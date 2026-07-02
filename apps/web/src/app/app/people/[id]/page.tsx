@@ -4,7 +4,9 @@ import { requireSessionPage } from "@/lib/auth/guard";
 import { getContact } from "@/lib/repo/contacts";
 import { listFacts, listNotes, listOpenFollowUps } from "@/lib/repo/notes";
 import { listContactSessions } from "@/lib/repo/sessions";
+import { listContactConnections } from "@/lib/repo/connections";
 import { AddNoteForm } from "@/components/app/contact/AddNoteForm";
+import { ConnectionsList } from "@/components/app/contact/ConnectionsList";
 import { DetailChips } from "@/components/app/contact/DetailChips";
 import { DraftSection } from "@/components/app/contact/DraftSection";
 import { FactList } from "@/components/app/contact/FactList";
@@ -24,12 +26,13 @@ export default async function PersonPage({
   const detail = await getContact(id);
   if (!detail) notFound();
   const { contact, companyName } = detail;
-  const [contactNotes, contactFacts, openFollowUps, contactSessions] =
+  const [contactNotes, contactFacts, openFollowUps, contactSessions, connections] =
     await Promise.all([
       listNotes(id),
       listFacts(id),
       listOpenFollowUps(id),
       listContactSessions(id),
+      listContactConnections(id),
     ]);
 
   return (
@@ -79,6 +82,8 @@ export default async function PersonPage({
           values={contact.location ? [contact.location] : []}
         />
       </div>
+
+      <ConnectionsList connections={connections} />
 
       <FollowUpList contactId={id} followUps={openFollowUps} />
 

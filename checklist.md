@@ -88,8 +88,8 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 ## 7. Knowledge graph v0 (M5)
 
 - [x] Relationship edges written from extraction (`works_at`, `knows`, `used_to_work_at`, …)
-- [ ] Contact page: same-company + same-session connections render
-- [ ] Graph browser page (React Flow — reuse landing graph patterns)
+- [x] Contact page: same-company + same-session + edge connections render
+- [x] Graph browser page (React Flow: people/companies, typed edges, ring layout)
 - [ ] Tag ontology v0 (tags from extraction, filterable)
 
 ## 8. Natural-language search (M6)

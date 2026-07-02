@@ -7,6 +7,7 @@ export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
 export const APP_NAV_LINKS = [
   { href: "/app/people", label: "People" },
   { href: "/app/sessions", label: "Sessions" },
+  { href: "/app/graph", label: "Graph" },
   { href: "/app/search", label: "Search" },
   { href: "/app/quick-add", label: "Quick add" },
 ] as const;

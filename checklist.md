@@ -16,9 +16,9 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Design tokens centralised (`globals.css` @theme: ink/panel/seam/paper/fog/amber)
 - [x] Landing page (hero, scrollytelling feature story, pricing, FAQ, OSS section)
 - [x] npm workspaces (`apps/*`, `packages/*`) so `packages/core` is shareable
-- [x] `.env.example` documenting every env var
-- [ ] CI (lint + typecheck + build on push)
-- [ ] Fix Dependabot alert #1 (moderate)
+- [x] `apps/web/.env.example` documenting every env var
+- [x] CI (lint + typecheck + build on push)
+- [x] Fix Dependabot alert (postcss <8.5.10 via next — npm override to ^8.5.16)
 - [ ] Deploy to Vercel (landing + app)
 
 ## 1. Shared core — `packages/core`

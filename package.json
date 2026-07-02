@@ -7,6 +7,9 @@
     "apps/*",
     "packages/*"
   ],
+  "overrides": {
+    "postcss": "^8.5.16"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/anchit2000/dhaga.git"

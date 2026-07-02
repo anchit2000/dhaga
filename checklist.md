@@ -35,24 +35,25 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 
 ## 2. Web app shell (v1.1 surface, built first)
 
-- [ ] Auth: password login (`DHAGA_PASSWORD`), signed httpOnly session cookie
-- [ ] Middleware: every `/app` page + `/api/*` route (except login) requires session
-- [ ] App layout: nav (People / Sessions / Search / Quick-add), mobile-first at 375px
-- [ ] Empty states, loading skeletons, error states on every screen
-- [ ] Dark warm theme reused from landing tokens
+- [x] Auth: password login (`DHAGA_PASSWORD`), signed httpOnly session cookie
+- [x] Every `/app` page + server action validates the session (guard helpers)
+- [x] App layout: nav (People / Sessions / Search / Quick-add), mobile-first at 375px
+- [x] Empty states + error states; submit buttons have loading spinners
+- [ ] Loading skeletons on data-heavy screens
+- [x] Dark warm theme reused from landing tokens
 
 ## 3. Data layer (BRD §7.4 — boring storage)
 
-- [ ] PGlite (embedded Postgres) + Drizzle; hosted Postgres = driver swap
-- [ ] `contacts` table
-- [ ] `companies` table
-- [ ] `sessions` + `session_contacts` tables (M2)
-- [ ] `notes` table (kind: voice|text, transcript, audio_path)
-- [ ] `facts` table (type, text, confidence, `source_note_id`, `deleted_at`)
-- [ ] `edges` table (src/dst typed, predicate, `source_note_id`)
+- [x] PGlite (embedded Postgres) + Drizzle; hosted Postgres = driver swap
+- [x] `contacts` table
+- [x] `companies` table
+- [x] `sessions` + `session_contacts` tables (M2)
+- [x] `notes` table (kind: voice|text|capture_source, body)
+- [x] `facts` table (type, text, confidence, `source_note_id`, `deleted_at`)
+- [x] `edges` table (src/dst typed, predicate, `source_note_id`)
 - [ ] `embeddings` table (pgvector column; deferred until vector search lands)
-- [ ] `follow_ups` table
-- [ ] `ai_actions` metering table (per-user, per-month counts — day one requirement)
+- [x] `follow_ups` table
+- [x] `ai_actions` metering table (day one requirement)
 - [ ] Deletion cascade: contact → notes → facts → edges → embeddings ("forget this person")
 - [ ] Note deletion tombstones derived facts/edges (receipts invariant)
 
@@ -62,7 +63,8 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [ ] Edit-before-save review form (M1 acceptance: user confirms fields)
 - [ ] Assign capture to a session (create/pick "Web Summit 2026")
 - [ ] Attach source text as first note (receipt for extracted fields)
-- [ ] Manual add-contact form (no extraction path)
+- [x] Manual add-contact form (no extraction path)
+- [x] People list with filter + contact detail page
 - [ ] Company auto-link: extracted company name → find-or-create `companies` row
 
 ## 5. Sessions / auto-grouping (M2)

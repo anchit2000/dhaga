@@ -13,6 +13,9 @@ build/
 .env.*
 !.env.example
 
+# local embedded database (PGlite)
+.dhaga-data/
+
 # OS noise
 .DS_Store
 Thumbs.db

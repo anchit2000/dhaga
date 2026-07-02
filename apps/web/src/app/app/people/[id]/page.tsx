@@ -6,8 +6,10 @@ import { listFacts, listNotes, listOpenFollowUps } from "@/lib/repo/notes";
 import { listContactSessions } from "@/lib/repo/sessions";
 import { AddNoteForm } from "@/components/app/contact/AddNoteForm";
 import { DetailChips } from "@/components/app/contact/DetailChips";
+import { DraftSection } from "@/components/app/contact/DraftSection";
 import { FactList } from "@/components/app/contact/FactList";
 import { FollowUpList } from "@/components/app/contact/FollowUpList";
+import { ForgetButton } from "@/components/app/contact/ForgetButton";
 import { NoteList } from "@/components/app/contact/NoteList";
 
 export const metadata = { title: "Person — Dhaga" };
@@ -90,6 +92,12 @@ export default async function PersonPage({
         <AddNoteForm contactId={id} />
         <NoteList contactId={id} notes={contactNotes} />
       </section>
+
+      <DraftSection contactId={id} />
+
+      <div className="border-t border-seam pt-5">
+        <ForgetButton contactId={id} name={contact.name} />
+      </div>
     </div>
   );
 }

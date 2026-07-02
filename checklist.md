@@ -28,7 +28,8 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] `LLMClient` interface (Dependency-Inversion contract)
 - [x] `AnthropicLLMClient` — structured outputs via Zod-derived JSON schema
 - [x] Prompt builders (pure functions): contact parse, note extraction
-- [ ] Prompt builders: search query understanding, follow-up draft
+- [x] Prompt builders: search answer, follow-up draft
+- [ ] Prompt builder: search query understanding (structured filters stage)
 - [x] `getLLMClient()` factory (env-driven; Ollama/BYO-key = future implementations)
 - [x] Heuristic (no-LLM) contact parser fallback — email/phone/URL regex + name lines
 - [ ] Shared API types (request/response contracts used by web now, mobile later)
@@ -93,17 +94,17 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 
 ## 8. Natural-language search (M6)
 
-- [ ] Keyword + structured search (SQL ILIKE over contacts/notes/facts) — free path
+- [x] Keyword + structured search (SQL ILIKE over contacts/notes/facts) — free path
 - [ ] Query understanding: LLM → structured filters + semantic residual
 - [ ] Embeddings + pgvector similarity (open embedding model or API)
-- [ ] Rerank + answer with citations to underlying notes (Sonnet)
+- [x] "Ask AI" answer over retrieved candidates with receipts (Sonnet, explicit click)
 - [ ] Acceptance: seeded test set — correct contact in top 3
 
 ## 9. AI follow-up drafts (M7)
 
-- [ ] One-tap draft using notes + session context + facts (Sonnet, cache-friendly prompt)
-- [ ] Draft references ≥1 note-derived fact (acceptance)
-- [ ] Edit + copy-to-clipboard flow
+- [x] One-tap draft using notes + session context + facts (Sonnet, cache-friendly prompt)
+- [ ] Draft references ≥1 note-derived fact (acceptance — verify with a live API key)
+- [x] Edit + copy-to-clipboard flow
 
 ## 10. Metering, cost control (BRD §8.2–8.3)
 
@@ -114,11 +115,11 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 
 ## 11. Privacy & export (M8, BRD §7.5)
 
-- [ ] "Forget this person" — full cascade delete with confirmation
-- [ ] Export: contacts CSV
-- [ ] Export: vCard
-- [ ] Export: full JSON dump (contacts+sessions+notes+facts+edges)
-- [ ] No contact PII / transcripts / extraction output in server logs
+- [x] "Forget this person" — full cascade delete with confirmation
+- [x] Export: contacts CSV
+- [x] Export: vCard
+- [x] Export: full JSON dump (contacts+sessions+notes+facts+edges)
+- [x] No contact PII / transcripts / extraction output in server logs
 - [x] Enrichment & cloud AI strictly user-triggered (no background calls)
 
 ## 12. Mobile app — `apps/mobile` (BRD MVP platform; separate milestone)

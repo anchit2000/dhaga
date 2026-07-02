@@ -1,7 +1,16 @@
 import { randomUUID } from "node:crypto";
-import { desc, eq, ilike, or } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, or } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { companies, contacts, type ContactRow } from "@/lib/db/schema";
+import {
+  companies,
+  contacts,
+  edges,
+  facts,
+  followUps,
+  notes,
+  sessionContacts,
+  type ContactRow,
+} from "@/lib/db/schema";
 import type { ExtractedContact } from "@dhaga/core";
 import type { ContactSource } from "@/utils/constants/app";
 
@@ -90,4 +99,35 @@ export async function createContact(
     source,
   });
   return id;
+}
+
+/**
+ * "Forget this person" — hard delete, full cascade (BRD §7.5 / GDPR):
+ * contact → notes → facts → edges → follow-ups → session links.
+ */
+export async function forgetContact(id: string): Promise<void> {
+  const db = await getDb();
+  // Rows derived from this contact's notes can reference other contacts —
+  // remove by source note first so no receipt outlives its note.
+  const noteIds = (
+    await db.select({ id: notes.id }).from(notes).where(eq(notes.contactId, id))
+  ).map((row) => row.id);
+  if (noteIds.length > 0) {
+    await db.delete(edges).where(inArray(edges.sourceNoteId, noteIds));
+    await db.delete(facts).where(inArray(facts.sourceNoteId, noteIds));
+    await db.delete(followUps).where(inArray(followUps.sourceNoteId, noteIds));
+  }
+  await db
+    .delete(edges)
+    .where(
+      or(
+        and(eq(edges.srcType, "contact"), eq(edges.srcId, id)),
+        and(eq(edges.dstType, "person"), eq(edges.dstId, id)),
+      ),
+    );
+  await db.delete(facts).where(eq(facts.contactId, id));
+  await db.delete(followUps).where(eq(followUps.contactId, id));
+  await db.delete(notes).where(eq(notes.contactId, id));
+  await db.delete(sessionContacts).where(eq(sessionContacts.contactId, id));
+  await db.delete(contacts).where(eq(contacts.id, id));
 }

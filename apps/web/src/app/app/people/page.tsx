@@ -20,9 +20,23 @@ export default async function PeoplePage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-2xl tracking-tight">People</h1>
-        <Button render={<Link href="/app/people/new" />} size="sm">
-          Add person
-        </Button>
+        <div className="flex items-center gap-3">
+          <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-fog/60">
+            Export
+            {(["csv", "vcard", "json"] as const).map((format) => (
+              <a
+                key={format}
+                href={`/api/export/${format}`}
+                className="underline-offset-2 transition-colors hover:text-paper hover:underline"
+              >
+                {format}
+              </a>
+            ))}
+          </span>
+          <Button render={<Link href="/app/people/new" />} size="sm">
+            Add person
+          </Button>
+        </div>
       </div>
 
       <form method="GET" role="search">

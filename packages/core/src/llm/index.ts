@@ -18,6 +18,15 @@ export {
   NOTE_EXTRACTION_SYSTEM,
   buildNoteExtractionPrompt,
 } from "./prompts/note-extraction";
+export {
+  SEARCH_ANSWER_SYSTEM,
+  buildSearchAnswerPrompt,
+} from "./prompts/search";
+export {
+  DRAFT_SYSTEM,
+  buildDraftPrompt,
+  type DraftContext,
+} from "./prompts/draft";
 
 /** True when a cloud LLM is configured; features degrade gracefully when not. */
 export function hasLLM(): boolean {

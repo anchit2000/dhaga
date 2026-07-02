@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth/guard";
-import { createContact } from "@/lib/repo/contacts";
+import { createContact, forgetContact } from "@/lib/repo/contacts";
 import { addNote } from "@/lib/repo/notes";
 import { addContactToSession, createSession } from "@/lib/repo/sessions";
 import type { ExtractedContact } from "@dhaga/core";
@@ -55,4 +55,13 @@ export async function createContactAction(
   if (sessionId) await addContactToSession(sessionId, id);
 
   redirect(`/app/people/${id}`);
+}
+
+/** Full cascade delete — the UI confirms before submitting. */
+export async function forgetContactAction(formData: FormData): Promise<void> {
+  await requireSession();
+  const contactId = String(formData.get("contactId") ?? "");
+  if (!contactId) return;
+  await forgetContact(contactId);
+  redirect("/app/people");
 }

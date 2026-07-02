@@ -59,33 +59,34 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 
 ## 4. Capture — web quick-add (v1.1, M1-equivalent for web)
 
-- [ ] Paste email signature / free text → extracted contact (LLM, heuristic fallback)
-- [ ] Edit-before-save review form (M1 acceptance: user confirms fields)
-- [ ] Assign capture to a session (create/pick "Web Summit 2026")
-- [ ] Attach source text as first note (receipt for extracted fields)
+- [x] Paste email signature / free text → extracted contact (LLM, heuristic fallback)
+- [x] Edit-before-save review form (M1 acceptance: user confirms fields)
+- [x] Assign capture to a session (create/pick "Web Summit 2026")
+- [x] Attach source text as first note (receipt for extracted fields)
 - [x] Manual add-contact form (no extraction path)
 - [x] People list with filter + contact detail page
-- [ ] Company auto-link: extracted company name → find-or-create `companies` row
+- [x] Company auto-link: extracted company name → find-or-create `companies` row
 
 ## 5. Sessions / auto-grouping (M2)
 
-- [ ] Sessions list + session page (contacts met there)
-- [ ] Create/rename/merge sessions
+- [x] Sessions list + session page (contacts met there)
+- [x] Create sessions (from Sessions page and inline in quick-add)
+- [ ] Rename/merge sessions
 - [ ] Web: active-session default (captures within same day attach to active session)
 - [ ] Mobile (later): time + geohash clustering per BRD §6.2
 
 ## 6. Notes & entity extraction (M3, M4)
 
-- [ ] Text notes on a contact (add, list, delete)
-- [ ] Extraction: note → facts/relationships/follow-ups/tags (Haiku, structured output)
-- [ ] Facts render on contact page with receipt ("from note, {date} — tap to view")
-- [ ] User can edit/delete a fact (M4 acceptance)
-- [ ] Deleting a note tombstones its derived facts/edges
+- [x] Text notes on a contact (add, list, delete)
+- [x] Extraction: note → facts/relationships/follow-ups/tags (Haiku, structured output)
+- [x] Facts render on contact page with receipt ("from note, {date}")
+- [x] User can delete a fact (M4 acceptance; inline edit later)
+- [x] Deleting a note tombstones its derived facts/edges
 - [ ] Voice notes + on-device transcription (mobile milestone)
 
 ## 7. Knowledge graph v0 (M5)
 
-- [ ] Relationship edges written from extraction (`works_at`, `knows`, `used_to_work_at`, …)
+- [x] Relationship edges written from extraction (`works_at`, `knows`, `used_to_work_at`, …)
 - [ ] Contact page: same-company + same-session connections render
 - [ ] Graph browser page (React Flow — reuse landing graph patterns)
 - [ ] Tag ontology v0 (tags from extraction, filterable)
@@ -106,8 +107,8 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 
 ## 10. Metering, cost control (BRD §8.2–8.3)
 
-- [ ] Every AI call logged to `ai_actions` (feature, model, tokens in/out)
-- [ ] Free-tier cap enforced (25 cloud AI actions/month) with clear UI message
+- [x] Every AI call logged to `ai_actions` (feature, model, tokens in/out)
+- [x] Free-tier cap enforced (25/month, `DHAGA_AI_MONTHLY_CAP` override) with clear UI message
 - [ ] Prompt caching on stable system prompts
 - [ ] Batch API for nightly jobs (v1.2, when jobs exist)
 
@@ -118,7 +119,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [ ] Export: vCard
 - [ ] Export: full JSON dump (contacts+sessions+notes+facts+edges)
 - [ ] No contact PII / transcripts / extraction output in server logs
-- [ ] Enrichment & cloud AI strictly user-triggered (no background calls)
+- [x] Enrichment & cloud AI strictly user-triggered (no background calls)
 
 ## 12. Mobile app — `apps/mobile` (BRD MVP platform; separate milestone)
 

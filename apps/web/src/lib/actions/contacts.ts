@@ -3,6 +3,8 @@
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth/guard";
 import { createContact } from "@/lib/repo/contacts";
+import { addNote } from "@/lib/repo/notes";
+import { addContactToSession, createSession } from "@/lib/repo/sessions";
 import type { ExtractedContact } from "@dhaga/core";
 
 export interface ContactFormState {
@@ -38,6 +40,19 @@ export async function createContactAction(
     phones: listField(formData, "phones"),
     links: listField(formData, "links"),
   };
-  const id = await createContact(input, "manual");
+  const source = field(formData, "source") === "quick_add" ? "quick_add" : "manual";
+  const id = await createContact(input, source);
+
+  // Quick-add receipts: the pasted text becomes the contact's first note.
+  const sourceText = field(formData, "sourceText");
+  if (sourceText) await addNote(id, "capture_source", sourceText);
+
+  const newSessionName = field(formData, "newSessionName");
+  const sessionId =
+    newSessionName != null
+      ? await createSession(newSessionName)
+      : field(formData, "sessionId");
+  if (sessionId) await addContactToSession(sessionId, id);
+
   redirect(`/app/people/${id}`);
 }

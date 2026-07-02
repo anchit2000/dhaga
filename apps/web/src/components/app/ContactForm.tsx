@@ -44,13 +44,19 @@ function fieldsFor(initial: ExtractedContact): FieldSpec[] {
   ];
 }
 
-/** Review-and-save form: used for manual add and for extracted captures. */
+/**
+ * Review-and-save form: used for manual add and for extracted captures.
+ * `children` lets callers ride extra fields along (hidden capture source,
+ * session picker) — they submit through the same action.
+ */
 export function ContactForm({
   initial,
   submitLabel,
+  children,
 }: {
   initial: ExtractedContact;
   submitLabel: string;
+  children?: React.ReactNode;
 }) {
   const [state, formAction] = useActionState<ContactFormState, FormData>(
     createContactAction,
@@ -81,6 +87,7 @@ export function ContactForm({
           </div>
         ))}
       </div>
+      {children}
       {state.error ? (
         <p className="text-sm text-red-400" role="alert">
           {state.error}

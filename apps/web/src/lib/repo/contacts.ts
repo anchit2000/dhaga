@@ -86,6 +86,7 @@ export async function createContact(
     phones: input.phones,
     links: input.links,
     location: input.location?.trim() || null,
+    tags: [],
     source,
   });
   return id;

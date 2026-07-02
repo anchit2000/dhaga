@@ -1,0 +1,72 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { requireSession } from "@/lib/auth/guard";
+import { extractAndApplyNote } from "@/lib/ai/note-extraction";
+import { getContact } from "@/lib/repo/contacts";
+import {
+  addNote,
+  deleteFact,
+  deleteNote,
+  setFollowUpStatus,
+} from "@/lib/repo/notes";
+
+export interface NoteFormState {
+  notice?: string;
+  error?: string;
+}
+
+export async function addNoteAction(
+  _previous: NoteFormState,
+  formData: FormData,
+): Promise<NoteFormState> {
+  await requireSession();
+  const contactId = String(formData.get("contactId") ?? "");
+  const body = String(formData.get("body") ?? "").trim();
+  if (!contactId) return { error: "Missing contact." };
+  if (!body) return { error: "Write something first." };
+
+  const detail = await getContact(contactId);
+  if (!detail) return { error: "Contact not found." };
+
+  const noteId = await addNote(contactId, "text", body);
+  const outcome = await extractAndApplyNote(
+    contactId,
+    noteId,
+    detail.contact.name,
+    body,
+  );
+  revalidatePath(`/app/people/${contactId}`);
+  return {
+    notice: outcome.applied
+      ? `Note saved — ${outcome.factCount} fact${outcome.factCount === 1 ? "" : "s"} and ${outcome.followUpCount} follow-up${outcome.followUpCount === 1 ? "" : "s"} extracted.`
+      : outcome.notice,
+  };
+}
+
+export async function deleteNoteAction(formData: FormData): Promise<void> {
+  await requireSession();
+  const noteId = String(formData.get("noteId") ?? "");
+  const contactId = String(formData.get("contactId") ?? "");
+  if (!noteId) return;
+  await deleteNote(noteId);
+  revalidatePath(`/app/people/${contactId}`);
+}
+
+export async function deleteFactAction(formData: FormData): Promise<void> {
+  await requireSession();
+  const factId = String(formData.get("factId") ?? "");
+  const contactId = String(formData.get("contactId") ?? "");
+  if (!factId) return;
+  await deleteFact(factId);
+  revalidatePath(`/app/people/${contactId}`);
+}
+
+export async function completeFollowUpAction(formData: FormData): Promise<void> {
+  await requireSession();
+  const followUpId = String(formData.get("followUpId") ?? "");
+  const contactId = String(formData.get("contactId") ?? "");
+  if (!followUpId) return;
+  await setFollowUpStatus(followUpId, "done");
+  revalidatePath(`/app/people/${contactId}`);
+}

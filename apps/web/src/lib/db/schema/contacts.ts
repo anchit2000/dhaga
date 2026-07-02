@@ -17,6 +17,7 @@ export const contacts = pgTable("contacts", {
   phones: jsonb("phones").$type<string[]>().notNull(),
   links: jsonb("links").$type<string[]>().notNull(),
   location: text("location"),
+  tags: jsonb("tags").$type<string[]>().notNull(),
   source: text("source").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),

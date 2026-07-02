@@ -84,6 +84,8 @@ CREATE TABLE IF NOT EXISTS follow_ups (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS tags jsonb NOT NULL DEFAULT '[]';
+
 CREATE TABLE IF NOT EXISTS ai_actions (
   id text PRIMARY KEY,
   feature text NOT NULL,

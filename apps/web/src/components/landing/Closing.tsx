@@ -1,0 +1,83 @@
+import { GITHUB_URL } from "@/utils/constants/landing";
+import { WaitlistForm } from "./WaitlistForm";
+
+export function FinalCta() {
+  return (
+    <section className="border-t border-seam bg-panel-2/40" id="waitlist">
+      <div className="mx-auto max-w-6xl px-6 py-24">
+        <p className="font-mono text-xs uppercase tracking-[0.22em] text-amber">
+          Early access
+        </p>
+        <h2 className="mt-4 max-w-2xl text-balance font-display text-4xl font-medium sm:text-5xl">
+          The next conference is coming. Arrive with a memory.
+        </h2>
+        <p className="mt-4 max-w-xl text-fog">
+          Join the waitlist for the beta. The first 500 signups lock the $79
+          founding lifetime price — after that it&apos;s $99, and that&apos;s a
+          promise we keep in public.
+        </p>
+        <WaitlistForm />
+      </div>
+    </section>
+  );
+}
+
+export function Footer() {
+  return (
+    <footer className="border-t border-seam">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-start justify-between gap-10 px-6 py-14">
+        <div className="max-w-xs">
+          <p className="font-display text-xl">
+            dhaga<span className="text-amber">.</span>
+          </p>
+          <p className="mt-3 text-sm text-fog">
+            धागा — thread. The one that ties your network together.
+          </p>
+        </div>
+        <div className="flex gap-16 text-sm">
+          <div className="space-y-2.5">
+            <p className="font-mono text-[10px] uppercase tracking-widest text-fog/60">
+              Product
+            </p>
+            <FooterLink href="#product" label="Product" />
+            <FooterLink href="#pricing" label="Pricing" />
+            <FooterLink href="#faq" label="FAQ" />
+          </div>
+          <div className="space-y-2.5">
+            <p className="font-mono text-[10px] uppercase tracking-widest text-fog/60">
+              Open source
+            </p>
+            <FooterLink href={GITHUB_URL} label="GitHub" external />
+            <FooterLink href={`${GITHUB_URL}/blob/main/LICENSE`} label="AGPL-3.0" external />
+            <FooterLink href={`${GITHUB_URL}/blob/main/BRD.md`} label="Roadmap" external />
+          </div>
+        </div>
+      </div>
+      <div className="border-t border-seam/60">
+        <p className="mx-auto max-w-6xl px-6 py-5 text-xs text-fog/60">
+          © 2026 Dhaga. Built in the open. Your data is yours — always exportable, always deletable.
+        </p>
+      </div>
+    </footer>
+  );
+}
+
+function FooterLink({
+  href,
+  label,
+  external,
+}: {
+  href: string;
+  label: string;
+  external?: boolean;
+}) {
+  return (
+    <a
+      href={href}
+      className="block text-fog transition-colors hover:text-paper"
+      {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+    >
+      {label}
+    </a>
+  );
+}

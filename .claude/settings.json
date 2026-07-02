@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install*)",
+      "Bash(npm run *)",
+      "Bash(npm test*)",
+      "Bash(npx tsc *)",
+      "Bash(npx next *)",
+      "Bash(npx eslint *)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git branch*)",
+      "Bash(node --version)",
+      "Bash(npm --version)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "statusMessage": "Checking file length...",
+            "command": "$j=[Console]::In.ReadToEnd()|ConvertFrom-Json;$fp=$j.tool_input.file_path;if($fp -and $fp -match 'networkpro' -and $fp -match '\\.(ts|tsx)$' -and $fp -notmatch 'node_modules'){$n=(Get-Content $fp -ErrorAction SilentlyContinue|Measure-Object -Line).Lines;if($n -gt 150){@{hookSpecificOutput=@{hookEventName='PostToolUse';additionalContext=\"FILE TOO LONG: $fp has $n lines. Per CLAUDE.md, convert it into a directory (index.ts re-exports) and split.\"}}|ConvertTo-Json -Compress}}"
+          },
+          {
+            "type": "command",
+            "shell": "powershell",
+            "timeout": 120,
+            "statusMessage": "Type-checking...",
+            "command": "$j=[Console]::In.ReadToEnd()|ConvertFrom-Json;$fp=$j.tool_input.file_path;if($fp -and $fp -match 'networkpro' -and $fp -match '\\.(ts|tsx)$' -and $fp -notmatch 'node_modules'){$d=Split-Path $fp;while($d -and -not (Test-Path (Join-Path $d 'tsconfig.json'))){$p=Split-Path $d;if($p -eq $d -or -not $p){$d=$null}else{$d=$p}};if($d -and (Test-Path (Join-Path $d 'node_modules/typescript/bin/tsc'))){$r=node (Join-Path $d 'node_modules/typescript/bin/tsc') --noEmit -p (Join-Path $d 'tsconfig.json') 2>&1|Out-String;$f=($r -split \"`n\"|Where-Object{$_ -notmatch 'node_modules'}) -join \"`n\";if($f.Trim()){@{hookSpecificOutput=@{hookEventName='PostToolUse';additionalContext=\"TypeScript errors after edit:`n$f\"}}|ConvertTo-Json -Compress}}}"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+# local Claude Code overrides (personal, not team)
+.claude/settings.local.json
+
+# dependencies & builds (for when apps/ exist)
+node_modules/
+.next/
+dist/
+build/
+.expo/
+
+# env & secrets
+.env
+.env.*
+!.env.example
+
+# OS noise
+.DS_Store
+Thumbs.db

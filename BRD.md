@@ -1,6 +1,8 @@
-# NetworkPro — Business Requirements Document
+# Dhaga — Business Requirements Document
 
-**Product:** NetworkPro — Intelligence in Your Network
+*(Product renamed from working title "NetworkPro" to **Dhaga** — धागा, "thread" — July 2026. Mentions of NetworkPro below are historical.)*
+
+**Product:** Dhaga — Intelligence in Your Network
 **Version:** 0.1 (Draft)
 **Date:** 2 July 2026
 **Owner:** Anchit Shrivastava

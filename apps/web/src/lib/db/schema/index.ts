@@ -15,4 +15,4 @@ export {
   type EdgeRow,
   type FollowUpRow,
 } from "./notes";
-export { aiActions, type AiActionRow } from "./meta";
+export { aiActions, waitlist, type AiActionRow } from "./meta";

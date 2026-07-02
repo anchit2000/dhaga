@@ -9,5 +9,3 @@
 
 React vs Flutter for this? 
 And for backend? Python? Node? Go? 
-
-Let's start with a pitch and positioning landing page. 

@@ -40,7 +40,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Every `/app` page + server action validates the session (guard helpers)
 - [x] App layout: nav (People / Sessions / Search / Quick-add), mobile-first at 375px
 - [x] Empty states + error states; submit buttons have loading spinners
-- [ ] Loading skeletons on data-heavy screens
+- [x] Loading skeletons on data-heavy screens (route `loading.tsx` files)
 - [x] Dark warm theme reused from landing tokens
 
 ## 3. Data layer (BRD §7.4 — boring storage)
@@ -167,7 +167,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 
 ## 18. Monetization & launch
 
-- [ ] Waitlist API (`/api/waitlist`) wired to real storage (landing form is demo-only)
+- [x] Waitlist API (`/api/waitlist`) wired to real storage; landing form posts to it
 - [ ] Free tier caps live; Pro (lifetime $79 first-500 / $8 mo) checkout
 - [ ] Self-host docs (`docker compose up`)
 - [ ] Public roadmap + good-first-issues

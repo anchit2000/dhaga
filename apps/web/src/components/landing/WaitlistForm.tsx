@@ -7,15 +7,30 @@ import { Input } from "@/components/ui/input";
 export function WaitlistForm() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const email = new FormData(event.currentTarget).get("email");
     setLoading(true);
-    // TODO(waitlist): POST to /api/waitlist once the backend route exists.
-    setTimeout(() => {
-      setLoading(false);
+    setError(null);
+    try {
+      const response = await fetch("/api/waitlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!response.ok) {
+        const body = (await response.json()) as { error?: string };
+        setError(body.error ?? "Something went wrong — try again.");
+        return;
+      }
       setSubmitted(true);
-    }, 400);
+    } catch {
+      setError("Network error — try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   if (submitted) {
@@ -31,6 +46,7 @@ export function WaitlistForm() {
     <form onSubmit={handleSubmit} className="mt-8 flex max-w-md flex-wrap gap-3">
       <Input
         type="email"
+        name="email"
         required
         placeholder="you@company.com"
         aria-label="Email address"
@@ -39,6 +55,11 @@ export function WaitlistForm() {
       <Button type="submit" size="lg" disabled={loading}>
         {loading ? "Reserving…" : "Request an invite"}
       </Button>
+      {error ? (
+        <p role="alert" className="w-full text-sm text-red-400">
+          {error}
+        </p>
+      ) : null}
     </form>
   );
 }

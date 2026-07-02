@@ -4,7 +4,7 @@ import { DDL } from "./ddl";
 import { companies, contacts } from "./schema/contacts";
 import { sessionContacts, sessions } from "./schema/sessions";
 import { edges, facts, followUps, notes } from "./schema/notes";
-import { aiActions } from "./schema/meta";
+import { aiActions, waitlist } from "./schema/meta";
 
 const schema = {
   companies,
@@ -16,6 +16,7 @@ const schema = {
   edges,
   followUps,
   aiActions,
+  waitlist,
 };
 
 export type DhagaDb = PgliteDatabase<typeof schema>;

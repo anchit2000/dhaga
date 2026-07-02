@@ -4,25 +4,52 @@ const EXTRACTED_FIELDS = [
   { label: "Email", value: "nisha@meridian.vc" },
 ];
 
-/** Phone screen: business card in the viewfinder, scan line, fields extracting. */
+/** Phone screen: a realistic business card in a bracket viewfinder, scan line, fields extracting. */
 export function ScanScreen() {
   return (
-    <div className="flex h-full flex-col bg-gradient-to-b from-panel-2 to-ink px-4 pb-8 pt-10">
+    <div className="flex h-full flex-col bg-gradient-to-b from-[#1a1510] to-ink px-4 pb-8 pt-10">
       <p className="text-center font-mono text-[9px] uppercase tracking-[0.2em] text-amber">
         Scanning · Web Summit 2026
       </p>
 
-      {/* viewfinder */}
-      <div className="relative mt-4 rounded-xl border-2 border-dashed border-amber/40 p-3">
-        <div className="rounded-md bg-[#efe9dc] p-3 text-ink shadow-inner">
-          <p className="font-display text-sm font-medium">Nisha Shah</p>
-          <p className="text-[9px] text-ink/70">Principal · Meridian Capital</p>
-          <div className="mt-2 space-y-1">
-            <div className="h-1 w-3/4 rounded bg-ink/20" />
-            <div className="h-1 w-1/2 rounded bg-ink/20" />
+      {/* viewfinder with corner brackets */}
+      <div className="relative mt-4 px-1 py-2">
+        <Bracket className="left-0 top-0 border-l-2 border-t-2" />
+        <Bracket className="right-0 top-0 border-r-2 border-t-2" />
+        <Bracket className="bottom-0 left-0 border-b-2 border-l-2" />
+        <Bracket className="bottom-0 right-0 border-b-2 border-r-2" />
+
+        {/* the card — real business-card proportions (3.5in × 2in) */}
+        <div className="flex aspect-[7/4] rotate-[-1.5deg] flex-col justify-between rounded-md bg-gradient-to-br from-[#faf7f0] to-[#ece5d6] px-3 py-2 text-ink shadow-[0_10px_30px_-8px_rgba(0,0,0,0.7),0_1px_0_rgba(255,255,255,0.6)_inset]">
+          <div className="flex items-center justify-between">
+            <span className="flex size-4 items-center justify-center rounded-[3px] bg-[#1f3a33] font-display text-[8px] font-semibold text-[#e8dcc0]">
+              M
+            </span>
+            <span className="font-mono text-[6px] uppercase tracking-[0.2em] text-ink/50">
+              Meridian Capital
+            </span>
+          </div>
+          <div>
+            <p className="font-display text-[13px] font-semibold leading-none tracking-tight">
+              Nisha Shah
+            </p>
+            <p className="mt-0.5 text-[6.5px] uppercase tracking-[0.14em] text-ink/60">
+              Principal · Early Stage
+            </p>
+          </div>
+          <div className="flex items-end justify-between border-t border-ink/10 pt-1">
+            <div className="text-[6px] leading-snug text-ink/70">
+              <p>nisha@meridian.vc · +65 8123 4567</p>
+            </div>
+            <div className="grid grid-cols-4 gap-[1px]" aria-hidden="true">
+              {QR_DOTS.map((on, i) => (
+                <span key={i} className={`size-[2.5px] ${on ? "bg-ink/70" : "bg-transparent"}`} />
+              ))}
+            </div>
           </div>
         </div>
-        <div className="pointer-events-none absolute left-2 right-2 h-0.5 rounded-full bg-amber shadow-[0_0_12px_2px_rgba(226,164,76,0.8)] motion-safe:animate-[dhaga-scan_2.8s_ease-in-out_infinite]" />
+
+        <div className="pointer-events-none absolute left-2 right-2 h-0.5 rounded-full bg-amber shadow-[0_0_14px_3px_rgba(226,164,76,0.75)] motion-safe:animate-[dhaga-scan_2.8s_ease-in-out_infinite]" />
       </div>
 
       {/* extracted fields */}
@@ -50,3 +77,19 @@ export function ScanScreen() {
     </div>
   );
 }
+
+function Bracket({ className }: { className: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`absolute z-10 size-4 rounded-[2px] border-amber/90 ${className}`}
+    />
+  );
+}
+
+const QR_DOTS = [
+  true, true, false, true,
+  false, true, true, false,
+  true, false, true, true,
+  true, true, false, true,
+];

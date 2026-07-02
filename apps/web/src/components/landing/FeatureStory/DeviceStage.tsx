@@ -27,11 +27,12 @@ export function DeviceStage({ visual }: { visual: StoryVisual }) {
     <div className="relative">
       {/* desktop window */}
       <div
-        className="transition-all duration-700"
+        className="relative transition-all duration-700"
         style={{
-          opacity: phoneActive ? 0.45 : 1,
-          filter: phoneActive ? "saturate(0.6)" : "none",
-          transform: phoneActive ? "scale(0.97)" : "scale(1)",
+          zIndex: phoneActive ? 0 : 10,
+          opacity: phoneActive ? 0.6 : 1,
+          filter: phoneActive ? "saturate(0.5) brightness(0.75)" : "none",
+          transform: phoneActive ? "scale(0.97) translateX(12px)" : "scale(1)",
         }}
       >
         <Shell className="ml-auto w-full max-w-xl">
@@ -39,16 +40,17 @@ export function DeviceStage({ visual }: { visual: StoryVisual }) {
         </Shell>
       </div>
 
-      {/* phone, front-left */}
+      {/* phone: in front when a capture scene plays, tucked behind otherwise */}
       <div
-        className="absolute -bottom-8 -left-2 w-44 transition-all duration-700 sm:w-48"
+        className="absolute -bottom-8 w-44 transition-all duration-700 sm:w-48"
         style={{
-          opacity: phoneActive ? 1 : 0.55,
-          filter: phoneActive ? "none" : "saturate(0.6)",
+          zIndex: phoneActive ? 10 : 0,
+          left: phoneActive ? "-0.5rem" : "-3.5rem",
+          opacity: phoneActive ? 1 : 0.9,
+          filter: phoneActive ? "none" : "saturate(0.5) brightness(0.6)",
           transform: phoneActive
             ? "scale(1.04) rotate(-2deg)"
-            : "scale(0.96) rotate(-4deg)",
-          zIndex: 10,
+            : "scale(0.9) rotate(-7deg) translateY(10px)",
         }}
       >
         <PhoneShell>

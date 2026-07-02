@@ -1,0 +1,21 @@
+{
+  "name": "@dhaga/core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Dhaga shared core: Zod schemas, LLM gateway, parsers. Consumed as TypeScript source (apps transpile it).",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.109.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.0",
+    "typescript": "^6.0.3"
+  }
+}

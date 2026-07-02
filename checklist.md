@@ -15,21 +15,22 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Next.js app scaffold (`apps/web`) — App Router, TS strict, Tailwind v4
 - [x] Design tokens centralised (`globals.css` @theme: ink/panel/seam/paper/fog/amber)
 - [x] Landing page (hero, scrollytelling feature story, pricing, FAQ, OSS section)
-- [ ] npm workspaces (`apps/*`, `packages/*`) so `packages/core` is shareable
-- [ ] `.env.example` documenting every env var
+- [x] npm workspaces (`apps/*`, `packages/*`) so `packages/core` is shareable
+- [x] `.env.example` documenting every env var
 - [ ] CI (lint + typecheck + build on push)
 - [ ] Fix Dependabot alert #1 (moderate)
 - [ ] Deploy to Vercel (landing + app)
 
 ## 1. Shared core — `packages/core`
 
-- [ ] Zod contact schema (name, title, company, emails[], phones[], links, address)
-- [ ] Zod extraction schema (facts, relationships, follow_ups, tags) per BRD §6.3
-- [ ] `LLMClient` interface (Dependency-Inversion contract)
-- [ ] `AnthropicLLMClient` — structured outputs via Zod-derived JSON schema
-- [ ] Prompt builders (pure functions): contact parse, note extraction, search, draft
-- [ ] `getLLMClient()` factory (env-driven; Ollama/BYO-key = future implementations)
-- [ ] Heuristic (no-LLM) contact parser fallback — email/phone/URL regex + name lines
+- [x] Zod contact schema (name, title, company, emails[], phones[], links, location)
+- [x] Zod extraction schema (facts, relationships, follow_ups, tags) per BRD §6.3
+- [x] `LLMClient` interface (Dependency-Inversion contract)
+- [x] `AnthropicLLMClient` — structured outputs via Zod-derived JSON schema
+- [x] Prompt builders (pure functions): contact parse, note extraction
+- [ ] Prompt builders: search query understanding, follow-up draft
+- [x] `getLLMClient()` factory (env-driven; Ollama/BYO-key = future implementations)
+- [x] Heuristic (no-LLM) contact parser fallback — email/phone/URL regex + name lines
 - [ ] Shared API types (request/response contracts used by web now, mobile later)
 
 ## 2. Web app shell (v1.1 surface, built first)

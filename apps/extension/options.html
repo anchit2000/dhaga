@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    body {
+      margin: 0; min-width: 320px; background: #0d0b09; color: #f3ede2;
+      font: 13px/1.5 Georgia, "Times New Roman", serif; padding: 14px;
+    }
+    label { display: block; color: #a49a8a; margin-bottom: 6px; }
+    input {
+      width: 100%; box-sizing: border-box; background: #16120e; color: #f3ede2;
+      border: 1px solid #2b241b; border-radius: 8px; padding: 8px; font-size: 13px;
+    }
+    input:focus { outline: none; border-color: #e2a44c66; }
+    button {
+      margin-top: 10px; padding: 7px 16px; border: 0; cursor: pointer;
+      border-radius: 999px; font-weight: 600; color: #0d0b09;
+      background: linear-gradient(#f0bc6e, #d18f36);
+    }
+    #status { font-size: 12px; color: #e2a44c; margin-left: 8px; }
+    p.hint { font-size: 11px; color: #a49a8a; }
+  </style>
+</head>
+<body>
+  <label for="baseUrl">Dhaga instance URL</label>
+  <input id="baseUrl" type="url" placeholder="http://localhost:3000" />
+  <p class="hint">Self-hosting elsewhere? Also add your domain to
+    host_permissions in manifest.json and reload the extension.</p>
+  <button id="save" type="button">Save</button><span id="status"></span>
+  <script src="options.js"></script>
+</body>
+</html>

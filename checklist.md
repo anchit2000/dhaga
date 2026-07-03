@@ -138,9 +138,11 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 
 ## 13. Browser extension (v1.1)
 
-- [ ] Chrome/Edge extension scaffold sharing web quick-add TS core
-- [ ] One-click capture from LinkedIn profile / article (active tab, explicit click only)
+- [x] Chrome/Edge extension (MV3): popup captures page selection → `/api/capture`
+- [x] One-click capture from any page (activeTab on explicit click only, page URL as receipt)
+- [x] `/api/capture` REST endpoint (session-gated; shared by extension + future mobile share)
 - [ ] "Save this article to {contact}" linking
+- [ ] Web Store packaging/listing
 
 ## 14. Proactive intelligence (v1.2)
 

@@ -44,10 +44,13 @@ export function heuristicContactParse(rawText: string): ExtractedContact {
 
   const titleLine = lines.find((line) => line !== nameLine && TITLE_WORDS_RE.test(line));
   if (titleLine) {
-    // "VP of Sales at Acme" / "CTO, Acme Corp" → split title vs company.
-    const atSplit = titleLine.split(/\s+(?:at|@)\s+|,\s+/);
+    // "VP of Sales at Acme" / "CTO, Acme Corp" / "Principal — Acme" →
+    // split title vs company (spaced dashes count as separators).
+    const atSplit = titleLine.split(/\s+(?:at|@)\s+|,\s+|\s+[—–-]\s+/);
     contact.title = atSplit[0].trim();
-    if (atSplit.length > 1 && atSplit[1].trim()) contact.company = atSplit[1].trim();
+    // Company is conventionally the last segment ("Principal, Early Stage — Acme").
+    const lastSegment = atSplit[atSplit.length - 1]?.trim();
+    if (atSplit.length > 1 && lastSegment) contact.company = lastSegment;
   }
 
   if (!contact.company) {

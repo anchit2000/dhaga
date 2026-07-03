@@ -8,6 +8,9 @@ dist/
 build/
 .expo/
 
+# transformers.js model cache
+apps/web/node_modules/.cache/
+
 # env & secrets
 .env
 .env.*

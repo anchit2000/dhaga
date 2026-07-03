@@ -159,7 +159,18 @@ On a contact, add this note:
       and capture falls back to the offline parser instead of failing.
 - [ ] Remove the override and restart.
 
-## 12. Static verification (CI-to-be)
+## 11b. Browser extension
+
+- [ ] `npm run build --workspace @dhaga/extension`, then Chrome →
+      `chrome://extensions` → Developer mode → **Load unpacked** →
+      `apps/extension/dist`.
+- [ ] With the web app running and you signed in: select a person's details
+      on any page (name, title, email), click the Dhaga icon — the selection
+      is pre-filled — **Save to my network** → success links to the contact.
+- [ ] The contact's notes include the selection with the page URL (receipt).
+- [ ] Signed out: saving shows "Sign in to Dhaga" with a login link.
+
+## 12. Static verification (CI)
 
 ```bash
 npm run lint --prefix apps/web           # ESLint

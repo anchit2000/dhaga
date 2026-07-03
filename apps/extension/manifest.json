@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Dhaga — capture to your network",
+  "version": "0.1.0",
+  "description": "Select a person's details on any page, save them to your private Dhaga graph in one click.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Capture to Dhaga"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": false
+  },
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["http://localhost:3000/*"]
+}

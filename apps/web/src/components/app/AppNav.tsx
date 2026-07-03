@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logout } from "@/lib/auth/actions";
+import { ThreadMark } from "@/components/brand/ThreadMark";
 import { cn } from "@/lib/utils";
 import { APP_NAV_LINKS } from "@/utils/constants/app";
 
@@ -15,8 +16,9 @@ export function AppNav() {
       <div className="mx-auto flex h-14 max-w-5xl items-center gap-4 px-4 sm:px-6">
         <Link
           href="/app/people"
-          className="font-display text-lg tracking-tight text-paper"
+          className="flex items-center gap-2 font-display text-lg tracking-tight text-paper"
         >
+          <ThreadMark size={20} />
           dhaga
         </Link>
         <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">

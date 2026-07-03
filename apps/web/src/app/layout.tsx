@@ -22,6 +22,12 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ??
+      (process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : "http://localhost:3000"),
+  ),
   title: "Dhaga — Every thread, remembered",
   description:
     "Dhaga turns every card scan, badge, and voice note into a private knowledge graph you can search in plain language. Open source. Your data stays yours.",

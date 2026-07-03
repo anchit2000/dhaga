@@ -1,3 +1,5 @@
+<img src="apps/web/public/logo.svg" alt="dhaga" width="240" />
+
 # dhaga <sub>धागा · thread</sub>
 
 **Every thread, remembered.**

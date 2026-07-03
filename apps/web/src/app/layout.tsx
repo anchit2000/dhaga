@@ -51,7 +51,13 @@ export default function RootLayout({
       lang="en"
       className={`${spectral.variable} ${plexSans.variable} ${plexMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-ink text-paper">
+      {/* suppressHydrationWarning: browser extensions (Grammarly et al.)
+          inject attributes into <body> before React hydrates; the warning is
+          noise. Suppression is attribute-level and this element only. */}
+      <body
+        suppressHydrationWarning
+        className="min-h-full flex flex-col bg-ink text-paper"
+      >
         {children}
       </body>
     </html>

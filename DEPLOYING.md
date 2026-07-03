@@ -20,7 +20,12 @@ work but **must not be trusted with real data** (ephemeral storage).
 
 1. Import the GitHub repo at vercel.com → framework auto-detects Next.js.
 2. Set **Root Directory** to `apps/web` and keep the default build command.
-3. Deploy. Add your domain under Settings → Domains.
+3. Set env vars: `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `DHAGA_OWNER_EMAIL`.
+   **The waitlist needs these on Vercel**: the embedded DB can't write to a
+   serverless filesystem, so signups fall back to a notification email to
+   `DHAGA_OWNER_EMAIL` (and signers still get their confirmation). Without
+   them the form returns 503.
+4. Deploy. Add your domain under Settings → Domains.
 
 Don't set `DHAGA_PASSWORD` here until persistent storage exists — better that
 `/app` stays unusable than that someone builds a graph that vanishes.

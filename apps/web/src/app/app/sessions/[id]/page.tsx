@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireSessionPage } from "@/lib/auth/guard";
 import { getSession, listSessionContacts, listSessions } from "@/lib/repo/sessions";
+import { EmailDigestButton } from "@/components/app/EmailDigestButton";
 import { EmptyState } from "@/components/app/EmptyState";
 import { SessionAdmin } from "@/components/app/SessionAdmin";
 
@@ -30,6 +31,8 @@ export default async function SessionPage({
           {people.length === 1 ? "person" : "people"}
         </p>
       </div>
+
+      {people.length > 0 ? <EmailDigestButton sessionId={id} /> : null}
 
       <SessionAdmin
         sessionId={id}

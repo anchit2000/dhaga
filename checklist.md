@@ -68,6 +68,8 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Manual add-contact form (no extraction path)
 - [x] People list with filter + contact detail page
 - [x] Company auto-link: extracted company name → find-or-create `companies` row
+- [x] User-triggered enrichment: web search → cited enrichment note → receipted facts
+- [x] Waitlist signups get a confirmation email (Resend)
 
 ## 5. Sessions / auto-grouping (M2)
 
@@ -145,7 +147,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [ ] Job-change detection (nightly Batch API job, diffs → alerts)
 - [x] Keep-in-touch cadence reminders + Home reach-out feed (ideas.md #2)
 - [ ] Automatic relationship-decay detection (nightly job, no cadence needed)
-- [ ] Post-event digest email
+- [x] Post-event digest email (user-triggered from the session page, template-based)
 - [ ] Pre-meeting briefs (calendar integration → push 30 min before)
 
 ## 15. Graph power (v1.3)

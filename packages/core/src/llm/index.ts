@@ -29,6 +29,11 @@ export {
   buildDraftPrompt,
   type DraftContext,
 } from "./prompts/draft";
+export {
+  ENRICHMENT_SYSTEM,
+  buildEnrichmentPrompt,
+  type EnrichmentSubject,
+} from "./prompts/enrichment";
 
 /** True when a cloud LLM is configured; features degrade gracefully when not. */
 export function hasLLM(): boolean {

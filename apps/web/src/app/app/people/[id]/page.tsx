@@ -13,6 +13,7 @@ import { KeepInTouch } from "@/components/app/contact/KeepInTouch";
 import { RecommendedList } from "@/components/app/contact/RecommendedList";
 import { DetailChips } from "@/components/app/contact/DetailChips";
 import { DraftSection } from "@/components/app/contact/DraftSection";
+import { EnrichButton } from "@/components/app/contact/EnrichButton";
 import { FactList } from "@/components/app/contact/FactList";
 import { FollowUpList } from "@/components/app/contact/FollowUpList";
 import { ForgetButton } from "@/components/app/contact/ForgetButton";
@@ -113,6 +114,7 @@ export default async function PersonPage({
       <section className="space-y-3">
         <h2 className="font-display text-lg">Facts</h2>
         <FactList contactId={id} facts={contactFacts} />
+        <EnrichButton contactId={id} />
       </section>
 
       <section className="space-y-3">

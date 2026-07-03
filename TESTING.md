@@ -137,6 +137,21 @@ On a contact, add this note:
 - [ ] Their sessions no longer list them; search finds nothing; a fresh JSON
       export contains no trace (contact, notes, facts, edges, follow-ups all gone).
 
+## 10b. Email (needs RESEND_API_KEY + RESEND_FROM_EMAIL)
+
+- [ ] Join the waitlist on the landing page with a real address — a branded
+      confirmation email arrives.
+- [ ] On a session page with people in it, **Email me the digest** — the
+      digest (people + facts + follow-ups) arrives at `DHAGA_OWNER_EMAIL`.
+- [ ] Unset `DHAGA_OWNER_EMAIL` and retry — clear error, no crash.
+
+## 10c. Enrichment (needs ANTHROPIC_API_KEY)
+
+- [ ] On a contact with a real public identity, **Enrich from public web ✦**
+      — a "web enrichment" note appears with cited source URLs, and facts
+      extracted from it carry the note as their receipt.
+- [ ] Delete the enrichment note — its derived facts disappear with it.
+
 ## 11. Metering cap
 
 - [ ] Set `DHAGA_AI_MONTHLY_CAP=1` in `.env.local`, restart, run one

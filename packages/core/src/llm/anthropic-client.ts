@@ -68,6 +68,9 @@ export class AnthropicLLMClient implements LLMClient {
       max_tokens: options.maxTokens ?? 1024,
       system: this.cachedSystem(options.system),
       messages: [{ role: "user", content: options.prompt }],
+      tools: options.webSearch
+        ? [{ type: "web_search_20260209", name: "web_search", max_uses: 3 }]
+        : undefined,
     });
     const text = response.content
       .filter((block) => block.type === "text")

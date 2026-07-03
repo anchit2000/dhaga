@@ -32,6 +32,8 @@ export interface CompleteOptions {
   prompt: string;
   tier: ModelTier;
   maxTokens?: number;
+  /** Allow the provider's server-side web search (user-triggered features only). */
+  webSearch?: boolean;
 }
 
 export interface LLMClient {

@@ -6,6 +6,7 @@ const KIND_LABELS: Record<string, string> = {
   text: "note",
   voice: "voice note",
   capture_source: "capture source",
+  enrichment: "web enrichment",
 };
 
 export function NoteList({

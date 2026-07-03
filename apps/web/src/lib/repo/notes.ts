@@ -11,7 +11,7 @@ import {
   type NoteRow,
 } from "@/lib/db/schema";
 
-export type NoteKind = "text" | "voice" | "capture_source";
+export type NoteKind = "text" | "voice" | "capture_source" | "enrichment";
 
 export async function listNotes(contactId: string): Promise<NoteRow[]> {
   const db = await getDb();

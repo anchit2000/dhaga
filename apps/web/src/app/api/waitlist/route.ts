@@ -1,5 +1,7 @@
+import { after } from "next/server";
 import { getDb } from "@/lib/db";
 import { waitlist } from "@/lib/db/schema";
+import { emailEnabled, emailShell, sendEmail } from "@/lib/email/send";
 
 const EMAIL_RE = /^[\w.+-]+@[\w-]+(?:\.[\w-]+)+$/;
 
@@ -23,5 +25,21 @@ export async function POST(request: Request): Promise<Response> {
   }
   const db = await getDb();
   await db.insert(waitlist).values({ email }).onConflictDoNothing();
+  if (emailEnabled()) {
+    // Confirmation goes out after the response; failures are non-fatal.
+    after(() =>
+      sendEmail({
+        to: email,
+        subject: "You're on the Dhaga waitlist",
+        html: emailShell(
+          "You're on the list",
+          `<p>Thanks for reserving a spot. First invites go out before autumn
+           conference season — founding seats are assigned in signup order.</p>
+           <p>Until then: Dhaga is open source. Watch the build at
+           <a href="https://github.com/anchit2000/dhaga" style="color:#e2a44c;">github.com/anchit2000/dhaga</a>.</p>`,
+        ),
+      }),
+    );
+  }
   return Response.json({ ok: true });
 }

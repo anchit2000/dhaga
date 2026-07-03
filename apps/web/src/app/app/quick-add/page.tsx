@@ -6,6 +6,15 @@ import { hasLLM } from "@dhaga/core";
 
 export const metadata = { title: "Quick add — Dhaga" };
 
+/** M2's active-session default: preselect a session started today. */
+function activeSessionId(
+  sessions: { id: string; startedAt: Date }[],
+): string | undefined {
+  const today = new Date().toDateString();
+  return sessions.find((session) => session.startedAt.toDateString() === today)
+    ?.id;
+}
+
 export default async function QuickAddPage() {
   await requireSessionPage();
   const [sessions, used] = await Promise.all([
@@ -29,6 +38,7 @@ export default async function QuickAddPage() {
       </div>
       <QuickAddForm
         sessions={sessions.map(({ id, name }) => ({ id, name }))}
+        defaultSessionId={activeSessionId(sessions)}
       />
     </div>
   );

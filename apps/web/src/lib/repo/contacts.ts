@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, desc, eq, ilike, inArray, or } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import {
   companies,
@@ -28,9 +28,24 @@ export interface ContactDetail {
   companyName: string | null;
 }
 
-export async function listContacts(query?: string): Promise<ContactListItem[]> {
+export async function listContacts(
+  query?: string,
+  tag?: string,
+): Promise<ContactListItem[]> {
   const db = await getDb();
   const like = query?.trim() ? `%${query.trim()}%` : null;
+  const conditions = [
+    like
+      ? or(
+          ilike(contacts.name, like),
+          ilike(contacts.title, like),
+          ilike(companies.name, like),
+        )
+      : undefined,
+    tag?.trim()
+      ? sql`${contacts.tags} @> ${JSON.stringify([tag.trim()])}::jsonb`
+      : undefined,
+  ].filter((condition) => condition !== undefined);
   return db
     .select({
       id: contacts.id,
@@ -41,16 +56,15 @@ export async function listContacts(query?: string): Promise<ContactListItem[]> {
     })
     .from(contacts)
     .leftJoin(companies, eq(contacts.companyId, companies.id))
-    .where(
-      like
-        ? or(
-            ilike(contacts.name, like),
-            ilike(contacts.title, like),
-            ilike(companies.name, like),
-          )
-        : undefined,
-    )
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(desc(contacts.createdAt));
+}
+
+/** Distinct tags across all contacts (extraction writes them lowercase). */
+export async function listAllTags(): Promise<string[]> {
+  const db = await getDb();
+  const rows = await db.select({ tags: contacts.tags }).from(contacts);
+  return [...new Set(rows.flatMap((row) => row.tags))].sort();
 }
 
 export async function getContact(id: string): Promise<ContactDetail | null> {

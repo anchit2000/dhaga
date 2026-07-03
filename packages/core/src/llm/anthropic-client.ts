@@ -24,12 +24,27 @@ export class AnthropicLLMClient implements LLMClient {
     this.client = new Anthropic({ apiKey });
   }
 
+  /**
+   * System prompts are stable strings; marking them as cache breakpoints
+   * makes repeat calls read them at ~0.1× input price once they exceed the
+   * model's minimum cacheable length (below it the marker is ignored).
+   */
+  private cachedSystem(system: string) {
+    return [
+      {
+        type: "text" as const,
+        text: system,
+        cache_control: { type: "ephemeral" as const },
+      },
+    ];
+  }
+
   async extract<T>(options: ExtractOptions<T>): Promise<LLMResult<T>> {
     const model = TIER_MODELS[options.tier];
     const response = await this.client.messages.parse({
       model,
       max_tokens: options.maxTokens ?? 2048,
-      system: options.system,
+      system: this.cachedSystem(options.system),
       messages: [{ role: "user", content: options.prompt }],
       output_config: { format: zodOutputFormat(options.schema) },
     });
@@ -51,7 +66,7 @@ export class AnthropicLLMClient implements LLMClient {
     const response = await this.client.messages.create({
       model,
       max_tokens: options.maxTokens ?? 1024,
-      system: options.system,
+      system: this.cachedSystem(options.system),
       messages: [{ role: "user", content: options.prompt }],
     });
     const text = response.content

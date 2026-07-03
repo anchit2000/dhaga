@@ -1,10 +1,10 @@
 import Link from "next/link";
+import { after } from "next/server";
 import { requireSessionPage } from "@/lib/auth/guard";
 import { hybridSearch } from "@/lib/repo/search";
-import { countUnindexed } from "@/lib/repo/embeddings";
+import { countUnindexed, ensureIndexed } from "@/lib/repo/embeddings";
 import { embeddingsEnabled } from "@/lib/ai/embedder";
 import { AskAi } from "@/components/app/search/AskAi";
-import { IndexButton } from "@/components/app/search/IndexButton";
 import { EmptyState } from "@/components/app/EmptyState";
 import { Input } from "@/components/ui/input";
 
@@ -21,6 +21,8 @@ export default async function SearchPage({
     q?.trim() ? hybridSearch(q) : Promise.resolve([]),
     embeddingsEnabled() ? countUnindexed() : Promise.resolve(0),
   ]);
+  // Backfill runs after the response is sent — never blocks the page.
+  if (unindexed > 0) after(() => ensureIndexed());
 
   return (
     <div className="space-y-6">
@@ -32,7 +34,13 @@ export default async function SearchPage({
         </p>
       </div>
 
-      {unindexed > 0 ? <IndexButton unindexed={unindexed} /> : null}
+      {unindexed > 0 ? (
+        <p className="text-xs text-fog" role="status">
+          Indexing {unindexed} item{unindexed === 1 ? "" : "s"} in the
+          background — semantic matches improve in a moment. Everything runs
+          on this machine.
+        </p>
+      ) : null}
 
       <form method="GET" role="search">
         <Input

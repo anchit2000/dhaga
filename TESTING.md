@@ -98,9 +98,9 @@ On a contact, add this note:
 
 - [ ] Search `freight` — the contact appears with the matching fact/note
       snippet quoted under the name.
-- [ ] If a "not in the semantic index yet" line shows, click **Build index**
-      — the first run downloads a ~35 MB embedding model (one-time, local),
-      so give it a minute.
+- [ ] If an "Indexing N items in the background" line shows, existing data is
+      being embedded automatically (first run downloads a ~35 MB model,
+      one-time, local). Refresh after a minute and the line disappears.
 - [ ] Semantic test: search `logistics shipping` (words that appear in NO
       note verbatim) — the freight-forwarder contact still surfaces, with a
       "related note/fact:" snippet. That's the local embeddings working.

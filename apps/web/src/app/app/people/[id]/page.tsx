@@ -17,6 +17,7 @@ import { FactList } from "@/components/app/contact/FactList";
 import { FollowUpList } from "@/components/app/contact/FollowUpList";
 import { ForgetButton } from "@/components/app/contact/ForgetButton";
 import { NoteList } from "@/components/app/contact/NoteList";
+import { Timeline } from "@/components/app/contact/Timeline";
 
 export const metadata = { title: "Person — Dhaga" };
 
@@ -121,6 +122,14 @@ export default async function PersonPage({
       </section>
 
       <DraftSection contactId={id} />
+
+      <Timeline
+        createdAt={contact.createdAt}
+        source={contact.source}
+        lastReachedOutAt={contact.lastReachedOutAt}
+        sessions={contactSessions}
+        notes={contactNotes}
+      />
 
       <div className="border-t border-seam pt-5">
         <ForgetButton contactId={id} name={contact.name} />

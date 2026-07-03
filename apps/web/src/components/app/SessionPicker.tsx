@@ -10,15 +10,23 @@ export interface SessionOption {
 /**
  * Attach-to-session fields for capture forms. Pick an existing session or
  * type a new name — the save action prefers the new name when both are set.
+ * `defaultSessionId` preselects the active session (M2: same-day captures
+ * default to the session you're already in).
  */
-export function SessionPicker({ sessions }: { sessions: SessionOption[] }) {
+export function SessionPicker({
+  sessions,
+  defaultSessionId,
+}: {
+  sessions: SessionOption[];
+  defaultSessionId?: string;
+}) {
   return (
     <div className="grid grid-cols-1 gap-4 rounded-xl border border-seam bg-paper/[0.02] p-4 sm:grid-cols-2">
       <div>
         <Label htmlFor="sessionId" className="mb-2 text-fog">
           Session
         </Label>
-        <Select id="sessionId" name="sessionId" defaultValue="">
+        <Select id="sessionId" name="sessionId" defaultValue={defaultSessionId ?? ""}>
           <option value="">None</option>
           {sessions.map((session) => (
             <option key={session.id} value={session.id}>

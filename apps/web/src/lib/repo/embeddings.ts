@@ -84,6 +84,22 @@ export async function countUnindexed(): Promise<number> {
   return noteRows.length + factRows.length;
 }
 
+const indexingStore = globalThis as unknown as { __dhagaIndexing?: boolean };
+
+/**
+ * Background auto-backfill: new rows are embedded at write time, so this
+ * only ever catches pre-existing data. Idempotent; one run at a time.
+ */
+export async function ensureIndexed(): Promise<void> {
+  if (indexingStore.__dhagaIndexing) return;
+  indexingStore.__dhagaIndexing = true;
+  try {
+    await backfillEmbeddings();
+  } finally {
+    indexingStore.__dhagaIndexing = false;
+  }
+}
+
 /** Index everything missing. Returns how many rows were embedded. */
 export async function backfillEmbeddings(): Promise<number> {
   const db = await getDb();

@@ -1,20 +1,48 @@
 import Link from "next/link";
 import { requireSessionPage } from "@/lib/auth/guard";
-import { listContacts } from "@/lib/repo/contacts";
+import { listAllTags, listContacts } from "@/lib/repo/contacts";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/app/EmptyState";
 
 export const metadata = { title: "People — Dhaga" };
 
+function TagChip({
+  href,
+  active,
+  children,
+}: {
+  href: string;
+  active: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors",
+        active
+          ? "border-amber/40 bg-amber/15 font-medium text-amber"
+          : "border-seam text-fog hover:text-paper",
+      )}
+    >
+      {children}
+    </Link>
+  );
+}
+
 export default async function PeoplePage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; tag?: string }>;
 }) {
   await requireSessionPage();
-  const { q } = await searchParams;
-  const people = await listContacts(q);
+  const { q, tag } = await searchParams;
+  const [people, allTags] = await Promise.all([
+    listContacts(q, tag),
+    listAllTags(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -47,18 +75,36 @@ export default async function PeoplePage({
           placeholder="Filter by name, title, company…"
           className="h-10 max-w-md"
         />
+        {tag ? <input type="hidden" name="tag" value={tag} /> : null}
       </form>
+
+      {allTags.length > 0 ? (
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+          <TagChip href={q ? `?q=${encodeURIComponent(q)}` : "?"} active={!tag}>
+            All
+          </TagChip>
+          {allTags.map((tagName) => (
+            <TagChip
+              key={tagName}
+              href={`?tag=${encodeURIComponent(tagName)}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+              active={tag === tagName}
+            >
+              {tagName}
+            </TagChip>
+          ))}
+        </div>
+      ) : null}
 
       {people.length === 0 ? (
         <EmptyState
-          title={q ? "No one matches that" : "No people yet"}
+          title={q || tag ? "No one matches that" : "No people yet"}
           body={
-            q
-              ? "Try a different name, title, or company."
+            q || tag
+              ? "Try a different name, title, company, or tag."
               : "Add your first contact manually, or paste a signature in Quick add."
           }
         >
-          {!q ? (
+          {!q && !tag ? (
             <Button render={<Link href="/app/people/new" />} variant="outline" size="sm">
               Add your first person
             </Button>

@@ -12,7 +12,13 @@ import { SessionPicker, type SessionOption } from "./SessionPicker";
 import { SubmitButton } from "./SubmitButton";
 
 /** Two steps: paste → extract, then review-and-save with session attach. */
-export function QuickAddForm({ sessions }: { sessions: SessionOption[] }) {
+export function QuickAddForm({
+  sessions,
+  defaultSessionId,
+}: {
+  sessions: SessionOption[];
+  defaultSessionId?: string;
+}) {
   const [state, extractAction] = useActionState<QuickAddState, FormData>(
     extractQuickAddAction,
     {},
@@ -37,7 +43,7 @@ export function QuickAddForm({ sessions }: { sessions: SessionOption[] }) {
           <ContactForm initial={state.contact} submitLabel="Save person">
             <input type="hidden" name="source" value="quick_add" />
             <input type="hidden" name="sourceText" value={state.sourceText ?? ""} />
-            <SessionPicker sessions={sessions} />
+            <SessionPicker sessions={sessions} defaultSessionId={defaultSessionId} />
           </ContactForm>
         </div>
       </div>

@@ -74,7 +74,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Sessions list + session page (contacts met there)
 - [x] Create sessions (from Sessions page and inline in quick-add)
 - [x] Rename/merge sessions
-- [ ] Web: active-session default (captures within same day attach to active session)
+- [x] Web: active-session default (a session started today is preselected in quick-add)
 - [ ] Mobile (later): time + geohash clustering per BRD §6.2
 
 ## 6. Notes & entity extraction (M3, M4)
@@ -91,7 +91,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Relationship edges written from extraction (`works_at`, `knows`, `used_to_work_at`, …)
 - [x] Contact page: same-company + same-session + edge connections render
 - [x] Graph browser page (React Flow: people/companies, typed edges, ring layout)
-- [ ] Tag ontology v0 (tags from extraction, filterable)
+- [x] Tag ontology v0 (tags from extraction, filter chips on People)
 
 ## 8. Natural-language search (M6)
 
@@ -111,7 +111,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 
 - [x] Every AI call logged to `ai_actions` (feature, model, tokens in/out)
 - [x] Free-tier cap enforced (25/month, `DHAGA_AI_MONTHLY_CAP` override) with clear UI message
-- [ ] Prompt caching on stable system prompts
+- [x] Prompt caching markers on stable system prompts (engages once prompts exceed the model's cacheable minimum)
 - [ ] Batch API for nightly jobs (v1.2, when jobs exist)
 
 ## 11. Privacy & export (M8, BRD §7.5)
@@ -152,7 +152,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 
 - [x] Warm-path finding (BFS over edges/companies/sessions — no AI cost)
 - [x] Second-degree suggestions ("Nearby in your network" — ideas.md #1, local-only traversal)
-- [ ] Relationship timeline view
+- [x] Relationship timeline view (captures, sessions, notes, touches on the contact page)
 - [ ] Watch app / widgets
 
 ## 16. Ecosystem (v1.4)

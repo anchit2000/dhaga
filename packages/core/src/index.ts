@@ -7,6 +7,7 @@ export {
   searchQueryPlanSchema,
   type SearchQueryPlan,
 } from "./schemas/search-query";
+export { cardScanSchema, type CardScan } from "./schemas/card-scan";
 export {
   FACT_TYPES,
   RELATIONSHIP_PREDICATES,
@@ -22,6 +23,8 @@ export {
 export {
   AnthropicLLMClient,
   BRIEF_SYSTEM,
+  CARD_SCAN_PROMPT,
+  CARD_SCAN_SYSTEM,
   CONTACT_PARSE_SYSTEM,
   DRAFT_SYSTEM,
   ENRICHMENT_SYSTEM,
@@ -43,6 +46,7 @@ export {
   type CompleteOptions,
   type ExtractOptions,
   type LLMClient,
+  type LLMImage,
   type LLMResult,
   type LLMUsage,
   type ModelTier,

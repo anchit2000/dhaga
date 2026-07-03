@@ -72,6 +72,15 @@ Singapore
 - [ ] With a key: the "N of 25 AI actions used this month" counter on Quick
       add increased by one.
 
+## 4b. Card photo scan (needs ANTHROPIC_API_KEY)
+
+- [ ] Open Quick add on your **phone** browser (same network:
+      `http://<your-ip>:3000`) → **Card photo** tab → take a photo of a real
+      business card. Fields extract into the review form; the card's
+      transcription becomes the receipt note. The photo itself is not stored.
+- [ ] Desktop: choose an image file instead — same flow.
+- [ ] Without a key: honest "Card scanning needs cloud AI" error.
+
 ## 5. Sessions
 
 - [ ] **Sessions** lists `Web Summit 2026` with a people count.

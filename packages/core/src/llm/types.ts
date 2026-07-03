@@ -19,12 +19,19 @@ export interface LLMResult<T> {
   usage: LLMUsage;
 }
 
+export interface LLMImage {
+  mediaType: "image/jpeg" | "image/png" | "image/webp";
+  dataBase64: string;
+}
+
 export interface ExtractOptions<T> {
   schema: ZodType<T>;
   system: string;
   prompt: string;
   tier: ModelTier;
   maxTokens?: number;
+  /** Optional images placed before the prompt text (card/badge photos). */
+  images?: LLMImage[];
 }
 
 export interface CompleteOptions {

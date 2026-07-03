@@ -5,6 +5,7 @@ export type {
   CompleteOptions,
   ExtractOptions,
   LLMClient,
+  LLMImage,
   LLMResult,
   LLMUsage,
   ModelTier,
@@ -39,6 +40,7 @@ export {
   buildBriefPrompt,
   type BriefContext,
 } from "./prompts/brief";
+export { CARD_SCAN_SYSTEM, CARD_SCAN_PROMPT } from "./prompts/card-scan";
 
 /** True when a cloud LLM is configured; features degrade gracefully when not. */
 export function hasLLM(): boolean {

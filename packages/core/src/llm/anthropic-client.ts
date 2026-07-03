@@ -41,11 +41,24 @@ export class AnthropicLLMClient implements LLMClient {
 
   async extract<T>(options: ExtractOptions<T>): Promise<LLMResult<T>> {
     const model = TIER_MODELS[options.tier];
+    const content: Anthropic.ContentBlockParam[] = [
+      ...(options.images ?? []).map(
+        (image): Anthropic.ImageBlockParam => ({
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: image.mediaType,
+            data: image.dataBase64,
+          },
+        }),
+      ),
+      { type: "text", text: options.prompt },
+    ];
     const response = await this.client.messages.parse({
       model,
       max_tokens: options.maxTokens ?? 2048,
       system: this.cachedSystem(options.system),
-      messages: [{ role: "user", content: options.prompt }],
+      messages: [{ role: "user", content }],
       output_config: { format: zodOutputFormat(options.schema) },
     });
     if (response.parsed_output == null) {

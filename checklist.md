@@ -64,6 +64,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 ## 4. Capture — web quick-add (v1.1, M1-equivalent for web)
 
 - [x] Paste email signature / free text → extracted contact (LLM, heuristic fallback)
+- [x] Card photo scan (M1 web path): phone camera/upload → vision parse → review → receipt
 - [x] Edit-before-save review form (M1 acceptance: user confirms fields)
 - [x] Assign capture to a session (create/pick "Web Summit 2026")
 - [x] Attach source text as first note (receipt for extracted fields)

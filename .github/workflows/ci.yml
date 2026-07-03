@@ -19,4 +19,5 @@ jobs:
       - run: npm run typecheck --workspace @dhaga/extension
       - run: npm run build --workspace @dhaga/extension
       - run: npm run lint --prefix apps/web
+      - run: npm run test --prefix apps/web
       - run: npm run build --prefix apps/web

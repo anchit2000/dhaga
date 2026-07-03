@@ -8,18 +8,35 @@
       font: 13px/1.5 Georgia, "Times New Roman", serif; padding: 14px;
     }
     h1 { font-size: 16px; font-weight: 500; color: #e2a44c; margin: 0 0 10px; }
-    textarea {
-      width: 100%; box-sizing: border-box; min-height: 110px; resize: vertical;
-      background: #16120e; color: #f3ede2; border: 1px solid #2b241b;
-      border-radius: 8px; padding: 8px; font: 12px/1.5 ui-monospace, monospace;
+    .modes { display: flex; gap: 6px; margin-bottom: 10px; }
+    .modes button {
+      flex: 1; margin: 0; padding: 6px 0; font-size: 12px; font-weight: 400;
+      color: #a49a8a; background: #16120e; border: 1px solid #2b241b;
+      border-radius: 999px; cursor: pointer;
     }
-    textarea:focus { outline: none; border-color: #e2a44c66; }
-    button {
+    .modes button.active { color: #e2a44c; border-color: #e2a44c66; background: #e2a44c1a; }
+    textarea, input[type="search"] {
+      width: 100%; box-sizing: border-box; background: #16120e; color: #f3ede2;
+      border: 1px solid #2b241b; border-radius: 8px; padding: 8px;
+      font: 12px/1.5 ui-monospace, monospace;
+    }
+    textarea { min-height: 96px; resize: vertical; }
+    textarea:focus, input:focus { outline: none; border-color: #e2a44c66; }
+    #contactPicker { display: none; margin-top: 8px; }
+    #results { margin: 6px 0 0; padding: 0; list-style: none; }
+    #results button {
+      width: 100%; text-align: left; margin: 2px 0; padding: 6px 8px;
+      background: #16120e; color: #f3ede2; border: 1px solid #2b241b;
+      border-radius: 8px; cursor: pointer; font-size: 12px;
+    }
+    #results button.selected { border-color: #e2a44c; color: #e2a44c; }
+    #results .sub { color: #a49a8a; font-size: 11px; }
+    #save {
       margin-top: 10px; width: 100%; padding: 9px 0; border: 0; cursor: pointer;
       border-radius: 999px; font-weight: 600; font-size: 13px; color: #0d0b09;
       background: linear-gradient(#f0bc6e, #d18f36);
     }
-    button:disabled { opacity: 0.6; cursor: default; }
+    #save:disabled { opacity: 0.6; cursor: default; }
     #status { margin: 10px 0 0; font-size: 12px; color: #a49a8a; }
     #status a { color: #e2a44c; }
     #status.error { color: #f87171; }
@@ -27,7 +44,15 @@
 </head>
 <body>
   <h1>Capture to Dhaga</h1>
-  <textarea id="raw" placeholder="Select a person's details on the page before opening this popup — or paste them here."></textarea>
+  <div class="modes">
+    <button id="modeNew" type="button" class="active">New person</button>
+    <button id="modeAttach" type="button">Attach to someone</button>
+  </div>
+  <textarea id="raw" placeholder="Select text on the page before opening this popup — or paste here."></textarea>
+  <div id="contactPicker">
+    <input id="contactSearch" type="search" placeholder="Who is this about?" />
+    <ul id="results"></ul>
+  </div>
   <button id="save" type="button">Save to my network</button>
   <p id="status"></p>
   <script src="popup.js"></script>

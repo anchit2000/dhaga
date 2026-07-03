@@ -1,6 +1,7 @@
 import { hasSession } from "@/lib/auth/guard";
 import { extractContactFromText } from "@/lib/ai/contact-extraction";
-import { createContact } from "@/lib/repo/contacts";
+import { extractAndApplyNote } from "@/lib/ai/note-extraction";
+import { createContact, getContact } from "@/lib/repo/contacts";
 import { addNote } from "@/lib/repo/notes";
 import { upsertEmbedding } from "@/lib/repo/embeddings";
 
@@ -16,10 +17,16 @@ export async function POST(request: Request): Promise<Response> {
   }
   let raw = "";
   let sourceUrl = "";
+  let contactId = "";
   try {
-    const body = (await request.json()) as { raw?: unknown; sourceUrl?: unknown };
+    const body = (await request.json()) as {
+      raw?: unknown;
+      sourceUrl?: unknown;
+      contactId?: unknown;
+    };
     raw = String(body.raw ?? "").trim();
     sourceUrl = String(body.sourceUrl ?? "").trim();
+    contactId = String(body.contactId ?? "").trim();
   } catch {
     return Response.json({ error: "Invalid request." }, { status: 400 });
   }
@@ -28,6 +35,32 @@ export async function POST(request: Request): Promise<Response> {
   }
   if (raw.length > 10_000) {
     return Response.json({ error: "Selection too long." }, { status: 400 });
+  }
+
+  // Attach mode ("save this article to Sarah"): the selection becomes a
+  // note on an existing contact, and extraction mines it for facts.
+  if (contactId) {
+    const detail = await getContact(contactId);
+    if (!detail) {
+      return Response.json({ error: "Contact not found." }, { status: 404 });
+    }
+    const receiptText = sourceUrl ? `${raw}\n\nSource: ${sourceUrl}` : raw;
+    const noteId = await addNote(contactId, "capture_source", receiptText);
+    await upsertEmbedding("note", noteId, contactId, receiptText);
+    const outcome = await extractAndApplyNote(
+      contactId,
+      noteId,
+      detail.contact.name,
+      raw,
+    );
+    return Response.json({
+      id: contactId,
+      name: detail.contact.name,
+      attached: true,
+      notice: outcome.applied
+        ? `${outcome.factCount} fact${outcome.factCount === 1 ? "" : "s"} extracted.`
+        : (outcome.notice ?? null),
+    });
   }
 
   const extraction = await extractContactFromText(raw);

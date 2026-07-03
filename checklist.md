@@ -17,7 +17,8 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Landing page (hero, scrollytelling feature story, pricing, FAQ, OSS section)
 - [x] npm workspaces (`apps/*`, `packages/*`) so `packages/core` is shareable
 - [x] `apps/web/.env.example` documenting every env var
-- [x] CI (lint + typecheck + build on push)
+- [x] CI (typecheck + lint + tests + build on push)
+- [x] Test suite (vitest, in-memory PGlite): heuristic parser, export formats, receipts cascade
 - [x] Fix Dependabot alert (postcss <8.5.10 via next — npm override to ^8.5.16)
 - [ ] Deploy to Vercel (landing + app)
 
@@ -102,7 +103,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Query understanding: LLM → structured filters + semantic residual (Ask AI stage 1)
 - [x] Embeddings + pgvector similarity (bge-small via transformers.js — local, $0)
 - [x] "Ask AI" answer over retrieved candidates with receipts (Sonnet, explicit click)
-- [ ] Acceptance: seeded test set — correct contact in top 3
+- [x] Acceptance: seeded test set — correct contact in top 3 (vitest, keyword path; semantic covered by the standalone E2E check)
 
 ## 9. AI follow-up drafts (M7)
 
@@ -142,7 +143,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Chrome/Edge extension (MV3): popup captures page selection → `/api/capture`
 - [x] One-click capture from any page (activeTab on explicit click only, page URL as receipt)
 - [x] `/api/capture` REST endpoint (session-gated; shared by extension + future mobile share)
-- [ ] "Save this article to {contact}" linking
+- [x] "Save this article to {contact}": attach mode in the popup + contact search API
 - [ ] Web Store packaging/listing
 
 ## 14. Proactive intelligence (v1.2)

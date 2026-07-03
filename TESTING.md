@@ -186,6 +186,12 @@ On a contact, add this note:
       and capture falls back to the offline parser instead of failing.
 - [ ] Remove the override and restart.
 
+## 11a. PWA install
+
+- [ ] On your phone (`http://<your-ip>:3000` or the deployed URL): browser
+      menu → **Add to Home Screen** — Dhaga installs with the knot icon and
+      opens standalone straight into `/app`.
+
 ## 11b. Browser extension
 
 - [ ] `npm run build --workspace @dhaga/extension`, then Chrome →

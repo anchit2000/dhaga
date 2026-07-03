@@ -25,6 +25,13 @@ const ogImage = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="63
   <text x="124" y="500" font-family="Georgia, 'Times New Roman', serif" font-size="30" fill="#5c5347">The open-source, AI-native personal CRM — private by design.</text>
 </svg>`;
 
+const pwaIcon = (size) => `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 180 180">
+  <rect width="180" height="180" fill="#0d0b09"/>
+  <g transform="translate(24 41) scale(5.5)">${knot(5.5, 1.9)}</g>
+</svg>`;
+
 await sharp(Buffer.from(appleIcon)).png().toFile("src/app/apple-icon.png");
 await sharp(Buffer.from(ogImage)).png().toFile("src/app/opengraph-image.png");
-console.log("wrote src/app/apple-icon.png and src/app/opengraph-image.png");
+await sharp(Buffer.from(pwaIcon(192))).png().toFile("public/icon-192.png");
+await sharp(Buffer.from(pwaIcon(512))).png().toFile("public/icon-512.png");
+console.log("wrote apple-icon, opengraph-image, icon-192, icon-512");

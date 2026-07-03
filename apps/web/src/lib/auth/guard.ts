@@ -1,11 +1,21 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { verifySessionToken } from "./session";
 import { SESSION_COOKIE } from "@/utils/constants/app";
 
+/** Non-browser clients (future mobile app, scripts) authenticate with
+ *  `Authorization: Bearer $DHAGA_API_TOKEN` instead of the cookie. */
+async function hasValidBearerToken(): Promise<boolean> {
+  const token = process.env.DHAGA_API_TOKEN;
+  if (!token) return false;
+  const header = (await headers()).get("authorization");
+  return header === `Bearer ${token}`;
+}
+
 export async function hasSession(): Promise<boolean> {
   const store = await cookies();
-  return verifySessionToken(store.get(SESSION_COOKIE)?.value);
+  if (verifySessionToken(store.get(SESSION_COOKIE)?.value)) return true;
+  return hasValidBearerToken();
 }
 
 /** For pages: bounce unauthenticated visitors to /login. */

@@ -1,9 +1,12 @@
 import { hasSession } from "@/lib/auth/guard";
 import { extractContactFromText } from "@/lib/ai/contact-extraction";
 import { extractAndApplyNote } from "@/lib/ai/note-extraction";
+import { scanCardImage } from "@/lib/ai/card-scan";
 import { createContact, getContact } from "@/lib/repo/contacts";
 import { addNote } from "@/lib/repo/notes";
 import { upsertEmbedding } from "@/lib/repo/embeddings";
+
+const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 
 /**
  * One-shot capture for external surfaces (browser extension; later, mobile
@@ -18,18 +21,50 @@ export async function POST(request: Request): Promise<Response> {
   let raw = "";
   let sourceUrl = "";
   let contactId = "";
+  let imageBase64 = "";
+  let imageType = "";
   try {
     const body = (await request.json()) as {
       raw?: unknown;
       sourceUrl?: unknown;
       contactId?: unknown;
+      imageBase64?: unknown;
+      imageType?: unknown;
     };
     raw = String(body.raw ?? "").trim();
     sourceUrl = String(body.sourceUrl ?? "").trim();
     contactId = String(body.contactId ?? "").trim();
+    imageBase64 = String(body.imageBase64 ?? "").trim();
+    imageType = String(body.imageType ?? "").trim();
   } catch {
     return Response.json({ error: "Invalid request." }, { status: 400 });
   }
+
+  // Card-photo path (mobile/API clients): vision-parse, never stored.
+  if (imageBase64) {
+    const mediaType = IMAGE_TYPES.find((type) => type === imageType);
+    if (!mediaType) {
+      return Response.json(
+        { error: "imageType must be image/jpeg, image/png, or image/webp." },
+        { status: 400 },
+      );
+    }
+    if (imageBase64.length > 8_000_000) {
+      return Response.json({ error: "Image too large (max ~6 MB)." }, { status: 400 });
+    }
+    const scan = await scanCardImage({ mediaType, dataBase64: imageBase64 });
+    if (scan.error || !scan.contact) {
+      return Response.json({ error: scan.error ?? "Scan failed." }, { status: 422 });
+    }
+    const id = await createContact(scan.contact, "quick_add");
+    const receipt = scan.rawText ?? "";
+    if (receipt) {
+      const noteId = await addNote(id, "capture_source", receipt);
+      await upsertEmbedding("note", noteId, id, receipt);
+    }
+    return Response.json({ id, name: scan.contact.name, via: "ai", notice: null });
+  }
+
   if (!raw) {
     return Response.json({ error: "Nothing to capture." }, { status: 400 });
   }

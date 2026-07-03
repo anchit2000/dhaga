@@ -131,6 +131,10 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 
 ## 12. Mobile app — `apps/mobile` (BRD MVP platform; separate milestone)
 
+- [x] PWA: installable web app (manifest, standalone display, brand icons) — the interim mobile surface
+- [x] API bearer-token auth (`DHAGA_API_TOKEN`) for non-browser clients
+- [x] `/api/capture` accepts card images (base64) — ready for the Expo app to call
+
 - [ ] M0 spike: Expo app, camera → Vision/ML Kit OCR → Haiku parse → contact saved
 - [ ] M1 card scan: edit-before-save, ≥90% accuracy on clean cards, <5s
 - [ ] M2 auto event grouping (time + geohash clustering, name-once prompt)

@@ -11,6 +11,7 @@ export const APP_NAV_LINKS = [
   { href: "/app/graph", label: "Graph" },
   { href: "/app/search", label: "Search" },
   { href: "/app/quick-add", label: "Quick add" },
+  { href: "/app/settings", label: "Settings" },
 ] as const;
 
 /** Free-tier cloud AI action cap per calendar month (BRD §8.3). */
@@ -18,6 +19,10 @@ export const FREE_TIER_AI_ACTIONS_PER_MONTH = 25;
 
 export const CONTACT_SOURCES = ["manual", "quick_add"] as const;
 export type ContactSource = (typeof CONTACT_SOURCES)[number];
+
+/** Accepted card-photo formats (scan input and stored visual receipts). */
+export const CARD_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+export type CardImageType = (typeof CARD_IMAGE_TYPES)[number];
 
 /** Keep-in-touch cadence choices (ideas.md #2). */
 export const CADENCE_OPTIONS = [

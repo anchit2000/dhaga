@@ -3,9 +3,10 @@
 import { requireSession } from "@/lib/auth/guard";
 import { extractContactFromText } from "@/lib/ai/contact-extraction";
 import { scanCardImage } from "@/lib/ai/card-scan";
+import { shouldStoreCardPhotos } from "@/lib/repo/settings";
+import { CARD_IMAGE_TYPES } from "@/utils/constants/app";
 import type { ExtractedContact, LLMImage } from "@dhaga/core";
 
-const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
 
 export interface QuickAddState {
@@ -14,6 +15,10 @@ export interface QuickAddState {
   notice?: string;
   error?: string;
   sourceText?: string;
+  /** Set only when store-card-photos is on — carried through the review
+   *  form so the photo is saved as a visual receipt alongside the contact. */
+  imageBase64?: string;
+  imageType?: string;
 }
 
 export async function extractQuickAddAction(
@@ -32,7 +37,8 @@ export async function extractQuickAddAction(
   };
 }
 
-/** Card-photo path (M1): the photo is parsed, never stored. */
+/** Card-photo path (M1): parse the photo; keep it as a visual receipt
+ *  unless the user turned storage off in Settings. */
 export async function scanCardAction(
   _previous: QuickAddState,
   formData: FormData,
@@ -42,7 +48,7 @@ export async function scanCardAction(
   if (!(photo instanceof File) || photo.size === 0) {
     return { error: "Take or choose a card photo first." };
   }
-  const mediaType = IMAGE_TYPES.find((type) => type === photo.type);
+  const mediaType = CARD_IMAGE_TYPES.find((type) => type === photo.type);
   if (!mediaType) return { error: "Use a JPEG, PNG, or WebP photo." };
   if (photo.size > MAX_IMAGE_BYTES) {
     return { error: "Photo too large — try again (max 6 MB)." };
@@ -55,9 +61,12 @@ export async function scanCardAction(
   if (result.error || !result.contact) {
     return { error: result.error ?? "The scan failed." };
   }
+  const storePhoto = await shouldStoreCardPhotos();
   return {
     contact: result.contact,
     via: "ai",
     sourceText: result.rawText,
+    imageBase64: storePhoto ? image.dataBase64 : undefined,
+    imageType: storePhoto ? mediaType : undefined,
   };
 }

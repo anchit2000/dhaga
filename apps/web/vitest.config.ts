@@ -10,6 +10,10 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.test.ts"],
+    // Each test file boots its own in-memory PGlite; the first test in a
+    // file pays that cold start, which exceeds the 5s default under
+    // parallel file runs.
+    testTimeout: 30_000,
     // Repo/DB tests run against an in-memory PGlite; embeddings stay off so
     // CI never downloads the model.
     env: {

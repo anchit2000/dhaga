@@ -1,6 +1,7 @@
 import { requireSessionPage } from "@/lib/auth/guard";
 import { aiActionsUsedThisMonth, monthlyAiCap } from "@/lib/ai/metering";
 import { listSessions } from "@/lib/repo/sessions";
+import { shouldStoreCardPhotos } from "@/lib/repo/settings";
 import { QuickAddForm } from "@/components/app/QuickAddForm";
 import { hasLLM } from "@dhaga/core";
 
@@ -17,9 +18,10 @@ function activeSessionId(
 
 export default async function QuickAddPage() {
   await requireSessionPage();
-  const [sessions, used] = await Promise.all([
+  const [sessions, used, storeCardPhotos] = await Promise.all([
     listSessions(),
     hasLLM() ? aiActionsUsedThisMonth() : Promise.resolve(0),
+    shouldStoreCardPhotos(),
   ]);
 
   return (
@@ -39,6 +41,7 @@ export default async function QuickAddPage() {
       <QuickAddForm
         sessions={sessions.map(({ id, name }) => ({ id, name }))}
         defaultSessionId={activeSessionId(sessions)}
+        storeCardPhotos={storeCardPhotos}
       />
     </div>
   );

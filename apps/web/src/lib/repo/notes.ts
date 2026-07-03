@@ -10,6 +10,7 @@ import {
   type FollowUpRow,
   type NoteRow,
 } from "@/lib/db/schema";
+import { deleteCardImagesByNote } from "./card-images";
 
 export type NoteKind = "text" | "voice" | "capture_source" | "enrichment";
 
@@ -35,7 +36,9 @@ export async function addNote(
 
 /**
  * Tombstone a note and everything derived from it. Receipts invariant:
- * facts/edges must never outlive their source note (BRD §7.4).
+ * facts/edges must never outlive their source note (BRD §7.4). A stored
+ * card photo hangs off its receipt note, so it goes too (hard delete —
+ * photos never linger as tombstones).
  */
 export async function deleteNote(noteId: string): Promise<void> {
   const db = await getDb();
@@ -43,6 +46,7 @@ export async function deleteNote(noteId: string): Promise<void> {
   await db.update(notes).set({ deletedAt: now }).where(eq(notes.id, noteId));
   await db.update(facts).set({ deletedAt: now }).where(eq(facts.sourceNoteId, noteId));
   await db.update(edges).set({ deletedAt: now }).where(eq(edges.sourceNoteId, noteId));
+  await deleteCardImagesByNote(noteId);
 }
 
 export interface FactWithReceipt extends FactRow {

@@ -5,7 +5,10 @@ import { requireSession } from "@/lib/auth/guard";
 import { createContact, forgetContact } from "@/lib/repo/contacts";
 import { addNote } from "@/lib/repo/notes";
 import { upsertEmbedding } from "@/lib/repo/embeddings";
+import { saveCardImage } from "@/lib/repo/card-images";
+import { shouldStoreCardPhotos } from "@/lib/repo/settings";
 import { addContactToSession, createSession } from "@/lib/repo/sessions";
+import { CARD_IMAGE_TYPES } from "@/utils/constants/app";
 import type { ExtractedContact } from "@dhaga/core";
 
 export interface ContactFormState {
@@ -46,9 +49,20 @@ export async function createContactAction(
 
   // Quick-add receipts: the pasted text becomes the contact's first note.
   const sourceText = field(formData, "sourceText");
+  let noteId: string | null = null;
   if (sourceText) {
-    const noteId = await addNote(id, "capture_source", sourceText);
+    noteId = await addNote(id, "capture_source", sourceText);
     await upsertEmbedding("note", noteId, id, sourceText);
+  }
+
+  // Card scans carry the photo through the review form; store it as the
+  // visual receipt (re-check the setting — it may have changed since scan).
+  const imageBase64 = field(formData, "imageBase64");
+  const imageType = CARD_IMAGE_TYPES.find(
+    (type) => type === field(formData, "imageType"),
+  );
+  if (imageBase64 && imageType && (await shouldStoreCardPhotos())) {
+    await saveCardImage(id, noteId, imageType, imageBase64);
   }
 
   const newSessionName = field(formData, "newSessionName");

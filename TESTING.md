@@ -77,9 +77,24 @@ Singapore
 - [ ] Open Quick add on your **phone** browser (same network:
       `http://<your-ip>:3000`) → **Card photo** tab → take a photo of a real
       business card. Fields extract into the review form; the card's
-      transcription becomes the receipt note. The photo itself is not stored.
+      transcription becomes the receipt note.
+- [ ] After saving: the person's page shows the photo under **Card photo**
+      (the visual receipt). Clicking it opens the full-size image.
 - [ ] Desktop: choose an image file instead — same flow.
 - [ ] Without a key: honest "Card scanning needs cloud AI" error.
+
+## 4c. Card-photo storage setting (Settings page)
+
+- [ ] **Settings** → "Store card photos" is ON by default; the Quick add
+      photo tab says the photo is kept as the visual receipt.
+- [ ] Toggle it OFF → the Quick add photo tab now says the photo is not
+      stored; scan a card → the saved contact has no Card photo section
+      (transcription receipt still there).
+- [ ] Toggle back ON, scan again → the photo appears on the contact.
+- [ ] **Delete all stored card photos** → confirm → the count clears and
+      contacts keep their transcription notes but lose the photos.
+- [ ] Deleting a scanned contact's receipt note (or the person) removes its
+      photo too — `/api/card-image/<id>` returns 404 afterwards.
 
 ## 5. Sessions
 

@@ -20,9 +20,11 @@ type Mode = "paste" | "photo";
 export function QuickAddForm({
   sessions,
   defaultSessionId,
+  storeCardPhotos,
 }: {
   sessions: SessionOption[];
   defaultSessionId?: string;
+  storeCardPhotos: boolean;
 }) {
   const [mode, setMode] = useState<Mode>("paste");
   const [state, formAction] = useActionState<QuickAddState, FormData>(
@@ -56,6 +58,8 @@ export function QuickAddForm({
           <ContactForm initial={state.contact} submitLabel="Save person">
             <input type="hidden" name="source" value="quick_add" />
             <input type="hidden" name="sourceText" value={state.sourceText ?? ""} />
+            <input type="hidden" name="imageBase64" value={state.imageBase64 ?? ""} />
+            <input type="hidden" name="imageType" value={state.imageType ?? ""} />
             <SessionPicker sessions={sessions} defaultSessionId={defaultSessionId} />
           </ContactForm>
         </div>
@@ -101,8 +105,9 @@ export function QuickAddForm({
             <Camera className="size-6 text-amber" aria-hidden />
             <span className="text-sm text-paper">Take or choose a card photo</span>
             <span className="text-xs text-fog">
-              Parsed by AI; the photo itself is never stored — only the
-              transcription, as the receipt.
+              {storeCardPhotos
+                ? "Parsed by AI; the photo is kept in your database as the visual receipt (turn off in Settings)."
+                : "Parsed by AI; the photo itself is not stored — only the transcription, as the receipt."}
             </span>
             <input
               type="file"

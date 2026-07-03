@@ -65,6 +65,9 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 
 - [x] Paste email signature / free text → extracted contact (LLM, heuristic fallback)
 - [x] Card photo scan (M1 web path): phone camera/upload → vision parse → review → receipt
+- [x] Card photos stored as visual receipts (user's own DB — local or hosted), shown on the contact page
+- [x] Settings page: per-user "store card photos" toggle + purge-all button
+- [x] Photo deletion cascades: gone with its receipt note, gone with "forget this person"
 - [x] Edit-before-save review form (M1 acceptance: user confirms fields)
 - [x] Assign capture to a session (create/pick "Web Summit 2026")
 - [x] Attach source text as first note (receipt for extracted fields)

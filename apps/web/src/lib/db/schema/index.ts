@@ -16,4 +16,5 @@ export {
   type FollowUpRow,
 } from "./notes";
 export { embeddings, type EmbeddingRow } from "./embeddings";
-export { aiActions, waitlist, type AiActionRow } from "./meta";
+export { aiActions, waitlist, settings, type AiActionRow } from "./meta";
+export { cardImages, type CardImageRow } from "./card-images";

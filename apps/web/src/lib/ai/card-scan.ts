@@ -18,7 +18,8 @@ export interface CardScanResult {
 /**
  * Card/badge photo → contact via the vision model (M1 server path).
  * No offline fallback exists for images, so failures are explicit.
- * The photo itself is never stored — only the transcription (the receipt).
+ * Scanning never stores anything — callers persist the photo (visual
+ * receipt) only when the store-card-photos setting allows it.
  */
 export async function scanCardImage(image: LLMImage): Promise<CardScanResult> {
   if (!hasLLM()) {

@@ -5,8 +5,9 @@ import { scanCardImage } from "@/lib/ai/card-scan";
 import { createContact, getContact } from "@/lib/repo/contacts";
 import { addNote } from "@/lib/repo/notes";
 import { upsertEmbedding } from "@/lib/repo/embeddings";
-
-const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+import { saveCardImage } from "@/lib/repo/card-images";
+import { shouldStoreCardPhotos } from "@/lib/repo/settings";
+import { CARD_IMAGE_TYPES } from "@/utils/constants/app";
 
 /**
  * One-shot capture for external surfaces (browser extension; later, mobile
@@ -40,9 +41,10 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: "Invalid request." }, { status: 400 });
   }
 
-  // Card-photo path (mobile/API clients): vision-parse, never stored.
+  // Card-photo path (mobile/API clients): vision-parse; the photo is kept
+  // as a visual receipt unless the store-card-photos setting is off.
   if (imageBase64) {
-    const mediaType = IMAGE_TYPES.find((type) => type === imageType);
+    const mediaType = CARD_IMAGE_TYPES.find((type) => type === imageType);
     if (!mediaType) {
       return Response.json(
         { error: "imageType must be image/jpeg, image/png, or image/webp." },
@@ -58,11 +60,20 @@ export async function POST(request: Request): Promise<Response> {
     }
     const id = await createContact(scan.contact, "quick_add");
     const receipt = scan.rawText ?? "";
+    let noteId: string | null = null;
     if (receipt) {
-      const noteId = await addNote(id, "capture_source", receipt);
+      noteId = await addNote(id, "capture_source", receipt);
       await upsertEmbedding("note", noteId, id, receipt);
     }
-    return Response.json({ id, name: scan.contact.name, via: "ai", notice: null });
+    const photoStored = await shouldStoreCardPhotos();
+    if (photoStored) await saveCardImage(id, noteId, mediaType, imageBase64);
+    return Response.json({
+      id,
+      name: scan.contact.name,
+      via: "ai",
+      photoStored,
+      notice: null,
+    });
   }
 
   if (!raw) {

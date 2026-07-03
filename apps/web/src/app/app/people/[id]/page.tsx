@@ -5,9 +5,11 @@ import { getContact } from "@/lib/repo/contacts";
 import { listFacts, listNotes, listOpenFollowUps } from "@/lib/repo/notes";
 import { listContactSessions } from "@/lib/repo/sessions";
 import { listContactConnections } from "@/lib/repo/connections";
+import { listCardImageRefs } from "@/lib/repo/card-images";
 import { recommendContacts } from "@/lib/repo/recommendations";
 import { isReachOutDue } from "@/lib/repo/reminders";
 import { AddNoteForm } from "@/components/app/contact/AddNoteForm";
+import { CardPhotoStrip } from "@/components/app/contact/CardPhotoStrip";
 import { BriefSection } from "@/components/app/contact/BriefSection";
 import { ConnectionsList } from "@/components/app/contact/ConnectionsList";
 import { KeepInTouch } from "@/components/app/contact/KeepInTouch";
@@ -40,6 +42,7 @@ export default async function PersonPage({
     contactSessions,
     connections,
     recommendations,
+    cardPhotos,
   ] = await Promise.all([
     listNotes(id),
     listFacts(id),
@@ -47,6 +50,7 @@ export default async function PersonPage({
     listContactSessions(id),
     listContactConnections(id),
     recommendContacts(id),
+    listCardImageRefs(id),
   ]);
   const lastTouch = contact.lastReachedOutAt ?? contact.createdAt;
   const isDue = isReachOutDue(contact.reachOutEveryDays, lastTouch);
@@ -98,6 +102,8 @@ export default async function PersonPage({
           values={contact.location ? [contact.location] : []}
         />
       </div>
+
+      <CardPhotoStrip images={cardPhotos} />
 
       <KeepInTouch
         contactId={id}

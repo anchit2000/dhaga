@@ -9,7 +9,7 @@ const SECTIONS: { heading: string; body: string }[] = [
   },
   {
     heading: "AI is opt-in and user-triggered",
-    body: "Cloud AI calls (extraction, search answers, drafts, briefs, enrichment, card scanning) happen only when you press the button and only using your own API key. Nothing runs in the background. Card photos are parsed and never stored — only their transcription, as the audit trail.",
+    body: "Cloud AI calls (extraction, search answers, drafts, briefs, enrichment, card scanning) happen only when you press the button and only using your own API key. Nothing runs in the background. Scanned card photos are kept in your own database as visual receipts — a setting you can turn off, with one-click deletion of everything already stored.",
   },
   {
     heading: "The browser extension reads nothing silently",

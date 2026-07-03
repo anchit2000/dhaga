@@ -94,6 +94,15 @@ On a contact, add this note:
 - [ ] Delete the note — its remaining derived facts disappear with it
       (receipts invariant: no fact outlives its source).
 
+## 6b. Voice notes & pre-meeting brief
+
+- [ ] On a contact, tap **Voice note** (Chrome/Edge) — allow the mic, talk,
+      tap stop. The transcript lands in the textarea; **Add note** saves it
+      labelled *voice note*, and facts extract as usual.
+- [ ] With a key: **Brief me ✦** — a WHO / WHAT MATTERS / OPEN LOOPS /
+      OPENERS dossier under 180 words, drawn only from your notes; empty
+      areas say "nothing on file" rather than inventing.
+
 ## 7. Search (hybrid: keyword + local semantic)
 
 - [ ] Search `freight` — the contact appears with the matching fact/note

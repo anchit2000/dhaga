@@ -35,7 +35,8 @@ export async function addNoteAction(
   const detail = await getContact(contactId);
   if (!detail) return { error: "Contact not found." };
 
-  const noteId = await addNote(contactId, "text", body);
+  const kind = formData.get("kind") === "voice" ? "voice" : "text";
+  const noteId = await addNote(contactId, kind, body);
   await upsertEmbedding("note", noteId, contactId, body);
   const outcome = await extractAndApplyNote(
     contactId,

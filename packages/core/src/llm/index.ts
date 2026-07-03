@@ -34,6 +34,11 @@ export {
   buildEnrichmentPrompt,
   type EnrichmentSubject,
 } from "./prompts/enrichment";
+export {
+  BRIEF_SYSTEM,
+  buildBriefPrompt,
+  type BriefContext,
+} from "./prompts/brief";
 
 /** True when a cloud LLM is configured; features degrade gracefully when not. */
 export function hasLLM(): boolean {

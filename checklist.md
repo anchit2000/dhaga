@@ -88,7 +88,8 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Facts render on contact page with receipt ("from note, {date}")
 - [x] User can edit/delete a fact inline (M4 acceptance)
 - [x] Deleting a note tombstones its derived facts/edges
-- [ ] Voice notes + on-device transcription (mobile milestone)
+- [x] Voice notes on web (browser SpeechRecognition → transcript → extraction)
+- [ ] Voice notes on mobile (whisper.cpp / Apple Speech — mobile milestone)
 
 ## 7. Knowledge graph v0 (M5)
 
@@ -152,7 +153,8 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Keep-in-touch cadence reminders + Home reach-out feed (ideas.md #2)
 - [ ] Automatic relationship-decay detection (nightly job, no cadence needed)
 - [x] Post-event digest email (user-triggered from the session page, template-based)
-- [ ] Pre-meeting briefs (calendar integration → push 30 min before)
+- [x] Pre-meeting brief on demand ("Brief me ✦" on the contact page, graph-only)
+- [ ] Calendar integration → brief pushed 30 min before the meeting
 
 ## 15. Graph power (v1.3)
 

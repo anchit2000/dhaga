@@ -8,6 +8,7 @@ import { listContactConnections } from "@/lib/repo/connections";
 import { recommendContacts } from "@/lib/repo/recommendations";
 import { isReachOutDue } from "@/lib/repo/reminders";
 import { AddNoteForm } from "@/components/app/contact/AddNoteForm";
+import { BriefSection } from "@/components/app/contact/BriefSection";
 import { ConnectionsList } from "@/components/app/contact/ConnectionsList";
 import { KeepInTouch } from "@/components/app/contact/KeepInTouch";
 import { RecommendedList } from "@/components/app/contact/RecommendedList";
@@ -104,6 +105,8 @@ export default async function PersonPage({
         lastTouch={lastTouch.toLocaleDateString()}
         due={isDue}
       />
+
+      <BriefSection contactId={id} />
 
       <ConnectionsList connections={connections} />
 

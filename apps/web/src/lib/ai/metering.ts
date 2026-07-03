@@ -38,7 +38,13 @@ export async function assertAiBudget(): Promise<void> {
 }
 
 export async function recordAiAction(
-  feature: "contact_parse" | "note_extraction" | "search" | "draft" | "enrichment",
+  feature:
+    | "contact_parse"
+    | "note_extraction"
+    | "search"
+    | "draft"
+    | "enrichment"
+    | "brief",
   model: string,
   usage: LLMUsage,
 ): Promise<void> {

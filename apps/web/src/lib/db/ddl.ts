@@ -5,6 +5,8 @@
  * for a boring storage layer; revisit when the schema churns faster).
  */
 export const DDL = `
+CREATE EXTENSION IF NOT EXISTS vector;
+
 CREATE TABLE IF NOT EXISTS companies (
   id text PRIMARY KEY,
   name text NOT NULL,
@@ -87,6 +89,16 @@ CREATE TABLE IF NOT EXISTS follow_ups (
 ALTER TABLE contacts ADD COLUMN IF NOT EXISTS tags jsonb NOT NULL DEFAULT '[]';
 ALTER TABLE contacts ADD COLUMN IF NOT EXISTS reach_out_every_days integer;
 ALTER TABLE contacts ADD COLUMN IF NOT EXISTS last_reached_out_at timestamptz;
+
+CREATE TABLE IF NOT EXISTS embeddings (
+  owner_type text NOT NULL,
+  owner_id text NOT NULL,
+  contact_id text NOT NULL,
+  content text NOT NULL,
+  embedding vector(384) NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (owner_type, owner_id)
+);
 
 CREATE TABLE IF NOT EXISTS waitlist (
   email text PRIMARY KEY,

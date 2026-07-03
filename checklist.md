@@ -29,7 +29,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] `AnthropicLLMClient` — structured outputs via Zod-derived JSON schema
 - [x] Prompt builders (pure functions): contact parse, note extraction
 - [x] Prompt builders: search answer, follow-up draft
-- [ ] Prompt builder: search query understanding (structured filters stage)
+- [x] Prompt builder: search query understanding (structured filters stage)
 - [x] `getLLMClient()` factory (env-driven; Ollama/BYO-key = future implementations)
 - [x] Heuristic (no-LLM) contact parser fallback — email/phone/URL regex + name lines
 - [ ] Shared API types (request/response contracts used by web now, mobile later)
@@ -53,7 +53,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] `notes` table (kind: voice|text|capture_source, body)
 - [x] `facts` table (type, text, confidence, `source_note_id`, `deleted_at`)
 - [x] `edges` table (src/dst typed, predicate, `source_note_id`)
-- [ ] `embeddings` table (pgvector column; deferred until vector search lands)
+- [x] `embeddings` table (pgvector, 384-dim, receipts via owner_type/owner_id)
 - [x] `follow_ups` table
 - [x] `ai_actions` metering table (day one requirement)
 - [ ] Deletion cascade: contact → notes → facts → edges → embeddings ("forget this person")
@@ -96,8 +96,8 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 ## 8. Natural-language search (M6)
 
 - [x] Keyword + structured search (SQL ILIKE over contacts/notes/facts) — free path
-- [ ] Query understanding: LLM → structured filters + semantic residual
-- [ ] Embeddings + pgvector similarity (open embedding model or API)
+- [x] Query understanding: LLM → structured filters + semantic residual (Ask AI stage 1)
+- [x] Embeddings + pgvector similarity (bge-small via transformers.js — local, $0)
 - [x] "Ask AI" answer over retrieved candidates with receipts (Sonnet, explicit click)
 - [ ] Acceptance: seeded test set — correct contact in top 3
 
@@ -150,7 +150,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 
 ## 15. Graph power (v1.3)
 
-- [ ] Warm-path finding (BFS over edges — no AI cost)
+- [x] Warm-path finding (BFS over edges/companies/sessions — no AI cost)
 - [x] Second-degree suggestions ("Nearby in your network" — ideas.md #1, local-only traversal)
 - [ ] Relationship timeline view
 - [ ] Watch app / widgets

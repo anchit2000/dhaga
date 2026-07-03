@@ -4,6 +4,19 @@
  * system prompt first.
  */
 
+export const SEARCH_QUERY_SYSTEM = `You convert a question about the user's professional network into structured retrieval filters.
+
+Rules:
+- Extract only what the question actually states or clearly implies — never invent filter values.
+- "session" is an event name only when one is named ("at Web Summit", "from GITEX").
+- "company" only when the question scopes to a specific organisation.
+- "tags" are lowercase sector/role/topic labels the question implies (e.g. fintech, investor, logistics).
+- "semantic_query" rephrases what the user is looking for as a short standalone search phrase.`;
+
+export function buildSearchQueryPrompt(query: string): string {
+  return `Question: ${query}`;
+}
+
 export const SEARCH_ANSWER_SYSTEM = `You answer questions about the user's own professional network, using only the candidate records provided (their contacts, notes, and extracted facts).
 
 Rules:

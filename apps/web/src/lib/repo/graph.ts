@@ -3,6 +3,7 @@ import { eq, ilike } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { contacts, edges, facts, followUps } from "@/lib/db/schema";
 import { findOrCreateCompany } from "./contacts";
+import { upsertEmbedding } from "./embeddings";
 import type { NoteExtraction, Relationship } from "@dhaga/core";
 
 async function resolvePersonId(name: string): Promise<string | null> {
@@ -34,14 +35,16 @@ export async function applyExtraction(
   const db = await getDb();
 
   for (const fact of extraction.facts) {
+    const factId = randomUUID();
     await db.insert(facts).values({
-      id: randomUUID(),
+      id: factId,
       contactId,
       type: fact.type,
       text: fact.text,
       confidence: fact.confidence,
       sourceNoteId: noteId,
     });
+    await upsertEmbedding("fact", factId, contactId, fact.text);
   }
 
   for (const rel of extraction.relationships) {
@@ -65,14 +68,17 @@ export async function applyExtraction(
         sourceNoteId: noteId,
       });
     } else {
+      const factId = randomUUID();
+      const text = relationshipAsFactText(rel);
       await db.insert(facts).values({
-        id: randomUUID(),
+        id: factId,
         contactId,
         type: "personal",
-        text: relationshipAsFactText(rel),
+        text,
         confidence: 0.7,
         sourceNoteId: noteId,
       });
+      await upsertEmbedding("fact", factId, contactId, text);
     }
   }
 

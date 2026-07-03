@@ -20,7 +20,9 @@ export {
 } from "./prompts/note-extraction";
 export {
   SEARCH_ANSWER_SYSTEM,
+  SEARCH_QUERY_SYSTEM,
   buildSearchAnswerPrompt,
+  buildSearchQueryPrompt,
 } from "./prompts/search";
 export {
   DRAFT_SYSTEM,

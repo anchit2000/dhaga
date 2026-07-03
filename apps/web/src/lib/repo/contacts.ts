@@ -11,6 +11,7 @@ import {
   sessionContacts,
   type ContactRow,
 } from "@/lib/db/schema";
+import { deleteEmbeddingsByContact } from "./embeddings";
 import type { ExtractedContact } from "@dhaga/core";
 import type { ContactSource } from "@/utils/constants/app";
 
@@ -129,5 +130,6 @@ export async function forgetContact(id: string): Promise<void> {
   await db.delete(followUps).where(eq(followUps.contactId, id));
   await db.delete(notes).where(eq(notes.contactId, id));
   await db.delete(sessionContacts).where(eq(sessionContacts.contactId, id));
+  await deleteEmbeddingsByContact(id);
   await db.delete(contacts).where(eq(contacts.id, id));
 }

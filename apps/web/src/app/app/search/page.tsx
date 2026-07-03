@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { requireSessionPage } from "@/lib/auth/guard";
-import { keywordSearch } from "@/lib/repo/search";
+import { hybridSearch } from "@/lib/repo/search";
+import { countUnindexed } from "@/lib/repo/embeddings";
+import { embeddingsEnabled } from "@/lib/ai/embedder";
 import { AskAi } from "@/components/app/search/AskAi";
+import { IndexButton } from "@/components/app/search/IndexButton";
 import { EmptyState } from "@/components/app/EmptyState";
 import { Input } from "@/components/ui/input";
 
@@ -14,16 +17,22 @@ export default async function SearchPage({
 }) {
   await requireSessionPage();
   const { q } = await searchParams;
-  const hits = q?.trim() ? await keywordSearch(q) : [];
+  const [hits, unindexed] = await Promise.all([
+    q?.trim() ? hybridSearch(q) : Promise.resolve([]),
+    embeddingsEnabled() ? countUnindexed() : Promise.resolve(0),
+  ]);
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl tracking-tight">Search</h1>
         <p className="mt-1 text-sm text-fog">
-          Ask your network — matches come from names, facts, and notes.
+          Ask your network — matches come from names, facts, notes, and local
+          semantic similarity.
         </p>
       </div>
+
+      {unindexed > 0 ? <IndexButton unindexed={unindexed} /> : null}
 
       <form method="GET" role="search">
         <Input

@@ -11,6 +11,11 @@ import {
   setFollowUpStatus,
   updateFactText,
 } from "@/lib/repo/notes";
+import {
+  deleteEmbedding,
+  deleteEmbeddingsForNote,
+  upsertEmbedding,
+} from "@/lib/repo/embeddings";
 
 export interface NoteFormState {
   notice?: string;
@@ -31,6 +36,7 @@ export async function addNoteAction(
   if (!detail) return { error: "Contact not found." };
 
   const noteId = await addNote(contactId, "text", body);
+  await upsertEmbedding("note", noteId, contactId, body);
   const outcome = await extractAndApplyNote(
     contactId,
     noteId,
@@ -50,6 +56,7 @@ export async function deleteNoteAction(formData: FormData): Promise<void> {
   const noteId = String(formData.get("noteId") ?? "");
   const contactId = String(formData.get("contactId") ?? "");
   if (!noteId) return;
+  await deleteEmbeddingsForNote(noteId);
   await deleteNote(noteId);
   revalidatePath(`/app/people/${contactId}`);
 }
@@ -59,6 +66,7 @@ export async function deleteFactAction(formData: FormData): Promise<void> {
   const factId = String(formData.get("factId") ?? "");
   const contactId = String(formData.get("contactId") ?? "");
   if (!factId) return;
+  await deleteEmbedding("fact", factId);
   await deleteFact(factId);
   revalidatePath(`/app/people/${contactId}`);
 }
@@ -70,6 +78,7 @@ export async function updateFactAction(formData: FormData): Promise<void> {
   const text = String(formData.get("text") ?? "").trim();
   if (!factId || !text) return;
   await updateFactText(factId, text);
+  await upsertEmbedding("fact", factId, contactId, text);
   revalidatePath(`/app/people/${contactId}`);
 }
 

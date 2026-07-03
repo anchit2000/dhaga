@@ -94,13 +94,27 @@ On a contact, add this note:
 - [ ] Delete the note — its remaining derived facts disappear with it
       (receipts invariant: no fact outlives its source).
 
-## 7. Search
+## 7. Search (hybrid: keyword + local semantic)
 
 - [ ] Search `freight` — the contact appears with the matching fact/note
       snippet quoted under the name.
+- [ ] If a "not in the semantic index yet" line shows, click **Build index**
+      — the first run downloads a ~35 MB embedding model (one-time, local),
+      so give it a minute.
+- [ ] Semantic test: search `logistics shipping` (words that appear in NO
+      note verbatim) — the freight-forwarder contact still surfaces, with a
+      "related note/fact:" snippet. That's the local embeddings working.
 - [ ] Search gibberish — honest "No matches" empty state.
 - [ ] With a key: **Ask AI ✦** composes an answer naming the right person and
-      citing their facts/notes. It only runs when clicked (check the counter).
+      citing their facts/notes. It only runs when clicked. It now also runs a
+      query-understanding step — try "who did I meet at Web Summit in
+      fintech?" and confirm the answer respects the event scope.
+
+## 7b. Warm paths (Graph page)
+
+- [ ] On **Graph**, pick a company in "Warm path to" → **Find path** — chains
+      render as You → person → … → target.
+- [ ] Pick a target with no connection — honest "No thread reaches…" message.
 
 ## 8. Follow-up draft (needs the API key)
 

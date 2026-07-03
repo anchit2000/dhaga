@@ -12,6 +12,8 @@
     "@base-ui/react": "^1.6.0",
     "@dhaga/core": "*",
     "@electric-sql/pglite": "^0.5.4",
+    "@electric-sql/pglite-pgvector": "^0.0.5",
+    "@huggingface/transformers": "^4.2.0",
     "@xyflow/react": "^12.11.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

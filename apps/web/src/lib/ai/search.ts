@@ -1,10 +1,15 @@
 import {
   SEARCH_ANSWER_SYSTEM,
+  SEARCH_QUERY_SYSTEM,
   buildSearchAnswerPrompt,
+  buildSearchQueryPrompt,
   getLLMClient,
   hasLLM,
+  searchQueryPlanSchema,
+  type SearchQueryPlan,
 } from "@dhaga/core";
-import { keywordSearch, type SearchHit } from "@/lib/repo/search";
+import { hybridSearch, type SearchHit } from "@/lib/repo/search";
+import { contactIdsForPlan } from "@/lib/repo/search-filters";
 import { AiBudgetError, assertAiBudget, recordAiAction } from "./metering";
 
 export interface AiAnswerResult {
@@ -24,20 +29,56 @@ function candidateBlocks(hits: SearchHit[]): string {
     .join("\n\n");
 }
 
-/** M6 stage 3: compose an answer over keyword candidates (Sonnet), with receipts. */
+/** Stage 1: question → filters + semantic residual (Haiku). Null on failure. */
+async function planQuery(query: string): Promise<SearchQueryPlan | null> {
+  try {
+    const result = await getLLMClient().extract({
+      schema: searchQueryPlanSchema,
+      system: SEARCH_QUERY_SYSTEM,
+      prompt: buildSearchQueryPrompt(query),
+      tier: "extract",
+    });
+    await recordAiAction("search", result.model, result.usage);
+    return result.data;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * M6 full pipeline: understand the query (Haiku) → retrieve (structured
+ * filters + hybrid keyword/semantic, all local) → answer with receipts
+ * (Sonnet). Stage 1 failing degrades to unfiltered retrieval, never to
+ * a broken search.
+ */
 export async function answerSearchQuery(query: string): Promise<AiAnswerResult> {
   if (!hasLLM()) {
     return { notice: "Set ANTHROPIC_API_KEY to get AI answers over your graph." };
   }
-  const hits = await keywordSearch(query);
+  try {
+    await assertAiBudget();
+  } catch (error) {
+    return {
+      notice: error instanceof AiBudgetError ? error.message : "The AI call failed.",
+    };
+  }
+
+  const plan = await planQuery(query);
+  const restrictTo = plan ? await contactIdsForPlan(plan) : undefined;
+  const retrievalQuery = plan?.semantic_query || query;
+  let hits = await hybridSearch(retrievalQuery, restrictTo);
+  if (hits.length === 0 && restrictTo) {
+    // Filters matched nobody — retry unfiltered rather than answering blind.
+    hits = await hybridSearch(retrievalQuery);
+  }
   if (hits.length === 0) {
     return {
       notice:
-        "Nothing in your graph matches those words yet — the AI has no records to reason over.",
+        "Nothing in your graph matches that yet — the AI has no records to reason over.",
     };
   }
+
   try {
-    await assertAiBudget();
     const result = await getLLMClient().complete({
       system: SEARCH_ANSWER_SYSTEM,
       prompt: buildSearchAnswerPrompt(query, candidateBlocks(hits)),

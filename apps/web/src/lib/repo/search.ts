@@ -1,6 +1,7 @@
 import { and, eq, ilike, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { companies, contacts, facts, notes } from "@/lib/db/schema";
+import { semanticSearch } from "./embeddings";
 
 export interface SearchHit {
   contactId: string;
@@ -29,48 +30,61 @@ function anyWordMatches(column: SQL, words: string[]): SQL {
 }
 
 /**
- * Keyword retrieval over contacts, facts, and notes (M6's free path —
- * no LLM, no embeddings yet). Field weights: identity 3, facts 2, notes 1.
+ * Hybrid retrieval (M6 free path — both stages run locally): weighted
+ * keyword match over contacts/facts/notes plus semantic similarity over
+ * the embeddings index. Optional `restrictTo` narrows to structured-filter
+ * candidates (query-understanding stage).
  */
-export async function keywordSearch(query: string): Promise<SearchHit[]> {
+export async function hybridSearch(
+  query: string,
+  restrictTo?: Set<string>,
+): Promise<SearchHit[]> {
   const words = queryWords(query);
-  if (words.length === 0) return [];
   const db = await getDb();
   const hits = new Map<string, { score: number; matches: string[] }>();
   const bump = (contactId: string, score: number, match?: string) => {
+    if (restrictTo && !restrictTo.has(contactId)) return;
     const hit = hits.get(contactId) ?? { score: 0, matches: [] };
     hit.score += score;
     if (match && hit.matches.length < 4) hit.matches.push(match);
     hits.set(contactId, hit);
   };
 
-  const identityRows = await db
-    .select({ id: contacts.id })
-    .from(contacts)
-    .leftJoin(companies, eq(contacts.companyId, companies.id))
-    .where(
-      or(
-        anyWordMatches(sql`${contacts.name}`, words),
-        anyWordMatches(sql`${contacts.title}`, words),
-        anyWordMatches(sql`${companies.name}`, words),
-        anyWordMatches(sql`${contacts.tags}::text`, words),
-      ),
-    );
-  for (const row of identityRows) bump(row.id, 3);
+  const semanticHits = await semanticSearch(query);
+  for (const hit of semanticHits) {
+    const snippet =
+      hit.content.length > 140 ? `${hit.content.slice(0, 140)}…` : hit.content;
+    bump(hit.contactId, hit.similarity * 4, `related ${hit.ownerType}: ${snippet}`);
+  }
+  if (words.length > 0) {
+    const identityRows = await db
+      .select({ id: contacts.id })
+      .from(contacts)
+      .leftJoin(companies, eq(contacts.companyId, companies.id))
+      .where(
+        or(
+          anyWordMatches(sql`${contacts.name}`, words),
+          anyWordMatches(sql`${contacts.title}`, words),
+          anyWordMatches(sql`${companies.name}`, words),
+          anyWordMatches(sql`${contacts.tags}::text`, words),
+        ),
+      );
+    for (const row of identityRows) bump(row.id, 3);
 
-  const factRows = await db
-    .select({ contactId: facts.contactId, text: facts.text })
-    .from(facts)
-    .where(and(isNull(facts.deletedAt), anyWordMatches(sql`${facts.text}`, words)));
-  for (const row of factRows) bump(row.contactId, 2, `fact: ${row.text}`);
+    const factRows = await db
+      .select({ contactId: facts.contactId, text: facts.text })
+      .from(facts)
+      .where(and(isNull(facts.deletedAt), anyWordMatches(sql`${facts.text}`, words)));
+    for (const row of factRows) bump(row.contactId, 2, `fact: ${row.text}`);
 
-  const noteRows = await db
-    .select({ contactId: notes.contactId, body: notes.body })
-    .from(notes)
-    .where(and(isNull(notes.deletedAt), anyWordMatches(sql`${notes.body}`, words)));
-  for (const row of noteRows) {
-    const snippet = row.body.length > 140 ? `${row.body.slice(0, 140)}…` : row.body;
-    bump(row.contactId, 1, `note: ${snippet}`);
+    const noteRows = await db
+      .select({ contactId: notes.contactId, body: notes.body })
+      .from(notes)
+      .where(and(isNull(notes.deletedAt), anyWordMatches(sql`${notes.body}`, words)));
+    for (const row of noteRows) {
+      const snippet = row.body.length > 140 ? `${row.body.slice(0, 140)}…` : row.body;
+      bump(row.contactId, 1, `note: ${snippet}`);
+    }
   }
 
   if (hits.size === 0) return [];

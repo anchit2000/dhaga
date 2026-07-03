@@ -15,4 +15,5 @@ export {
   type EdgeRow,
   type FollowUpRow,
 } from "./notes";
+export { embeddings, type EmbeddingRow } from "./embeddings";
 export { aiActions, waitlist, type AiActionRow } from "./meta";

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth/guard";
 import { createContact, forgetContact } from "@/lib/repo/contacts";
 import { addNote } from "@/lib/repo/notes";
+import { upsertEmbedding } from "@/lib/repo/embeddings";
 import { addContactToSession, createSession } from "@/lib/repo/sessions";
 import type { ExtractedContact } from "@dhaga/core";
 
@@ -45,7 +46,10 @@ export async function createContactAction(
 
   // Quick-add receipts: the pasted text becomes the contact's first note.
   const sourceText = field(formData, "sourceText");
-  if (sourceText) await addNote(id, "capture_source", sourceText);
+  if (sourceText) {
+    const noteId = await addNote(id, "capture_source", sourceText);
+    await upsertEmbedding("note", noteId, id, sourceText);
+  }
 
   const newSessionName = field(formData, "newSessionName");
   const sessionId =

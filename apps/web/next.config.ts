@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
   serverExternalPackages: [
     "@electric-sql/pglite",
     "@electric-sql/pglite-pgvector",
+    "pg",
     "@huggingface/transformers",
     "onnxruntime-node",
     "sharp",

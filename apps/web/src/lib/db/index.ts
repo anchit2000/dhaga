@@ -1,6 +1,9 @@
 import { PGlite } from "@electric-sql/pglite";
 import { vector } from "@electric-sql/pglite-pgvector";
-import { drizzle, type PgliteDatabase } from "drizzle-orm/pglite";
+import { drizzle as drizzlePglite } from "drizzle-orm/pglite";
+import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
+import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { DDL } from "./ddl";
 import { companies, contacts } from "./schema/contacts";
 import { sessionContacts, sessions } from "./schema/sessions";
@@ -22,20 +25,29 @@ const schema = {
   waitlist,
 };
 
-export type DhagaDb = PgliteDatabase<typeof schema>;
+/** Driver-agnostic handle: hosted Postgres and embedded PGlite both satisfy it. */
+export type DhagaDb = PgDatabase<PgQueryResultHKT, typeof schema>;
 
 // Cached on globalThis so dev-server HMR doesn't open the data dir twice.
 // The applied-DDL text is tracked so schema changes re-run the idempotent
 // DDL on the live instance instead of waiting for a process restart.
 const store = globalThis as unknown as {
   __dhagaClient?: PGlite;
+  __dhagaPool?: Pool;
   __dhagaDb?: Promise<DhagaDb>;
   __dhagaDdl?: string;
 };
 
-async function init(): Promise<DhagaDb> {
-  // Embedded Postgres (PGlite). Swapping to hosted Postgres later means
-  // replacing this driver block — the Drizzle schema and queries stay put.
+/** Hosted Postgres (Neon/Supabase/self-hosted) — required on serverless hosts. */
+async function initHosted(connectionString: string): Promise<DhagaDb> {
+  store.__dhagaPool ??= new Pool({ connectionString, max: 5 });
+  await store.__dhagaPool.query(DDL);
+  store.__dhagaDdl = DDL;
+  return drizzlePg(store.__dhagaPool, { schema });
+}
+
+/** Embedded Postgres (PGlite) — local-first default, zero setup. */
+async function initEmbedded(): Promise<DhagaDb> {
   const dataDir = process.env.DHAGA_DATA_DIR ?? ".dhaga-data";
   // A schema change may also mean a new extension; extensions only load at
   // construction, so close and recreate the client rather than reuse it.
@@ -46,12 +58,13 @@ async function init(): Promise<DhagaDb> {
   store.__dhagaClient ??= new PGlite({ dataDir, extensions: { vector } });
   await store.__dhagaClient.exec(DDL);
   store.__dhagaDdl = DDL;
-  return drizzle(store.__dhagaClient, { schema });
+  return drizzlePglite(store.__dhagaClient, { schema });
 }
 
 export function getDb(): Promise<DhagaDb> {
   if (!store.__dhagaDb || store.__dhagaDdl !== DDL) {
-    store.__dhagaDb = init();
+    const url = process.env.DATABASE_URL;
+    store.__dhagaDb = url ? initHosted(url) : initEmbedded();
   }
   return store.__dhagaDb;
 }

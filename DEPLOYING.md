@@ -7,28 +7,30 @@ Two very different things deploy from this repo today:
    (PGlite) on the server's filesystem**. That single fact decides where you
    can run it.
 
-> **⚠ Read this first:** on serverless platforms (Vercel, Netlify,
-> Cloudflare) the filesystem is ephemeral and instances are many — **your
-> graph would silently reset**. Until the hosted-Postgres driver swap lands
-> (see checklist §3), the app tier needs a single persistent server: a VPS,
-> a Docker host, Railway/Render/Fly with a mounted volume.
+> **⚠ Read this first:** the default storage is an embedded database on the
+> server's filesystem — great on a laptop/VPS, impossible on serverless
+> (read-only, ephemeral, many instances). **To run the app on Vercel, set
+> `DATABASE_URL` to a hosted Postgres** (Neon/Supabase free tiers work; the
+> database must support `CREATE EXTENSION vector`). With it set, the app
+> uses hosted Postgres everywhere; without it, the embedded DB — and on
+> serverless only the landing page + waitlist (email fallback) function.
 
-## Option A — Vercel (landing page now, app later)
-
-Fine today if you only need the marketing site live; the `/app` routes will
-work but **must not be trusted with real data** (ephemeral storage).
+## Option A — Vercel
 
 1. Import the GitHub repo at vercel.com → framework auto-detects Next.js.
 2. Set **Root Directory** to `apps/web` and keep the default build command.
-3. Set env vars: `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `DHAGA_OWNER_EMAIL`.
-   **The waitlist needs these on Vercel**: the embedded DB can't write to a
-   serverless filesystem, so signups fall back to a notification email to
-   `DHAGA_OWNER_EMAIL` (and signers still get their confirmation). Without
-   them the form returns 503.
+3. Env vars:
+   - `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `DHAGA_OWNER_EMAIL` — emails +
+     the waitlist's fallback path.
+   - `DATABASE_URL` — hosted Postgres (create a free Neon or Supabase
+     project, copy its connection string). **Without this, `/app` cannot
+     store anything on Vercel**; with it, the full app works.
+   - `DHAGA_PASSWORD`, `DHAGA_SESSION_SECRET` — once `DATABASE_URL` is set.
+   - `ANTHROPIC_API_KEY` — AI features.
+   - `DHAGA_EMBEDDINGS=off` recommended on Vercel for now: the local
+     embedding model (~100 MB of native runtime) is a poor fit for
+     serverless functions; search falls back to keyword matching.
 4. Deploy. Add your domain under Settings → Domains.
-
-Don't set `DHAGA_PASSWORD` here until persistent storage exists — better that
-`/app` stays unusable than that someone builds a graph that vanishes.
 
 ## Option B — a single persistent server (the real deployment today)
 

@@ -47,6 +47,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 ## 3. Data layer (BRD §7.4 — boring storage)
 
 - [x] PGlite (embedded Postgres) + Drizzle; hosted Postgres = driver swap
+- [x] Hosted Postgres support: `DATABASE_URL` → node-postgres (unlocks Vercel)
 - [x] `contacts` table
 - [x] `companies` table
 - [x] `sessions` + `session_contacts` tables (M2)

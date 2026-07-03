@@ -1,7 +1,11 @@
 import Link from "next/link";
 import type { RecommendedContact } from "@/lib/repo/recommendations";
 
-/** Idea #1: people worth a look, from second-degree links and shared tags. */
+/**
+ * Idea #1: adjacent threads from the user's OWN graph — contacts two hops
+ * away (via shared sessions/companies/edges) or sharing tags. Purely local;
+ * never suggests people from outside the user's data.
+ */
 export function RecommendedList({
   recommendations,
 }: {
@@ -10,7 +14,12 @@ export function RecommendedList({
   if (recommendations.length === 0) return null;
   return (
     <section className="space-y-3">
-      <h2 className="font-display text-lg">You might also know</h2>
+      <div className="flex items-baseline gap-2">
+        <h2 className="font-display text-lg">Nearby in your network</h2>
+        <span className="text-xs text-fog">
+          your own contacts, two threads away
+        </span>
+      </div>
       <ul className="flex flex-wrap gap-2">
         {recommendations.map((person) => (
           <li key={person.contactId}>

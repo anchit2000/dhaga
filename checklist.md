@@ -151,7 +151,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 ## 15. Graph power (v1.3)
 
 - [ ] Warm-path finding (BFS over edges — no AI cost)
-- [x] Second-degree suggestions ("You might also know" — ideas.md #1)
+- [x] Second-degree suggestions ("Nearby in your network" — ideas.md #1, local-only traversal)
 - [ ] Relationship timeline view
 - [ ] Watch app / widgets
 

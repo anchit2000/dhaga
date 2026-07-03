@@ -5,8 +5,12 @@ import { getContact } from "@/lib/repo/contacts";
 import { listFacts, listNotes, listOpenFollowUps } from "@/lib/repo/notes";
 import { listContactSessions } from "@/lib/repo/sessions";
 import { listContactConnections } from "@/lib/repo/connections";
+import { recommendContacts } from "@/lib/repo/recommendations";
+import { isReachOutDue } from "@/lib/repo/reminders";
 import { AddNoteForm } from "@/components/app/contact/AddNoteForm";
 import { ConnectionsList } from "@/components/app/contact/ConnectionsList";
+import { KeepInTouch } from "@/components/app/contact/KeepInTouch";
+import { RecommendedList } from "@/components/app/contact/RecommendedList";
 import { DetailChips } from "@/components/app/contact/DetailChips";
 import { DraftSection } from "@/components/app/contact/DraftSection";
 import { FactList } from "@/components/app/contact/FactList";
@@ -26,14 +30,23 @@ export default async function PersonPage({
   const detail = await getContact(id);
   if (!detail) notFound();
   const { contact, companyName } = detail;
-  const [contactNotes, contactFacts, openFollowUps, contactSessions, connections] =
-    await Promise.all([
-      listNotes(id),
-      listFacts(id),
-      listOpenFollowUps(id),
-      listContactSessions(id),
-      listContactConnections(id),
-    ]);
+  const [
+    contactNotes,
+    contactFacts,
+    openFollowUps,
+    contactSessions,
+    connections,
+    recommendations,
+  ] = await Promise.all([
+    listNotes(id),
+    listFacts(id),
+    listOpenFollowUps(id),
+    listContactSessions(id),
+    listContactConnections(id),
+    recommendContacts(id),
+  ]);
+  const lastTouch = contact.lastReachedOutAt ?? contact.createdAt;
+  const isDue = isReachOutDue(contact.reachOutEveryDays, lastTouch);
 
   return (
     <div className="space-y-6">
@@ -83,7 +96,16 @@ export default async function PersonPage({
         />
       </div>
 
+      <KeepInTouch
+        contactId={id}
+        everyDays={contact.reachOutEveryDays}
+        lastTouch={lastTouch.toLocaleDateString()}
+        due={isDue}
+      />
+
       <ConnectionsList connections={connections} />
+
+      <RecommendedList recommendations={recommendations} />
 
       <FollowUpList contactId={id} followUps={openFollowUps} />
 

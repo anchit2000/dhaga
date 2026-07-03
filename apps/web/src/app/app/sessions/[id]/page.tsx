@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireSessionPage } from "@/lib/auth/guard";
-import { getSession, listSessionContacts } from "@/lib/repo/sessions";
+import { getSession, listSessionContacts, listSessions } from "@/lib/repo/sessions";
 import { EmptyState } from "@/components/app/EmptyState";
+import { SessionAdmin } from "@/components/app/SessionAdmin";
 
 export const metadata = { title: "Session — Dhaga" };
 
@@ -15,7 +16,10 @@ export default async function SessionPage({
   const { id } = await params;
   const session = await getSession(id);
   if (!session) notFound();
-  const people = await listSessionContacts(id);
+  const [people, allSessions] = await Promise.all([
+    listSessionContacts(id),
+    listSessions(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -26,6 +30,14 @@ export default async function SessionPage({
           {people.length === 1 ? "person" : "people"}
         </p>
       </div>
+
+      <SessionAdmin
+        sessionId={id}
+        name={session.name}
+        otherSessions={allSessions
+          .filter((other) => other.id !== id)
+          .map(({ id: otherId, name }) => ({ id: otherId, name }))}
+      />
 
       {people.length === 0 ? (
         <EmptyState

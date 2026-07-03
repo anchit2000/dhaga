@@ -21,7 +21,10 @@ export function AppNav() {
         </Link>
         <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
           {APP_NAV_LINKS.map((link) => {
-            const active = pathname.startsWith(link.href);
+            const active =
+              link.href === "/app"
+                ? pathname === "/app"
+                : pathname.startsWith(link.href);
             return (
               <Link
                 key={link.href}

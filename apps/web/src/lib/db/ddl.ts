@@ -85,6 +85,8 @@ CREATE TABLE IF NOT EXISTS follow_ups (
 );
 
 ALTER TABLE contacts ADD COLUMN IF NOT EXISTS tags jsonb NOT NULL DEFAULT '[]';
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS reach_out_every_days integer;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS last_reached_out_at timestamptz;
 
 CREATE TABLE IF NOT EXISTS waitlist (
   email text PRIMARY KEY,

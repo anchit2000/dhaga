@@ -1,6 +1,5 @@
-import { deleteFactAction } from "@/lib/actions/notes";
 import type { FactWithReceipt } from "@/lib/repo/notes";
-import { DeleteButton } from "./DeleteButton";
+import { FactItem } from "./FactItem";
 
 /** AI-derived facts, each with its receipt (the note it came from). */
 export function FactList({
@@ -20,25 +19,18 @@ export function FactList({
   return (
     <ul className="space-y-1.5">
       {facts.map((fact) => (
-        <li
+        <FactItem
           key={fact.id}
-          className="flex items-start gap-2 rounded-lg border-l-2 border-amber bg-panel px-3 py-2"
-        >
-          <div className="min-w-0 flex-1">
-            <p className="text-sm leading-snug text-paper">{fact.text}</p>
-            <p className="mt-0.5 font-mono text-[10px] uppercase tracking-wider text-fog/60">
-              {fact.type}
-              {fact.noteCreatedAt
-                ? ` · from note, ${fact.noteCreatedAt.toLocaleDateString()}`
-                : ""}
-            </p>
-          </div>
-          <form action={deleteFactAction}>
-            <input type="hidden" name="factId" value={fact.id} />
-            <input type="hidden" name="contactId" value={contactId} />
-            <DeleteButton label="Delete fact" />
-          </form>
-        </li>
+          contactId={contactId}
+          factId={fact.id}
+          text={fact.text}
+          type={fact.type}
+          receipt={
+            fact.noteCreatedAt
+              ? `from note, ${fact.noteCreatedAt.toLocaleDateString()}`
+              : null
+          }
+        />
       ))}
     </ul>
   );

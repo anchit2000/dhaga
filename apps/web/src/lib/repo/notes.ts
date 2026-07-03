@@ -60,6 +60,14 @@ export async function listFacts(contactId: string): Promise<FactWithReceipt[]> {
   return rows.map((row) => ({ ...row.fact, noteCreatedAt: row.noteCreatedAt }));
 }
 
+export async function updateFactText(
+  factId: string,
+  text: string,
+): Promise<void> {
+  const db = await getDb();
+  await db.update(facts).set({ text: text.trim() }).where(eq(facts.id, factId));
+}
+
 export async function deleteFact(factId: string): Promise<void> {
   const db = await getDb();
   await db.update(facts).set({ deletedAt: new Date() }).where(eq(facts.id, factId));

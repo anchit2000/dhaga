@@ -9,6 +9,7 @@ import {
   deleteFact,
   deleteNote,
   setFollowUpStatus,
+  updateFactText,
 } from "@/lib/repo/notes";
 
 export interface NoteFormState {
@@ -62,6 +63,16 @@ export async function deleteFactAction(formData: FormData): Promise<void> {
   revalidatePath(`/app/people/${contactId}`);
 }
 
+export async function updateFactAction(formData: FormData): Promise<void> {
+  await requireSession();
+  const factId = String(formData.get("factId") ?? "");
+  const contactId = String(formData.get("contactId") ?? "");
+  const text = String(formData.get("text") ?? "").trim();
+  if (!factId || !text) return;
+  await updateFactText(factId, text);
+  revalidatePath(`/app/people/${contactId}`);
+}
+
 export async function completeFollowUpAction(formData: FormData): Promise<void> {
   await requireSession();
   const followUpId = String(formData.get("followUpId") ?? "");
@@ -69,4 +80,5 @@ export async function completeFollowUpAction(formData: FormData): Promise<void> 
   if (!followUpId) return;
   await setFollowUpStatus(followUpId, "done");
   revalidatePath(`/app/people/${contactId}`);
+  revalidatePath("/app");
 }

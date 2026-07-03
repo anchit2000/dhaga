@@ -1,4 +1,4 @@
-import { jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { integer, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 export const companies = pgTable("companies", {
   id: text("id").primaryKey(),
@@ -18,6 +18,9 @@ export const contacts = pgTable("contacts", {
   links: jsonb("links").$type<string[]>().notNull(),
   location: text("location"),
   tags: jsonb("tags").$type<string[]>().notNull(),
+  // Keep-in-touch cadence: remind when the last touch is older than this.
+  reachOutEveryDays: integer("reach_out_every_days"),
+  lastReachedOutAt: timestamp("last_reached_out_at", { withTimezone: true }),
   source: text("source").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),

@@ -21,19 +21,28 @@ const schema = {
 
 export type DhagaDb = PgliteDatabase<typeof schema>;
 
+// Cached on globalThis so dev-server HMR doesn't open the data dir twice.
+// The applied-DDL text is tracked so schema changes re-run the idempotent
+// DDL on the live instance instead of waiting for a process restart.
+const store = globalThis as unknown as {
+  __dhagaClient?: PGlite;
+  __dhagaDb?: Promise<DhagaDb>;
+  __dhagaDdl?: string;
+};
+
 async function init(): Promise<DhagaDb> {
   // Embedded Postgres (PGlite). Swapping to hosted Postgres later means
   // replacing this driver block — the Drizzle schema and queries stay put.
   const dataDir = process.env.DHAGA_DATA_DIR ?? ".dhaga-data";
-  const client = new PGlite(dataDir);
-  await client.exec(DDL);
-  return drizzle(client, { schema });
+  store.__dhagaClient ??= new PGlite(dataDir);
+  await store.__dhagaClient.exec(DDL);
+  store.__dhagaDdl = DDL;
+  return drizzle(store.__dhagaClient, { schema });
 }
 
-// Cached on globalThis so dev-server HMR doesn't open the data dir twice.
-const store = globalThis as unknown as { __dhagaDb?: Promise<DhagaDb> };
-
 export function getDb(): Promise<DhagaDb> {
-  store.__dhagaDb ??= init();
+  if (!store.__dhagaDb || store.__dhagaDdl !== DDL) {
+    store.__dhagaDb = init();
+  }
   return store.__dhagaDb;
 }

@@ -74,3 +74,29 @@ export async function addContactToSession(
     .values({ sessionId, contactId })
     .onConflictDoNothing();
 }
+
+export async function renameSession(id: string, name: string): Promise<void> {
+  const db = await getDb();
+  await db.update(sessions).set({ name: name.trim() }).where(eq(sessions.id, id));
+}
+
+/** Move everyone from one session into another, then drop the empty one. */
+export async function mergeSessions(
+  fromId: string,
+  intoId: string,
+): Promise<void> {
+  if (fromId === intoId) return;
+  const db = await getDb();
+  const members = await db
+    .select({ contactId: sessionContacts.contactId, scannedAt: sessionContacts.scannedAt })
+    .from(sessionContacts)
+    .where(eq(sessionContacts.sessionId, fromId));
+  for (const member of members) {
+    await db
+      .insert(sessionContacts)
+      .values({ sessionId: intoId, contactId: member.contactId, scannedAt: member.scannedAt })
+      .onConflictDoNothing();
+  }
+  await db.delete(sessionContacts).where(eq(sessionContacts.sessionId, fromId));
+  await db.delete(sessions).where(eq(sessions.id, fromId));
+}

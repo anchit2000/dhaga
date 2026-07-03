@@ -42,6 +42,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Empty states + error states; submit buttons have loading spinners
 - [x] Loading skeletons on data-heavy screens (route `loading.tsx` files)
 - [x] Dark warm theme reused from landing tokens
+- [x] Home dashboard: due reach-outs + open follow-ups across the graph
 
 ## 3. Data layer (BRD §7.4 — boring storage)
 
@@ -72,7 +73,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 
 - [x] Sessions list + session page (contacts met there)
 - [x] Create sessions (from Sessions page and inline in quick-add)
-- [ ] Rename/merge sessions
+- [x] Rename/merge sessions
 - [ ] Web: active-session default (captures within same day attach to active session)
 - [ ] Mobile (later): time + geohash clustering per BRD §6.2
 
@@ -81,7 +82,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Text notes on a contact (add, list, delete)
 - [x] Extraction: note → facts/relationships/follow-ups/tags (Haiku, structured output)
 - [x] Facts render on contact page with receipt ("from note, {date}")
-- [x] User can delete a fact (M4 acceptance; inline edit later)
+- [x] User can edit/delete a fact inline (M4 acceptance)
 - [x] Deleting a note tombstones its derived facts/edges
 - [ ] Voice notes + on-device transcription (mobile milestone)
 
@@ -142,14 +143,15 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 ## 14. Proactive intelligence (v1.2)
 
 - [ ] Job-change detection (nightly Batch API job, diffs → alerts)
-- [ ] Relationship-decay alerts ("no contact in 8 months")
+- [x] Keep-in-touch cadence reminders + Home reach-out feed (ideas.md #2)
+- [ ] Automatic relationship-decay detection (nightly job, no cadence needed)
 - [ ] Post-event digest email
 - [ ] Pre-meeting briefs (calendar integration → push 30 min before)
 
 ## 15. Graph power (v1.3)
 
 - [ ] Warm-path finding (BFS over edges — no AI cost)
-- [ ] Second-degree suggestions
+- [x] Second-degree suggestions ("You might also know" — ideas.md #1)
 - [ ] Relationship timeline view
 - [ ] Watch app / widgets
 

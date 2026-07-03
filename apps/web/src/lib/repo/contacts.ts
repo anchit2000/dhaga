@@ -12,6 +12,7 @@ import {
   type ContactRow,
 } from "@/lib/db/schema";
 import { deleteEmbeddingsByContact } from "./embeddings";
+import { emitWebhook } from "@/lib/webhooks";
 import type { ExtractedContact } from "@dhaga/core";
 import type { ContactSource } from "@/utils/constants/app";
 
@@ -113,6 +114,8 @@ export async function createContact(
     tags: [],
     source,
   });
+  // Single choke point for all capture surfaces — the natural webhook spot.
+  await emitWebhook("contact.created", { id, name: input.name.trim(), source });
   return id;
 }
 

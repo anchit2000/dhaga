@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { contacts, edges, facts, followUps } from "@/lib/db/schema";
 import { findOrCreateCompany } from "./contacts";
 import { upsertEmbedding } from "./embeddings";
+import { emitWebhook } from "@/lib/webhooks";
 import type { NoteExtraction, Relationship } from "@dhaga/core";
 
 async function resolvePersonId(name: string): Promise<string | null> {
@@ -83,13 +84,20 @@ export async function applyExtraction(
   }
 
   for (const followUp of extraction.follow_ups) {
+    const followUpId = randomUUID();
     await db.insert(followUps).values({
-      id: randomUUID(),
+      id: followUpId,
       contactId,
       action: followUp.action,
       dueHint: followUp.due_hint,
       status: "open",
       sourceNoteId: noteId,
+    });
+    await emitWebhook("followup.created", {
+      id: followUpId,
+      contactId,
+      action: followUp.action,
+      dueHint: followUp.due_hint,
     });
   }
 

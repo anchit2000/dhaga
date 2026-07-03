@@ -170,6 +170,15 @@ On a contact, add this note:
       extracted from it carry the note as their receipt.
 - [ ] Delete the enrichment note — its derived facts disappear with it.
 
+## 10d. Telegram bot & webhooks (optional envs)
+
+- [ ] With `TELEGRAM_*` set and the webhook registered (see `.env.example`):
+      message the bot a signature → "Saved {name}"; send `?who did I meet in
+      fintech` → an answer. Messages from other chats are silently ignored.
+- [ ] With `DHAGA_WEBHOOK_URL` set: creating a contact POSTs
+      `contact.created` to your URL; extracted follow-ups POST
+      `followup.created`.
+
 ## 11. Metering cap
 
 - [ ] Set `DHAGA_AI_MONTHLY_CAP=1` in `.env.local`, restart, run one

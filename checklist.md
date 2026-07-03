@@ -146,7 +146,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] One-click capture from any page (activeTab on explicit click only, page URL as receipt)
 - [x] `/api/capture` REST endpoint (session-gated; shared by extension + future mobile share)
 - [x] "Save this article to {contact}": attach mode in the popup + contact search API
-- [ ] Web Store packaging/listing
+- [ ] Web Store packaging/listing (privacy policy page now live at `/privacy`)
 
 ## 14. Proactive intelligence (v1.2)
 
@@ -167,8 +167,9 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 ## 16. Ecosystem (v1.4)
 
 - [ ] Salesforce/HubSpot/Notion export-sync
-- [ ] Zapier / webhooks
-- [ ] LinkedIn QR format, WhatsApp share-to-capture
+- [x] Outbound webhooks (contact.created, followup.created → `DHAGA_WEBHOOK_URL`)
+- [x] Telegram bot: capture + ?questions from chat (ideas.md #6; owner-only, secret-verified)
+- [ ] WhatsApp capture (needs Meta business API), LinkedIn QR format
 
 ## 17. Teams (v2.0 — revenue engine)
 

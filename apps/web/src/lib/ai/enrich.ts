@@ -9,6 +9,7 @@ import { addNote } from "@/lib/repo/notes";
 import { upsertEmbedding } from "@/lib/repo/embeddings";
 import { extractAndApplyNote } from "./note-extraction";
 import { AiBudgetError, assertAiBudget, recordAiAction } from "./metering";
+import { FeatureNotEntitledError, requireFeature } from "@/lib/entitlements";
 
 export interface EnrichResult {
   noticed?: string;
@@ -32,6 +33,7 @@ export async function enrichContact(
   if (!detail) return { error: "Contact not found." };
 
   try {
+    await requireFeature(userId, "enrichment");
     await assertAiBudget(userId);
     const result = await getLLMClient().complete({
       system: ENRICHMENT_SYSTEM,
@@ -64,9 +66,10 @@ export async function enrichContact(
         : "Enriched — findings saved as a note (fact extraction skipped).",
     };
   } catch (error) {
-    return {
-      error:
-        error instanceof AiBudgetError ? error.message : "Enrichment failed.",
-    };
+    if (error instanceof AiBudgetError) return { error: error.message };
+    if (error instanceof FeatureNotEntitledError) {
+      return { error: "Enrichment requires a Pro or Lifetime plan." };
+    }
+    return { error: "Enrichment failed." };
   }
 }

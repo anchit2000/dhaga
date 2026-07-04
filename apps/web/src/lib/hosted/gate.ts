@@ -24,6 +24,10 @@ export interface TenantGate {
 
 export interface SignupGate {
   checkEmail(email: string): Promise<{ allowed: boolean; reason?: string }>;
+  /** Called when a signup attempt is blocked — files (or no-ops, in core
+   *  mode) an access request so the same email can just retry once approved
+   *  instead of needing the separate /api/access-requests form first. */
+  requestAccess(email: string): Promise<void>;
 }
 
 export interface PlanSummary {
@@ -48,6 +52,7 @@ export interface AdminGate {
 
 const openSignupGate: SignupGate = {
   checkEmail: async () => ({ allowed: true }),
+  requestAccess: async () => undefined,
 };
 const noBillingGate: BillingGate = {
   hasUnlimitedAi: async () => false,

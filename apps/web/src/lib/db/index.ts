@@ -11,7 +11,14 @@ import { edges, facts, followUps, notes } from "./schema/notes";
 import { embeddings } from "./schema/embeddings";
 import { aiActions, settings } from "./schema/meta";
 import { cardImages } from "./schema/card-images";
-import { authAccount, authSession, authUser, authVerification } from "./schema/auth";
+import {
+  authAccount,
+  authPasskey,
+  authSession,
+  authTwoFactor,
+  authUser,
+  authVerification,
+} from "./schema/auth";
 import { apiKey } from "./schema/api-key";
 
 const schema = {
@@ -32,6 +39,8 @@ const schema = {
   account: authAccount,
   verification: authVerification,
   apikey: apiKey,
+  passkey: authPasskey,
+  twoFactor: authTwoFactor,
 };
 
 /** Driver-agnostic handle: hosted Postgres and embedded PGlite both satisfy it. */

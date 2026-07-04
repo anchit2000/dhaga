@@ -23,6 +23,8 @@ export {
   authSession,
   authAccount,
   authVerification,
+  authPasskey,
+  authTwoFactor,
   type AuthUserRow,
 } from "./auth";
 export { apiKey, type ApiKeyRow } from "./api-key";

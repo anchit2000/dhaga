@@ -8,6 +8,7 @@ import { getContact } from "@/lib/repo/contacts";
 import { listFacts, listNotes, listOpenFollowUps } from "@/lib/repo/notes";
 import { listContactSessions } from "@/lib/repo/sessions";
 import { AiBudgetError, assertAiBudget, recordAiAction } from "./metering";
+import { FeatureNotEntitledError, requireFeature } from "@/lib/entitlements";
 
 export interface BriefResult {
   brief?: string;
@@ -32,6 +33,7 @@ export async function generateBrief(
   ]);
 
   try {
+    await requireFeature(userId, "pre_meeting_brief");
     await assertAiBudget(userId);
     const lastTouch =
       detail.contact.lastReachedOutAt ?? detail.contact.createdAt;
@@ -56,9 +58,10 @@ export async function generateBrief(
     await recordAiAction("brief", result.model, result.usage);
     return { brief: result.data.trim() };
   } catch (error) {
-    return {
-      error:
-        error instanceof AiBudgetError ? error.message : "The AI call failed.",
-    };
+    if (error instanceof AiBudgetError) return { error: error.message };
+    if (error instanceof FeatureNotEntitledError) {
+      return { error: "Pre-meeting briefs require a Pro or Lifetime plan." };
+    }
+    return { error: "The AI call failed." };
   }
 }

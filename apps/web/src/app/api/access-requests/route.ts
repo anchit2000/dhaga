@@ -5,7 +5,7 @@
 // without them — see lib/hosted/gate.ts for the routes that stay core).
 import { after } from "next/server";
 import { submitAccessRequest } from "@dhaga/ee/access-requests";
-import { emailEnabled, emailShell, ownerEmail, sendEmail } from "@/lib/email/send";
+import { notifyAccessRequested } from "@/lib/access/notify";
 
 const EMAIL_RE = /^[\w.+-]+@[\w-]+(?:\.[\w-]+)+$/;
 
@@ -37,32 +37,7 @@ export async function POST(request: Request): Promise<Response> {
 
   await submitAccessRequest(email);
 
-  if (emailEnabled()) {
-    // Confirmation + owner notification go out after the response.
-    after(async () => {
-      await sendEmail({
-        to: email,
-        subject: "Your Dhaga access request",
-        html: emailShell(
-          "Request received",
-          `<p>We'll email you as soon as you're approved. Founding-price seats
-           are assigned in request order.</p>
-           <p>Until then: Dhaga is open source. Watch the build at
-           <a href="https://github.com/anchit2000/dhaga" style="color:#e2a44c;">github.com/anchit2000/dhaga</a>.</p>`,
-        ),
-      });
-      const owner = ownerEmail();
-      if (owner) {
-        await sendEmail({
-          to: owner,
-          subject: "New Dhaga access request",
-          html: emailShell(
-            "New access request",
-            `<p><strong style="color:#f3ede2;">${email}</strong> requested access.</p>`,
-          ),
-        });
-      }
-    });
-  }
+  // Confirmation + owner notification go out after the response.
+  after(() => notifyAccessRequested(email));
   return Response.json({ ok: true });
 }

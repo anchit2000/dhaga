@@ -14,8 +14,23 @@ CREATE TABLE IF NOT EXISTS "user" (
   image text,
   created_at timestamp NOT NULL DEFAULT now(),
   updated_at timestamp NOT NULL DEFAULT now(),
+  two_factor_enabled boolean DEFAULT false,
+  username text,
+  display_username text,
+  phone_number text,
+  phone_number_verified boolean,
   is_admin boolean DEFAULT false
 );
+-- Plugin-owned user columns, added via ALTER for databases created before the
+-- twoFactor/username/phoneNumber plugins existed (fresh installs get them from
+-- the CREATE TABLE above; both paths are idempotent).
+ALTER TABLE "user" ADD COLUMN IF NOT EXISTS two_factor_enabled boolean DEFAULT false;
+ALTER TABLE "user" ADD COLUMN IF NOT EXISTS username text;
+ALTER TABLE "user" ADD COLUMN IF NOT EXISTS display_username text;
+ALTER TABLE "user" ADD COLUMN IF NOT EXISTS phone_number text;
+ALTER TABLE "user" ADD COLUMN IF NOT EXISTS phone_number_verified boolean;
+CREATE UNIQUE INDEX IF NOT EXISTS user_username_uq ON "user" (username);
+CREATE UNIQUE INDEX IF NOT EXISTS user_phoneNumber_uq ON "user" (phone_number);
 
 CREATE TABLE IF NOT EXISTS session (
   id text PRIMARY KEY,
@@ -83,4 +98,32 @@ CREATE TABLE IF NOT EXISTS apikey (
 CREATE INDEX IF NOT EXISTS "apikey_configId_idx" ON apikey (config_id);
 CREATE INDEX IF NOT EXISTS "apikey_referenceId_idx" ON apikey (reference_id);
 CREATE INDEX IF NOT EXISTS apikey_key_idx ON apikey (key);
+
+CREATE TABLE IF NOT EXISTS passkey (
+  id text PRIMARY KEY,
+  name text,
+  public_key text NOT NULL,
+  user_id text NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+  credential_id text NOT NULL,
+  counter integer NOT NULL,
+  device_type text NOT NULL,
+  backed_up boolean NOT NULL,
+  transports text,
+  created_at timestamp,
+  aaguid text
+);
+CREATE INDEX IF NOT EXISTS "passkey_userId_idx" ON passkey (user_id);
+CREATE INDEX IF NOT EXISTS "passkey_credentialID_idx" ON passkey (credential_id);
+
+CREATE TABLE IF NOT EXISTS two_factor (
+  id text PRIMARY KEY,
+  secret text NOT NULL,
+  backup_codes text NOT NULL,
+  user_id text NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+  verified boolean DEFAULT true,
+  failed_verification_count integer DEFAULT 0,
+  locked_until timestamp
+);
+CREATE INDEX IF NOT EXISTS "twoFactor_secret_idx" ON two_factor (secret);
+CREATE INDEX IF NOT EXISTS "twoFactor_userId_idx" ON two_factor (user_id);
 `;

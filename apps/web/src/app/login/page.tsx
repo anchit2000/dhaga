@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/guard";
+import { enabledSocialProviders } from "@/lib/auth/config/social";
 import { LoginForm } from "@/components/app/LoginForm";
 import { ThreadMark } from "@/components/brand/ThreadMark";
 
@@ -21,7 +22,7 @@ export default async function LoginPage() {
           <p className="mb-6 text-sm text-fog">
             Your graph is yours — sign in to reach it.
           </p>
-          <LoginForm />
+          <LoginForm socialProviders={enabledSocialProviders()} />
           <p className="mt-6 text-center text-sm text-fog">
             No account?{" "}
             <Link href="/signup" className="text-amber hover:underline">

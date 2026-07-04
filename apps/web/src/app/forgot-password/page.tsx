@@ -1,19 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/guard";
-import { enabledSocialProviders } from "@/lib/auth/config/social";
-import { SignupForm } from "@/components/app/SignupForm";
+import { ForgotPasswordForm } from "@/components/app/auth/ForgotPasswordForm";
 import { ThreadMark } from "@/components/brand/ThreadMark";
 
-export const metadata = { title: "Create account — Dhaga" };
+export const metadata = { title: "Reset your password — Dhaga" };
 
-interface SignupPageProps {
-  searchParams: Promise<{ email?: string }>;
-}
-
-export default async function SignupPage({ searchParams }: SignupPageProps) {
+export default async function ForgotPasswordPage() {
   if (await getCurrentUser()) redirect("/app/people");
-  const { email } = await searchParams;
 
   return (
     <main className="flex min-h-dvh items-center justify-center bg-ink px-4">
@@ -23,15 +17,14 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
           dhaga
         </p>
         <div className="rounded-2xl border border-seam bg-panel p-6">
-          <h1 className="mb-1 font-display text-xl text-paper">Create your account</h1>
+          <h1 className="mb-1 font-display text-xl text-paper">Reset your password</h1>
           <p className="mb-6 text-sm text-fog">
-            Your professional memory, augmented — and yours alone.
+            We&apos;ll email you a link to choose a new one.
           </p>
-          <SignupForm socialProviders={enabledSocialProviders()} defaultEmail={email} />
+          <ForgotPasswordForm />
           <p className="mt-6 text-center text-sm text-fog">
-            Already have an account?{" "}
             <Link href="/login" className="text-amber hover:underline">
-              Sign in
+              Back to sign in
             </Link>
           </p>
         </div>

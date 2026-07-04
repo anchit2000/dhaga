@@ -1,4 +1,4 @@
-import { isEmailApproved } from "./repo";
+import { isEmailApproved, submitAccessRequest } from "./repo";
 
 function isBootstrapAdmin(email: string): boolean {
   return (process.env.DHAGA_ADMIN_EMAILS ?? "")
@@ -18,6 +18,12 @@ export const signupGate = {
     return allowed
       ? { allowed: true }
       : { allowed: false, reason: "This email hasn't been invited yet — request access first." };
+  },
+  // Idempotent (onConflictDoNothing): a signup retry never creates a
+  // duplicate row or resets an already-pending/approved/rejected request.
+  requestAccess: async (email: string) => {
+    if (isBootstrapAdmin(email)) return;
+    await submitAccessRequest(email);
   },
 };
 

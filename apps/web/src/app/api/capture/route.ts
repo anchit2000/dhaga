@@ -8,6 +8,11 @@ import { upsertEmbedding } from "@/lib/repo/embeddings";
 import { saveCardImage } from "@/lib/repo/card-images";
 import { shouldStoreCardPhotos } from "@/lib/repo/settings";
 import { CARD_IMAGE_TYPES } from "@/utils/constants/app";
+import type {
+  CaptureAttachResponse,
+  CaptureImageResponse,
+  CaptureTextResponse,
+} from "@dhaga/core/src/api/capture";
 
 /**
  * One-shot capture for external surfaces (browser extension; later, mobile
@@ -76,7 +81,7 @@ export async function POST(request: Request): Promise<Response> {
       via: "ai",
       photoStored,
       notice: null,
-    });
+    } satisfies CaptureImageResponse);
   }
 
   if (!raw) {
@@ -110,7 +115,7 @@ export async function POST(request: Request): Promise<Response> {
       notice: outcome.applied
         ? `${outcome.factCount} fact${outcome.factCount === 1 ? "" : "s"} extracted.`
         : (outcome.notice ?? null),
-    });
+    } satisfies CaptureAttachResponse);
   }
 
   const extraction = await extractContactFromText(userId, raw);
@@ -131,5 +136,5 @@ export async function POST(request: Request): Promise<Response> {
     company: extraction.contact.company,
     via: extraction.via,
     notice: extraction.notice ?? null,
-  });
+  } satisfies CaptureTextResponse);
 }

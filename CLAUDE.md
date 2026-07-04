@@ -105,7 +105,7 @@ original (thread metaphor, warm palette, serif display, receipts-first UI).
 ### Planned repo layout (create as milestones need it; update this section as it evolves)
 ```
 apps/web/          Next.js app: marketing, web quick-add, graph browser, API routes
-apps/mobile/       Expo app (later milestone)
+apps/mobile/       Expo app (SDK 57, dev-client) — M0 capture spike built; M1+ pending
 apps/extension/    Browser extension (MV3) — built, v1.1
 packages/core/     Shared: Zod schemas, extraction prompts, API client, types
 packages/ee/       Dhaga Cloud only: multi-tenant RLS, billing, admin, early

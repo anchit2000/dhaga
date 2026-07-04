@@ -33,7 +33,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Prompt builder: search query understanding (structured filters stage)
 - [x] `getLLMClient()` factory (env-driven; Ollama/BYO-key = future implementations)
 - [x] Heuristic (no-LLM) contact parser fallback — email/phone/URL regex + name lines
-- [ ] Shared API types (request/response contracts used by web now, mobile later)
+- [ ] Shared API types (request/response contracts used by web now, mobile later) — `/api/capture` contract added (`packages/core/src/api/capture.ts`, 2026-07-04): web route `satisfies` it, mobile imports it; other routes still untyped, not pushed
 
 ## 2. Web app shell (v1.1 surface, built first)
 
@@ -139,7 +139,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [ ] Per-user API keys (better-auth `apiKey` plugin) for non-browser clients — replaces `DHAGA_API_TOKEN`; settings UI built, typecheck/lint/build pass, manual verification pending
 - [x] `/api/capture` accepts card images (base64) — ready for the Expo app to call
 
-- [ ] M0 spike: Expo app, camera → Vision/ML Kit OCR → Haiku parse → contact saved
+- [ ] M0 spike: Expo app, camera → Vision/ML Kit OCR → Haiku parse → contact saved — built 2026-07-04 (`apps/mobile`: Expo SDK 57, dev-client, `expo-text-extractor` on-device OCR primary + server photo-scan fallback, `x-api-key` auth); typecheck green; **needs on-device verification on Android + iPhone** (see `apps/mobile/README.md`), not pushed
 - [ ] M1 card scan: edit-before-save, ≥90% accuracy on clean cards, <5s
 - [ ] M2 auto event grouping (time + geohash clustering, name-once prompt)
 - [ ] M3 voice notes: whisper.cpp / Apple Speech on-device transcription

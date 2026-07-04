@@ -1,5 +1,10 @@
 # Deploying Dhaga
 
+> **Just want to self-host for yourself, with no Dhaga Cloud features
+> (billing, admin panel, invite-only signup)?** Read
+> [SELF_HOSTING.md](SELF_HOSTING.md) first — it's simpler than this whole
+> file and you can skip the "Hosted-mode extras" section below entirely.
+
 Two very different things deploy from this repo today:
 
 1. **The landing page** (`/`) — static, deploys anywhere, zero config.
@@ -25,12 +30,35 @@ Two very different things deploy from this repo today:
    - `DATABASE_URL` — hosted Postgres (create a free Neon or Supabase
      project, copy its connection string). **Without this, `/app` cannot
      store anything on Vercel**; with it, the full app works.
-   - `DHAGA_PASSWORD`, `DHAGA_SESSION_SECRET` — once `DATABASE_URL` is set.
+   - `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` — once `DATABASE_URL` is set.
    - `ANTHROPIC_API_KEY` — AI features.
    - `DHAGA_EMBEDDINGS=off` recommended on Vercel for now: the local
      embedding model (~100 MB of native runtime) is a poor fit for
      serverless functions; search falls back to keyword matching.
 4. Deploy. Add your domain under Settings → Domains.
+
+### Hosted-mode extras (Dhaga Cloud only — skip for plain self-hosting)
+
+Add these on top of the above only if you want invite-gated signup, the
+admin panel, and Stripe billing. See [SELF_HOSTING.md](SELF_HOSTING.md) for
+what each of these actually turns on, and how to create your first admin
+account once it's live.
+
+- `DHAGA_HOSTED_MODE=true` — the master switch; every EE feature stays off
+  without it, regardless of whether the other vars below are set.
+- `DHAGA_ADMIN_EMAILS` — comma-separated emails that bootstrap into admins
+  on signup (see SELF_HOSTING.md's "Creating the first admin user").
+- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_PRO_ANNUAL`,
+  `STRIPE_PRICE_LIFETIME` — from the Stripe Dashboard (test-mode keys while
+  developing). Omit `STRIPE_SECRET_KEY` to run hosted mode without billing
+  (e.g. a free beta) — the billing UI simply doesn't render without it.
+- Register the webhook in Stripe pointing at
+  `https://your-domain/api/stripe/webhook`, subscribed to at least
+  `checkout.session.completed`, `customer.subscription.updated`,
+  `customer.subscription.deleted`, `invoice.payment_failed`.
+- `DATABASE_URL` is **mandatory** in hosted mode regardless of platform — the
+  multi-tenant isolation is Postgres Row-Level Security, which the embedded
+  PGlite database doesn't support.
 
 ## Option B — a single persistent server (the real deployment today)
 
@@ -47,8 +75,8 @@ npm run build
 Create `apps/web/.env.local` (or export the vars in your process manager):
 
 ```
-DHAGA_PASSWORD=<strong password — this is the only lock on your graph>
-DHAGA_SESSION_SECRET=<long random string, e.g. `openssl rand -hex 32`>
+BETTER_AUTH_SECRET=<long random string, e.g. `openssl rand -hex 32`>
+BETTER_AUTH_URL=https://dhaga.example.com
 DHAGA_DATA_DIR=/var/lib/dhaga        # persisted dir OUTSIDE the repo
 ANTHROPIC_API_KEY=sk-ant-...         # optional; enables AI features
 DHAGA_AI_MONTHLY_CAP=500             # optional; default 25/month
@@ -86,13 +114,14 @@ dhaga.example.com {
 ### Backups & migration
 
 - **Backup** = copy the `DHAGA_DATA_DIR` directory (stop the service first),
-  plus a periodic `curl -H "Cookie: dhaga_session=…" .../api/export/json`.
+  plus a periodic `curl -H "x-api-key: …" .../api/export/json` (create a
+  personal access token from `/app/settings`).
 - **Leaving** = the JSON/CSV/vCard export endpoints give you everything;
   no lock-in is a feature.
 
 ## Checklist before going live
 
-- [ ] Strong `DHAGA_PASSWORD` + random `DHAGA_SESSION_SECRET`
+- [ ] Random `BETTER_AUTH_SECRET`, correct `BETTER_AUTH_URL`
 - [ ] `DHAGA_DATA_DIR` on persistent storage, owned by the service user
 - [ ] HTTPS terminating in front of port 3000
 - [ ] Backup cron for the data dir / JSON export
@@ -101,8 +130,16 @@ dhaga.example.com {
 
 ## What's deliberately not here yet
 
-- **Docker image / compose** — planned with the self-host docs (checklist §18).
-- **Hosted Postgres (Supabase/Neon)** — the schema is already
-  Postgres-dialect; swapping PGlite for a hosted connection is a driver
-  change in `apps/web/src/lib/db/index.ts`, and unlocks serverless hosting.
-- **Multi-user auth / billing** — single-password instance for now.
+- **Docker image / compose** — planned (checklist §18).
+- **Manual click-through verification of the Stripe checkout/webhook flow**
+  — the code is typechecked/linted/built/tested, but nobody has run a real
+  test-mode purchase against a live Stripe account yet.
+
+## Already done (see SELF_HOSTING.md and the "Hosted-mode extras" section above)
+
+- **Hosted Postgres (Supabase/Neon)** — `DATABASE_URL` switches the driver
+  automatically; see Option A above.
+- **Real user accounts, per-user API keys, multi-tenant RLS, billing, admin
+  panel, early-access gating** — all built. Self-hosted instances run
+  without any of the hosted-only pieces by default (open registration, no
+  billing UI, no admin nav) — see [SELF_HOSTING.md](SELF_HOSTING.md).

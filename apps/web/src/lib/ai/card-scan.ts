@@ -21,12 +21,15 @@ export interface CardScanResult {
  * Scanning never stores anything — callers persist the photo (visual
  * receipt) only when the store-card-photos setting allows it.
  */
-export async function scanCardImage(image: LLMImage): Promise<CardScanResult> {
+export async function scanCardImage(
+  userId: string,
+  image: LLMImage,
+): Promise<CardScanResult> {
   if (!hasLLM()) {
     return { error: "Card scanning needs cloud AI — set ANTHROPIC_API_KEY." };
   }
   try {
-    await assertAiBudget();
+    await assertAiBudget(userId);
     const result = await getLLMClient().extract({
       schema: cardScanSchema,
       system: CARD_SCAN_SYSTEM,

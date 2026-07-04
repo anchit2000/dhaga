@@ -1,5 +1,5 @@
 import { aliasedTable, and, eq, isNull, ne, or } from "drizzle-orm";
-import { getDb } from "@/lib/db";
+import { getDb } from "@/lib/db/request-scope";
 import { contacts, edges, sessionContacts, sessions } from "@/lib/db/schema";
 
 export interface ConnectionItem {

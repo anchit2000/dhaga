@@ -15,12 +15,6 @@ export const aiActions = pgTable("ai_actions", {
 
 export type AiActionRow = typeof aiActions.$inferSelect;
 
-/** Landing-page waitlist signups (public endpoint, email only). */
-export const waitlist = pgTable("waitlist", {
-  email: text("email").primaryKey(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-});
-
 /** Per-user app preferences (single-user app → a simple key/value table). */
 export const settings = pgTable("settings", {
   key: text("key").primaryKey(),

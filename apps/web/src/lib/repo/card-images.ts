@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { desc, eq, sql } from "drizzle-orm";
-import { getDb } from "@/lib/db";
+import { getDb } from "@/lib/db/request-scope";
 import { cardImages, type CardImageRow } from "@/lib/db/schema";
 
 export interface CardImageRef {

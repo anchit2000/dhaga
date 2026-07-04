@@ -22,41 +22,64 @@ captures at the handshake and remembers who they are *to you*.
 
 ## Principles
 
-- **Local-first.** Your phone is the source of truth. OCR, transcription, and
-  search run on-device. Works fully offline.
-- **Private by design.** End-to-end encrypted sync — our servers can't read
-  your graph. No scraping, no silent enrichment. Every fact keeps a receipt.
-- **Leave anytime.** Your data exports as a single SQLite file. Self-host the
-  whole stack with `docker compose up`.
-- **Bring your own AI.** Our cloud, your API key, or a local model via Ollama.
+- **Local-first.** Notes, extraction, and search work against your own
+  Postgres (embedded PGlite by default, or any hosted Postgres you point it
+  at) — no dependency on Dhaga's cloud to function.
+- **Private by design.** No scraping, no silent enrichment — every AI call is
+  user-triggered and every derived fact keeps a receipt back to the note it
+  came from. "Forget this person" cascades everywhere.
+- **Leave anytime.** Export your full graph as CSV, vCard, or JSON at any
+  time — see [DEPLOYING.md](docs/DEPLOYING.md).
+- **Bring your own AI.** Cloud AI (Claude) is optional — without an API key,
+  capture falls back to an offline heuristic parser and AI features show a
+  clear "not configured" message rather than failing silently.
+- **Open-core, not open-crippled.** Everything you need to run Dhaga for
+  yourself — accounts, capture, notes, graph, search, drafts, export,
+  Telegram, the browser extension API — is AGPL and runs with zero
+  dependency on any proprietary code. See [SELF_HOSTING.md](docs/SELF_HOSTING.md).
 
 ## Repository layout
 
 ```
-apps/web/        Next.js — marketing site, web quick-add, graph browser (in progress)
+apps/web/        Next.js — marketing site, the app (/app), API routes
+apps/extension/  Browser extension (MV3) — one-click capture
+packages/core/   Shared Zod schemas, LLM gateway, extraction prompts
+packages/ee/     Dhaga Cloud only — multi-tenancy, billing, admin, early access
+                 (source-available, not AGPL — see packages/ee/LICENSE;
+                 self-hosting needs none of it, see docs/SELF_HOSTING.md)
 apps/mobile/     React Native + Expo — iOS & Android (planned)
-apps/extension/  Browser extension — one-click capture (planned)
-packages/core/   Shared Zod schemas, extraction prompts, API client (planned)
-BRD.md           Full product requirements, roadmap, competitor analysis
+docs/BRD.md      Full product requirements, roadmap, competitor analysis
 ```
 
 ## Development
 
 ```bash
-cd apps/web
 npm install
-npm run dev
+npm run dev --workspace=web
 ```
+
+Copy `apps/web/.env.example` to `apps/web/.env.local` and fill in at least
+`BETTER_AUTH_SECRET` (`openssl rand -base64 32`) to run locally. See
+[TESTING.md](docs/TESTING.md) for a full manual test pass, and
+[SELF_HOSTING.md](docs/SELF_HOSTING.md) / [DEPLOYING.md](docs/DEPLOYING.md) for
+running your own instance or Dhaga Cloud's hosted-mode features.
 
 ## Status
 
-Pre-alpha. The landing page is live; the MVP capture loop
-(scan → auto-group → voice note → extraction → search → follow-up draft) is
-being built next. See [BRD.md](BRD.md) for the milestone plan.
+Pre-launch. The full MVP loop is built — card/badge scan, voice + text
+notes, entity extraction, the knowledge graph, natural-language search, AI
+follow-up drafts, and export — plus v1.1+ features (web quick-add, browser
+extension, Telegram capture, sessions, reminders) and real multi-user
+accounts. Not yet done: mobile app, Docker packaging, and a live-tested
+Stripe billing flow for Dhaga Cloud. See [checklist.md](docs/checklist.md) for the
+exact feature-by-feature status and [BRD.md](docs/BRD.md) for the roadmap.
 
 ## License
 
-[AGPL-3.0](LICENSE). The core is and will remain free software — usable,
-self-hostable, and forkable. Hosted-cloud modules (team graph, managed
-enrichment, billing) may live under a separate commercial license as the
-project grows, following the standard open-core model.
+[AGPL-3.0](LICENSE) for everything except `packages/ee`, which is
+source-available under a separate noncompete license (PolyForm Shield
+1.0.0 — see [`packages/ee/LICENSE`](packages/ee/LICENSE)) and powers Dhaga
+Cloud's hosted-only features: multi-tenant isolation, early access, the
+admin panel, and billing. Self-hosting needs none of it — see
+[SELF_HOSTING.md](docs/SELF_HOSTING.md) for exactly what that means and how to
+verify it yourself.

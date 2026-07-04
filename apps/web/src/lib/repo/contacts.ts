@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { and, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
-import { getDb } from "@/lib/db";
+import { getDb } from "@/lib/db/request-scope";
 import {
   companies,
   contacts,

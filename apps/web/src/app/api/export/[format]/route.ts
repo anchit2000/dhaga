@@ -1,12 +1,14 @@
-import { hasSession } from "@/lib/auth/guard";
+import { requireUserIdFromRequest } from "@/lib/auth/guard";
 import { exportContacts, exportEverything } from "@/lib/export/data";
 import { contactsToCsv, contactsToVCards } from "@/lib/export/formats";
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ format: string }> },
 ): Promise<Response> {
-  if (!(await hasSession())) {
+  try {
+    await requireUserIdFromRequest(request);
+  } catch {
     return new Response("Unauthorized", { status: 401 });
   }
   const { format } = await params;

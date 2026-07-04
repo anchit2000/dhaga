@@ -17,6 +17,9 @@
 /.next/
 /out/
 
+# embedded local database (PGlite)
+/.dhaga-data/
+
 # production
 /build
 

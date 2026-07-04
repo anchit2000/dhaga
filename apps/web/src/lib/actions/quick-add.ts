@@ -1,6 +1,6 @@
 "use server";
 
-import { requireSession } from "@/lib/auth/guard";
+import { requireUserId } from "@/lib/auth/guard";
 import { extractContactFromText } from "@/lib/ai/contact-extraction";
 import { scanCardImage } from "@/lib/ai/card-scan";
 import { shouldStoreCardPhotos } from "@/lib/repo/settings";
@@ -25,10 +25,10 @@ export async function extractQuickAddAction(
   _previous: QuickAddState,
   formData: FormData,
 ): Promise<QuickAddState> {
-  await requireSession();
+  const userId = await requireUserId();
   const raw = String(formData.get("raw") ?? "").trim();
   if (!raw) return { error: "Paste some text first." };
-  const result = await extractContactFromText(raw);
+  const result = await extractContactFromText(userId, raw);
   return {
     contact: result.contact,
     via: result.via,
@@ -43,7 +43,7 @@ export async function scanCardAction(
   _previous: QuickAddState,
   formData: FormData,
 ): Promise<QuickAddState> {
-  await requireSession();
+  const userId = await requireUserId();
   const photo = formData.get("photo");
   if (!(photo instanceof File) || photo.size === 0) {
     return { error: "Take or choose a card photo first." };
@@ -57,7 +57,7 @@ export async function scanCardAction(
     mediaType,
     dataBase64: Buffer.from(await photo.arrayBuffer()).toString("base64"),
   };
-  const result = await scanCardImage(image);
+  const result = await scanCardImage(userId, image);
   if (result.error || !result.contact) {
     return { error: result.error ?? "The scan failed." };
   }

@@ -1,9 +1,9 @@
 import { GITHUB_URL } from "@/utils/constants/landing";
-import { WaitlistForm } from "./WaitlistForm";
+import { RequestAccessForm } from "./RequestAccessForm";
 
 export function FinalCta() {
   return (
-    <section className="border-t border-seam bg-panel-2/40" id="waitlist">
+    <section className="border-t border-seam bg-panel-2/40" id="request-access">
       <div className="mx-auto max-w-6xl px-6 py-24">
         <p className="font-mono text-xs uppercase tracking-[0.22em] text-amber">
           Early access
@@ -12,11 +12,11 @@ export function FinalCta() {
           The next conference is coming. Arrive with a memory.
         </h2>
         <p className="mt-4 max-w-xl text-fog">
-          Join the waitlist for the beta. The first 500 signups lock the $79
-          founding lifetime price — after that it&apos;s $99, and that&apos;s a
-          promise we keep in public.
+          Request access to the beta. The first 500 approved signups lock the
+          $79 founding lifetime price — after that it&apos;s $99, and
+          that&apos;s a promise we keep in public.
         </p>
-        <WaitlistForm />
+        <RequestAccessForm />
       </div>
     </section>
   );
@@ -49,7 +49,7 @@ export function Footer() {
             </p>
             <FooterLink href={GITHUB_URL} label="GitHub" external />
             <FooterLink href={`${GITHUB_URL}/blob/main/LICENSE`} label="AGPL-3.0" external />
-            <FooterLink href={`${GITHUB_URL}/blob/main/BRD.md`} label="Roadmap" external />
+            <FooterLink href={`${GITHUB_URL}/blob/main/docs/BRD.md`} label="Roadmap" external />
           </div>
         </div>
       </div>

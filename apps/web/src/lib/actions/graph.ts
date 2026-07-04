@@ -1,6 +1,6 @@
 "use server";
 
-import { requireSession } from "@/lib/auth/guard";
+import { requireUserId } from "@/lib/auth/guard";
 import { findWarmPaths, type WarmPath } from "@/lib/repo/warm-paths";
 
 export interface WarmPathState {
@@ -13,7 +13,7 @@ export async function findWarmPathsAction(
   _previous: WarmPathState,
   formData: FormData,
 ): Promise<WarmPathState> {
-  await requireSession();
+  await requireUserId();
   const targetId = String(formData.get("targetId") ?? "");
   const targetLabel = String(formData.get("targetLabel") ?? "");
   if (!targetId) return { error: "Pick a target first." };

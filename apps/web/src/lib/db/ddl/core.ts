@@ -1,10 +1,10 @@
 /**
  * Idempotent schema DDL, applied on first DB open. Column names must stay in
- * lockstep with the Drizzle definitions in ./schema. Schema changes get a new
+ * lockstep with the Drizzle definitions in ../schema. Schema changes get a new
  * `ALTER ... IF NOT EXISTS`-style statement appended here (boring migrations
  * for a boring storage layer; revisit when the schema churns faster).
  */
-export const DDL = `
+export const CORE_DDL = `
 CREATE EXTENSION IF NOT EXISTS vector;
 
 CREATE TABLE IF NOT EXISTS companies (
@@ -98,11 +98,6 @@ CREATE TABLE IF NOT EXISTS embeddings (
   embedding vector(384) NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (owner_type, owner_id)
-);
-
-CREATE TABLE IF NOT EXISTS waitlist (
-  email text PRIMARY KEY,
-  created_at timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS ai_actions (

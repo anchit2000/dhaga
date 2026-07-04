@@ -1,15 +1,23 @@
-import { requireSessionPage } from "@/lib/auth/guard";
+import { headers } from "next/headers";
+import { requireUserIdForPage } from "@/lib/auth/guard";
+import { getAuth } from "@/lib/auth/config";
+import { getBillingGate } from "@/lib/hosted/gate";
 import { shouldStoreCardPhotos } from "@/lib/repo/settings";
 import { countCardImages } from "@/lib/repo/card-images";
 import { CardPhotoSetting } from "@/components/app/settings/CardPhotoSetting";
+import { ApiKeysSetting } from "@/components/app/settings/ApiKeysSetting";
+import { BillingSetting } from "@/components/app/settings/BillingSetting";
 
 export const metadata = { title: "Settings — Dhaga" };
 
 export default async function SettingsPage() {
-  await requireSessionPage();
-  const [storePhotos, photoCount] = await Promise.all([
+  const userId = await requireUserIdForPage();
+  const auth = await getAuth();
+  const [storePhotos, photoCount, apiKeys, planSummary] = await Promise.all([
     shouldStoreCardPhotos(),
     countCardImages(),
+    auth.api.listApiKeys({ headers: await headers() }),
+    (await getBillingGate()).getPlanSummary(userId),
   ]);
 
   return (
@@ -20,7 +28,9 @@ export default async function SettingsPage() {
           Everything here is about what Dhaga keeps — and only for you.
         </p>
       </div>
+      {planSummary ? <BillingSetting summary={planSummary} /> : null}
       <CardPhotoSetting enabled={storePhotos} count={photoCount} />
+      <ApiKeysSetting keys={apiKeys.apiKeys} />
     </div>
   );
 }

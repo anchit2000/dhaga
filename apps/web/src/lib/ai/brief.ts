@@ -15,7 +15,10 @@ export interface BriefResult {
 }
 
 /** v1.2: the pre-meeting dossier, composed strictly from the user's graph. */
-export async function generateBrief(contactId: string): Promise<BriefResult> {
+export async function generateBrief(
+  userId: string,
+  contactId: string,
+): Promise<BriefResult> {
   if (!hasLLM()) {
     return { error: "Set ANTHROPIC_API_KEY to generate briefs." };
   }
@@ -29,7 +32,7 @@ export async function generateBrief(contactId: string): Promise<BriefResult> {
   ]);
 
   try {
-    await assertAiBudget();
+    await assertAiBudget(userId);
     const lastTouch =
       detail.contact.lastReachedOutAt ?? detail.contact.createdAt;
     const result = await getLLMClient().complete({

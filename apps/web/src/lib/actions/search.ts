@@ -1,6 +1,6 @@
 "use server";
 
-import { requireSession } from "@/lib/auth/guard";
+import { requireUserId } from "@/lib/auth/guard";
 import { answerSearchQuery } from "@/lib/ai/search";
 
 export interface AskAiState {
@@ -12,8 +12,8 @@ export async function askAiAction(
   _previous: AskAiState,
   formData: FormData,
 ): Promise<AskAiState> {
-  await requireSession();
+  const userId = await requireUserId();
   const query = String(formData.get("q") ?? "").trim();
   if (!query) return { notice: "Type a question first." };
-  return answerSearchQuery(query);
+  return answerSearchQuery(userId, query);
 }

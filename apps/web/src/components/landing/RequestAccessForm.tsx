@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export function WaitlistForm() {
+export function RequestAccessForm() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -15,7 +15,7 @@ export function WaitlistForm() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/waitlist", {
+      const response = await fetch("/api/access-requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
@@ -36,8 +36,8 @@ export function WaitlistForm() {
   if (submitted) {
     return (
       <p role="status" className="mt-8 text-amber">
-        You&apos;re on the list. First invites go out before autumn conference
-        season — founding seats are assigned in signup order.
+        Request received — we&apos;ll email you when you&apos;re approved.
+        Founding-price seats are assigned in request order.
       </p>
     );
   }
@@ -53,7 +53,7 @@ export function WaitlistForm() {
         className="h-12 min-w-60 flex-1 border-seam bg-ink text-base placeholder:text-fog/50"
       />
       <Button type="submit" size="lg" disabled={loading}>
-        {loading ? "Reserving…" : "Request an invite"}
+        {loading ? "Requesting…" : "Request access"}
       </Button>
       {error ? (
         <p role="alert" className="w-full text-sm text-red-400">

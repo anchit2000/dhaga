@@ -1,4 +1,4 @@
-import { requireSessionPage } from "@/lib/auth/guard";
+import { requireUserIdForPage } from "@/lib/auth/guard";
 import { fetchGraphView } from "@/lib/repo/graph-data";
 import { EmptyState } from "@/components/app/EmptyState";
 import { GraphBrowser } from "@/components/app/graph/GraphBrowser";
@@ -10,7 +10,7 @@ import {
 export const metadata = { title: "Graph — Dhaga" };
 
 export default async function GraphPage() {
-  await requireSessionPage();
+  await requireUserIdForPage();
   const data = await fetchGraphView();
 
   return (

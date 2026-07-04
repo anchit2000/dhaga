@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireSession } from "@/lib/auth/guard";
+import { requireUserId } from "@/lib/auth/guard";
 import { extractAndApplyNote } from "@/lib/ai/note-extraction";
 import { getContact } from "@/lib/repo/contacts";
 import {
@@ -26,7 +26,7 @@ export async function addNoteAction(
   _previous: NoteFormState,
   formData: FormData,
 ): Promise<NoteFormState> {
-  await requireSession();
+  const userId = await requireUserId();
   const contactId = String(formData.get("contactId") ?? "");
   const body = String(formData.get("body") ?? "").trim();
   if (!contactId) return { error: "Missing contact." };
@@ -39,6 +39,7 @@ export async function addNoteAction(
   const noteId = await addNote(contactId, kind, body);
   await upsertEmbedding("note", noteId, contactId, body);
   const outcome = await extractAndApplyNote(
+    userId,
     contactId,
     noteId,
     detail.contact.name,
@@ -53,7 +54,7 @@ export async function addNoteAction(
 }
 
 export async function deleteNoteAction(formData: FormData): Promise<void> {
-  await requireSession();
+  await requireUserId();
   const noteId = String(formData.get("noteId") ?? "");
   const contactId = String(formData.get("contactId") ?? "");
   if (!noteId) return;
@@ -63,7 +64,7 @@ export async function deleteNoteAction(formData: FormData): Promise<void> {
 }
 
 export async function deleteFactAction(formData: FormData): Promise<void> {
-  await requireSession();
+  await requireUserId();
   const factId = String(formData.get("factId") ?? "");
   const contactId = String(formData.get("contactId") ?? "");
   if (!factId) return;
@@ -73,7 +74,7 @@ export async function deleteFactAction(formData: FormData): Promise<void> {
 }
 
 export async function updateFactAction(formData: FormData): Promise<void> {
-  await requireSession();
+  await requireUserId();
   const factId = String(formData.get("factId") ?? "");
   const contactId = String(formData.get("contactId") ?? "");
   const text = String(formData.get("text") ?? "").trim();
@@ -84,7 +85,7 @@ export async function updateFactAction(formData: FormData): Promise<void> {
 }
 
 export async function completeFollowUpAction(formData: FormData): Promise<void> {
-  await requireSession();
+  await requireUserId();
   const followUpId = String(formData.get("followUpId") ?? "");
   const contactId = String(formData.get("contactId") ?? "");
   if (!followUpId) return;

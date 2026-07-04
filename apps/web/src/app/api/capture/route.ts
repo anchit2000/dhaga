@@ -1,4 +1,4 @@
-import { hasSession } from "@/lib/auth/guard";
+import { requireUserIdFromRequest } from "@/lib/auth/guard";
 import { extractContactFromText } from "@/lib/ai/contact-extraction";
 import { extractAndApplyNote } from "@/lib/ai/note-extraction";
 import { scanCardImage } from "@/lib/ai/card-scan";
@@ -16,7 +16,10 @@ import { CARD_IMAGE_TYPES } from "@/utils/constants/app";
  * step — the extension shows the result and links to the contact for edits.
  */
 export async function POST(request: Request): Promise<Response> {
-  if (!(await hasSession())) {
+  let userId: string;
+  try {
+    userId = await requireUserIdFromRequest(request);
+  } catch {
     return Response.json({ error: "Not signed in to Dhaga." }, { status: 401 });
   }
   let raw = "";
@@ -54,7 +57,7 @@ export async function POST(request: Request): Promise<Response> {
     if (imageBase64.length > 8_000_000) {
       return Response.json({ error: "Image too large (max ~6 MB)." }, { status: 400 });
     }
-    const scan = await scanCardImage({ mediaType, dataBase64: imageBase64 });
+    const scan = await scanCardImage(userId, { mediaType, dataBase64: imageBase64 });
     if (scan.error || !scan.contact) {
       return Response.json({ error: scan.error ?? "Scan failed." }, { status: 422 });
     }
@@ -94,6 +97,7 @@ export async function POST(request: Request): Promise<Response> {
     const noteId = await addNote(contactId, "capture_source", receiptText);
     await upsertEmbedding("note", noteId, contactId, receiptText);
     const outcome = await extractAndApplyNote(
+      userId,
       contactId,
       noteId,
       detail.contact.name,
@@ -109,7 +113,7 @@ export async function POST(request: Request): Promise<Response> {
     });
   }
 
-  const extraction = await extractContactFromText(raw);
+  const extraction = await extractContactFromText(userId, raw);
   if (!extraction.contact.name.trim()) {
     return Response.json(
       { error: "Couldn't find a person in that text — select their details and retry." },

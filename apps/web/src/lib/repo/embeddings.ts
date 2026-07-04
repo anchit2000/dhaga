@@ -1,5 +1,5 @@
 import { and, cosineDistance, desc, eq, gt, inArray, isNull, notInArray, sql } from "drizzle-orm";
-import { getDb } from "@/lib/db";
+import { getDb } from "@/lib/db/request-scope";
 import { embeddings, facts, notes } from "@/lib/db/schema";
 import { embedPassages, embedQuery } from "@/lib/ai/embedder";
 

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireSessionPage } from "@/lib/auth/guard";
+import { requireUserIdForPage } from "@/lib/auth/guard";
 import { listAllOpenFollowUps, listDueReachOuts } from "@/lib/repo/reminders";
 import { completeFollowUpAction } from "@/lib/actions/notes";
 import { markReachedOutAction } from "@/lib/actions/reminders";
@@ -14,7 +14,7 @@ function daysAgo(date: Date): string {
 }
 
 export default async function HomePage() {
-  await requireSessionPage();
+  await requireUserIdForPage();
   const [dueReachOuts, openFollowUps] = await Promise.all([
     listDueReachOuts(),
     listAllOpenFollowUps(),

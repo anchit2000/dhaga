@@ -24,7 +24,7 @@ export type ContactSource = (typeof CONTACT_SOURCES)[number];
 export const CARD_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 export type CardImageType = (typeof CARD_IMAGE_TYPES)[number];
 
-/** Keep-in-touch cadence choices (ideas.md #2). */
+/** Keep-in-touch cadence choices (docs/ideas.md #2). */
 export const CADENCE_OPTIONS = [
   { label: "Monthly", days: 30 },
   { label: "Quarterly", days: 90 },

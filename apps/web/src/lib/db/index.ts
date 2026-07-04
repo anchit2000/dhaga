@@ -9,7 +9,10 @@ import { companies, contacts } from "./schema/contacts";
 import { sessionContacts, sessions } from "./schema/sessions";
 import { edges, facts, followUps, notes } from "./schema/notes";
 import { embeddings } from "./schema/embeddings";
-import { aiActions, waitlist } from "./schema/meta";
+import { aiActions, settings } from "./schema/meta";
+import { cardImages } from "./schema/card-images";
+import { authAccount, authSession, authUser, authVerification } from "./schema/auth";
+import { apiKey } from "./schema/api-key";
 
 const schema = {
   companies,
@@ -22,7 +25,13 @@ const schema = {
   followUps,
   embeddings,
   aiActions,
-  waitlist,
+  settings,
+  cardImages,
+  user: authUser,
+  session: authSession,
+  account: authAccount,
+  verification: authVerification,
+  apikey: apiKey,
 };
 
 /** Driver-agnostic handle: hosted Postgres and embedded PGlite both satisfy it. */

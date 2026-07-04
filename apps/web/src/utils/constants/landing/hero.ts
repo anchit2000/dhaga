@@ -11,7 +11,7 @@ export const HERO = {
   eyebrow: "Open source · Private by design",
   headline: "Every thread, remembered.",
   sub: "Dhaga (धागा) — thread. Scan a card, leave a voice note, and every person you meet becomes part of a private knowledge graph you can search in plain language. With receipts.",
-  primaryCta: "Join the waitlist",
+  primaryCta: "Request access",
   secondaryCta: "Read the code",
 } as const;
 

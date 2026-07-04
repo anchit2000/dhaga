@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireSessionPage } from "@/lib/auth/guard";
+import { requireUserIdForPage } from "@/lib/auth/guard";
 import { getSession, listSessionContacts, listSessions } from "@/lib/repo/sessions";
 import { EmailDigestButton } from "@/components/app/EmailDigestButton";
 import { EmptyState } from "@/components/app/EmptyState";
@@ -13,7 +13,7 @@ export default async function SessionPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireSessionPage();
+  await requireUserIdForPage();
   const { id } = await params;
   const session = await getSession(id);
   if (!session) notFound();

@@ -1,5 +1,5 @@
 import { and, desc, eq, isNotNull, sql } from "drizzle-orm";
-import { getDb } from "@/lib/db";
+import { getDb } from "@/lib/db/request-scope";
 import { companies, contacts, followUps } from "@/lib/db/schema";
 
 /** Idea #2: "when should I remind you to reach out" — cadence per contact. */

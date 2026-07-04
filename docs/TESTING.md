@@ -14,8 +14,8 @@ npm run dev        # serves http://localhost:3000
 `apps/web/.env.local` (gitignored) must exist:
 
 ```
-DHAGA_PASSWORD=dhaga-dev            # any password you like
-DHAGA_SESSION_SECRET=<long random>  # cookie signing secret
+BETTER_AUTH_SECRET=<long random>    # auth cookie/session signing secret
+BETTER_AUTH_URL=http://localhost:3000
 ANTHROPIC_API_KEY=sk-ant-...        # OPTIONAL — enables the AI paths
 ```
 
@@ -38,8 +38,8 @@ Two test modes:
 ## 2. Auth
 
 - [ ] `http://localhost:3000/app/people` while signed out → redirected to `/login`.
-- [ ] Wrong password → "Wrong password." stays on the form.
-- [ ] Correct password → lands on **People**. Refresh — still signed in.
+- [ ] `/signup` creates an account and lands on **People**. Refresh — still signed in.
+- [ ] Wrong password on `/login` → error stays on the form.
 - [ ] `curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/export/csv`
       → `401` (API routes are gated too).
 - [ ] Sign out (top right) → back to `/login`, and `/app/people` redirects again.

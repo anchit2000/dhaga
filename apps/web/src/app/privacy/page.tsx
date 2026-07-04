@@ -24,8 +24,8 @@ const SECTIONS: { heading: string; body: string }[] = [
     body: "Export your full graph as CSV, vCard, or JSON at any time. No lock-in is a feature.",
   },
   {
-    heading: "Waitlist emails",
-    body: "If you join the waitlist we store your email address to send the invite, and nothing else. One email confirms the signup; unsubscribe by replying.",
+    heading: "Access request emails",
+    body: "If you request access we store your email address to send the invite once approved, and nothing else. One email confirms the request; unsubscribe by replying.",
   },
 ];
 

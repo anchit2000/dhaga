@@ -1,0 +1,29 @@
+{
+  "name": "@dhaga/ee",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Dhaga Cloud only: multi-tenant RLS, early access, admin panel, Stripe billing. Source-available, noncompete (PolyForm Shield 1.0.0) — see LICENSE. Not part of the AGPL core.",
+  "license": "PolyForm-Shield-1.0.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./access-requests": "./src/access-requests/index.ts",
+    "./admin": "./src/admin/index.ts",
+    "./billing": "./src/billing/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.2",
+    "pg": "^8.22.0",
+    "stripe": "^19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/pg": "^8.20.0",
+    "typescript": "^5"
+  }
+}

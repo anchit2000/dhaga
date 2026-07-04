@@ -27,7 +27,7 @@ export function StickyCta() {
           for the first 500 seats. Then $99.
         </p>
         <div className="flex items-center gap-3">
-          <Button render={<Link href="#waitlist" />} size="sm">
+          <Button render={<Link href="#request-access" />} size="sm">
             Reserve a seat
           </Button>
           <button

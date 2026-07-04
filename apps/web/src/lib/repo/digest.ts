@@ -1,5 +1,5 @@
 import { and, eq, inArray, isNull } from "drizzle-orm";
-import { getDb } from "@/lib/db";
+import { getDb } from "@/lib/db/request-scope";
 import { companies, contacts, facts, followUps, sessionContacts } from "@/lib/db/schema";
 
 export interface DigestPerson {

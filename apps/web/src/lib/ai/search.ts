@@ -51,12 +51,15 @@ async function planQuery(query: string): Promise<SearchQueryPlan | null> {
  * (Sonnet). Stage 1 failing degrades to unfiltered retrieval, never to
  * a broken search.
  */
-export async function answerSearchQuery(query: string): Promise<AiAnswerResult> {
+export async function answerSearchQuery(
+  userId: string,
+  query: string,
+): Promise<AiAnswerResult> {
   if (!hasLLM()) {
     return { notice: "Set ANTHROPIC_API_KEY to get AI answers over your graph." };
   }
   try {
-    await assertAiBudget();
+    await assertAiBudget(userId);
   } catch (error) {
     return {
       notice: error instanceof AiBudgetError ? error.message : "The AI call failed.",

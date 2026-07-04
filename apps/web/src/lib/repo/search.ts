@@ -1,5 +1,5 @@
 import { and, eq, ilike, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
-import { getDb } from "@/lib/db";
+import { getDb } from "@/lib/db/request-scope";
 import { companies, contacts, facts, notes } from "@/lib/db/schema";
 import { semanticSearch } from "./embeddings";
 

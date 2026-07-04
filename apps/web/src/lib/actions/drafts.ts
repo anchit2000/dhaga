@@ -1,6 +1,6 @@
 "use server";
 
-import { requireSession } from "@/lib/auth/guard";
+import { requireUserId } from "@/lib/auth/guard";
 import { generateFollowUpDraft } from "@/lib/ai/draft";
 
 export interface DraftState {
@@ -12,8 +12,8 @@ export async function draftFollowUpAction(
   _previous: DraftState,
   formData: FormData,
 ): Promise<DraftState> {
-  await requireSession();
+  const userId = await requireUserId();
   const contactId = String(formData.get("contactId") ?? "");
   if (!contactId) return { error: "Missing contact." };
-  return generateFollowUpDraft(contactId);
+  return generateFollowUpDraft(userId, contactId);
 }

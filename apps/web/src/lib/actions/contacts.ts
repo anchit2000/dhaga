@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { requireSession } from "@/lib/auth/guard";
+import { requireUserId } from "@/lib/auth/guard";
 import { createContact, forgetContact } from "@/lib/repo/contacts";
 import { addNote } from "@/lib/repo/notes";
 import { upsertEmbedding } from "@/lib/repo/embeddings";
@@ -31,7 +31,7 @@ export async function createContactAction(
   _previous: ContactFormState,
   formData: FormData,
 ): Promise<ContactFormState> {
-  await requireSession();
+  await requireUserId();
   const name = field(formData, "name");
   if (!name) return { error: "Name is required." };
 
@@ -77,7 +77,7 @@ export async function createContactAction(
 
 /** Full cascade delete — the UI confirms before submitting. */
 export async function forgetContactAction(formData: FormData): Promise<void> {
-  await requireSession();
+  await requireUserId();
   const contactId = String(formData.get("contactId") ?? "");
   if (!contactId) return;
   await forgetContact(contactId);

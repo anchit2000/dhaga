@@ -21,7 +21,10 @@ export interface EnrichResult {
  * standard extraction so facts land with that note as their receipt.
  * Deleting the note removes everything this produced.
  */
-export async function enrichContact(contactId: string): Promise<EnrichResult> {
+export async function enrichContact(
+  userId: string,
+  contactId: string,
+): Promise<EnrichResult> {
   if (!hasLLM()) {
     return { error: "Set ANTHROPIC_API_KEY to enable enrichment." };
   }
@@ -29,7 +32,7 @@ export async function enrichContact(contactId: string): Promise<EnrichResult> {
   if (!detail) return { error: "Contact not found." };
 
   try {
-    await assertAiBudget();
+    await assertAiBudget(userId);
     const result = await getLLMClient().complete({
       system: ENRICHMENT_SYSTEM,
       prompt: buildEnrichmentPrompt({
@@ -49,6 +52,7 @@ export async function enrichContact(contactId: string): Promise<EnrichResult> {
     const noteId = await addNote(contactId, "enrichment", text);
     await upsertEmbedding("note", noteId, contactId, text);
     const outcome = await extractAndApplyNote(
+      userId,
       contactId,
       noteId,
       detail.contact.name,

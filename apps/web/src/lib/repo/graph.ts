@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { eq, ilike } from "drizzle-orm";
-import { getDb } from "@/lib/db";
+import { getDb } from "@/lib/db/request-scope";
 import { contacts, edges, facts, followUps } from "@/lib/db/schema";
 import { findOrCreateCompany } from "./contacts";
 import { upsertEmbedding } from "./embeddings";

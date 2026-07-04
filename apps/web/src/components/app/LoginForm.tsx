@@ -1,16 +1,51 @@
 "use client";
 
-import { useActionState } from "react";
-import { login, type LoginState } from "@/lib/auth/actions";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import { authClient } from "@/lib/auth/client";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { SubmitButton } from "./SubmitButton";
 
 export function LoginForm() {
-  const [state, formAction] = useActionState<LoginState, FormData>(login, {});
+  const router = useRouter();
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | undefined>();
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    setPending(true);
+    setError(undefined);
+    const { error: signInError } = await authClient.signIn.email({
+      email: String(formData.get("email") ?? ""),
+      password: String(formData.get("password") ?? ""),
+    });
+    if (signInError) {
+      setError(signInError.message ?? "Wrong email or password.");
+      setPending(false);
+      return;
+    }
+    router.push("/app/people");
+  }
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="email" className="text-fog">
+          Email
+        </Label>
+        <Input
+          id="email"
+          name="email"
+          type="email"
+          required
+          autoFocus
+          autoComplete="email"
+          className="h-11"
+        />
+      </div>
       <div className="space-y-2">
         <Label htmlFor="password" className="text-fog">
           Password
@@ -20,17 +55,19 @@ export function LoginForm() {
           name="password"
           type="password"
           required
-          autoFocus
           autoComplete="current-password"
           className="h-11"
         />
       </div>
-      {state.error ? (
+      {error ? (
         <p className="text-sm text-red-400" role="alert">
-          {state.error}
+          {error}
         </p>
       ) : null}
-      <SubmitButton className="w-full">Enter</SubmitButton>
+      <Button type="submit" disabled={pending} className="w-full">
+        {pending ? <Loader2 className="size-4 animate-spin" /> : null}
+        Sign in
+      </Button>
     </form>
   );
 }

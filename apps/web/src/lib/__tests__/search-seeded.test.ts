@@ -38,7 +38,7 @@ let priya: string;
  * M6 acceptance: seeded test set — the correct contact ranks in the top 3.
  * Runs the keyword half of hybrid retrieval (embeddings are off in tests so
  * CI never downloads the model); semantic ranking is covered by the
- * standalone E2E check documented in TESTING.md §7.
+ * standalone E2E check documented in docs/TESTING.md §7.
  */
 describe("hybrid search over a seeded graph (M6 acceptance)", () => {
   beforeAll(async () => {

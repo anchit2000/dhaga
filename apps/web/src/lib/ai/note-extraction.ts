@@ -21,6 +21,7 @@ export interface NoteExtractionOutcome {
  * never loses the user's words.
  */
 export async function extractAndApplyNote(
+  userId: string,
   contactId: string,
   noteId: string,
   contactName: string,
@@ -36,7 +37,7 @@ export async function extractAndApplyNote(
     };
   }
   try {
-    await assertAiBudget();
+    await assertAiBudget(userId);
     const result = await getLLMClient().extract({
       schema: noteExtractionSchema,
       system: NOTE_EXTRACTION_SYSTEM,

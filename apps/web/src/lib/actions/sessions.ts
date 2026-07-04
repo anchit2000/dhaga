@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireSession } from "@/lib/auth/guard";
+import { requireUserId } from "@/lib/auth/guard";
 import { createSession, mergeSessions, renameSession, getSession } from "@/lib/repo/sessions";
 import { sessionDigestData } from "@/lib/repo/digest";
 import { sessionDigestHtml } from "@/lib/email/digest";
@@ -16,7 +16,7 @@ export async function createSessionAction(
   _previous: SessionFormState,
   formData: FormData,
 ): Promise<SessionFormState> {
-  await requireSession();
+  await requireUserId();
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return { error: "Give the session a name." };
   const id = await createSession(name);
@@ -24,7 +24,7 @@ export async function createSessionAction(
 }
 
 export async function renameSessionAction(formData: FormData): Promise<void> {
-  await requireSession();
+  await requireUserId();
   const sessionId = String(formData.get("sessionId") ?? "");
   const name = String(formData.get("name") ?? "").trim();
   if (!sessionId || !name) return;
@@ -42,7 +42,7 @@ export async function emailDigestAction(
   _previous: DigestState,
   formData: FormData,
 ): Promise<DigestState> {
-  await requireSession();
+  await requireUserId();
   const sessionId = String(formData.get("sessionId") ?? "");
   if (!sessionId) return { error: "Missing session." };
   if (!emailEnabled()) {
@@ -66,7 +66,7 @@ export async function emailDigestAction(
 }
 
 export async function mergeSessionAction(formData: FormData): Promise<void> {
-  await requireSession();
+  await requireUserId();
   const fromId = String(formData.get("fromId") ?? "");
   const intoId = String(formData.get("intoId") ?? "");
   if (!fromId || !intoId || fromId === intoId) return;

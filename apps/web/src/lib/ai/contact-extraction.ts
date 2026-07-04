@@ -21,6 +21,7 @@ export interface ContactExtractionResult {
  * which path ran. Never logs the captured text (contact PII).
  */
 export async function extractContactFromText(
+  userId: string,
   rawText: string,
 ): Promise<ContactExtractionResult> {
   if (!hasLLM()) {
@@ -32,7 +33,7 @@ export async function extractContactFromText(
     };
   }
   try {
-    await assertAiBudget();
+    await assertAiBudget(userId);
     const result = await getLLMClient().extract({
       schema: extractedContactSchema,
       system: CONTACT_PARSE_SYSTEM,

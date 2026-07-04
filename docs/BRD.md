@@ -131,17 +131,17 @@ The MVP must prove one loop end-to-end:
 
 | Phase | Feature cluster | Contents |
 |---|---|---|
-| **v1.1 — Capture everywhere** | New surfaces + enrichment | **Web app quick-add** (paste email/article/LinkedIn URL → extract → link to contact); **browser extension** (one-click add from LinkedIn/articles, "save this article to Sarah"); **badge scanning** (table stakes per competitor analysis); user-triggered public-web enrichment; email-forwarding ingestion |
-| **v1.2 — Proactive intelligence** | Alerts & digests | Job-change detection, relationship-decay alerts ("no contact in 8 months"), post-event digest email, pre-meeting briefs via calendar integration |
+| **v1.1 — Capture everywhere** | New surfaces + enrichment | **Web app quick-add** (paste email/article/LinkedIn URL → extract → link to contact); **browser extension** (one-click add from LinkedIn/articles, "save this article to Sarah"); **LinkedIn Connections CSV import** (user's own LinkedIn data export — ToS-safe bulk import, see §6.7); **badge scanning** (table stakes per competitor analysis); user-triggered public-web enrichment; email-forwarding ingestion |
+| **v1.2 — Proactive intelligence** | Alerts & digests | Keep-in-touch cadence reminders (recurring, dismissed only on "reached out"), job-change detection (LinkedIn-export re-import diff + watchlist hits, see §6.7), **opt-in news watchlist** (starred contacts, nightly Batch web search, per-tier cap), relationship-decay alerts ("no contact in 8 months"), post-event digest email, pre-meeting briefs via calendar integration |
 | **v1.3 — Graph power** | Deep graph | Warm-path finding ("who can intro me to Airbus?"), second-degree suggestions, sector/tag ontology, timeline view of the relationship, watch/widgets |
-| **v1.4 — Ecosystem** | Integrations | Salesforce/HubSpot/Notion sync, Zapier/webhooks, LinkedIn QR formats, WhatsApp share-to-capture |
+| **v1.4 — Ecosystem** | Integrations | Salesforce/HubSpot/Notion sync, Zapier/webhooks, LinkedIn QR formats, WhatsApp share-to-capture, **email/calendar interaction sync** (Gmail/Outlook OAuth, opt-in — the one ToS-clean ambient-capture channel, see §6.7) |
 | **v2.0 — Teams** | Shared graph | Org workspace, contact-level sharing controls, "who knows whom" across the team, SSO; this is the primary revenue engine |
 
 ### 5.3 MVP vs Full Product — at a glance
 
 | Dimension | MVP | Full Product |
 |---|---|---|
-| Capture | Card scan, vCard QR, voice notes (mobile) | + badges, web quick-add (paste email/article/URL), browser extension one-click add, email forwarding, LinkedIn QR, call-log prompts |
+| Capture | Card scan, vCard QR, voice notes (mobile) | + badges, web quick-add (paste email/article/URL), browser extension one-click add, LinkedIn Connections CSV import, email forwarding, LinkedIn QR, call-log prompts |
 | Intelligence | Extraction + NL search + follow-up drafts | + enrichment, change detection, decay alerts, pre-meeting briefs, warm paths |
 | Graph | Per-user, on-device, basic edges | Rich ontology, article-to-contact links, team-shared graph, cross-user dedup |
 | Platform | iOS + Android (one RN codebase) | + web app + browser extension + watch/widgets |
@@ -201,6 +201,29 @@ Single LLM call: contact + session context + extracted facts + user's writing-st
 - **Change detection:** nightly **Batch API** job (50% cost discount, latency-insensitive) re-checks key contacts' public signals; diffs become alerts ("Marcus is now VP at …").
 - **Pre-meeting briefs:** calendar webhook → assemble contact dossier from graph → one LLM call → push notification 30 min before the meeting.
 - **Warm paths:** pure graph traversal (BFS over `works_at`/`used_to_work_at`/`knows` edges) — no AI cost.
+
+### 6.7 Source legality — the Mesh-style auto-sync we can and can't do (researched 2026-07)
+
+Mesh/Clay-class competitors claim continuous auto-recording from LinkedIn and Twitter. That runs on
+user-session piggybacking or scraping: LinkedIn's API is partner-gated, closed to CRM/enrichment
+tools (the Connections API died in 2015; Proxycurl was shut down by LinkedIn legal in 2025), and
+X's API has no free read tier (pay-per-use $0.005/post read, Enterprise ~$42K/mo) — uneconomical
+at our price point. Our channels, all user-initiated or opt-in:
+
+| Signal | Legal channel | Phase |
+|---|---|---|
+| LinkedIn profile capture | Extension reads the DOM the user is viewing — user-initiated, single profile, no automation (folkX pattern) | v1.1 |
+| LinkedIn network bulk import | User's own LinkedIn data export — Connections CSV (name, company, position, connected date, sometimes email) | v1.1 |
+| Job-change detection | Diff of re-imported Connections CSV + news-watchlist hits; email-signature changes once email sync exists. Days-to-weeks latency, partial coverage — accepted trade-off | v1.2 |
+| "In the news" alerts | Opt-in per-contact watchlist (user stars contacts), nightly/weekly Batch API web search, capped per tier | v1.2 |
+| X/Twitter capture | Extension capture of the viewed profile + user-triggered enrichment (web search reaches public X presence); no API monitoring | v1.1 |
+| Ambient auto-capture | Email/calendar OAuth (Gmail/Outlook) — the only ToS-clean *continuous* channel; explicit opt-in | v1.4 |
+| Relationship strength | Computed from the user's own graph (interaction recency/frequency, notes, sessions) — no external data at all | v1.2 |
+
+Hard lines: **no scraping, no session piggybacking, no bulk lookup of people who never consented,
+no SMS/call-log ingestion** (blocked by iOS entirely and by Play Store policy anyway). This is the
+privacy moat stated as engineering policy — the marketing claim is "one click, one file, nothing
+scraped behind your back," not "automatic."
 
 ---
 
@@ -286,8 +309,17 @@ The graph is `edges`; the audit trail is `source_note_id` on facts/edges. Deleti
 | Component | License | Why |
 |---|---|---|
 | Mobile app, sync server, graph engine, extraction prompts/schemas | **AGPL-3.0** | Fully usable self-hosted; AGPL prevents a hosted competitor from free-riding |
-| Cloud-only modules: team graph, enrichment pipeline, billing, admin | **Proprietary (ee/ folder)** | The revenue moat; standard open-core separation |
+| Cloud-only modules: multi-tenant isolation, early access, billing, admin | **Source-available, noncompete (`packages/ee`, PolyForm Shield 1.0.0)** | The revenue moat; standard open-core separation |
 | Schemas, prompt library, eval sets | **MIT** | Maximize community contribution where contribution helps most |
+
+**Implementation status (2026-07):** this split is built, not just planned.
+Real accounts, capture, notes, graph, search, and export are AGPL core and
+run fully self-hosted with zero `packages/ee` dependency (see
+[SELF_HOSTING.md](SELF_HOSTING.md)). Multi-tenancy (Postgres RLS), the
+early-access gate, the admin panel, and Stripe billing live in
+`packages/ee`, gated behind a single `DHAGA_HOSTED_MODE` flag that self-hosted
+instances simply never set. Team graph/SSO (§5.2 v2.0) will land in the same
+module once built.
 
 **Why open source helps rather than hurts here:**
 1. **Trust is the product.** A private-network app asking for your contacts, location, and voice notes needs verifiable privacy claims. "Read the code, run it yourself" is the strongest possible answer.
@@ -356,8 +388,8 @@ Per-card pipeline (OCR parse ≈ 800 in / 200 out tokens on Haiku): **≈ $0.002
 
 1. Lifetime-tier pricing: $79 vs $99 vs $129? Needs willingness-to-pay testing against BCR Pro's AUD $99.99 anchor and Clay/Mesh's ~$10/mo.
 2. Sync build-vs-adopt: PowerSync/ElectricSQL licensing fit with AGPL?
-3. Enrichment data sources: which are ToS-safe? LinkedIn scraping is off the table (unlike the Apollo/Seamless camp); rely on user-triggered web search + public company registries — is that enough enrichment quality to compete with Popl's claimed 90%?
-4. Browser extension and LinkedIn: one-click capture from a LinkedIn profile page reads the DOM the user is viewing (extension pattern used by folkX/Add to CRM). Confirm legal posture: user-initiated, single-profile, no automation — distinct from bulk scraping.
+3. ~~Enrichment data sources: which are ToS-safe?~~ **Resolved 2026-07 — see §6.7.** LinkedIn API is partner-gated and closed to CRMs; X API reads are pay-per-use and uneconomical. Channels: user-triggered web search, LinkedIn Connections CSV import + re-import diff, opt-in news watchlist, extension DOM capture. Remaining sub-question: is this enrichment quality enough vs Popl's claimed 90%?
+4. ~~Browser extension and LinkedIn: confirm legal posture.~~ **Resolved 2026-07 — see §6.7.** User-initiated, single-profile DOM read of a page the user is viewing (folkX/Add to CRM pattern) is the posture; shipped in the extension. No automation, no bulk collection.
 5. Brand/name: "NetworkPro" is a working title; trademark search needed.
 
 ---

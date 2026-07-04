@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireSession } from "@/lib/auth/guard";
+import { requireUserId } from "@/lib/auth/guard";
 import { markReachedOut, setCadence } from "@/lib/repo/reminders";
 
 function revalidate(contactId: string): void {
@@ -10,7 +10,7 @@ function revalidate(contactId: string): void {
 }
 
 export async function setCadenceAction(formData: FormData): Promise<void> {
-  await requireSession();
+  await requireUserId();
   const contactId = String(formData.get("contactId") ?? "");
   if (!contactId) return;
   const raw = String(formData.get("days") ?? "");
@@ -20,7 +20,7 @@ export async function setCadenceAction(formData: FormData): Promise<void> {
 }
 
 export async function markReachedOutAction(formData: FormData): Promise<void> {
-  await requireSession();
+  await requireUserId();
   const contactId = String(formData.get("contactId") ?? "");
   if (!contactId) return;
   await markReachedOut(contactId);

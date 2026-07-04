@@ -1,5 +1,5 @@
 /**
- * Telegram bot support (ideas.md #6 — chat-interface capture/query).
+ * Telegram bot support (docs/ideas.md #6 — chat-interface capture/query).
  * Owner-only: messages from any other chat are ignored. Server-only;
  * never log message contents (they're contact PII).
  */

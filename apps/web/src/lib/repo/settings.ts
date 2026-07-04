@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { getDb } from "@/lib/db";
+import { getDb } from "@/lib/db/request-scope";
 import { settings } from "@/lib/db/schema";
 
 export const STORE_CARD_PHOTOS_KEY = "store_card_photos";

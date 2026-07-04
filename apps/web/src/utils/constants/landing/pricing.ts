@@ -48,17 +48,17 @@ export const FAQ_ITEMS: FaqItem[] = [
   {
     question: "Is my data private?",
     answer:
-      "Yes — structurally, not just contractually. OCR, transcription, and storage run on your device. Sync is end-to-end encrypted, so our servers can't read your graph. And because the code is open source, you don't have to take our word for any of this.",
+      "Cloud AI only ever runs when you trigger it — no background scraping, no silent enrichment, and every AI-derived fact keeps a receipt back to the note it came from so you can verify or delete it. On our hosted tier, your account's data is isolated by Postgres row-level security; if you want the strongest guarantee, self-host the whole stack yourself. And because the code is open source, you don't have to take our word for any of this.",
   },
   {
     question: "What happens if Dhaga shuts down?",
     answer:
-      "You lose nothing. The core is AGPL-licensed and self-hostable with one docker compose command, and your data exports as a single SQLite file at any time. We designed our own exit to be painless — that's the point of building in the open.",
+      "You lose nothing. The core is AGPL-licensed and self-hostable on your own server today (packaged install coming), and your data exports as CSV, vCard, or a full JSON dump at any time. We designed our own exit to be painless — that's the point of building in the open.",
   },
   {
     question: "iPhone and Android?",
     answer:
-      "Both, from one codebase, at launch. A web app for quick-adds (paste an email or article, link it to a contact) and a browser extension for one-click capture from LinkedIn follow shortly after.",
+      "A native mobile app (one React Native codebase for both) is on the roadmap, not out yet. Today, capture happens through the web app — quick-add by pasting an email or article, card/badge photo scan, voice notes — and a browser extension for one-click capture from any page.",
   },
   {
     question: "Do the people I scan get contacted or scraped?",

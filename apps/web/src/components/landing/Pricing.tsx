@@ -57,7 +57,7 @@ export function Pricing() {
               ))}
             </ul>
             <Button
-              render={<Link href="#waitlist" />}
+              render={<Link href="#request-access" />}
               variant={plan.highlight ? "default" : "outline"}
               className="mt-7"
             >

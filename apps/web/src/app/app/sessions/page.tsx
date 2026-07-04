@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireSessionPage } from "@/lib/auth/guard";
+import { requireUserIdForPage } from "@/lib/auth/guard";
 import { listSessions } from "@/lib/repo/sessions";
 import { CreateSessionForm } from "@/components/app/CreateSessionForm";
 import { EmptyState } from "@/components/app/EmptyState";
@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/app/EmptyState";
 export const metadata = { title: "Sessions — Dhaga" };
 
 export default async function SessionsPage() {
-  await requireSessionPage();
+  await requireUserIdForPage();
   const sessions = await listSessions();
 
   return (

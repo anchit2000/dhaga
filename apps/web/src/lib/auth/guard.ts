@@ -1,29 +1,43 @@
-import { cookies, headers } from "next/headers";
+import { cache } from "react";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { verifySessionToken } from "./session";
-import { SESSION_COOKIE } from "@/utils/constants/app";
+import { getAuth } from "./config";
 
-/** Non-browser clients (future mobile app, scripts) authenticate with
- *  `Authorization: Bearer $DHAGA_API_TOKEN` instead of the cookie. */
-async function hasValidBearerToken(): Promise<boolean> {
-  const token = process.env.DHAGA_API_TOKEN;
-  if (!token) return false;
-  const header = (await headers()).get("authorization");
-  return header === `Bearer ${token}`;
-}
+/** Memoized per-request so layout + page both hitting this cost one lookup. */
+export const getCurrentUser = cache(async () => {
+  const auth = await getAuth();
+  const session = await auth.api.getSession({ headers: await headers() });
+  return session?.user ?? null;
+});
 
-export async function hasSession(): Promise<boolean> {
-  const store = await cookies();
-  if (verifySessionToken(store.get(SESSION_COOKIE)?.value)) return true;
-  return hasValidBearerToken();
+/** For server actions: hard-fail without a session. */
+export async function requireUserId(): Promise<string> {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Unauthorized");
+  return user.id;
 }
 
 /** For pages: bounce unauthenticated visitors to /login. */
-export async function requireSessionPage(): Promise<void> {
-  if (!(await hasSession())) redirect("/login");
+export async function requireUserIdForPage(): Promise<string> {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+  return user.id;
 }
 
-/** For server actions and API routes: hard-fail without a session. */
-export async function requireSession(): Promise<void> {
-  if (!(await hasSession())) throw new Error("Unauthorized");
+/**
+ * For API routes reachable by non-browser clients: cookie session first,
+ * falling back to a per-user `x-api-key` header (replaces the old single
+ * shared DHAGA_API_TOKEN — see the apiKey plugin in ./config.ts).
+ */
+export async function requireUserIdFromRequest(request: Request): Promise<string> {
+  const auth = await getAuth();
+  const session = await auth.api.getSession({ headers: request.headers });
+  if (session?.user) return session.user.id;
+
+  const key = request.headers.get("x-api-key");
+  if (key) {
+    const result = await auth.api.verifyApiKey({ body: { key } });
+    if (result.valid && result.key) return result.key.referenceId;
+  }
+  throw new Error("Unauthorized");
 }

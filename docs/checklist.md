@@ -37,7 +37,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 
 ## 2. Web app shell (v1.1 surface, built first)
 
-- [x] Auth: password login (`DHAGA_PASSWORD`), signed httpOnly session cookie
+- [ ] Auth: real accounts (better-auth email/password), signed httpOnly session cookie — typecheck/lint/build/test all pass; manual browser click-through + push still pending
 - [x] Every `/app` page + server action validates the session (guard helpers)
 - [x] App layout: nav (People / Sessions / Search / Quick-add), mobile-first at 375px
 - [x] Empty states + error states; submit buttons have loading spinners
@@ -75,6 +75,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] People list with filter + contact detail page
 - [x] Company auto-link: extracted company name → find-or-create `companies` row
 - [x] User-triggered enrichment: web search → cited enrichment note → receipted facts
+- [ ] LinkedIn Connections CSV import — user's own LinkedIn data export → bulk contacts, ToS-safe (BRD §6.7) (v1.1)
 - [x] Waitlist signups get a confirmation email (Resend)
 
 ## 5. Sessions / auto-grouping (M2)
@@ -135,7 +136,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 ## 12. Mobile app — `apps/mobile` (BRD MVP platform; separate milestone)
 
 - [x] PWA: installable web app (manifest, standalone display, brand icons) — the interim mobile surface
-- [x] API bearer-token auth (`DHAGA_API_TOKEN`) for non-browser clients
+- [ ] Per-user API keys (better-auth `apiKey` plugin) for non-browser clients — replaces `DHAGA_API_TOKEN`; settings UI built, typecheck/lint/build pass, manual verification pending
 - [x] `/api/capture` accepts card images (base64) — ready for the Expo app to call
 
 - [ ] M0 spike: Expo app, camera → Vision/ML Kit OCR → Haiku parse → contact saved
@@ -157,9 +158,11 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 
 ## 14. Proactive intelligence (v1.2)
 
-- [ ] Job-change detection (nightly Batch API job, diffs → alerts)
+- [ ] Job-change detection — legal channels only: LinkedIn CSV re-import diff + watchlist hits, no scraping (BRD §6.7)
+- [ ] Opt-in news watchlist: user stars contacts to watch → nightly/weekly Batch API web search → alerts, capped per tier (BRD §6.7)
 - [x] Keep-in-touch cadence reminders + Home reach-out feed (ideas.md #2)
 - [ ] Automatic relationship-decay detection (nightly job, no cadence needed)
+- [ ] Relationship-strength score from own-graph data (interaction recency/frequency, notes, sessions — no external data)
 - [x] Post-event digest email (user-triggered from the session page, template-based)
 - [x] Pre-meeting brief on demand ("Brief me ✦" on the contact page, graph-only)
 - [ ] Calendar integration → brief pushed 30 min before the meeting
@@ -177,6 +180,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Outbound webhooks (contact.created, followup.created → `DHAGA_WEBHOOK_URL`)
 - [x] Telegram bot: capture + ?questions from chat (ideas.md #6; owner-only, secret-verified)
 - [ ] WhatsApp capture (needs Meta business API), LinkedIn QR format
+- [ ] Email/calendar interaction sync (Gmail/Outlook OAuth, explicit opt-in) — the one ToS-clean ambient-capture channel (BRD §6.7)
 
 ## 17. Teams (v2.0 — revenue engine)
 
@@ -186,8 +190,27 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 
 ## 18. Monetization & launch
 
-- [x] Waitlist API (`/api/waitlist`) wired to real storage; landing form posts to it
-- [ ] Free tier caps live; Pro (lifetime $79 first-500 / $8 mo) checkout
-- [ ] Self-host docs (`docker compose up`)
+- [ ] Access-request API (`/api/access-requests`, `packages/ee`) wired to real storage; landing form posts to it — replaces the old public waitlist, gated behind `DHAGA_HOSTED_MODE`; typecheck/lint/build pass, manual verification pending
+- [ ] Free tier caps live; Pro (lifetime $79 first-500 / $8 mo) checkout — Stripe Checkout + webhook built (§19); real Stripe Product/Price setup + a live test-mode purchase still needed
+- [x] Self-host docs — [SELF_HOSTING.md](SELF_HOSTING.md) (no `packages/ee` needed, no `docker compose` yet)
+- [ ] `docker compose up` — self-host currently means `npm run build && npm run start`, no container image yet
 - [ ] Public roadmap + good-first-issues
 - [ ] Replace randomuser.me landing portraits with licensed photos before paid marketing
+
+## 19. SaaS platform — accounts, multi-tenancy, billing, admin (Dhaga Cloud)
+
+Everything in this section is typecheck/lint/build/vitest-clean (including a
+build with `packages/ee` and its exclusive route folders physically removed,
+confirming the AGPL core doesn't need it) but **not yet manually
+click-tested in a browser or pushed** — the checklist bar for `[x]` needs
+both, so these stay unchecked until that happens.
+
+- [ ] Real accounts (better-auth email/password) replacing the single shared `DHAGA_PASSWORD`; `/login` + `/signup`
+- [ ] Per-user personal access tokens (better-auth `apiKey` plugin) replacing `DHAGA_API_TOKEN`, settings UI to create/revoke
+- [ ] Multi-tenant data isolation via Postgres Row-Level Security, entirely in `packages/ee` — zero query-logic changes in `apps/web/src/lib/repo/*`
+- [ ] Open-core boundary: `packages/ee` (source-available, PolyForm Shield 1.0.0 — see `packages/ee/LICENSE`), self-host runs fully without it (`SELF_HOSTING.md`)
+- [ ] Early access: public request form → admin approve/reject → gated signup (`DHAGA_HOSTED_MODE` only; inert and 404s otherwise)
+- [ ] Admin panel (`/app/admin`): dashboard, access requests, users, subscriptions — 404s for non-admins
+- [ ] First-admin bootstrap via `DHAGA_ADMIN_EMAILS` (see `SELF_HOSTING.md`)
+- [ ] Stripe billing: Checkout (Pro/Lifetime), billing portal, webhook (4 event types), AI-cap bypass for paid users
+- [ ] Billing UI cleanly absent (not broken) when `STRIPE_SECRET_KEY` is unset, even in hosted mode

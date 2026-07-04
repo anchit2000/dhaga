@@ -26,9 +26,9 @@ export function OpenSource() {
         <div className="overflow-x-auto rounded-lg border border-seam bg-ink p-6 font-mono text-sm leading-loose">
           <p className="text-fog/60"># run the whole stack yourself</p>
           <p className="text-paper">git clone {GITHUB_URL.replace("https://", "")}</p>
-          <p className="text-paper">docker compose up</p>
-          <p className="text-[#7fb98a]">✓ postgres + pgvector ready</p>
-          <p className="text-[#7fb98a]">✓ sync server listening on :8080</p>
+          <p className="text-paper">npm install && npm run dev</p>
+          <p className="text-[#7fb98a]">✓ embedded Postgres + pgvector ready</p>
+          <p className="text-[#7fb98a]">✓ app running on :3000</p>
           <p className="text-[#7fb98a]">✓ your network. your hardware. your rules.</p>
         </div>
       </div>

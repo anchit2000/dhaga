@@ -1,5 +1,5 @@
 import { isNotNull, isNull } from "drizzle-orm";
-import { getDb } from "@/lib/db";
+import { getDb } from "@/lib/db/request-scope";
 import { companies, contacts, edges } from "@/lib/db/schema";
 
 export interface GraphViewNode {

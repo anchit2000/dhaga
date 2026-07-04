@@ -1,5 +1,5 @@
 import { eq, ilike, or, sql, type SQL } from "drizzle-orm";
-import { getDb } from "@/lib/db";
+import { getDb } from "@/lib/db/request-scope";
 import { companies, contacts, sessionContacts, sessions } from "@/lib/db/schema";
 import type { SearchQueryPlan } from "@dhaga/core";
 

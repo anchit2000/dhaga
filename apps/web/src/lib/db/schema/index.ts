@@ -16,5 +16,13 @@ export {
   type FollowUpRow,
 } from "./notes";
 export { embeddings, type EmbeddingRow } from "./embeddings";
-export { aiActions, waitlist, settings, type AiActionRow } from "./meta";
+export { aiActions, settings, type AiActionRow } from "./meta";
 export { cardImages, type CardImageRow } from "./card-images";
+export {
+  authUser,
+  authSession,
+  authAccount,
+  authVerification,
+  type AuthUserRow,
+} from "./auth";
+export { apiKey, type ApiKeyRow } from "./api-key";

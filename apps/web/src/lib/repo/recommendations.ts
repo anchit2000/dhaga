@@ -1,5 +1,5 @@
 import { eq, ne } from "drizzle-orm";
-import { getDb } from "@/lib/db";
+import { getDb } from "@/lib/db/request-scope";
 import { contacts } from "@/lib/db/schema";
 import { listContactConnections } from "./connections";
 

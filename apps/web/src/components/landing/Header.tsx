@@ -31,9 +31,17 @@ export function Header() {
             </Link>
           ))}
         </nav>
-        <Button render={<Link href="#waitlist" />} size="sm">
-          Join the waitlist
-        </Button>
+        <div className="flex items-center gap-4">
+          <Link
+            href="/login"
+            className="hidden text-sm text-fog transition-colors hover:text-paper sm:inline"
+          >
+            Sign in
+          </Link>
+          <Button render={<Link href="#request-access" />} size="sm">
+            Request access
+          </Button>
+        </div>
       </div>
     </header>
   );

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireSessionPage } from "@/lib/auth/guard";
+import { requireUserIdForPage } from "@/lib/auth/guard";
 import { listAllTags, listContacts } from "@/lib/repo/contacts";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,7 @@ export default async function PeoplePage({
 }: {
   searchParams: Promise<{ q?: string; tag?: string }>;
 }) {
-  await requireSessionPage();
+  await requireUserIdForPage();
   const { q, tag } = await searchParams;
   const [people, allTags] = await Promise.all([
     listContacts(q, tag),

@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { count, gte } from "drizzle-orm";
-import { getDb } from "@/lib/db";
+import { getDb } from "@/lib/db/request-scope";
 import { aiActions } from "@/lib/db/schema";
+import { getBillingGate } from "@/lib/hosted/gate";
 import { FREE_TIER_AI_ACTIONS_PER_MONTH } from "@/utils/constants/app";
 import type { LLMUsage } from "@dhaga/core";
 
@@ -32,7 +33,8 @@ export class AiBudgetError extends Error {
   }
 }
 
-export async function assertAiBudget(): Promise<void> {
+export async function assertAiBudget(userId: string): Promise<void> {
+  if (await (await getBillingGate()).hasUnlimitedAi(userId)) return;
   const cap = monthlyAiCap();
   if ((await aiActionsUsedThisMonth()) >= cap) throw new AiBudgetError(cap);
 }

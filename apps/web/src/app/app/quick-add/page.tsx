@@ -1,4 +1,4 @@
-import { requireSessionPage } from "@/lib/auth/guard";
+import { requireUserIdForPage } from "@/lib/auth/guard";
 import { aiActionsUsedThisMonth, monthlyAiCap } from "@/lib/ai/metering";
 import { listSessions } from "@/lib/repo/sessions";
 import { shouldStoreCardPhotos } from "@/lib/repo/settings";
@@ -17,7 +17,7 @@ function activeSessionId(
 }
 
 export default async function QuickAddPage() {
-  await requireSessionPage();
+  await requireUserIdForPage();
   const [sessions, used, storeCardPhotos] = await Promise.all([
     listSessions(),
     hasLLM() ? aiActionsUsedThisMonth() : Promise.resolve(0),

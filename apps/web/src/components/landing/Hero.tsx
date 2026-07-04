@@ -22,7 +22,7 @@ export function Hero() {
           {HERO.sub}
         </p>
         <div className="mt-9 flex flex-wrap items-center justify-center gap-4">
-          <Button render={<Link href="#waitlist" />} size="lg">
+          <Button render={<Link href="#request-access" />} size="lg">
             {HERO.primaryCta}
           </Button>
           <Button

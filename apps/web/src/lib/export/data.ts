@@ -1,5 +1,5 @@
 import { eq, isNull } from "drizzle-orm";
-import { getDb } from "@/lib/db";
+import { getDb } from "@/lib/db/request-scope";
 import {
   companies,
   contacts,

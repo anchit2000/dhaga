@@ -16,6 +16,7 @@ export interface DraftResult {
 
 /** M7: one-tap personalized follow-up draft from the contact's context. */
 export async function generateFollowUpDraft(
+  userId: string,
   contactId: string,
 ): Promise<DraftResult> {
   if (!hasLLM()) {
@@ -30,7 +31,7 @@ export async function generateFollowUpDraft(
   ]);
 
   try {
-    await assertAiBudget();
+    await assertAiBudget(userId);
     const result = await getLLMClient().complete({
       system: DRAFT_SYSTEM,
       prompt: buildDraftPrompt({

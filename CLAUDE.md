@@ -72,8 +72,10 @@ Open-core (AGPL core + proprietary cloud tier). Privacy-first, local-first.
 GitHub: https://github.com/anchit2000/dhaga
 
 **Key documents — read before making product decisions:**
-- `BRD.md` — full requirements: MVP scope (M1–M8), roadmap, competitor analysis, cost model, architecture
-- `ideas.md` — raw feature ideas backlog
+- `docs/BRD.md` — full requirements: MVP scope (M1–M8), roadmap, competitor analysis, cost model, architecture
+- `docs/ideas.md` — raw feature ideas backlog
+- `docs/SELF_HOSTING.md` — what self-hosting without `packages/ee` means and how to verify it
+- `docs/checklist.md` — feature-by-feature build status
 - `apps/web/` — Next.js app; the landing page lives at `src/app/page.tsx`
 
 **Brand identity:** warm near-black ground, amber thread glow, Spectral serif
@@ -104,9 +106,11 @@ original (thread metaphor, warm palette, serif display, receipts-first UI).
 ```
 apps/web/          Next.js app: marketing, web quick-add, graph browser, API routes
 apps/mobile/       Expo app (later milestone)
-apps/extension/    Browser extension (v1.1)
+apps/extension/    Browser extension (MV3) — built, v1.1
 packages/core/     Shared: Zod schemas, extraction prompts, API client, types
-site/              Static landing page (pre-app placeholder)
+packages/ee/       Dhaga Cloud only: multi-tenant RLS, billing, admin, early
+                   access — source-available (PolyForm Shield 1.0.0), not
+                   AGPL; self-hosting needs none of it, see docs/SELF_HOSTING.md
 ```
 
 ---

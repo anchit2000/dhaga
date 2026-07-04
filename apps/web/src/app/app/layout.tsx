@@ -1,4 +1,5 @@
-import { requireSessionPage } from "@/lib/auth/guard";
+import { requireUserIdForPage } from "@/lib/auth/guard";
+import { getAdminGate } from "@/lib/hosted/gate";
 import { AppNav } from "@/components/app/AppNav";
 
 export const metadata = { title: "Dhaga" };
@@ -8,11 +9,12 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  await requireSessionPage();
+  const userId = await requireUserIdForPage();
+  const isAdmin = await (await getAdminGate()).isAdmin(userId);
 
   return (
     <div className="min-h-dvh bg-ink text-paper">
-      <AppNav />
+      <AppNav isAdmin={isAdmin} />
       <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
         {children}
       </main>

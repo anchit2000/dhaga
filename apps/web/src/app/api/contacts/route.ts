@@ -1,9 +1,11 @@
-import { hasSession } from "@/lib/auth/guard";
+import { requireUserIdFromRequest } from "@/lib/auth/guard";
 import { listContacts } from "@/lib/repo/contacts";
 
 /** Contact lookup for external surfaces (extension attach-to-contact). */
 export async function GET(request: Request): Promise<Response> {
-  if (!(await hasSession())) {
+  try {
+    await requireUserIdFromRequest(request);
+  } catch {
     return Response.json({ error: "Not signed in to Dhaga." }, { status: 401 });
   }
   const q = new URL(request.url).searchParams.get("q") ?? "";

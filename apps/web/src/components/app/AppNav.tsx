@@ -1,15 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { logout } from "@/lib/auth/actions";
+import { usePathname, useRouter } from "next/navigation";
+import { authClient } from "@/lib/auth/client";
 import { ThreadMark } from "@/components/brand/ThreadMark";
 import { cn } from "@/lib/utils";
 import { APP_NAV_LINKS } from "@/utils/constants/app";
 
 /** App-shell header: brand, section nav (scrollable on mobile), sign out. */
-export function AppNav() {
+export function AppNav({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const links = isAdmin
+    ? [...APP_NAV_LINKS, { href: "/app/admin", label: "Admin" }]
+    : APP_NAV_LINKS;
 
   return (
     <header className="sticky top-0 z-40 border-b border-seam bg-ink/90 backdrop-blur">
@@ -22,7 +26,7 @@ export function AppNav() {
           dhaga
         </Link>
         <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
-          {APP_NAV_LINKS.map((link) => {
+          {links.map((link) => {
             const active =
               link.href === "/app"
                 ? pathname === "/app"
@@ -43,14 +47,15 @@ export function AppNav() {
             );
           })}
         </nav>
-        <form action={logout}>
-          <button
-            type="submit"
-            className="whitespace-nowrap text-sm text-fog transition-colors hover:text-paper"
-          >
-            Sign out
-          </button>
-        </form>
+        <button
+          type="button"
+          onClick={() => {
+            void authClient.signOut().then(() => router.push("/login"));
+          }}
+          className="whitespace-nowrap text-sm text-fog transition-colors hover:text-paper"
+        >
+          Sign out
+        </button>
       </div>
     </header>
   );

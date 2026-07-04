@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { after } from "next/server";
-import { requireSessionPage } from "@/lib/auth/guard";
+import { requireUserIdForPage } from "@/lib/auth/guard";
 import { hybridSearch } from "@/lib/repo/search";
 import { countUnindexed, ensureIndexed } from "@/lib/repo/embeddings";
 import { embeddingsEnabled } from "@/lib/ai/embedder";
@@ -15,7 +15,7 @@ export default async function SearchPage({
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
-  await requireSessionPage();
+  await requireUserIdForPage();
   const { q } = await searchParams;
   const [hits, unindexed] = await Promise.all([
     q?.trim() ? hybridSearch(q) : Promise.resolve([]),

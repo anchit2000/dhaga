@@ -95,8 +95,8 @@ export const COMPARISON_COLUMNS = [
 ] as const;
 
 export const OSS_PILLARS = [
-  { bold: "AGPL-licensed core.", rest: " The app, the sync server, the graph engine — public on GitHub." },
-  { bold: "Your data is one SQLite file.", rest: " On your phone. Export it, back it up, walk away anytime." },
-  { bold: "End-to-end encrypted sync.", rest: " Our hosted service can't read your graph. By design, not policy." },
-  { bold: "Bring your own AI.", rest: " Use our cloud, your API key, or a local model via Ollama." },
+  { bold: "AGPL-licensed core.", rest: " The app, the API, the graph engine — public on GitHub, self-hostable, no phone-home." },
+  { bold: "Your data, exportable anytime.", rest: " CSV, vCard, or a full JSON dump of your whole graph — no lock-in, ever." },
+  { bold: "Tenant-isolated by database, not just policy.", rest: " Our hosted tier enforces per-account isolation with Postgres row-level security; self-host it yourself for full control." },
+  { bold: "Cloud AI is optional.", rest: " Without a key, capture still works via an offline heuristic parser — nothing breaks, nothing's held hostage." },
 ] as const;

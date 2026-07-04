@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireSessionPage } from "@/lib/auth/guard";
+import { requireUserIdForPage } from "@/lib/auth/guard";
 import { getContact } from "@/lib/repo/contacts";
 import { listFacts, listNotes, listOpenFollowUps } from "@/lib/repo/notes";
 import { listContactSessions } from "@/lib/repo/sessions";
@@ -30,7 +30,7 @@ export default async function PersonPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireSessionPage();
+  await requireUserIdForPage();
   const { id } = await params;
   const detail = await getContact(id);
   if (!detail) notFound();

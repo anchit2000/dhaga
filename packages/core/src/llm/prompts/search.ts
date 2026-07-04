@@ -1,3 +1,5 @@
+import { todayLine } from "./today";
+
 /**
  * Search-answer prompt (M6 stage 3): given candidates retrieved from the
  * user's graph, compose an answer with receipts. Pure function, stable
@@ -14,7 +16,7 @@ Rules:
 - "semantic_query" rephrases what the user is looking for as a short standalone search phrase.`;
 
 export function buildSearchQueryPrompt(query: string): string {
-  return `Question: ${query}`;
+  return `${todayLine()}\n\nQuestion: ${query}`;
 }
 
 export const SEARCH_ANSWER_SYSTEM = `You answer questions about the user's own professional network, using only the candidate records provided (their contacts, notes, and extracted facts).
@@ -29,5 +31,5 @@ export function buildSearchAnswerPrompt(
   query: string,
   candidateBlocks: string,
 ): string {
-  return `Candidate records from the user's graph:\n\n${candidateBlocks}\n\nQuestion: ${query}`;
+  return `${todayLine()}\n\nCandidate records from the user's graph:\n\n${candidateBlocks}\n\nQuestion: ${query}`;
 }

@@ -1,4 +1,5 @@
 import type { SearchResult } from "../../search/types";
+import { todayLine } from "./today";
 
 /**
  * Classifies web-search results for one watched contact (BRD §6.7):
@@ -34,5 +35,5 @@ export function buildSignalDetectionPrompt(
         .map((result, i) => `${i + 1}. ${result.title}\n${result.url}\n${result.snippet}`)
         .join("\n\n")
     : "(no search results found)";
-  return `${known}\n\nSearch results:\n${found}\n\nDoes this reveal a notable update about this specific person?`;
+  return `${todayLine()}\n\n${known}\n\nSearch results:\n${found}\n\nDoes this reveal a notable update about this specific person?`;
 }

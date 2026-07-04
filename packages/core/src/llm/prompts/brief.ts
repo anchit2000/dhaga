@@ -1,3 +1,5 @@
+import { todayLine } from "./today";
+
 /**
  * Pre-meeting brief (BRD v1.2): assemble the dossier before you walk in.
  * Pure function; volatile contact context last (cache-friendly).
@@ -42,5 +44,5 @@ export function buildBriefPrompt(context: BriefContext): string {
       ? `Notes:\n- ${context.noteSnippets.join("\n- ")}`
       : null,
   ].filter(Boolean);
-  return `${lines.join("\n")}\n\nWrite the pre-meeting brief now.`;
+  return `${todayLine()}\n\n${lines.join("\n")}\n\nWrite the pre-meeting brief now.`;
 }

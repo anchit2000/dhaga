@@ -1,3 +1,5 @@
+import { todayLine } from "./today";
+
 /**
  * Follow-up draft prompt (M7). Pure function; the contact context is
  * volatile and goes last.
@@ -33,5 +35,5 @@ export function buildDraftPrompt(context: DraftContext): string {
       ? `Notes:\n- ${context.noteSnippets.join("\n- ")}`
       : null,
   ].filter(Boolean);
-  return `${lines.join("\n")}\n\nWrite the follow-up message now.`;
+  return `${todayLine()}\n\n${lines.join("\n")}\n\nWrite the follow-up message now.`;
 }

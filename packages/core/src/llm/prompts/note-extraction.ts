@@ -1,3 +1,5 @@
+import { todayLine } from "./today";
+
 /**
  * Note → graph extraction prompt (BRD §6.3). Pure function, no LLM dependency.
  * Stable system prompt first (cacheable); the note text goes last.
@@ -16,5 +18,5 @@ export function buildNoteExtractionPrompt(
   contactName: string,
   noteText: string,
 ): string {
-  return `The note is about: ${contactName}\n\nNote:\n"""\n${noteText}\n"""`;
+  return `${todayLine()}\n\nThe note is about: ${contactName}\n\nNote:\n"""\n${noteText}\n"""`;
 }

@@ -1,3 +1,5 @@
+import { todayLine } from "./today";
+
 /**
  * Prompt builders are pure functions — no LLM dependency, unit-testable.
  * System prompts are stable strings (prompt-cache friendly); the volatile
@@ -14,5 +16,5 @@ Rules:
 - Include every email, phone number, and URL found.`;
 
 export function buildContactParsePrompt(rawText: string): string {
-  return `Captured text:\n"""\n${rawText}\n"""`;
+  return `${todayLine()}\n\nCaptured text:\n"""\n${rawText}\n"""`;
 }

@@ -1,3 +1,5 @@
+import { todayLine } from "./today";
+
 /**
  * User-triggered enrichment (BRD v1.1): research a contact's public
  * footprint. Always attributed, always deletable — the result is saved as a
@@ -26,5 +28,5 @@ export function buildEnrichmentPrompt(subject: EnrichmentSubject): string {
     subject.company ? `Known company: ${subject.company}` : null,
     subject.links.length ? `Known links: ${subject.links.join(", ")}` : null,
   ].filter(Boolean);
-  return `${lines.join("\n")}\n\nResearch this person's public footprint now.`;
+  return `${todayLine()}\n\n${lines.join("\n")}\n\nResearch this person's public footprint now.`;
 }

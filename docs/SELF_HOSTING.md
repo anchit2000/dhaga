@@ -63,6 +63,10 @@ apps/web/src/app/api/stripe/
 apps/web/src/lib/actions/admin/
 ```
 
+Also remove the `"@dhaga/ee": "*"` line from `apps/web/package.json`
+dependencies (and the `"@dhaga/ee"` entry in `transpilePackages` in
+`apps/web/next.config.ts`), then re-run `npm install`.
+
 Everything else builds and runs unchanged — these are exactly the files that
 statically import `@dhaga/ee`; nothing else in the core references it. If you
 delete `packages/ee` but forget one of the route folders above, `next build`

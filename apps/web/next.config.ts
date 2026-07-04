@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // @dhaga/core ships raw TypeScript; Next transpiles it in-place.
-  transpilePackages: ["@dhaga/core"],
+  // @dhaga/core and @dhaga/ee ship raw TypeScript; Next transpiles them in-place.
+  transpilePackages: ["@dhaga/core", "@dhaga/ee"],
   // Runtime-loaded native/WASM packages stay out of the bundle:
   // PGlite (WASM Postgres) and transformers.js (onnxruntime, local models).
   serverExternalPackages: [

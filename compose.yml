@@ -1,0 +1,41 @@
+# Self-host: `docker compose up --build` — see docs/SELF_HOSTING.md.
+# Requires a `.env` file next to this one with at least BETTER_AUTH_SECRET.
+# The app creates its own schema (incl. the pgvector extension) on first
+# request, so there is no separate migration step.
+
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: dhaga
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dhaga}
+      POSTGRES_DB: dhaga
+    volumes:
+      - dhaga-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dhaga -d dhaga"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  web:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://dhaga:${POSTGRES_PASSWORD:-dhaga}@db:5432/dhaga
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?put a long random string in .env (openssl rand -base64 32)}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-}
+      DHAGA_OWNER_EMAIL: ${DHAGA_OWNER_EMAIL:-}
+      DHAGA_AI_MONTHLY_CAP: ${DHAGA_AI_MONTHLY_CAP:-}
+
+volumes:
+  dhaga-db:

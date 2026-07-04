@@ -1,0 +1,10 @@
+.git
+node_modules
+**/node_modules
+**/.next
+**/.dhaga-data
+.env
+**/.env
+**/.env.local
+Dockerfile
+compose.yml

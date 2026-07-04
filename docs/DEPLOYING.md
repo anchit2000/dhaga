@@ -64,7 +64,9 @@ account once it's live.
 
 Any Linux VPS (Hetzner/DigitalOcean/EC2) or PaaS with a volume
 (Railway / Render / Fly.io). Requirements: Node 20+, a directory that
-survives restarts, HTTPS in front.
+survives restarts, HTTPS in front. (Prefer containers? A `compose.yml`
+exists — see [SELF_HOSTING.md](SELF_HOSTING.md), noting it's not yet
+verified.)
 
 ```bash
 git clone https://github.com/anchit2000/dhaga.git && cd dhaga
@@ -130,7 +132,11 @@ dhaga.example.com {
 
 ## What's deliberately not here yet
 
-- **Docker image / compose** — planned (checklist §18).
+- **A verified Docker run** — `Dockerfile` + `compose.yml` now exist at the
+  repo root (see "Running with `docker compose up`" in
+  [SELF_HOSTING.md](SELF_HOSTING.md)), but the image hasn't been built and
+  run anywhere yet — treat that path as unverified until checklist §18
+  checks it off. The `npm` path below is the tested one.
 - **Manual click-through verification of the Stripe checkout/webhook flow**
   — the code is typechecked/linted/built/tested, but nobody has run a real
   test-mode purchase against a live Stripe account yet.

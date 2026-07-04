@@ -111,6 +111,29 @@ only an admin can approve. `DHAGA_ADMIN_EMAILS` breaks that circle:
 env-config, not a stored credential, and only your deployment operator
 controls it.
 
+## Running with `docker compose up`
+
+The repo root has a [`Dockerfile`](../Dockerfile) and [`compose.yml`](../compose.yml)
+that run the web app plus a Postgres 17 + pgvector container. The app creates
+its own schema (including the `vector` extension) on first request — there is
+no migration step.
+
+1. Create a `.env` file next to `compose.yml`:
+
+   ```
+   BETTER_AUTH_SECRET=   # openssl rand -base64 32
+   # Optional: ANTHROPIC_API_KEY, BETTER_AUTH_URL (defaults to
+   # http://localhost:3000), POSTGRES_PASSWORD (defaults to "dhaga" —
+   # change it if the DB port is ever exposed), RESEND_*, DHAGA_*
+   ```
+
+2. `docker compose up --build`
+3. Open http://localhost:3000 and sign up. Contact data lives in the
+   `dhaga-db` volume; `docker compose down` keeps it, `down -v` deletes it.
+
+None of the `packages/ee` vars are wired into `compose.yml` — this is the
+plain AGPL self-host path (Level 1 above).
+
 ## Self-host env var reference
 
 Everything below lives in `apps/web/.env.local` — see

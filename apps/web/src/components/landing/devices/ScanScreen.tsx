@@ -24,7 +24,7 @@ export function ScanScreen() {
           {/* the card — real business-card proportions (3.5in × 2in) */}
           <div className="flex aspect-[7/4] rotate-[-1.5deg] flex-col justify-between rounded-md bg-gradient-to-br from-[#faf7f0] to-[#ece5d6] px-3 py-2 text-ink shadow-[0_10px_30px_-8px_rgba(0,0,0,0.7),0_1px_0_rgba(255,255,255,0.6)_inset]">
             <div className="flex items-center justify-between gap-2">
-              <span className="flex size-4 shrink-0 items-center justify-center rounded-[3px] bg-[#1f3a33] font-display text-[8px] font-semibold text-[#e8dcc0]">
+              <span className="flex size-4 shrink-0 items-center justify-center rounded-[3px] bg-[#1f3a33] font-ui text-[8px] font-semibold text-[#e8dcc0]">
                 M
               </span>
               <span className="truncate whitespace-nowrap font-mono text-[6px] uppercase tracking-[0.18em] text-ink/50">
@@ -32,7 +32,7 @@ export function ScanScreen() {
               </span>
             </div>
             <div>
-              <p className="font-display text-[13px] font-semibold leading-none tracking-tight">
+              <p className="font-ui text-[13px] font-semibold leading-none tracking-tight">
                 Nisha Shah
               </p>
               <p className="mt-0.5 whitespace-nowrap text-[6.5px] uppercase tracking-[0.12em] text-ink/60">

@@ -2,21 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { ASK_EXAMPLES, ASK_QUERIES } from "@/utils/constants/landing";
+import { SectionHeading } from "./SectionHeading";
 
 export function AskDemo() {
   return (
     <section className="border-y border-seam bg-panel-2/40">
       <div className="mx-auto max-w-6xl px-6 py-24">
-        <p className="font-mono text-xs uppercase tracking-[0.22em] text-amber">
-          Answers with receipts
-        </p>
-        <h2 className="mt-4 max-w-xl text-balance font-display text-4xl font-medium sm:text-5xl">
-          Your notes, finally queryable.
-        </h2>
-        <p className="mt-4 max-w-2xl text-fog">
-          Not a feed. Not a guess scraped from the web. Answers built from what
-          you actually observed — cited back to your own notes.
-        </p>
+        <SectionHeading
+          eyebrow="Answers with receipts"
+          heading="Your notes, finally queryable."
+          intro="Not a feed. Not a guess scraped from the web. Answers built from what you actually observed — cited back to your own notes."
+        />
         <QueryTyper />
         <div className="mt-6 grid gap-5 lg:grid-cols-2">
           {ASK_EXAMPLES.map((example) => (

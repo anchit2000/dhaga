@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { STORY_STEPS } from "@/utils/constants/landing/story";
 import { DeviceStage } from "./DeviceStage";
+import { SectionHeading } from "../SectionHeading";
 
 /**
  * Scrollytelling: the left column narrates 8 features; the right column is a
@@ -30,12 +31,11 @@ export function FeatureStory() {
   return (
     <section className="border-y border-seam bg-[radial-gradient(ellipse_70%_50%_at_70%_30%,#16120e,#0d0b09)]">
       <div className="mx-auto max-w-6xl px-6 py-24">
-        <p className="font-mono text-xs uppercase tracking-[0.22em] text-amber">
-          The product
-        </p>
-        <h2 className="mt-4 max-w-2xl text-balance font-display text-4xl font-medium sm:text-5xl">
-          One thread, followed from handshake to intro.
-        </h2>
+        <SectionHeading
+          eyebrow="The product"
+          heading="One thread, followed from handshake to intro."
+          headingClassName="max-w-2xl"
+        />
 
         <div className="mt-16 lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
           {/* narrative steps */}

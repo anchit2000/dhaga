@@ -141,7 +141,11 @@
   --color-fog: #a49a8a;
   --color-amber: #e2a44c;
   --color-ember: #c37731;
-  --font-display: var(--font-spectral), Georgia, "Times New Roman", serif;
+  --font-display: "Geist Pixel", ui-sans-serif, system-ui, sans-serif;
+  /* plain, highly-legible stack for the tiny simulated app-UI text inside
+     the phone/desktop mockups, where Geist Pixel's display styling reads
+     poorly at 7-10px */
+  --font-ui: ui-sans-serif, system-ui, -apple-system, sans-serif;
 }
 
 /* Dark-warm defaults so shadcn primitives match the brand without per-use overrides */
@@ -164,7 +168,7 @@
   --input: #2b241b;
   --ring: #e2a44c;
   --radius: 0.5rem;
-  --font-sans: var(--font-plex-sans), system-ui, sans-serif;
+  --font-sans: "Geist Pixel", ui-sans-serif, system-ui, sans-serif;
   --font-geist-mono: var(--font-plex-mono), Consolas, monospace;
 }
 
@@ -212,5 +216,29 @@ html {
   }
   50% {
     transform: scaleY(1);
+  }
+}
+
+/* CaptureOrbit: icons orbit continuously while staying upright */
+@keyframes dhaga-orbit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes dhaga-orbit-counter {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+/* idle glow for the one or two cards that stay highlighted without a hover */
+@keyframes dhaga-glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 28px -10px rgba(226, 164, 76, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 46px -8px rgba(226, 164, 76, 0.65);
   }
 }

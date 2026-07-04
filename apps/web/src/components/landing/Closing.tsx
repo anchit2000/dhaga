@@ -1,21 +1,23 @@
 import { GITHUB_URL } from "@/utils/constants/landing";
 import { RequestAccessForm } from "./RequestAccessForm";
+import { SectionHeading } from "./SectionHeading";
 
 export function FinalCta() {
   return (
     <section className="border-t border-seam bg-panel-2/40" id="request-access">
       <div className="mx-auto max-w-6xl px-6 py-24">
-        <p className="font-mono text-xs uppercase tracking-[0.22em] text-amber">
-          Early access
-        </p>
-        <h2 className="mt-4 max-w-2xl text-balance font-display text-4xl font-medium sm:text-5xl">
-          The next conference is coming. Arrive with a memory.
-        </h2>
-        <p className="mt-4 max-w-xl text-fog">
-          Request access to the beta. The first 500 approved signups lock the
-          $79 founding lifetime price — after that it&apos;s $99, and
-          that&apos;s a promise we keep in public.
-        </p>
+        <SectionHeading
+          eyebrow="Early access"
+          heading="The next conference is coming. Arrive with a memory."
+          headingClassName="max-w-2xl"
+          intro={
+            <>
+              Request access to the beta. The first 500 approved signups lock
+              the $79 founding lifetime price — after that it&apos;s $99, and
+              that&apos;s a promise we keep in public.
+            </>
+          }
+        />
         <RequestAccessForm />
       </div>
     </section>

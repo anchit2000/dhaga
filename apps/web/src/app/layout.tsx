@@ -1,19 +1,6 @@
 import type { Metadata } from "next";
-import { Spectral, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
+import { IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
-
-const spectral = Spectral({
-  variable: "--font-spectral",
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  style: ["normal", "italic"],
-});
-
-const plexSans = IBM_Plex_Sans({
-  variable: "--font-plex-sans",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
 
 const plexMono = IBM_Plex_Mono({
   variable: "--font-plex-mono",
@@ -53,10 +40,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${spectral.variable} ${plexSans.variable} ${plexMono.variable} h-full antialiased`}
-    >
+    <html lang="en" className={`${plexMono.variable} h-full antialiased`}>
+      {/* Geist Pixel isn't in next/font/google's supported list yet, so it's
+          loaded as a regular Google Fonts stylesheet via the root <head>. */}
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Geist+Pixel&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       {/* suppressHydrationWarning: browser extensions (Grammarly et al.)
           inject attributes into <body> before React hydrates; the warning is
           noise. Suppression is attribute-level and this element only. */}

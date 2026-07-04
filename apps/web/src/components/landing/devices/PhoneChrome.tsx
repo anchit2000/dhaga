@@ -24,7 +24,7 @@ export function StatusBar() {
 export function ScreenHeader({ title, chip }: { title: string; chip?: string }) {
   return (
     <div className="flex items-center justify-between px-4 pb-2 pt-1.5">
-      <p className="font-display text-base text-paper">{title}</p>
+      <p className="font-ui text-base text-paper">{title}</p>
       {chip ? (
         <span className="rounded-full border border-amber/30 bg-amber/10 px-2 py-0.5 font-mono text-[7.5px] uppercase tracking-widest text-amber">
           {chip}

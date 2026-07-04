@@ -78,11 +78,9 @@ GitHub: https://github.com/anchit2000/dhaga
 - `docs/checklist.md` — feature-by-feature build status
 - `apps/web/` — Next.js app; the landing page lives at `src/app/page.tsx`
 
-**Brand identity:** warm near-black ground, amber thread glow, Spectral serif
-display + IBM Plex Sans/Mono. Design tokens live in `apps/web/src/app/globals.css`
-(`--color-ink/panel/seam/paper/fog/amber`). Mesh (me.sh) is visual *inspiration
-only* — never copy their copy, logo shapes, or imagery; our expression must stay
-original (thread metaphor, warm palette, serif display, receipts-first UI).
+**Brand identity:** warm near-black ground, amber thread glow, Geist Pixel for
+display + body, IBM Plex Mono for labels/code. Design tokens live in
+`apps/web/src/app/globals.css` (`--color-ink/panel/seam/paper/fog/amber`).
 
 ### Decided stack (do not re-litigate without asking)
 | Layer | Choice |

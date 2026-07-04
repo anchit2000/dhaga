@@ -1,22 +1,31 @@
 import { HOW_IT_WORKS, STATS } from "@/utils/constants/landing";
+import { CountUp } from "./CountUp";
 import { Reveal } from "./Reveal";
+import { SectionHeading } from "./SectionHeading";
+import { SpotlightCard } from "./SpotlightCard";
+import { TiltCard } from "./TiltCard";
 
 export function StatsBand() {
   return (
     <section className="border-y border-seam bg-panel-2/40">
-      <div className="mx-auto grid max-w-6xl gap-10 px-6 py-16 sm:grid-cols-3">
-        {STATS.map((stat, i) => (
-          <Reveal key={stat.num} delay={i * 120}>
-            <p
-              className={`font-display text-6xl tabular-nums ${
-                i === STATS.length - 1 ? "text-amber" : "text-paper"
-              }`}
-            >
-              {stat.num}
-            </p>
-            <p className="mt-3 max-w-[24ch] text-sm text-fog">{stat.cap}</p>
-          </Reveal>
-        ))}
+      <div className="mx-auto max-w-6xl px-6 py-16">
+        <p className="text-center text-xs italic text-fog/70">
+          A familiar story, not a stat we collected — picture your last conference.
+        </p>
+        <div className="mt-8 grid gap-10 sm:grid-cols-3">
+          {STATS.map((stat, i) => (
+            <Reveal key={stat.num} delay={i * 120}>
+              <p
+                className={`font-display text-6xl tabular-nums ${
+                  i === STATS.length - 1 ? "text-amber" : "text-paper"
+                }`}
+              >
+                <CountUp target={Number(stat.num)} />
+              </p>
+              <p className="mt-3 max-w-[24ch] text-sm text-fog">{stat.cap}</p>
+            </Reveal>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -27,12 +36,10 @@ const STEP_ICONS = [CameraIcon, GraphIcon, SparkIcon];
 export function HowItWorks() {
   return (
     <section className="mx-auto max-w-6xl px-6 py-24">
-      <p className="font-mono text-xs uppercase tracking-[0.22em] text-amber">
-        How it works
-      </p>
-      <h2 className="mt-4 max-w-xl text-balance font-display text-4xl font-medium sm:text-5xl">
-        From handshake to knowledge graph in three moves.
-      </h2>
+      <SectionHeading
+        eyebrow="How it works"
+        heading="From handshake to knowledge graph in three moves."
+      />
       <div className="relative mt-14">
         {/* thread connecting the three steps */}
         <svg
@@ -56,18 +63,23 @@ export function HowItWorks() {
             const Icon = STEP_ICONS[i] ?? SparkIcon;
             return (
               <Reveal key={step.step} delay={i * 140}>
-                <div className="group relative h-full rounded-2xl border border-seam bg-gradient-to-b from-panel to-panel-2/60 p-7 transition-all duration-300 hover:-translate-y-1 hover:border-amber/40 hover:shadow-[0_20px_60px_-24px_rgba(226,164,76,0.35)]">
-                  <div className="flex items-center justify-between">
-                    <span className="flex size-11 items-center justify-center rounded-full border border-amber/30 bg-amber/10 text-amber shadow-[0_0_24px_-6px_rgba(226,164,76,0.5)]">
-                      <Icon />
-                    </span>
-                    <span className="font-mono text-[11px] tracking-[0.18em] text-fog/70">
-                      {step.step}
-                    </span>
-                  </div>
-                  <h3 className="mt-5 font-display text-2xl">{step.title}</h3>
-                  <p className="mt-3 text-sm leading-relaxed text-fog">{step.body}</p>
-                </div>
+                <TiltCard>
+                  <SpotlightCard
+                    idleGlow={i === 1}
+                    className="group relative h-full rounded-2xl border border-seam bg-gradient-to-b from-panel to-panel-2/60 p-7 transition-all duration-300 hover:-translate-y-1 hover:border-amber/40 hover:shadow-[0_20px_60px_-24px_rgba(226,164,76,0.35)]"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="flex size-11 items-center justify-center rounded-full border border-amber/30 bg-amber/10 text-amber shadow-[0_0_24px_-6px_rgba(226,164,76,0.5)]">
+                        <Icon />
+                      </span>
+                      <span className="font-mono text-[11px] tracking-[0.18em] text-fog/70">
+                        {step.step}
+                      </span>
+                    </div>
+                    <h3 className="mt-5 font-display text-2xl">{step.title}</h3>
+                    <p className="mt-3 text-sm leading-relaxed text-fog">{step.body}</p>
+                  </SpotlightCard>
+                </TiltCard>
               </Reveal>
             );
           })}

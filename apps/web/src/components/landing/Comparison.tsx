@@ -1,4 +1,5 @@
 import { COMPARISON_ROWS } from "@/utils/constants/landing";
+import { SectionHeading } from "./SectionHeading";
 import type { ComparisonRow } from "@/types";
 
 const BRANDS = [
@@ -13,10 +14,7 @@ const CELL_KEYS: (keyof ComparisonRow)[] = ["dhaga", "cardApps", "personalCrms",
 export function Comparison() {
   return (
     <section className="mx-auto max-w-6xl px-6 py-24" id="compare">
-      <p className="font-mono text-xs uppercase tracking-[0.22em] text-amber">Compare</p>
-      <h2 className="mt-4 max-w-xl text-balance font-display text-4xl font-medium sm:text-5xl">
-        Everyone else stops at the contact.
-      </h2>
+      <SectionHeading eyebrow="Compare" heading="Everyone else stops at the contact." />
       <div className="mt-12 overflow-x-auto rounded-2xl border border-paper/10 bg-panel/40 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.9)]">
         <table className="w-full min-w-[760px] border-collapse text-sm">
           <thead>

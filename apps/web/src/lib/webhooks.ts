@@ -5,7 +5,7 @@
  * Fire-and-tolerate: a dead receiver must never break a capture.
  */
 
-export type WebhookEvent = "contact.created" | "followup.created";
+export type WebhookEvent = "contact.created" | "followup.created" | "contacts.imported";
 
 export async function emitWebhook(
   event: WebhookEvent,

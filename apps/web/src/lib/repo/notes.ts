@@ -12,7 +12,7 @@ import {
 } from "@/lib/db/schema";
 import { deleteCardImagesByNote } from "./card-images";
 
-export type NoteKind = "text" | "voice" | "capture_source" | "enrichment";
+export type NoteKind = "text" | "voice" | "capture_source" | "enrichment" | "signal";
 
 export async function listNotes(contactId: string): Promise<NoteRow[]> {
   const db = await getDb();

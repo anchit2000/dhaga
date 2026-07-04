@@ -134,6 +134,22 @@ no migration step.
 None of the `packages/ee` vars are wired into `compose.yml` — this is the
 plain AGPL self-host path (Level 1 above).
 
+### Nightly signal detection (job-change + news watchlist, opt-in)
+
+The web-search sweep behind a contact's "Watch for job changes & news"
+toggle (BRD §6.7) runs from `/api/jobs/detect-signals`, not a background
+process — there is no job queue to run in a container. Point any scheduler
+at it:
+
+```
+0 6 * * * curl -fsS -H "Authorization: Bearer $CRON_SECRET" \
+  https://your-domain/api/jobs/detect-signals
+```
+
+Requires `CRON_SECRET` and `FIRECRAWL_API_KEY` (or another `SEARCH_PROVIDER`)
+set — see `.env.example`. Without `CRON_SECRET` the route always returns
+401, so it's safe to leave unconfigured if you don't want the feature.
+
 ## Self-host env var reference
 
 Everything below lives in `apps/web/.env.local` — see
@@ -150,6 +166,8 @@ None of the `packages/ee/.env.example` vars (`DHAGA_HOSTED_MODE`,
 | `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `DHAGA_OWNER_EMAIL` | No | Session digests only |
 | `TELEGRAM_*` | No | Owner-only bot capture |
 | `DHAGA_WEBHOOK_URL` | No | Outbound automation |
+| `SEARCH_PROVIDER`, `FIRECRAWL_API_KEY` | No | Job-change detection + news watchlist |
+| `CRON_SECRET` | No | Required to enable `/api/jobs/detect-signals` — see above |
 | `DHAGA_AI_MONTHLY_CAP`, `DHAGA_DATA_DIR`, `DHAGA_EMBEDDINGS` | No | See `.env.example` for defaults |
 
 See [DEPLOYING.md](DEPLOYING.md) for the full deploy walkthrough (Vercel and

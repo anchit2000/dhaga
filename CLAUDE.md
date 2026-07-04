@@ -151,6 +151,12 @@ packages/ee/       Dhaga Cloud only: multi-tenant RLS, billing, admin, early
 - `packages/core/llm/index.ts` — `getLLMClient()` factory
 - Adding Ollama/BYO-key later = new implementation of `LLMClient`, zero changes to callers
 
+**Search gateway pattern (same shape as the LLM gateway — web search is provider-agnostic too):**
+- `packages/core/search/types.ts` — `SearchClient` interface (the contract)
+- `packages/core/search/firecrawl-client.ts` — `FirecrawlSearchClient implements SearchClient` (default provider)
+- `packages/core/search/index.ts` — `getSearchClient()` factory, keyed off `SEARCH_PROVIDER`
+- Adding Brave/SerpAPI/a self-hosted SearXNG instance = new implementation of `SearchClient` + one case in the factory, zero changes to callers
+
 ---
 
 ## Security & Privacy Rules

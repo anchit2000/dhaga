@@ -25,3 +25,5 @@ apps/extension/*.zip
 # OS noise
 .DS_Store
 Thumbs.db
+
+rough/

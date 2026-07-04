@@ -8,11 +8,14 @@ import { listContactConnections } from "@/lib/repo/connections";
 import { listCardImageRefs } from "@/lib/repo/card-images";
 import { recommendContacts } from "@/lib/repo/recommendations";
 import { isReachOutDue } from "@/lib/repo/reminders";
+import { listContactSignals } from "@/lib/repo/signals";
 import { AddNoteForm } from "@/components/app/contact/AddNoteForm";
 import { CardPhotoStrip } from "@/components/app/contact/CardPhotoStrip";
 import { BriefSection } from "@/components/app/contact/BriefSection";
 import { ConnectionsList } from "@/components/app/contact/ConnectionsList";
+import { ContactSignalList } from "@/components/app/contact/ContactSignalList";
 import { KeepInTouch } from "@/components/app/contact/KeepInTouch";
+import { WatchToggle } from "@/components/app/contact/WatchToggle";
 import { RecommendedList } from "@/components/app/contact/RecommendedList";
 import { DetailChips } from "@/components/app/contact/DetailChips";
 import { DraftSection } from "@/components/app/contact/DraftSection";
@@ -43,6 +46,7 @@ export default async function PersonPage({
     connections,
     recommendations,
     cardPhotos,
+    contactSignals,
   ] = await Promise.all([
     listNotes(id),
     listFacts(id),
@@ -51,6 +55,7 @@ export default async function PersonPage({
     listContactConnections(id),
     recommendContacts(id),
     listCardImageRefs(id),
+    listContactSignals(id),
   ]);
   const lastTouch = contact.lastReachedOutAt ?? contact.createdAt;
   const isDue = isReachOutDue(contact.reachOutEveryDays, lastTouch);
@@ -110,6 +115,14 @@ export default async function PersonPage({
         everyDays={contact.reachOutEveryDays}
         lastTouch={lastTouch.toLocaleDateString()}
         due={isDue}
+      />
+
+      <WatchToggle contactId={id} watched={contact.watchedForSignals} />
+
+      <ContactSignalList
+        contactId={id}
+        contactName={contact.name}
+        signals={contactSignals}
       />
 
       <BriefSection contactId={id} />

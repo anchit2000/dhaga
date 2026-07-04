@@ -1,9 +1,13 @@
 import Link from "next/link";
 import { requireUserIdForPage } from "@/lib/auth/guard";
 import { listAllOpenFollowUps, listDueReachOuts } from "@/lib/repo/reminders";
+import { listQuietContacts } from "@/lib/repo/strength";
+import { listNewSignals } from "@/lib/repo/signals";
 import { completeFollowUpAction } from "@/lib/actions/notes";
 import { markReachedOutAction } from "@/lib/actions/reminders";
 import { EmptyState } from "@/components/app/EmptyState";
+import { GoingQuiet } from "@/components/app/home/GoingQuiet";
+import { SignalsFeed } from "@/components/app/home/SignalsFeed";
 import { Check } from "lucide-react";
 
 export const metadata = { title: "Home — Dhaga" };
@@ -15,14 +19,18 @@ function daysAgo(date: Date): string {
 
 export default async function HomePage() {
   await requireUserIdForPage();
-  const [dueReachOuts, openFollowUps] = await Promise.all([
+  const [dueReachOuts, openFollowUps, quietContacts, newSignals] = await Promise.all([
     listDueReachOuts(),
     listAllOpenFollowUps(),
+    listQuietContacts(),
+    listNewSignals(),
   ]);
 
   return (
     <div className="space-y-8">
       <h1 className="font-display text-2xl tracking-tight">Home</h1>
+
+      <SignalsFeed signals={newSignals} />
 
       <section className="space-y-3">
         <h2 className="font-display text-lg">Reach out</h2>
@@ -62,6 +70,8 @@ export default async function HomePage() {
           </ul>
         )}
       </section>
+
+      <GoingQuiet contacts={quietContacts} />
 
       <section className="space-y-3">
         <h2 className="font-display text-lg">Open follow-ups</h2>

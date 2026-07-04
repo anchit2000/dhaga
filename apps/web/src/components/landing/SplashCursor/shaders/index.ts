@@ -1,0 +1,4 @@
+export { BASE_VERTEX_SHADER } from "./vertex";
+export { CLEAR_SHADER, COPY_SHADER, DISPLAY_SHADER_SOURCE, SPLAT_SHADER } from "./display";
+export { ADVECTION_SHADER, CURL_SHADER, DIVERGENCE_SHADER } from "./advection";
+export { GRADIENT_SUBTRACT_SHADER, PRESSURE_SHADER, VORTICITY_SHADER } from "./pressure";

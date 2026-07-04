@@ -46,7 +46,8 @@ export async function recordAiAction(
     | "search"
     | "draft"
     | "enrichment"
-    | "brief",
+    | "brief"
+    | "signal_detection",
   model: string,
   usage: LLMUsage,
 ): Promise<void> {

@@ -89,6 +89,8 @@ CREATE TABLE IF NOT EXISTS follow_ups (
 ALTER TABLE contacts ADD COLUMN IF NOT EXISTS tags jsonb NOT NULL DEFAULT '[]';
 ALTER TABLE contacts ADD COLUMN IF NOT EXISTS reach_out_every_days integer;
 ALTER TABLE contacts ADD COLUMN IF NOT EXISTS last_reached_out_at timestamptz;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS watched_for_signals boolean NOT NULL DEFAULT false;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS signals_scanned_at timestamptz;
 
 CREATE TABLE IF NOT EXISTS embeddings (
   owner_type text NOT NULL,
@@ -121,6 +123,17 @@ CREATE TABLE IF NOT EXISTS card_images (
   note_id text REFERENCES notes(id),
   media_type text NOT NULL,
   data_base64 text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS signals (
+  id text PRIMARY KEY,
+  contact_id text NOT NULL REFERENCES contacts(id),
+  kind text NOT NULL,
+  headline text NOT NULL,
+  detail text NOT NULL,
+  source_url text,
+  status text NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 `;

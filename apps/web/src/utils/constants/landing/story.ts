@@ -59,12 +59,12 @@ export const STORY_STEPS: StoryStep[] = [
     id: "alerts",
     kicker: "Intelligence",
     title: "Know before your competitors do.",
-    body: "Sarah left Stripe this morning. Priya is back from Singapore. The moments outreach matters most, pushed to you.",
+    body: "Sarah announced she left Stripe — your watchlist caught it. Priya's back from Singapore — you noted it once; the graph remembered. The moments outreach matters, pushed to you.",
   },
   {
     id: "warmpath",
     kicker: "Warm paths",
     title: "Every intro is two threads away.",
-    body: "Need a way into Aerolane? You know Priya. Priya knows Mei. The graph finds the path — and drafts the ask.",
+    body: "Need a way into Aerolane? You've never met anyone there — but one note remembers Priya mentioning her old teammate Mei. The graph finds the path, and drafts the ask.",
   },
 ];

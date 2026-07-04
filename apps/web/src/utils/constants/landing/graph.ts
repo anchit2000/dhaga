@@ -118,7 +118,7 @@ export const GRAPH_SCENES: GraphScene[] = [
   {
     id: "alerts",
     chip: "Job-change alerts",
-    caption: "Sarah left Stripe this morning. You knew before your competitors did.",
+    caption: "Sarah announced she left Stripe. Your watchlist caught it — you knew before your competitors did.",
     litNodes: ["sarah"],
     litEdges: ["you-sarah"],
     dimOthers: true,
@@ -127,7 +127,7 @@ export const GRAPH_SCENES: GraphScene[] = [
   {
     id: "warmpath",
     chip: "Warm paths",
-    caption: "Need Aerolane? You know Priya. Priya knows Mei. Intro found.",
+    caption: "Need Aerolane? A note remembers Priya's old teammate Mei is there. Intro found.",
     litNodes: ["you", "priya", "mei"],
     litEdges: ["you-priya", "priya-mei"],
     dimOthers: true,

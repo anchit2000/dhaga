@@ -1,4 +1,4 @@
-import { integer, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, integer, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 export const companies = pgTable("companies", {
   id: text("id").primaryKey(),
@@ -21,6 +21,10 @@ export const contacts = pgTable("contacts", {
   // Keep-in-touch cadence: remind when the last touch is older than this.
   reachOutEveryDays: integer("reach_out_every_days"),
   lastReachedOutAt: timestamp("last_reached_out_at", { withTimezone: true }),
+  // Proactive intelligence (v1.2, BRD §6.7): opt-in per contact, own-graph +
+  // web-search only — never automatic mass lookup.
+  watchedForSignals: boolean("watched_for_signals").notNull().default(false),
+  signalsScannedAt: timestamp("signals_scanned_at", { withTimezone: true }),
   source: text("source").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),

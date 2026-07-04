@@ -21,6 +21,12 @@ export {
   type NoteExtraction,
 } from "./schemas/extraction";
 export {
+  SIGNAL_KINDS,
+  signalDetectionSchema,
+  type SignalDetection,
+  type SignalKind,
+} from "./schemas/signal";
+export {
   AnthropicLLMClient,
   BRIEF_SYSTEM,
   CARD_SCAN_PROMPT,
@@ -51,4 +57,17 @@ export {
   type LLMUsage,
   type ModelTier,
 } from "./llm";
+export {
+  SIGNAL_DETECTION_SYSTEM,
+  buildSignalDetectionPrompt,
+  type SignalDetectionSubject,
+} from "./llm/prompts/signal-detection";
 export { heuristicContactParse } from "./parse/heuristic-contact";
+export {
+  FirecrawlSearchClient,
+  getSearchClient,
+  hasSearch,
+  type SearchClient,
+  type SearchOptions,
+  type SearchResult,
+} from "./search";

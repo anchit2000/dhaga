@@ -9,6 +9,7 @@ import { companies, contacts } from "./schema/contacts";
 import { sessionContacts, sessions } from "./schema/sessions";
 import { edges, facts, followUps, notes } from "./schema/notes";
 import { embeddings } from "./schema/embeddings";
+import { signals } from "./schema/signals";
 import { aiActions, settings } from "./schema/meta";
 import { cardImages } from "./schema/card-images";
 import {
@@ -31,6 +32,7 @@ const schema = {
   edges,
   followUps,
   embeddings,
+  signals,
   aiActions,
   settings,
   cardImages,

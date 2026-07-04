@@ -35,6 +35,11 @@ Two very different things deploy from this repo today:
    - `DHAGA_EMBEDDINGS=off` recommended on Vercel for now: the local
      embedding model (~100 MB of native runtime) is a poor fit for
      serverless functions; search falls back to keyword matching.
+   - `CRON_SECRET`, `FIRECRAWL_API_KEY` — optional, job-change detection +
+     news watchlist. `apps/web/vercel.json` already declares the nightly
+     cron; Vercel sends `Authorization: Bearer $CRON_SECRET` to it
+     automatically once the var is set (unset = the route 401s to everyone,
+     including Vercel's own cron — the feature is simply off).
 4. Deploy. Add your domain under Settings → Domains.
 
 ### Hosted-mode extras (Dhaga Cloud only — skip for plain self-hosting)

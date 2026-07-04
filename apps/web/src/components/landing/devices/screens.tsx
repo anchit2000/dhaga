@@ -67,8 +67,8 @@ export function AlertsScreen() {
       <ScreenHeader title="Home" chip="3 new" />
       <div className="min-h-0 flex-1 space-y-2 px-4">
         {[
-          { personId: "sarah", title: "Job change", body: "Sarah Chen left Stripe — draft a congrats note?", time: "now" },
-          { personId: "priya", title: "Reconnect", body: "Priya Nair is back from Singapore today.", time: "2m" },
+          { personId: "sarah", title: "Job change", body: "Sarah Chen announced she left Stripe — draft a congrats note?", time: "now" },
+          { personId: "priya", title: "Reconnect", body: "Your note: Priya Nair is back from Singapore this week.", time: "2m" },
           { personId: "alice", title: "Going quiet", body: "No contact with Alice in 3 months — she's marked key.", time: "1h" },
         ].map((alert, i) => (
           <div

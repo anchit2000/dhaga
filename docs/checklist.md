@@ -122,7 +122,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Every AI call logged to `ai_actions` (feature, model, tokens in/out)
 - [x] Free-tier cap enforced (25/month, `DHAGA_AI_MONTHLY_CAP` override) with clear UI message
 - [x] Prompt caching markers on stable system prompts (engages once prompts exceed the model's cacheable minimum)
-- [ ] Batch API for nightly jobs (v1.2, when jobs exist)
+- [ ] Batch API for nightly jobs — the first nightly job now exists (`lib/jobs/detect-signals.ts`, §14) but calls Haiku synchronously per watched contact rather than through the Batch API; volume is naturally bounded by the per-plan watchlist cap today, so this is a follow-up optimization, not blocking
 
 ## 11. Privacy & export (M8, BRD §7.5)
 
@@ -158,11 +158,11 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 
 ## 14. Proactive intelligence (v1.2)
 
-- [ ] Job-change detection — legal channels only: LinkedIn CSV re-import diff + watchlist hits, no scraping (BRD §6.7)
-- [ ] Opt-in news watchlist: user stars contacts to watch → nightly/weekly Batch API web search → alerts, capped per tier (BRD §6.7)
+- [ ] Job-change detection — simplified to web-search-only per product decision (2026-07-05), superseding the CSV-diff mechanism in BRD §6.7: shares the signal-detection sweep with the news watchlist below, `kind: "job_change"` when the search results show a different title/employer than what's on file. Typecheck/lint/build/tests pass; manual click-through needs a real `FIRECRAWL_API_KEY` + `ANTHROPIC_API_KEY`, not done
+- [ ] Opt-in news watchlist: per-contact "Watch for job changes & news" toggle (contact page) → nightly cron (`/api/jobs/detect-signals`, `apps/web/vercel.json`) → provider-agnostic web search (`packages/core/src/search`, Firecrawl by default — cheaper per-search than an LLM's own web-search tool) → Haiku classifies hits → `signals` table → Home "Signals" feed + contact page, "Add as note" (receipted) or dismiss. Capped per plan (`PRO_TIER_WATCHLIST_CAP`/`FREE_TIER_WATCHLIST_CAP`). Typecheck/lint/build/tests pass (`signals.test.ts`, `search-client.test.ts`); manual click-through not done (needs live API keys); hosted multi-tenant RLS scoping for this job is a known follow-up (it currently runs against the default connection, correct for self-host, same posture as the Telegram webhook)
 - [x] Keep-in-touch cadence reminders + Home reach-out feed (ideas.md #2)
-- [ ] Automatic relationship-decay detection (nightly job, no cadence needed)
-- [ ] Relationship-strength score from own-graph data (interaction recency/frequency, notes, sessions — no external data)
+- [ ] Automatic relationship-decay detection — built read-time (no nightly job needed): "Going quiet" feed on Home surfaces contacts with no touch in ~8 months and no cadence set (`repo/strength.ts`); typecheck/lint/build/tests pass, manual click-through not done
+- [ ] Relationship-strength score from own-graph data (interaction recency/frequency, notes, sessions — no external data) — built: 0–100 recency×frequency score (`scoreStrength`), ranks the Going-quiet feed strongest-first; tests in `strength.test.ts`, manual click-through not done
 - [x] Post-event digest email (user-triggered from the session page, template-based)
 - [x] Pre-meeting brief on demand ("Brief me ✦" on the contact page, graph-only)
 - [ ] Calendar integration → brief pushed 30 min before the meeting

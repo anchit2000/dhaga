@@ -15,6 +15,8 @@ const contact: ExportContact = {
   tags: ["fintech"],
   reachOutEveryDays: null,
   lastReachedOutAt: null,
+  watchedForSignals: false,
+  signalsScannedAt: null,
   source: "manual",
   createdAt: new Date("2026-07-01T00:00:00Z"),
   updatedAt: new Date("2026-07-01T00:00:00Z"),

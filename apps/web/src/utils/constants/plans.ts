@@ -24,7 +24,7 @@ export const PLAN_FEATURES: Record<EntitlementPlan, readonly PlanFeature[]> = {
 };
 
 export const FEATURE_LABELS: Record<PlanFeature, string> = {
-  enrichment: "Company enrichment & job-change alerts",
+  enrichment: "Company enrichment, job-change detection & news alerts",
   pre_meeting_brief: "Pre-meeting briefs",
   multi_device_sync: "Encrypted multi-device sync",
 };

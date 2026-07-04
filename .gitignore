@@ -19,6 +19,9 @@ apps/web/node_modules/.cache/
 # local embedded database (PGlite)
 .dhaga-data/
 
+# extension store packages (built artifacts)
+apps/extension/*.zip
+
 # OS noise
 .DS_Store
 Thumbs.db

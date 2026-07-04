@@ -83,7 +83,15 @@ async function save(): Promise<void> {
     );
     rawInput.value = "";
   } catch {
-    setStatus(`Could not reach Dhaga at ${base} — is it running?`, true);
+    const granted = await chrome.permissions.contains({
+      origins: [`${new URL(base).origin}/*`],
+    });
+    setStatus(
+      granted
+        ? `Could not reach Dhaga at ${base} — is it running?`
+        : `Dhaga needs access to ${base} — re-save the URL in the extension options to grant it.`,
+      true,
+    );
   } finally {
     saveButton.disabled = false;
   }

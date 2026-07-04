@@ -1,16 +1,28 @@
 {
   "manifest_version": 3,
   "name": "Dhaga — capture to your network",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Select a person's details on any page, save them to your private Dhaga graph in one click.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Capture to Dhaga"
+    "default_title": "Capture to Dhaga",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png"
+    }
   },
   "options_ui": {
     "page": "options.html",
     "open_in_tab": false
   },
   "permissions": ["activeTab", "scripting", "storage"],
-  "host_permissions": ["http://localhost:3000/*"]
+  "host_permissions": ["http://localhost:3000/*"],
+  "optional_host_permissions": ["https://*/*", "http://*/*"]
 }

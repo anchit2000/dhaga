@@ -1,12 +1,13 @@
 {
   "name": "@dhaga/extension",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Dhaga browser extension: one-click capture from any page into your network.",
   "license": "AGPL-3.0-only",
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
+    "package": "node build.mjs --zip",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

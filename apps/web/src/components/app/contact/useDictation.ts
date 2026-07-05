@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useSyncExternalStore } from "react";
+import { noSubscription } from "@/lib/utils";
 
 /**
  * Browser speech recognition (M3's voice capture, web edition): free, no
@@ -33,8 +34,6 @@ function getCtor(): RecognitionCtor | undefined {
   };
   return w.SpeechRecognition ?? w.webkitSpeechRecognition;
 }
-
-const noSubscription = () => () => {};
 
 export function useDictation(onFinalText: (text: string) => void) {
   // SSR-safe support check without a hydration mismatch.

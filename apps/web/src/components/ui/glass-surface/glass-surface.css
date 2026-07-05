@@ -1,0 +1,61 @@
+.glass-surface {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: opacity 0.26s ease-out;
+}
+
+.glass-surface__filter {
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  z-index: -1;
+}
+
+.glass-surface__content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  border-radius: inherit;
+  position: relative;
+  z-index: 1;
+}
+
+.glass-surface--svg {
+  background: color-mix(in oklch, var(--color-panel), transparent calc(100% - (var(--glass-frost, 0) * 100%)));
+  backdrop-filter: var(--filter-id, url(#glass-filter)) saturate(var(--glass-saturation, 1));
+  box-shadow:
+    0 0 2px 1px color-mix(in oklch, var(--color-paper), transparent 65%) inset,
+    0 0 10px 4px color-mix(in oklch, var(--color-paper), transparent 85%) inset,
+    0px 8px 24px rgba(13, 11, 9, 0.35),
+    0px 16px 56px rgba(13, 11, 9, 0.25);
+}
+
+.glass-surface--fallback {
+  background: color-mix(in oklch, var(--color-panel), transparent 25%);
+  backdrop-filter: blur(12px) saturate(1.4);
+  -webkit-backdrop-filter: blur(12px) saturate(1.4);
+  border: 1px solid var(--color-seam);
+  box-shadow:
+    0 8px 32px 0 rgba(13, 11, 9, 0.4),
+    inset 0 1px 0 0 color-mix(in oklch, var(--color-paper), transparent 80%);
+}
+
+@supports not (backdrop-filter: blur(10px)) {
+  .glass-surface--fallback {
+    background: color-mix(in oklch, var(--color-panel), transparent 10%);
+  }
+}
+
+.glass-surface:focus-visible {
+  outline: 2px solid var(--color-amber);
+  outline-offset: 2px;
+}

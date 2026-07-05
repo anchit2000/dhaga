@@ -8,8 +8,8 @@ export interface MobileSettings {
   apiKey: string;
 }
 
-/** Which scan pipeline produced the capture payload (BRD §6.1 tiers). */
-export type ScanPath = "on-device" | "image-fallback";
+/** Which capture pipeline produced the request (BRD §6.1 tiers, plus manual typing). */
+export type ScanPath = "on-device" | "image-fallback" | "typed";
 
 /** A ready-to-POST /api/capture body plus the pipeline that built it. */
 export interface ScanPayload {

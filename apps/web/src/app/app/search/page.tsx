@@ -5,8 +5,8 @@ import { hybridSearch } from "@/lib/repo/search";
 import { countUnindexed, ensureIndexed } from "@/lib/repo/embeddings";
 import { embeddingsEnabled } from "@/lib/ai/embedder";
 import { AskAi } from "@/components/app/search/AskAi";
+import { SearchInput } from "@/components/app/search/SearchInput";
 import { EmptyState } from "@/components/app/EmptyState";
-import { Input } from "@/components/ui/input";
 
 export const metadata = { title: "Search — Dhaga" };
 
@@ -42,15 +42,7 @@ export default async function SearchPage({
         </p>
       ) : null}
 
-      <form method="GET" role="search">
-        <Input
-          type="search"
-          name="q"
-          defaultValue={q ?? ""}
-          placeholder="Who did I meet in logistics who mentioned an AI budget?"
-          className="h-11"
-        />
-      </form>
+      <SearchInput defaultValue={q ?? ""} />
 
       {q?.trim() ? (
         hits.length === 0 ? (

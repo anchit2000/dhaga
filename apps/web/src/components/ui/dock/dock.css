@@ -1,0 +1,56 @@
+.dock-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.dock-item-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.3rem;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.25rem 0.5rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  outline: none;
+  color: var(--color-fog);
+}
+
+.dock-item-wrap:hover,
+.dock-item-wrap:focus-visible {
+  color: var(--color-paper);
+}
+
+.dock-item-wrap:focus-visible {
+  outline: 2px solid var(--color-amber);
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
+.dock-item-wrap--active {
+  color: var(--color-amber);
+}
+
+.dock-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background-color: color-mix(in oklch, var(--color-panel-2), transparent 20%);
+  border: 1px solid var(--color-seam);
+}
+
+.dock-item-wrap--active .dock-item {
+  border-color: color-mix(in oklch, var(--color-amber), transparent 40%);
+  background-color: color-mix(in oklch, var(--color-amber), transparent 85%);
+}
+
+.dock-item-label {
+  font-size: 0.6875rem;
+  white-space: nowrap;
+}

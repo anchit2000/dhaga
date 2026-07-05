@@ -13,7 +13,8 @@ export function ResultBanner({ outcome }: { outcome: ScanOutcome }): React.JSX.E
       </View>
     );
   }
-  const pathLabel = outcome.path === "on-device" ? "on-device OCR" : "photo scan";
+  const pathLabel =
+    outcome.path === "on-device" ? "on-device OCR" : outcome.path === "typed" ? "typed" : "photo scan";
   const viaLabel = outcome.via === "ai" ? "AI parse" : "offline parse";
   return (
     <View style={styles.banner}>

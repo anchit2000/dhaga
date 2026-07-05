@@ -1,20 +1,29 @@
 import { useCallback, useRef, useState } from "react";
-import { CameraView, useCameraPermissions } from "expo-camera";
+import { Feather } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import { router, useFocusEffect } from "expo-router";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
+import { BottomDock, type DockAction } from "@/components/bottom-dock";
+import { CameraCaptureView, type CameraCaptureHandle } from "@/components/camera-capture-view";
+import { TextCaptureView } from "@/components/text-capture-view";
 import { ResultBanner } from "@/components/result-banner";
 import { CaptureError, captureContact } from "@/lib/api";
 import { buildScanPayload } from "@/lib/ocr";
 import { isConfigured, loadSettings } from "@/lib/settings";
-import { CAPTURE_QUALITY, COLORS } from "@/utils/constants";
+import { COLORS } from "@/utils/constants";
 
-import type { MobileSettings, ScanOutcome } from "@/types";
+import type { CaptureRequest } from "@dhaga/core/src/api/capture";
+import type { MobileSettings, ScanOutcome, ScanPath } from "@/types";
+
+type Mode = "camera" | "text";
 
 export default function CaptureScreen() {
-  const cameraRef = useRef<CameraView>(null);
+  const cameraRef = useRef<CameraCaptureHandle>(null);
   const [settings, setSettings] = useState<MobileSettings | null>(null);
-  const [permission, requestPermission] = useCameraPermissions();
+  const [mode, setMode] = useState<Mode>("camera");
+  const [text, setText] = useState("");
+  const [voiceHint, setVoiceHint] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [outcome, setOutcome] = useState<ScanOutcome | null>(null);
 
@@ -27,74 +36,102 @@ export default function CaptureScreen() {
     }, []),
   );
 
-  const scan = async (): Promise<void> => {
-    if (!cameraRef.current || !settings || busy) return;
+  async function finish(request: CaptureRequest, path: ScanPath): Promise<void> {
+    if (!settings) return;
     setBusy(true);
     setOutcome(null);
     const startedAt = Date.now();
     try {
-      const photo = await cameraRef.current.takePictureAsync({ quality: CAPTURE_QUALITY });
-      if (!photo?.uri) throw new Error("The camera didn't return a photo.");
-      const payload = await buildScanPayload(photo.uri);
-      const saved = await captureContact(settings, payload.request);
+      const saved = await captureContact(settings, request);
       setOutcome({
         kind: "saved",
         name: saved.name,
         via: "via" in saved ? saved.via : "ai",
-        path: payload.path,
+        path,
         seconds: (Date.now() - startedAt) / 1000,
         notice: saved.notice,
       });
+      setText("");
+      setVoiceHint(null);
     } catch (error) {
       const message =
-        error instanceof CaptureError || error instanceof Error
-          ? error.message
-          : "Something went wrong. Try again.";
+        error instanceof CaptureError || error instanceof Error ? error.message : "Something went wrong. Try again.";
       setOutcome({ kind: "error", message });
     } finally {
       setBusy(false);
     }
-  };
-
-  if (!settings || !permission) return <View style={styles.screen} />;
-
-  if (!permission.granted) {
-    return (
-      <View style={[styles.screen, styles.centered]}>
-        <Text style={styles.permissionText}>
-          Dhaga scans business cards with the camera. Nothing is captured until you press the
-          shutter.
-        </Text>
-        <Pressable style={styles.grantButton} onPress={() => void requestPermission()}>
-          <Text style={styles.grantLabel}>Allow camera access</Text>
-        </Pressable>
-      </View>
-    );
   }
+
+  async function shootCamera(): Promise<void> {
+    if (busy) return;
+    try {
+      const uri = await cameraRef.current?.capture();
+      if (!uri) return;
+      const payload = await buildScanPayload(uri);
+      await finish(payload.request, payload.path);
+    } catch (error) {
+      setOutcome({ kind: "error", message: error instanceof Error ? error.message : "The camera didn't return a photo." });
+    }
+  }
+
+  async function pickFromLibrary(): Promise<void> {
+    if (busy) return;
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      setOutcome({ kind: "error", message: "Photo library access is needed to pick a card photo." });
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"] });
+    const uri = result.assets?.[0]?.uri;
+    if (result.canceled || !uri) return;
+    const payload = await buildScanPayload(uri);
+    await finish(payload.request, payload.path);
+  }
+
+  function submitText(): void {
+    const raw = text.trim();
+    if (!raw || busy) return;
+    void finish({ raw }, "typed");
+  }
+
+  if (!settings) return <View style={styles.screen} />;
+
+  const dockActions: DockAction[] = [
+    {
+      key: "voice",
+      icon: <Feather name="mic" size={20} color={mode === "text" ? COLORS.amber : COLORS.paper} />,
+      label: "Voice",
+      active: mode === "text",
+      onPress: () => {
+        setMode("text");
+        setVoiceHint("On-device voice dictation is coming soon — type for now.");
+      },
+    },
+    {
+      key: "camera",
+      icon: <Feather name="camera" size={20} color={mode === "camera" ? COLORS.amber : COLORS.paper} />,
+      label: mode === "camera" ? "Shutter" : "Camera",
+      active: mode === "camera",
+      onPress: () => (mode === "camera" ? void shootCamera() : setMode("camera")),
+    },
+    {
+      key: "file",
+      icon: <Feather name="image" size={20} color={COLORS.paper} />,
+      label: "File",
+      onPress: () => void pickFromLibrary(),
+    },
+  ];
 
   return (
     <View style={styles.screen}>
-      <CameraView ref={cameraRef} style={styles.camera} facing="back" />
+      {mode === "camera" ? (
+        <CameraCaptureView ref={cameraRef} />
+      ) : (
+        <TextCaptureView value={text} onChangeText={setText} onSubmit={submitText} busy={busy} hint={voiceHint} />
+      )}
       <View style={styles.overlay}>
         {outcome ? <ResultBanner outcome={outcome} /> : null}
-        <View style={styles.controls}>
-          <Pressable
-            style={styles.settingsButton}
-            onPress={() => router.push("/setup")}
-            disabled={busy}
-          >
-            <Text style={styles.settingsLabel}>Settings</Text>
-          </Pressable>
-          <Pressable
-            style={[styles.shutter, busy && styles.shutterBusy]}
-            onPress={() => void scan()}
-            disabled={busy}
-            accessibilityLabel="Scan card"
-          >
-            {busy ? <ActivityIndicator color={COLORS.ink} /> : <View style={styles.shutterDot} />}
-          </Pressable>
-          <View style={styles.settingsButton} />
-        </View>
+        <BottomDock actions={dockActions} />
       </View>
     </View>
   );
@@ -102,29 +139,5 @@ export default function CaptureScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: COLORS.ink },
-  centered: { alignItems: "center", justifyContent: "center", padding: 24, gap: 20 },
-  permissionText: { color: COLORS.fog, fontSize: 16, lineHeight: 24, textAlign: "center" },
-  grantButton: {
-    backgroundColor: COLORS.amber,
-    borderRadius: 999,
-    minHeight: 44,
-    paddingHorizontal: 24,
-    justifyContent: "center",
-  },
-  grantLabel: { color: COLORS.ink, fontSize: 16, fontWeight: "600" },
-  camera: { flex: 1 },
   overlay: { position: "absolute", bottom: 0, left: 0, right: 0, padding: 20, gap: 16 },
-  controls: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  settingsButton: { width: 88, minHeight: 44, justifyContent: "center" },
-  settingsLabel: { color: COLORS.paper, fontSize: 15 },
-  shutter: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: COLORS.amber,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  shutterBusy: { opacity: 0.6 },
-  shutterDot: { width: 56, height: 56, borderRadius: 28, borderWidth: 3, borderColor: COLORS.ink },
 });

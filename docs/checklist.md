@@ -20,7 +20,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] CI (typecheck + lint + tests + build on push)
 - [x] Test suite (vitest, in-memory PGlite): heuristic parser, export formats, receipts cascade
 - [x] Fix Dependabot alert (postcss <8.5.10 via next — npm override to ^8.5.16)
-- [ ] Deploy to Vercel (landing + app)
+- [x] Deploy to Vercel (landing + app)
 
 ## 1. Shared core — `packages/core`
 

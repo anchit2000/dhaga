@@ -75,7 +75,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] People list with filter + contact detail page
 - [x] Company auto-link: extracted company name → find-or-create `companies` row
 - [x] User-triggered enrichment: web search → cited enrichment note → receipted facts
-- [ ] LinkedIn Connections CSV import — user's own LinkedIn data export → bulk contacts, ToS-safe (BRD §6.7) (v1.1)
+- [x] LinkedIn Connections CSV import — user's own LinkedIn data export → bulk contacts, ToS-safe (BRD §6.7) (v1.1); `lib/import/linkedin.ts`, wired into `/app/import`, LinkedIn header format covered by `csv-import.test.ts`/`import-repo.test.ts`
 - [x] Waitlist signups get a confirmation email (Resend)
 
 ## 5. Sessions / auto-grouping (M2)
@@ -136,7 +136,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 ## 12. Mobile app — `apps/mobile` (BRD MVP platform; separate milestone)
 
 - [x] PWA: installable web app (manifest, standalone display, brand icons) — the interim mobile surface
-- [ ] Per-user API keys (better-auth `apiKey` plugin) for non-browser clients — replaces `DHAGA_API_TOKEN`; settings UI built, typecheck/lint/build pass, manual verification pending
+- [ ] Per-user API keys (better-auth `apiKey` plugin) for non-browser clients — replaces `DHAGA_API_TOKEN`; code confirmed fully wired end-to-end (2026-07-07 audit): `apiKey` plugin, settings UI, `/api/capture` auth fallback all connected, `DHAGA_API_TOKEN` no longer referenced anywhere in code. Only remaining bar is a human clicking through the settings UI in a browser
 - [x] `/api/capture` accepts card images (base64) — ready for the Expo app to call
 
 - [ ] M0 spike: Expo app, camera → Vision/ML Kit OCR → Haiku parse → contact saved — built 2026-07-04 (`apps/mobile`: Expo SDK 57, dev-client, `expo-text-extractor` on-device OCR primary + server photo-scan fallback, `x-api-key` auth); typecheck green; **needs on-device verification on Android + iPhone** (see `apps/mobile/README.md`), not pushed
@@ -154,7 +154,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] One-click capture from any page (activeTab on explicit click only, page URL as receipt)
 - [x] `/api/capture` REST endpoint (session-gated; shared by extension + future mobile share)
 - [x] "Save this article to {contact}": attach mode in the popup + contact search API
-- [ ] Web Store packaging/listing (privacy policy page now live at `/privacy`)
+- [ ] Web Store packaging/listing (privacy policy page now live at `/privacy`) — further along than it looks: build/zip pipeline exists (`apps/extension/build.mjs`), a pre-built `.zip` and `STORE_LISTING.md` with listing copy are ready; only remaining blockers are a reviewer demo account + the $5 Chrome dev registration fee (both manual/external, not code)
 
 ## 14. Proactive intelligence (v1.2)
 
@@ -190,10 +190,10 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 
 ## 18. Monetization & launch
 
-- [ ] Access-request API (`/api/access-requests`, `packages/ee`) wired to real storage; landing form posts to it — replaces the old public waitlist, gated behind `DHAGA_HOSTED_MODE`; typecheck/lint/build pass, manual verification pending
+- [ ] Access-request API (`/api/access-requests`, `packages/ee`) wired to real storage; landing form posts to it — replaces the old public waitlist, gated behind `DHAGA_HOSTED_MODE`; code confirmed backed by a real Drizzle/Postgres table (2026-07-07 audit), no stub — only remaining bar is a human clicking through the flow in a browser
 - [ ] Free tier caps live; Pro (lifetime $79 first-500 / $8 mo) checkout — Stripe Checkout + webhook built (§19); real Stripe Product/Price setup + a live test-mode purchase still needed
-- [x] Self-host docs — [SELF_HOSTING.md](SELF_HOSTING.md) (no `packages/ee` needed, no `docker compose` yet)
-- [ ] `docker compose up` — self-host currently means `npm run build && npm run start`, no container image yet
+- [x] Self-host docs — [SELF_HOSTING.md](SELF_HOSTING.md) (no `packages/ee` needed)
+- [ ] `docker compose up` — `Dockerfile` + `compose.yml` already exist at repo root (`0c774da`, single-stage Node 22 web image + pgvector/pgvector:pg17 db service with healthchecks); looks complete on read-through but has not actually been run end-to-end (no local Docker available as of 2026-07-07)
 - [ ] Public roadmap + good-first-issues
 - [ ] Replace randomuser.me landing portraits with licensed photos before paid marketing
 
@@ -205,8 +205,8 @@ confirming the AGPL core doesn't need it) but **not yet manually
 click-tested in a browser or pushed** — the checklist bar for `[x]` needs
 both, so these stay unchecked until that happens.
 
-- [ ] Real accounts (better-auth email/password) replacing the single shared `DHAGA_PASSWORD`; `/login` + `/signup`
-- [ ] Per-user personal access tokens (better-auth `apiKey` plugin) replacing `DHAGA_API_TOKEN`, settings UI to create/revoke
+- [ ] Real accounts (better-auth email/password) replacing the single shared `DHAGA_PASSWORD`; `/login` + `/signup` — **flagged 2026-07-07: this is the same code/checkbox as §2's "Auth: real accounts", not a distinct multi-tenant implementation** (`DHAGA_PASSWORD` doesn't exist anywhere in code, only in this checklist); consider deleting one of the two entries once confirmed there's no separate hosted-mode acceptance bar
+- [ ] Per-user personal access tokens (better-auth `apiKey` plugin) replacing `DHAGA_API_TOKEN`, settings UI to create/revoke — **flagged 2026-07-07: duplicate of §12's "Per-user API keys"**, same `apiKey` plugin/settings UI, not SaaS-specific
 - [ ] Multi-tenant data isolation via Postgres Row-Level Security, entirely in `packages/ee` — zero query-logic changes in `apps/web/src/lib/repo/*`
 - [ ] Open-core boundary: `packages/ee` (source-available, PolyForm Shield 1.0.0 — see `packages/ee/LICENSE`), self-host runs fully without it (`SELF_HOSTING.md`)
 - [ ] Early access: public request form → admin approve/reject → gated signup (`DHAGA_HOSTED_MODE` only; inert and 404s otherwise)

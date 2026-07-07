@@ -4,6 +4,7 @@ import { useRef, useState, type RefObject } from "react";
 import { Camera, Mic, Square, Upload } from "lucide-react";
 import { GlassSurface } from "@/components/ui/glass-surface";
 import { Dock, type DockItemData } from "@/components/ui/dock";
+import { PhotoCropper } from "../PhotoCropper";
 import { WebcamCapture } from "../WebcamCapture";
 import { downscalePhoto } from "../downscalePhoto";
 import { useDictation } from "../contact/useDictation";
@@ -24,6 +25,7 @@ export function QuickAddDock({
   pasteTextareaRef: RefObject<HTMLTextAreaElement | null>;
 }) {
   const [showCamera, setShowCamera] = useState(false);
+  const [photoToCrop, setPhotoToCrop] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { supported: dictationSupported, listening, start, stop } = useDictation((text) => {
     const el = pasteTextareaRef.current;
@@ -72,16 +74,26 @@ export function QuickAddDock({
         onChange={(event) => {
           const file = event.currentTarget.files?.[0];
           event.currentTarget.value = "";
-          if (file) submitPhoto(file);
+          if (file) setPhotoToCrop(file);
         }}
       />
       {showCamera ? (
         <WebcamCapture
           onCapture={(file) => {
             setShowCamera(false);
-            submitPhoto(file);
+            setPhotoToCrop(file);
           }}
           onClose={() => setShowCamera(false)}
+        />
+      ) : null}
+      {photoToCrop ? (
+        <PhotoCropper
+          file={photoToCrop}
+          onCancel={() => setPhotoToCrop(null)}
+          onConfirm={(cropped) => {
+            setPhotoToCrop(null);
+            submitPhoto(cropped);
+          }}
         />
       ) : null}
       <div className="pointer-events-none fixed inset-x-0 bottom-6 z-30 flex justify-center px-4">

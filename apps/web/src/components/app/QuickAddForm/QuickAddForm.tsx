@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState, useRef, useState } from "react";
-import Link from "next/link";
 import { Camera } from "lucide-react";
 import {
   extractQuickAddAction,
@@ -9,11 +8,12 @@ import {
   type QuickAddState,
 } from "@/lib/actions/quick-add";
 import { Textarea } from "@/components/ui/textarea";
-import { ContactForm } from "../ContactForm";
-import { SessionPicker, type SessionOption } from "../SessionPicker";
+import { PhotoCropper } from "../PhotoCropper";
+import type { SessionOption } from "../SessionPicker";
 import { SubmitButton } from "../SubmitButton";
 import { downscalePhoto } from "../downscalePhoto";
 import { QuickAddDock } from "./QuickAddDock";
+import { QuickAddResult } from "./QuickAddResult";
 
 type Mode = "paste" | "photo";
 
@@ -28,6 +28,7 @@ export function QuickAddForm({
   storeCardPhotos: boolean;
 }) {
   const [mode, setMode] = useState<Mode>("paste");
+  const [photoToCrop, setPhotoToCrop] = useState<File | null>(null);
   const pasteTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [state, formAction] = useActionState<QuickAddState, FormData>(
     async (previous, formData) => {
@@ -43,29 +44,16 @@ export function QuickAddForm({
 
   if (state.contact) {
     return (
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-full border border-amber/30 bg-amber/10 px-2.5 py-1 font-mono text-[10px] uppercase tracking-widest text-amber">
-            {state.via === "ai" ? "Extracted with AI" : "Parsed offline"}
-          </span>
-          <Link
-            href="/app/quick-add"
-            className="text-xs text-fog underline-offset-2 hover:text-paper hover:underline"
-          >
-            Start over
-          </Link>
-        </div>
-        {state.notice ? <p className="text-sm text-fog">{state.notice}</p> : null}
-        <div className="rounded-2xl border border-seam bg-panel p-5 sm:p-6">
-          <ContactForm initial={state.contact} submitLabel="Save person">
-            <input type="hidden" name="source" value="quick_add" />
-            <input type="hidden" name="sourceText" value={state.sourceText ?? ""} />
-            <input type="hidden" name="imageBase64" value={state.imageBase64 ?? ""} />
-            <input type="hidden" name="imageType" value={state.imageType ?? ""} />
-            <SessionPicker sessions={sessions} defaultSessionId={defaultSessionId} />
-          </ContactForm>
-        </div>
-      </div>
+      <QuickAddResult
+        contact={state.contact}
+        via={state.via}
+        notice={state.notice}
+        sourceText={state.sourceText}
+        imageBase64={state.imageBase64}
+        imageType={state.imageType}
+        sessions={sessions}
+        defaultSessionId={defaultSessionId}
+      />
     );
   }
 
@@ -120,9 +108,9 @@ export function QuickAddForm({
               required
               className="sr-only"
               onChange={(event) => {
-                if (event.currentTarget.files?.length) {
-                  event.currentTarget.form?.requestSubmit();
-                }
+                const file = event.currentTarget.files?.[0];
+                event.currentTarget.value = "";
+                if (file) setPhotoToCrop(file);
               }}
             />
           </label>
@@ -142,6 +130,19 @@ export function QuickAddForm({
         onVoiceStart={() => setMode("paste")}
         pasteTextareaRef={pasteTextareaRef}
       />
+
+      {photoToCrop ? (
+        <PhotoCropper
+          file={photoToCrop}
+          onCancel={() => setPhotoToCrop(null)}
+          onConfirm={(cropped) => {
+            setPhotoToCrop(null);
+            const formData = new FormData();
+            formData.set("photo", cropped);
+            formAction(formData);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

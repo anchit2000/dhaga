@@ -48,7 +48,7 @@ export default function SetupScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.lede}>
           Point the app at your Dhaga server. On a dev machine, use its LAN address (for example
-          http://192.168.1.20:3000) — your phone can't reach localhost.
+          http://192.168.1.20:3000) — your phone can&apos;t reach localhost.
         </Text>
         <View style={styles.field}>
           <Text style={styles.label}>Server address</Text>
@@ -77,8 +77,8 @@ export default function SetupScreen() {
             editable={!saving}
           />
           <Text style={styles.hint}>
-            Create one in the Dhaga web app under Settings → API keys, then paste it here. It's
-            stored only in this phone's secure storage.
+            Create one in the Dhaga web app under Settings → API keys, then paste it here. It&apos;s
+            stored only in this phone&apos;s secure storage.
           </Text>
         </View>
         <Pressable

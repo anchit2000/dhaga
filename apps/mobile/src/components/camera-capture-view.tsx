@@ -4,9 +4,15 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { CAPTURE_QUALITY, COLORS } from "@/utils/constants";
 
+export interface CapturedPhoto {
+  uri: string;
+  width: number;
+  height: number;
+}
+
 export interface CameraCaptureHandle {
-  /** Takes a photo and resolves its file uri; the dock's shutter button drives this. */
-  capture: () => Promise<string>;
+  /** Takes a photo and resolves its uri + pixel size; the dock's shutter button drives this. */
+  capture: () => Promise<CapturedPhoto>;
 }
 
 /** Live camera preview; capture is triggered externally (from BottomDock) via the exposed ref. */
@@ -18,7 +24,7 @@ export const CameraCaptureView = forwardRef<CameraCaptureHandle>(function Camera
     capture: async () => {
       const photo = await cameraRef.current?.takePictureAsync({ quality: CAPTURE_QUALITY });
       if (!photo?.uri) throw new Error("The camera didn't return a photo.");
-      return photo.uri;
+      return { uri: photo.uri, width: photo.width, height: photo.height };
     },
   }));
 

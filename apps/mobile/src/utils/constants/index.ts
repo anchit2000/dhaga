@@ -34,3 +34,24 @@ export const FALLBACK_IMAGE_COMPRESS = 0.7;
 
 /** Shutter capture quality (0–1). */
 export const CAPTURE_QUALITY = 0.7;
+
+/**
+ * Crop review screen (docs/ideas.md #2). Business cards rarely fill the
+ * whole camera frame, so the default rectangle starts inset instead of
+ * covering the full photo.
+ */
+export const CROP_INSET_X_RATIO = 0.08;
+export const CROP_INSET_Y_RATIO = 0.16;
+
+/** Crop rectangle can't shrink below this (dp) — keeps handles usable and
+ * stops the user from cropping to nothing. */
+export const CROP_MIN_SIZE = 80;
+
+/** Corner handle touch target (>=44x44 per the mobile-first UI rule); the
+ * visible dot inside it is smaller. */
+export const CROP_HANDLE_TOUCH_SIZE = 44;
+export const CROP_HANDLE_VISUAL_SIZE = 20;
+
+/** Re-encode quality for the cropped photo before it continues into the
+ * existing OCR pipeline (buildScanPayload resizes/compresses again there). */
+export const CROP_JPEG_COMPRESS = 0.9;

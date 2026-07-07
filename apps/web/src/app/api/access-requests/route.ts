@@ -6,6 +6,10 @@
 import { after } from "next/server";
 import { submitAccessRequest } from "@dhaga/ee/access-requests";
 import { notifyAccessRequested } from "@/lib/access/notify";
+import type {
+  AccessRequestErrorResponse,
+  AccessRequestResponse,
+} from "@dhaga/core/src/api/access-requests";
 
 const EMAIL_RE = /^[\w.+-]+@[\w-]+(?:\.[\w-]+)+$/;
 
@@ -20,7 +24,10 @@ export async function POST(request: Request): Promise<Response> {
   // hosted mode is explicitly on — self-hosters never trigger EE's schema
   // just by an unrelated visitor hitting this endpoint.
   if (process.env.DHAGA_HOSTED_MODE !== "true") {
-    return Response.json({ error: "Not found." }, { status: 404 });
+    return Response.json(
+      { error: "Not found." } satisfies AccessRequestErrorResponse,
+      { status: 404 },
+    );
   }
   let email = "";
   try {
@@ -29,15 +36,21 @@ export async function POST(request: Request): Promise<Response> {
       .trim()
       .toLowerCase();
   } catch {
-    return Response.json({ error: "Invalid request." }, { status: 400 });
+    return Response.json(
+      { error: "Invalid request." } satisfies AccessRequestErrorResponse,
+      { status: 400 },
+    );
   }
   if (!EMAIL_RE.test(email) || email.length > 254) {
-    return Response.json({ error: "Enter a valid email." }, { status: 400 });
+    return Response.json(
+      { error: "Enter a valid email." } satisfies AccessRequestErrorResponse,
+      { status: 400 },
+    );
   }
 
   await submitAccessRequest(email);
 
   // Confirmation + owner notification go out after the response.
   after(() => notifyAccessRequested(email));
-  return Response.json({ ok: true });
+  return Response.json({ ok: true } satisfies AccessRequestResponse);
 }

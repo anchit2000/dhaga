@@ -1,4 +1,8 @@
 import { runSignalDetection } from "@/lib/jobs/detect-signals";
+import type {
+  DetectSignalsErrorResponse,
+  SignalDetectionSummary,
+} from "@dhaga/core/src/api/jobs";
 
 /**
  * Cron entrypoint for nightly signal detection (BRD §6.7). Vercel Cron sends
@@ -10,8 +14,11 @@ import { runSignalDetection } from "@/lib/jobs/detect-signals";
 export async function GET(request: Request): Promise<Response> {
   const secret = process.env.CRON_SECRET;
   if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+    return Response.json(
+      { error: "Unauthorized" } satisfies DetectSignalsErrorResponse,
+      { status: 401 },
+    );
   }
   const summary = await runSignalDetection();
-  return Response.json(summary);
+  return Response.json(summary satisfies SignalDetectionSummary);
 }

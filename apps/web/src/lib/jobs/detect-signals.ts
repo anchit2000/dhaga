@@ -9,18 +9,13 @@ import {
   hasSearch,
   signalDetectionSchema,
 } from "@dhaga/core";
+import type { SignalDetectionSummary } from "@dhaga/core/src/api/jobs";
 import { getDb } from "@/lib/db";
 import { companies, contacts, signals } from "@/lib/db/schema";
 import { recordAiAction } from "@/lib/ai/metering";
 
 /** Re-scan cadence per watched contact — nightly cron, weekly-ish per contact. */
 const RESCAN_AFTER_DAYS = 6;
-
-export interface SignalDetectionSummary {
-  scanned: number;
-  created: number;
-  skipped: "no_search" | "no_llm" | null;
-}
 
 /**
  * Nightly signal detection (BRD §5.2 v1.2, §6.7): web-search each watched

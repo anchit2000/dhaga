@@ -1,6 +1,11 @@
 import { requireUserIdFromRequest } from "@/lib/auth/guard";
 import { exportContacts, exportEverything } from "@/lib/export/data";
 import { contactsToCsv, contactsToVCards } from "@/lib/export/formats";
+import type { ExportFormat } from "@dhaga/core/src/api/export";
+
+function isExportFormat(value: string): value is ExportFormat {
+  return value === "csv" || value === "vcard" || value === "json";
+}
 
 export async function GET(
   request: Request,
@@ -12,6 +17,9 @@ export async function GET(
     return new Response("Unauthorized", { status: 401 });
   }
   const { format } = await params;
+  if (!isExportFormat(format)) {
+    return new Response("Unknown format. Use csv, vcard, or json.", { status: 404 });
+  }
   const stamp = new Date().toISOString().slice(0, 10);
 
   if (format === "csv") {
@@ -28,14 +36,11 @@ export async function GET(
       `dhaga-contacts-${stamp}.vcf`,
     );
   }
-  if (format === "json") {
-    return fileResponse(
-      JSON.stringify(await exportEverything(), null, 2),
-      "application/json",
-      `dhaga-export-${stamp}.json`,
-    );
-  }
-  return new Response("Unknown format. Use csv, vcard, or json.", { status: 404 });
+  return fileResponse(
+    JSON.stringify(await exportEverything(), null, 2),
+    "application/json",
+    `dhaga-export-${stamp}.json`,
+  );
 }
 
 function fileResponse(

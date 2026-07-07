@@ -59,6 +59,34 @@ describe("relationship strength score", () => {
       scoreStrength(touched, 1, now).score,
     );
   });
+
+  it("a contact with zero interactions ever never produces NaN or a divide-by-zero score", () => {
+    const touchedToday = scoreStrength(new Date(now), 0, now);
+    expect(Number.isFinite(touchedToday.score)).toBe(true);
+    const neverTouched = scoreStrength(new Date(now - 10_000 * DAY), 0, now);
+    expect(Number.isFinite(neverTouched.score)).toBe(true);
+    expect(neverTouched.score).toBeGreaterThanOrEqual(0);
+  });
+
+  it("recency decay is monotonic: touching today always outscores touching earlier, at any fixed frequency", () => {
+    // Business logic this guards: the "going quiet" ranking must never
+    // invert — a fresher touch can't score lower than a staler one.
+    const offsets = [0, 1, 7, 30, 90, 200, 400, 2000];
+    for (const interactions of [0, 1, 5, 20]) {
+      const scores = offsets.map(
+        (days) => scoreStrength(new Date(now - days * DAY), interactions, now).score,
+      );
+      for (let i = 1; i < scores.length; i++) {
+        expect(scores[i]).toBeLessThanOrEqual(scores[i - 1]);
+      }
+    }
+  });
+
+  it("a future-dated last touch (clock skew) clamps to 'now', it doesn't score above a same-day touch", () => {
+    const skewed = scoreStrength(new Date(now + 5 * DAY), 3, now);
+    const sameDay = scoreStrength(new Date(now), 3, now);
+    expect(skewed.score).toBe(sameDay.score);
+  });
 });
 
 describe("decay detection (going quiet)", () => {

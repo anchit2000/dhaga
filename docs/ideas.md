@@ -1,5 +1,10 @@
 1. Keith Ferrazzi ideas from book
-2. Document scanners like cropping
+2. Document scanners like cropping — built 2026-07-07 for both web
+   (`apps/web/src/components/app/PhotoCropper/`) and mobile
+   (`apps/mobile/src/components/crop-review/`): drag-to-crop step between
+   capture and OCR/parsing on both platforms. Typecheck/lint/test green on
+   both; manual click-through (and first-ever on-device/simulator boot for
+   the mobile app) still outstanding.
 3. One stop chat interface whatsapp/telegram -- Anchit loves Linkin Park
 4. Graph seeding / cold-start imports (2026-07-04): Google Contacts (People API
    OAuth, one click — lower friction than LinkedIn CSV) + on-device contacts

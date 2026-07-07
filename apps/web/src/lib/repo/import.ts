@@ -4,6 +4,7 @@ import { companies, contacts } from "@/lib/db/schema";
 import { createContact } from "./contacts";
 import { addNote } from "./notes";
 import { emitWebhook } from "@/lib/webhooks";
+import { normalizeForMatch } from "@/lib/text-match";
 import type { ImportCandidate, ImportFormat } from "@/lib/import";
 
 export interface ImportSummary {
@@ -39,16 +40,18 @@ export async function importContacts(
   const nameSeen = new Set<string>();
   for (const row of existing) {
     for (const email of row.emails) emailSeen.add(email.toLowerCase());
-    nameSeen.add(`${row.name.toLowerCase()}|${row.companyName?.toLowerCase() ?? ""}`);
+    nameSeen.add(
+      `${normalizeForMatch(row.name)}|${normalizeForMatch(row.companyName ?? "")}`,
+    );
   }
 
   let created = 0;
   let skipped = 0;
   for (const candidate of candidates) {
     const emails = candidate.contact.emails.map((email) => email.toLowerCase());
-    const nameKey = `${candidate.contact.name.trim().toLowerCase()}|${
-      candidate.contact.company?.trim().toLowerCase() ?? ""
-    }`;
+    const nameKey = `${normalizeForMatch(candidate.contact.name)}|${normalizeForMatch(
+      candidate.contact.company ?? "",
+    )}`;
     if (emails.some((email) => emailSeen.has(email)) || nameSeen.has(nameKey)) {
       skipped++;
       continue;

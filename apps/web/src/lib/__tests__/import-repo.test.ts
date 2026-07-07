@@ -70,6 +70,20 @@ describe("bulk import", () => {
     );
     expect(summary).toEqual({ created: 1, skipped: 1 });
   });
+
+  it("matches names that differ only by internal whitespace or accents (no email on either side)", async () => {
+    // "Bob  Smith" (double space, e.g. a sloppy CSV export) must still be
+    // recognized as "Bob Smith" on re-import — a raw string-equality match
+    // would silently let the duplicate through.
+    await importContacts([candidate("Bob  Smith", "Acme")], "google");
+    const doubleSpace = await importContacts([candidate("Bob Smith", "Acme")], "google");
+    expect(doubleSpace).toEqual({ created: 0, skipped: 1 });
+
+    // "José" vs "Jose" — same name, accent dropped by a different export tool.
+    await importContacts([candidate("José García", "Acme")], "google");
+    const accented = await importContacts([candidate("Jose Garcia", "Acme")], "google");
+    expect(accented).toEqual({ created: 0, skipped: 1 });
+  });
 });
 
 describe("confirmed cluster suggestions", () => {

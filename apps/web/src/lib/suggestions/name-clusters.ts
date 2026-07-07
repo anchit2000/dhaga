@@ -1,3 +1,5 @@
+import { normalizeForMatch } from "@/lib/text-match";
+
 /**
  * Confirm-only clustering over saved contact names (docs/ideas.md #4).
  * People encode context in names ("Anchit JOGET") and surnames cluster into
@@ -25,7 +27,8 @@ export interface NameCluster {
 }
 
 function normalizeToken(raw: string): string | null {
-  const token = raw.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "").toLowerCase();
+  const stripped = raw.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "");
+  const token = normalizeForMatch(stripped);
   if (token.length < 3) return null;
   if (/^\d+$/.test(token)) return null;
   if (raw.includes("@") || /^https?:/i.test(raw)) return null;

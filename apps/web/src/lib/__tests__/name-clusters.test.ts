@@ -50,6 +50,18 @@ describe("name clustering suggestions", () => {
     expect(gone).toHaveLength(0);
   });
 
+  it("clusters accented and unaccented spellings of the same surname together", () => {
+    // "José" vs "Jose" — same surname, accent dropped by whoever typed the
+    // second contact in. A naive lowercase-only key treats these as two
+    // different tokens and never surfaces the cluster.
+    const clusters = computeNameClusters([
+      person("1", "Ana Núñez"),
+      person("2", "Luis Nunez"),
+    ]);
+    expect(clusters).toHaveLength(1);
+    expect(clusters[0].contactIds).toHaveLength(2);
+  });
+
   it("ignores short/numeric tokens that can't mean anything", () => {
     const clusters = computeNameClusters([
       person("1", "Li Wu"),

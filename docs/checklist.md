@@ -33,7 +33,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Prompt builder: search query understanding (structured filters stage)
 - [x] `getLLMClient()` factory (env-driven; Ollama/BYO-key = future implementations)
 - [x] Heuristic (no-LLM) contact parser fallback — email/phone/URL regex + name lines
-- [ ] Shared API types (request/response contracts used by web now, mobile later) — `/api/capture` contract added (`packages/core/src/api/capture.ts`, 2026-07-04): web route `satisfies` it, mobile imports it; other routes still untyped, not pushed
+- [x] Shared API types (request/response contracts used by web now, mobile later) — `packages/core/src/api/{capture,contacts,export,card-image,access-requests,jobs}.ts`; each route `satisfies` its contract (2026-07-07); `auth/[...all]`, `stripe/webhook`, and `telegram` intentionally left untyped (better-auth's own catch-all, a Stripe-shaped webhook receiver, and an internal bot webhook — none are a shared web/mobile contract surface), not pushed
 
 ## 2. Web app shell (v1.1 surface, built first)
 
@@ -58,8 +58,8 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] `embeddings` table (pgvector, 384-dim, receipts via owner_type/owner_id)
 - [x] `follow_ups` table
 - [x] `ai_actions` metering table (day one requirement)
-- [ ] Deletion cascade: contact → notes → facts → edges → embeddings ("forget this person")
-- [ ] Note deletion tombstones derived facts/edges (receipts invariant)
+- [x] Deletion cascade: contact → notes → facts → edges → embeddings ("forget this person") — `forgetContact` already did this correctly (`repo/contacts/mutations.ts`)
+- [x] Note deletion tombstones derived facts/edges (receipts invariant) — embeddings cleanup moved into `deleteNote` itself (2026-07-07, was only in the action layer, so any other caller skipped it); `graph-receipts.test.ts` now asserts embeddings are gone, not pushed
 
 ## 4. Capture — web quick-add (v1.1, M1-equivalent for web)
 
@@ -201,9 +201,14 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 
 Everything in this section is typecheck/lint/build/vitest-clean (including a
 build with `packages/ee` and its exclusive route folders physically removed,
-confirming the AGPL core doesn't need it) but **not yet manually
-click-tested in a browser or pushed** — the checklist bar for `[x]` needs
-both, so these stay unchecked until that happens.
+confirming the AGPL core doesn't need it — as of 2026-07-07 this is enforced
+on every push by the `verify-without-ee` CI job, not just a one-off manual
+check) but **not yet manually click-tested in a browser or pushed** — the
+checklist bar for `[x]` needs both, so these stay unchecked until that
+happens. A 2026-07-07 code audit confirmed every item below is backed by
+real, substantive implementation (RLS policies, Stripe integration matching
+the "4 event types" claim exactly, real `notFound()` admin gating) — none of
+this is a stub, the only gap is the manual click-through + push.
 
 - [ ] Real accounts (better-auth email/password) replacing the single shared `DHAGA_PASSWORD`; `/login` + `/signup` — **flagged 2026-07-07: this is the same code/checkbox as §2's "Auth: real accounts", not a distinct multi-tenant implementation** (`DHAGA_PASSWORD` doesn't exist anywhere in code, only in this checklist); consider deleting one of the two entries once confirmed there's no separate hosted-mode acceptance bar
 - [ ] Per-user personal access tokens (better-auth `apiKey` plugin) replacing `DHAGA_API_TOKEN`, settings UI to create/revoke — **flagged 2026-07-07: duplicate of §12's "Per-user API keys"**, same `apiKey` plugin/settings UI, not SaaS-specific

@@ -1,9 +1,28 @@
 import { describe, expect, it } from "vitest";
+import { eq } from "drizzle-orm";
+import { getDb } from "@/lib/db/request-scope";
+import { embeddings } from "@/lib/db/schema";
 import { createContact, forgetContact, getContact } from "@/lib/repo/contacts";
 import { addNote, deleteNote, listFacts, listOpenFollowUps } from "@/lib/repo/notes";
 import { applyExtraction } from "@/lib/repo/graph";
 import { fetchGraphView } from "@/lib/repo/graph-data";
 import type { NoteExtraction } from "@dhaga/core";
+
+/**
+ * Embeddings are off in tests (vitest.config.ts) so upsertEmbedding never
+ * inserts a row — seed one directly to prove deleteNote's cleanup actually
+ * fires, regardless of whether real indexing ran.
+ */
+async function seedEmbedding(noteId: string, contactId: string): Promise<void> {
+  const db = await getDb();
+  await db.insert(embeddings).values({
+    ownerType: "note",
+    ownerId: noteId,
+    contactId,
+    content: "stub",
+    embedding: new Array(384).fill(0),
+  });
+}
 
 const contactInput = {
   name: "Rohan Mehta",
@@ -67,6 +86,21 @@ describe("graph receipts and cascades", () => {
 
     await deleteNote(noteId);
     expect(await listFacts(id)).toHaveLength(0);
+  });
+
+  it("deleting a note removes its embedding rows too — no caller can leave orphans", async () => {
+    const id = await createContact({ ...contactInput, name: "Embedded Person" }, "manual");
+    const noteId = await addNote(id, "text", "a note worth indexing");
+    await seedEmbedding(noteId, id);
+
+    const db = await getDb();
+    const before = await db.select().from(embeddings).where(eq(embeddings.ownerId, noteId));
+    expect(before).toHaveLength(1);
+
+    await deleteNote(noteId);
+
+    const after = await db.select().from(embeddings).where(eq(embeddings.ownerId, noteId));
+    expect(after).toHaveLength(0);
   });
 
   it("forgetting a person removes them from the graph entirely", async () => {

@@ -22,3 +22,27 @@ jobs:
       - run: npm run lint --prefix apps/web
       - run: npm run test --prefix apps/web
       - run: npm run build --prefix apps/web
+
+  verify-without-ee:
+    name: Verify AGPL core builds without packages/ee
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      # Physically remove packages/ee, matching docs/SELF_HOSTING.md's "Level
+      # 2" instructions, so this job proves the AGPL core in apps/web builds
+      # standalone (see apps/web/src/lib/hosted/gate.ts for the dynamic-import
+      # gate pattern that makes this possible).
+      - run: |
+          rm -rf packages/ee \
+            apps/web/src/app/app/admin \
+            apps/web/src/app/api/access-requests \
+            apps/web/src/app/api/stripe \
+            apps/web/src/lib/actions/admin
+          sed -i '/"@dhaga\/ee": "\*",/d' apps/web/package.json
+          sed -i 's/\["@dhaga\/core", "@dhaga\/ee"\]/["@dhaga\/core"]/' apps/web/next.config.ts
+      - run: npm install
+      - run: npm run build --prefix apps/web

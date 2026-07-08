@@ -77,3 +77,12 @@ export const PRO_TIER_WATCHLIST_CAP = 25;
 
 /** How many new signals the Home feed shows before "+N more". */
 export const SIGNALS_FEED_LIMIT = 8;
+
+/**
+ * Auto event grouping (M2, BRD §6.2): scans sharing a geohash-6 within this
+ * rolling window join the same session instead of starting a new one.
+ */
+export const SESSION_CLUSTER_WINDOW_MS = 4 * 60 * 60 * 1000; // 4 hours
+
+/** Name given to a session auto-created by clustering, until the user renames it. */
+export const NEW_SESSION_PLACEHOLDER_NAME = "New session";

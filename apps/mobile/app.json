@@ -41,6 +41,12 @@
           "cameraPermission": "Dhaga uses the camera to scan business cards and badges."
         }
       ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Dhaga uses your coarse location to group scans from the same event into a session. Nothing is captured until you scan."
+        }
+      ],
       "expo-secure-store"
     ],
     "experiments": {

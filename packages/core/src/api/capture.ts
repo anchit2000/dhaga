@@ -27,6 +27,20 @@ export interface CaptureRequest {
   /** Raw base64 (no data-URI prefix). ≤8,000,000 chars (~6 MB). */
   imageBase64?: string;
   imageType?: CaptureImageType;
+  /** Coarse geohash-6 of the scan location (mobile, permission-gated; BRD §6.2). */
+  geohash?: string;
+  /** ISO-8601 timestamp of when the scan was taken (mobile; pairs with geohash). */
+  scannedAt?: string;
+}
+
+/**
+ * Which session (M2 auto event grouping, BRD §6.2) a new-contact scan landed
+ * in — omitted entirely when the request carried no geohash/scannedAt.
+ * `isNew` tells the client to prompt once for a session name.
+ */
+export interface CaptureSessionResult {
+  id: string;
+  isNew: boolean;
 }
 
 /** Success shape for the image-scan branch. */
@@ -36,6 +50,7 @@ export interface CaptureImageResponse {
   via: "ai";
   photoStored: boolean;
   notice: null;
+  session: CaptureSessionResult | null;
 }
 
 /** Success shape for the attach-to-contact branch. */
@@ -53,6 +68,7 @@ export interface CaptureTextResponse {
   company: string | null;
   via: CaptureVia;
   notice: string | null;
+  session: CaptureSessionResult | null;
 }
 
 export type CaptureResponse =

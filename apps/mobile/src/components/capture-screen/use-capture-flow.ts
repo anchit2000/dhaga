@@ -3,7 +3,8 @@ import * as ImagePicker from "expo-image-picker";
 import { router, useFocusEffect } from "expo-router";
 
 import { type CameraCaptureHandle, type CapturedPhoto } from "@/components/camera-capture-view";
-import { CaptureError, captureContact } from "@/lib/api";
+import { CaptureError, captureContact, renameSession } from "@/lib/api";
+import { getScanLocation } from "@/lib/geolocation";
 import { buildScanPayload } from "@/lib/ocr";
 import { isConfigured, loadSettings } from "@/lib/settings";
 
@@ -27,6 +28,9 @@ export function useCaptureFlow() {
   const [busy, setBusy] = useState(false);
   const [outcome, setOutcome] = useState<ScanOutcome | null>(null);
   const [pendingPhoto, setPendingPhoto] = useState<CapturedPhoto | null>(null);
+  // M2 auto event grouping (BRD §6.2): id of a just-created session waiting
+  // for its one-time "Name this event?" prompt; null the rest of the time.
+  const [sessionToName, setSessionToName] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -43,7 +47,9 @@ export function useCaptureFlow() {
     setOutcome(null);
     const startedAt = Date.now();
     try {
-      const saved = await captureContact(settings, request);
+      const location = await getScanLocation();
+      const saved = await captureContact(settings, { ...request, ...location });
+      const session = "session" in saved ? saved.session : null;
       setOutcome({
         kind: "saved",
         name: saved.name,
@@ -51,7 +57,9 @@ export function useCaptureFlow() {
         path,
         seconds: (Date.now() - startedAt) / 1000,
         notice: saved.notice,
+        session,
       });
+      if (session?.isNew) setSessionToName(session.id);
       setText("");
       setVoiceHint(null);
     } catch (error) {
@@ -61,6 +69,23 @@ export function useCaptureFlow() {
     } finally {
       setBusy(false);
     }
+  }
+
+  /** Confirms the one-time "Name this event?" prompt after a new session is auto-created. */
+  async function confirmSessionName(name: string): Promise<void> {
+    if (!settings || !sessionToName) return;
+    try {
+      await renameSession(settings, sessionToName, name);
+    } catch {
+      // Non-critical: the session keeps its placeholder name; it can still
+      // be renamed later from the web app's Sessions page.
+    } finally {
+      setSessionToName(null);
+    }
+  }
+
+  function dismissSessionPrompt(): void {
+    setSessionToName(null);
   }
 
   async function shootCamera(): Promise<void> {
@@ -122,6 +147,9 @@ export function useCaptureFlow() {
     outcome,
     pendingPhoto,
     setPendingPhoto,
+    sessionToName,
+    confirmSessionName,
+    dismissSessionPrompt,
     shootCamera,
     pickFromLibrary,
     applyCroppedPhoto,

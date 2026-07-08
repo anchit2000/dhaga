@@ -57,21 +57,22 @@ export async function listContactSessions(contactId: string) {
     .orderBy(desc(sessionContacts.scannedAt));
 }
 
-export async function createSession(name: string): Promise<string> {
+export async function createSession(name: string, geohash?: string | null): Promise<string> {
   const db = await getDb();
   const id = randomUUID();
-  await db.insert(sessions).values({ id, name: name.trim() });
+  await db.insert(sessions).values({ id, name: name.trim(), geohash: geohash ?? null });
   return id;
 }
 
 export async function addContactToSession(
   sessionId: string,
   contactId: string,
+  scannedAt?: Date,
 ): Promise<void> {
   const db = await getDb();
   await db
     .insert(sessionContacts)
-    .values({ sessionId, contactId })
+    .values({ sessionId, contactId, ...(scannedAt ? { scannedAt } : {}) })
     .onConflictDoNothing();
 }
 

@@ -91,6 +91,7 @@ ALTER TABLE contacts ADD COLUMN IF NOT EXISTS reach_out_every_days integer;
 ALTER TABLE contacts ADD COLUMN IF NOT EXISTS last_reached_out_at timestamptz;
 ALTER TABLE contacts ADD COLUMN IF NOT EXISTS watched_for_signals boolean NOT NULL DEFAULT false;
 ALTER TABLE contacts ADD COLUMN IF NOT EXISTS signals_scanned_at timestamptz;
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS geohash text;
 
 CREATE TABLE IF NOT EXISTS embeddings (
   owner_type text NOT NULL,

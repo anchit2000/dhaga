@@ -5,6 +5,7 @@ import { CropReviewView } from "@/components/crop-review";
 import { TextCaptureView } from "@/components/text-capture-view";
 import { ResultBanner } from "@/components/result-banner";
 import { BottomDock } from "@/components/bottom-dock";
+import { SessionNamePrompt } from "@/components/session-name-prompt";
 import { COLORS } from "@/utils/constants";
 
 import { buildDockActions } from "./dock-actions";
@@ -26,6 +27,9 @@ export default function CaptureScreen() {
     outcome,
     pendingPhoto,
     setPendingPhoto,
+    sessionToName,
+    confirmSessionName,
+    dismissSessionPrompt,
     shootCamera,
     pickFromLibrary,
     applyCroppedPhoto,
@@ -46,6 +50,11 @@ export default function CaptureScreen() {
 
   return (
     <View style={styles.screen}>
+      <SessionNamePrompt
+        visible={sessionToName != null}
+        onConfirm={(name) => void confirmSessionName(name)}
+        onSkip={dismissSessionPrompt}
+      />
       {pendingPhoto ? (
         <CropReviewView
           photoUri={pendingPhoto.uri}

@@ -1,8 +1,5 @@
-import type {
-  CaptureErrorResponse,
-  CaptureRequest,
-  CaptureResponse,
-} from "@dhaga/core/src/api/capture";
+import type { CaptureRequest, CaptureResponse } from "@dhaga/core/src/api/capture";
+import type { SessionRenameRequest, SessionRenameResponse } from "@dhaga/core/src/api/sessions";
 import type { MobileSettings } from "@/types";
 
 /** A capture failure with a message safe to show the user. */
@@ -40,20 +37,53 @@ export async function captureContact(
     );
   }
   if (!response.ok) {
-    throw new CaptureError(await errorMessage(response), response.status);
+    const fallback = `Capture failed (HTTP ${response.status}). Try again.`;
+    throw new CaptureError(await errorMessage(response, fallback), response.status);
   }
   return (await response.json()) as CaptureResponse;
 }
 
-async function errorMessage(response: Response): Promise<string> {
+/**
+ * PATCH /api/sessions/[id] with the user's own API key — the one-time
+ * "Name this event?" prompt after M2 auto event grouping creates a session.
+ */
+export async function renameSession(
+  settings: MobileSettings,
+  sessionId: string,
+  name: string,
+): Promise<SessionRenameResponse> {
+  let response: Response;
+  try {
+    response = await fetch(`${settings.baseUrl}/api/sessions/${sessionId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": settings.apiKey,
+      },
+      body: JSON.stringify({ name } satisfies SessionRenameRequest),
+    });
+  } catch {
+    throw new CaptureError(
+      "Couldn't reach Dhaga — check the server address and that your phone is on the same network.",
+    );
+  }
+  if (!response.ok) {
+    const fallback = `Couldn't rename the session (HTTP ${response.status}).`;
+    throw new CaptureError(await errorMessage(response, fallback), response.status);
+  }
+  return (await response.json()) as SessionRenameResponse;
+}
+
+/** Shared by captureContact and renameSession: both APIs return `{ error }` on failure. */
+async function errorMessage(response: Response, fallback: string): Promise<string> {
   if (response.status === 401) {
     return "API key rejected — create one in Dhaga web Settings and enter it on the setup screen.";
   }
   try {
-    const body = (await response.json()) as CaptureErrorResponse;
+    const body = (await response.json()) as { error?: string };
     if (body.error) return body.error;
   } catch {
     // fall through to the generic message
   }
-  return `Capture failed (HTTP ${response.status}). Try again.`;
+  return fallback;
 }

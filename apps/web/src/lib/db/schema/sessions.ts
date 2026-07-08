@@ -8,6 +8,9 @@ export const sessions = pgTable("sessions", {
   startedAt: timestamp("started_at", { withTimezone: true }).defaultNow().notNull(),
   endedAt: timestamp("ended_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  /** Coarse geohash-6 of where the session's scans happened (M2, BRD §6.2).
+   *  Null for sessions created manually (web quick-add) with no location. */
+  geohash: text("geohash"),
 });
 
 export const sessionContacts = pgTable(

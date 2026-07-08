@@ -1,4 +1,8 @@
-import type { CaptureRequest, CaptureVia } from "@dhaga/core/src/api/capture";
+import type {
+  CaptureRequest,
+  CaptureSessionResult,
+  CaptureVia,
+} from "@dhaga/core/src/api/capture";
 
 /** Connection settings the user enters once; held in SecureStore. */
 export interface MobileSettings {
@@ -26,5 +30,7 @@ export type ScanOutcome =
       path: ScanPath;
       seconds: number;
       notice: string | null;
+      /** M2 auto event grouping (BRD §6.2): which session this scan landed in, if any. */
+      session: CaptureSessionResult | null;
     }
   | { kind: "error"; message: string };

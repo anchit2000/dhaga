@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState, useRef, useState } from "react";
-import { Camera } from "lucide-react";
 import {
   extractQuickAddAction,
   scanCardAction,
@@ -12,6 +11,7 @@ import { PhotoCropper } from "../PhotoCropper";
 import type { SessionOption } from "../SessionPicker";
 import { SubmitButton } from "../SubmitButton";
 import { downscalePhoto } from "../downscalePhoto";
+import { PhotoCaptureInput } from "./PhotoCaptureInput";
 import { QuickAddDock } from "./QuickAddDock";
 import { QuickAddResult } from "./QuickAddResult";
 
@@ -92,28 +92,7 @@ export function QuickAddForm({
         </form>
       ) : (
         <form action={formAction} className="space-y-4">
-          <label className="flex min-h-36 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-seam bg-panel/40 p-6 text-center transition-colors hover:border-amber/40">
-            <Camera className="size-6 text-amber" aria-hidden />
-            <span className="text-sm text-paper">Take or choose a card photo</span>
-            <span className="text-xs text-fog">
-              {storeCardPhotos
-                ? "Parsed by AI; the photo is kept in your database as the visual receipt (turn off in Settings)."
-                : "Parsed by AI; the photo itself is not stored — only the transcription, as the receipt."}
-            </span>
-            <input
-              type="file"
-              name="photo"
-              accept="image/*"
-              capture="environment"
-              required
-              className="sr-only"
-              onChange={(event) => {
-                const file = event.currentTarget.files?.[0];
-                event.currentTarget.value = "";
-                if (file) setPhotoToCrop(file);
-              }}
-            />
-          </label>
+          <PhotoCaptureInput storeCardPhotos={storeCardPhotos} onPhotoSelected={setPhotoToCrop} />
           <SubmitButton>Scan card</SubmitButton>
         </form>
       )}

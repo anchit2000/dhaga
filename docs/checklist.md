@@ -179,7 +179,8 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [ ] Salesforce/HubSpot/Notion export-sync
 - [x] Outbound webhooks (contact.created, followup.created → `DHAGA_WEBHOOK_URL`)
 - [x] Telegram bot: capture + ?questions from chat (ideas.md #6; owner-only, secret-verified)
-- [ ] WhatsApp capture (needs Meta business API), LinkedIn QR format
+- [ ] WhatsApp capture (needs Meta business API)
+- [ ] LinkedIn QR format support — pure matcher `packages/core/src/capture/linkedin-qr.ts` (unit-tested, `apps/web/src/lib/__tests__/linkedin-qr.test.ts`); web: `QuickAddForm/PhotoCaptureInput.tsx` detects via BarcodeDetector and routes to `/app/people/new?linkedin=` (prefills the existing manual-add form, no auto-create); mobile: `camera-capture-view.tsx` scans live via expo-camera, `LinkedInQrPrompt` hands off to the web form via `Linking.openURL` (mobile has no manual-add screen of its own to route to — see docs/notes, this is the closest honest equivalent). Typecheck/lint/test all pass; manual browser + device click-through still pending
 - [ ] Email/calendar interaction sync (Gmail/Outlook OAuth, explicit opt-in) — the one ToS-clean ambient-capture channel (BRD §6.7)
 
 ## 17. Teams (v2.0 — revenue engine)

@@ -6,10 +6,12 @@ import { TextCaptureView } from "@/components/text-capture-view";
 import { ResultBanner } from "@/components/result-banner";
 import { BottomDock } from "@/components/bottom-dock";
 import { SessionNamePrompt } from "@/components/session-name-prompt";
+import { LinkedInQrPrompt } from "@/components/linkedin-qr-prompt";
 import { COLORS } from "@/utils/constants";
 
 import { buildDockActions } from "./dock-actions";
 import { useCaptureFlow } from "./use-capture-flow";
+import { useLinkedInQrCapture } from "./use-linkedin-qr";
 
 /** Card-scan capture screen: camera/text mode switch, a crop review step
  * between "photo captured" and "photo sent for OCR", and the result banner. */
@@ -35,6 +37,13 @@ export default function CaptureScreen() {
     applyCroppedPhoto,
     submitText,
   } = useCaptureFlow();
+  const {
+    linkedInQrUrl,
+    openError: linkedInOpenError,
+    handleLinkedInQrDetected,
+    dismissLinkedInPrompt,
+    openLinkedInAddForm,
+  } = useLinkedInQrCapture(settings);
 
   if (!settings) return <View style={styles.screen} />;
 
@@ -55,6 +64,12 @@ export default function CaptureScreen() {
         onConfirm={(name) => void confirmSessionName(name)}
         onSkip={dismissSessionPrompt}
       />
+      <LinkedInQrPrompt
+        url={linkedInQrUrl}
+        error={linkedInOpenError}
+        onOpen={() => void openLinkedInAddForm()}
+        onDismiss={dismissLinkedInPrompt}
+      />
       {pendingPhoto ? (
         <CropReviewView
           photoUri={pendingPhoto.uri}
@@ -66,7 +81,7 @@ export default function CaptureScreen() {
       ) : (
         <>
           {mode === "camera" ? (
-            <CameraCaptureView ref={cameraRef} />
+            <CameraCaptureView ref={cameraRef} onLinkedInQrDetected={handleLinkedInQrDetected} />
           ) : (
             <TextCaptureView value={text} onChangeText={setText} onSubmit={submitText} busy={busy} hint={voiceHint} />
           )}

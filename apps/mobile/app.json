@@ -47,6 +47,13 @@
           "locationWhenInUsePermission": "Dhaga uses your coarse location to group scans from the same event into a session. Nothing is captured until you scan."
         }
       ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Dhaga uses the microphone to transcribe voice notes for a new contact. Audio stays on your device.",
+          "speechRecognitionPermission": "Dhaga uses on-device speech recognition to turn what you say into text. Nothing is sent to a server."
+        }
+      ],
       "expo-secure-store"
     ],
     "experiments": {

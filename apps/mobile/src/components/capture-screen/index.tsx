@@ -11,6 +11,7 @@ import { COLORS } from "@/utils/constants";
 
 import { buildDockActions } from "./dock-actions";
 import { useCaptureFlow } from "./use-capture-flow";
+import { useDictation } from "./use-dictation";
 import { useLinkedInQrCapture } from "./use-linkedin-qr";
 
 /** Card-scan capture screen: camera/text mode switch, a crop review step
@@ -44,14 +45,22 @@ export default function CaptureScreen() {
     dismissLinkedInPrompt,
     openLinkedInAddForm,
   } = useLinkedInQrCapture(settings);
+  const { listening, start: startDictation, stop: stopDictation } = useDictation(text, setText, setVoiceHint);
 
   if (!settings) return <View style={styles.screen} />;
 
+  function submitTypedText(): void {
+    if (listening) stopDictation();
+    submitText();
+  }
+
   const dockActions = buildDockActions({
     mode,
+    listening,
     onVoice: () => {
       setMode("text");
-      setVoiceHint("On-device voice dictation is coming soon — type for now.");
+      if (listening) stopDictation();
+      else void startDictation();
     },
     onCameraOrShutter: () => (mode === "camera" ? void shootCamera() : setMode("camera")),
     onFile: () => void pickFromLibrary(),
@@ -83,7 +92,7 @@ export default function CaptureScreen() {
           {mode === "camera" ? (
             <CameraCaptureView ref={cameraRef} onLinkedInQrDetected={handleLinkedInQrDetected} />
           ) : (
-            <TextCaptureView value={text} onChangeText={setText} onSubmit={submitText} busy={busy} hint={voiceHint} />
+            <TextCaptureView value={text} onChangeText={setText} onSubmit={submitTypedText} busy={busy} hint={voiceHint} />
           )}
           <View style={styles.overlay}>
             {outcome ? <ResultBanner outcome={outcome} /> : null}

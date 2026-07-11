@@ -7,18 +7,19 @@ import type { CaptureMode } from "./use-capture-flow";
 
 interface BuildDockActionsArgs {
   mode: CaptureMode;
+  listening: boolean;
   onVoice: () => void;
   onCameraOrShutter: () => void;
   onFile: () => void;
 }
 
 /** Builds the three bottom-dock actions (voice, camera/shutter, file) for the capture screen. */
-export function buildDockActions({ mode, onVoice, onCameraOrShutter, onFile }: BuildDockActionsArgs): DockAction[] {
+export function buildDockActions({ mode, listening, onVoice, onCameraOrShutter, onFile }: BuildDockActionsArgs): DockAction[] {
   return [
     {
       key: "voice",
-      icon: <Feather name="mic" size={20} color={mode === "text" ? COLORS.amber : COLORS.paper} />,
-      label: "Voice",
+      icon: <Feather name={listening ? "square" : "mic"} size={20} color={mode === "text" ? COLORS.amber : COLORS.paper} />,
+      label: listening ? "Stop" : "Voice",
       active: mode === "text",
       onPress: onVoice,
     },

@@ -3,9 +3,10 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 import { COLORS } from "@/utils/constants";
 
 /**
- * Typed capture — the same review screen voice dictation will eventually fill
- * in-place (BRD §6.3 mobile STT is a separate fast-follow); today the mic
- * action just lands here with a clear "coming soon" hint instead of faking it.
+ * Typed capture — also the review screen on-device voice dictation fills
+ * in-place (checklist.md §6 "Voice notes on mobile"): the capture screen's
+ * mic dock action switches into this same view and writes transcript text
+ * into the same box, so it goes through the same `onSubmit` either way.
  */
 export function TextCaptureView({
   value,

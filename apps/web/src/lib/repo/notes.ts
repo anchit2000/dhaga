@@ -41,15 +41,25 @@ export async function addNote(
  * card photo hangs off its receipt note, so it goes too (hard delete —
  * photos never linger as tombstones). Embeddings are hard-deleted too —
  * a tombstoned note has no business surfacing in semantic search.
+ *
+ * Wrapped in one transaction: every statement here is a pure DB write (no
+ * outbound network calls), so holding a connection open across all of them
+ * is safe. Without this, a failure partway through — e.g. the facts update
+ * throwing after the note is already tombstoned — could leave the note/facts
+ * invisible in listNotes/listFacts (filtered on deletedAt) while their
+ * embeddings survive, so deleted content stays verbatim-searchable forever
+ * with no reconciliation job to catch the drift. All-or-nothing closes that.
  */
 export async function deleteNote(noteId: string): Promise<void> {
   const db = await getDb();
   const now = new Date();
-  await db.update(notes).set({ deletedAt: now }).where(eq(notes.id, noteId));
-  await db.update(facts).set({ deletedAt: now }).where(eq(facts.sourceNoteId, noteId));
-  await db.update(edges).set({ deletedAt: now }).where(eq(edges.sourceNoteId, noteId));
-  await deleteCardImagesByNote(noteId);
-  await deleteEmbeddingsForNote(noteId);
+  await db.transaction(async (tx) => {
+    await tx.update(notes).set({ deletedAt: now }).where(eq(notes.id, noteId));
+    await tx.update(facts).set({ deletedAt: now }).where(eq(facts.sourceNoteId, noteId));
+    await tx.update(edges).set({ deletedAt: now }).where(eq(edges.sourceNoteId, noteId));
+    await deleteCardImagesByNote(noteId, tx);
+    await deleteEmbeddingsForNote(noteId, tx);
+  });
 }
 
 export interface FactWithReceipt extends FactRow {
@@ -75,11 +85,18 @@ export async function updateFactText(
   await db.update(facts).set({ text: text.trim() }).where(eq(facts.id, factId));
 }
 
-/** Tombstone a fact. Its embedding goes too — same receipts invariant as deleteNote. */
+/**
+ * Tombstone a fact. Its embedding goes too — same receipts invariant as
+ * deleteNote, and the same reason it's transactional: if the fact update
+ * succeeded but deleteEmbedding threw, the fact would be gone everywhere
+ * else yet still fully searchable.
+ */
 export async function deleteFact(factId: string): Promise<void> {
   const db = await getDb();
-  await db.update(facts).set({ deletedAt: new Date() }).where(eq(facts.id, factId));
-  await deleteEmbedding("fact", factId);
+  await db.transaction(async (tx) => {
+    await tx.update(facts).set({ deletedAt: new Date() }).where(eq(facts.id, factId));
+    await deleteEmbedding("fact", factId, tx);
+  });
 }
 
 export async function listOpenFollowUps(contactId: string): Promise<FollowUpRow[]> {

@@ -45,9 +45,11 @@ export async function countCardImages(): Promise<number> {
   return row?.count ?? 0;
 }
 
-/** Photos are the most sensitive artifact — deletes are always hard. */
-export async function deleteCardImagesByNote(noteId: string): Promise<void> {
-  const db = await getDb();
+/** Photos are the most sensitive artifact — deletes are always hard.
+ *  Pass `conn` (e.g. a transaction) so callers like deleteNote can keep
+ *  this delete inside their own atomic cascade instead of a separate connection. */
+export async function deleteCardImagesByNote(noteId: string, conn?: DhagaDb): Promise<void> {
+  const db = conn ?? (await getDb());
   await db.delete(cardImages).where(eq(cardImages.noteId, noteId));
 }
 

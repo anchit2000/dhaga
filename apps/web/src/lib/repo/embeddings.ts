@@ -25,11 +25,14 @@ export async function upsertEmbedding(
     });
 }
 
+/** Pass `conn` (e.g. a transaction) so callers like deleteFact can keep
+ *  this delete inside their own atomic cascade instead of a separate connection. */
 export async function deleteEmbedding(
   ownerType: EmbeddingOwner,
   ownerId: string,
+  conn?: DhagaDb,
 ): Promise<void> {
-  const db = await getDb();
+  const db = conn ?? (await getDb());
   await db
     .delete(embeddings)
     .where(and(eq(embeddings.ownerType, ownerType), eq(embeddings.ownerId, ownerId)));
@@ -132,9 +135,11 @@ export async function backfillEmbeddings(): Promise<number> {
   return count;
 }
 
-/** Remove embeddings for a note and everything derived from it. */
-export async function deleteEmbeddingsForNote(noteId: string): Promise<void> {
-  const db = await getDb();
+/** Remove embeddings for a note and everything derived from it.
+ *  Pass `conn` (e.g. a transaction) so callers like deleteNote can keep
+ *  this delete inside their own atomic cascade instead of a separate connection. */
+export async function deleteEmbeddingsForNote(noteId: string, conn?: DhagaDb): Promise<void> {
+  const db = conn ?? (await getDb());
   const derivedFacts = await db
     .select({ id: facts.id })
     .from(facts)

@@ -4,6 +4,8 @@
  * never log message contents (they're contact PII).
  */
 
+import { timingSafeEqual } from "node:crypto";
+
 export function telegramEnabled(): boolean {
   return Boolean(
     process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_ALLOWED_CHAT_ID,
@@ -14,10 +16,19 @@ export function isAllowedChat(chatId: number | string): boolean {
   return String(chatId) === process.env.TELEGRAM_ALLOWED_CHAT_ID;
 }
 
-/** Telegram calls our webhook with this header, set during setWebhook. */
+/**
+ * Telegram calls our webhook with this header, set during setWebhook. This is
+ * the only thing standing between the public internet and contact capture —
+ * compare with constant time so a wrong-length or wrong-content guess can't
+ * be distinguished by response latency.
+ */
 export function verifyTelegramSecret(header: string | null): boolean {
   const secret = process.env.TELEGRAM_WEBHOOK_SECRET;
-  return Boolean(secret) && header === secret;
+  if (!secret || !header) return false;
+  const secretBuf = Buffer.from(secret);
+  const headerBuf = Buffer.from(header);
+  if (secretBuf.length !== headerBuf.length) return false;
+  return timingSafeEqual(secretBuf, headerBuf);
 }
 
 export async function sendTelegramMessage(

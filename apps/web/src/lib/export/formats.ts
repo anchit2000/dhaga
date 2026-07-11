@@ -1,7 +1,7 @@
 import type { ExportContact } from "./data";
 
 function csvCell(value: string): string {
-  return /[",\n]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value;
+  return /[",\r\n]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value;
 }
 
 export function contactsToCsv(rows: ExportContact[]): string {
@@ -41,7 +41,9 @@ function vCardEscape(value: string): string {
     .replaceAll("\\", "\\\\")
     .replaceAll(";", "\\;")
     .replaceAll(",", "\\,")
-    .replaceAll("\n", "\\n");
+    .replaceAll("\r\n", "\\n")
+    .replaceAll("\n", "\\n")
+    .replaceAll("\r", "\\n");
 }
 
 export function contactsToVCards(rows: ExportContact[]): string {

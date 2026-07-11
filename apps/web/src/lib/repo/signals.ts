@@ -105,6 +105,28 @@ export async function getSignal(signalId: string): Promise<SignalRow | null> {
   return row ?? null;
 }
 
+/**
+ * True when this contact already has an unactioned signal of this kind.
+ * Nothing updates `contacts.title`/`companyId` when a job-change signal
+ * fires (converting to a note is an explicit, receipted user action, not an
+ * automatic graph write) — so an unresolved change looks identical to the
+ * detection job on every rescan. Without this guard, the nightly sweep would
+ * re-insert a fresh "new" row for the same still-open change every ~6 days
+ * for as long as the user leaves it unactioned, flooding the Home feed with
+ * duplicates of one event instead of the one alert it actually is.
+ */
+export async function hasOpenSignal(contactId: string, kind: string): Promise<boolean> {
+  const db = await getDb();
+  const [row] = await db
+    .select({ id: signals.id })
+    .from(signals)
+    .where(
+      and(eq(signals.contactId, contactId), eq(signals.kind, kind), eq(signals.status, "new")),
+    )
+    .limit(1);
+  return Boolean(row);
+}
+
 export async function dismissSignal(signalId: string): Promise<void> {
   const db = await getDb();
   await db.update(signals).set({ status: "dismissed" }).where(eq(signals.id, signalId));

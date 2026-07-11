@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, eq, ilike, inArray, or } from "drizzle-orm";
+import { and, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import {
   companies,
@@ -16,18 +16,35 @@ import { emitWebhook } from "@/lib/webhooks";
 import type { ExtractedContact } from "@dhaga/core";
 import type { ContactSource } from "@/utils/constants/app";
 
+/**
+ * Two concurrent callers naming the same company (two note extractions, or
+ * a CSV import processing repeated employer names) must not race the
+ * select-then-insert below into creating duplicate company rows. There's no
+ * unique constraint on companies.name to fall back on with ON CONFLICT — DDL
+ * runs idempotently on every boot (lib/db/ddl/core.ts), and adding one would
+ * fail on any self-hosted install that already has duplicate names. Instead,
+ * take a transaction-scoped Postgres advisory lock keyed on the
+ * case-insensitive name: it serializes concurrent calls for the SAME name
+ * (the second blocks until the first's transaction commits, then its own
+ * SELECT sees the row the first just inserted) without touching the schema.
+ */
 export async function findOrCreateCompany(name: string): Promise<string> {
   const db = await getDb();
   const trimmed = name.trim();
-  const [existing] = await db
-    .select({ id: companies.id })
-    .from(companies)
-    .where(ilike(companies.name, trimmed))
-    .limit(1);
-  if (existing) return existing.id;
-  const id = randomUUID();
-  await db.insert(companies).values({ id, name: trimmed });
-  return id;
+  return db.transaction(async (tx) => {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtext(${trimmed.toLowerCase()}))`,
+    );
+    const [existing] = await tx
+      .select({ id: companies.id })
+      .from(companies)
+      .where(ilike(companies.name, trimmed))
+      .limit(1);
+    if (existing) return existing.id;
+    const id = randomUUID();
+    await tx.insert(companies).values({ id, name: trimmed });
+    return id;
+  });
 }
 
 export async function createContact(

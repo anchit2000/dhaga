@@ -13,9 +13,13 @@ async function db() {
 }
 
 export async function submitAccessRequest(email: string): Promise<void> {
+  // Normalize here, not just at callers: isEmailApproved/reviewAccessRequest
+  // both look up by email.toLowerCase(), so a row stored with any uppercase
+  // character would never match those lookups again (Postgres text equality
+  // is case-sensitive) — the row would be stuck "pending" forever with no error.
   await (await db())
     .insert(accessRequests)
-    .values({ email })
+    .values({ email: email.trim().toLowerCase() })
     .onConflictDoNothing();
 }
 

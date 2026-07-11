@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { desc, eq, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { cardImages, type CardImageRow } from "@/lib/db/schema";
+import type { DhagaDb } from "@/lib/db";
 
 export interface CardImageRef {
   id: string;
@@ -50,8 +51,13 @@ export async function deleteCardImagesByNote(noteId: string): Promise<void> {
   await db.delete(cardImages).where(eq(cardImages.noteId, noteId));
 }
 
-export async function deleteCardImagesByContact(contactId: string): Promise<void> {
-  const db = await getDb();
+/** Pass `conn` (e.g. a transaction) so callers like forgetContact can keep
+ *  this delete inside their own atomic cascade instead of a separate connection. */
+export async function deleteCardImagesByContact(
+  contactId: string,
+  conn?: DhagaDb,
+): Promise<void> {
+  const db = conn ?? (await getDb());
   await db.delete(cardImages).where(eq(cardImages.contactId, contactId));
 }
 

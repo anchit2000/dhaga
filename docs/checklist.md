@@ -142,7 +142,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [ ] M0 spike: Expo app, camera → Vision/ML Kit OCR → Haiku parse → contact saved — built 2026-07-04 (`apps/mobile`: Expo SDK 57, dev-client, `expo-text-extractor` on-device OCR primary + server photo-scan fallback, `x-api-key` auth); typecheck green; **needs on-device verification on Android + iPhone** (see `apps/mobile/README.md`), not pushed
 - [ ] M1 card scan: edit-before-save, ≥90% accuracy on clean cards, <5s
 - [ ] M2 auto event grouping (time + geohash clustering, name-once prompt)
-- [ ] M3 voice notes: whisper.cpp / Apple Speech on-device transcription
+- [ ] M3 voice notes: whisper.cpp / Apple Speech on-device transcription — built via `expo-speech-recognition` (§6 has details); typecheck/lint pass, needs a real device build to confirm native linking on SDK 57, not pushed
 - [ ] M8 local-first SQLite (op-sqlite) + sqlite-vec; full offline
 - [ ] Sync engine (field-level LWW or PowerSync/ElectricSQL — decide per BRD §11)
 - [ ] E2E-encrypted backup/sync

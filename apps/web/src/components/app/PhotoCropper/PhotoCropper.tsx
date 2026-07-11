@@ -21,6 +21,7 @@ export function PhotoCropper({
   const [url] = useState(() => URL.createObjectURL(file));
   const imgRef = useRef<HTMLImageElement>(null);
   const [busy, setBusy] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const { rect, displaySize, onImageLoad, beginDrag, onDragMove, endDrag } = useCropRect();
 
   useEffect(() => () => URL.revokeObjectURL(url), [url]);
@@ -76,29 +77,38 @@ export function PhotoCropper({
       >
         <X className="size-5" />
       </Button>
-      <p className="text-sm text-fog">Drag the corners to crop out background and glare</p>
+      <p className="text-sm text-fog">
+        {loadError
+          ? "This photo's format isn't supported by your browser (common with HEIC photos from an iPhone library) — go back and choose a JPEG or PNG instead."
+          : "Drag the corners to crop out background and glare"}
+      </p>
       <div className="relative inline-block max-h-[65vh] max-w-full touch-none select-none">
-        {/* eslint-disable-next-line @next/next/no-img-element -- object URL from a local file, not an optimizable remote asset */}
-        <img
-          ref={imgRef}
-          src={url}
-          alt="Card to crop"
-          onLoad={(event) => onImageLoad(event.currentTarget)}
-          draggable={false}
-          className="block max-h-[65vh] max-w-full rounded-2xl"
-        />
+        {loadError ? null : (
+          // eslint-disable-next-line @next/next/no-img-element -- object URL from a local file, not an optimizable remote asset
+          <img
+            ref={imgRef}
+            src={url}
+            alt="Card to crop"
+            onLoad={(event) => onImageLoad(event.currentTarget)}
+            onError={() => setLoadError(true)}
+            draggable={false}
+            className="block max-h-[65vh] max-w-full rounded-2xl"
+          />
+        )}
         {rect ? (
           <CropOverlay rect={rect} onDragStart={beginDrag} onDragMove={onDragMove} onDragEnd={endDrag} />
         ) : null}
       </div>
       <div className="flex gap-3">
         <Button type="button" variant="outline" size="lg" onClick={onCancel} disabled={busy}>
-          Retake
+          {loadError ? "Choose another photo" : "Retake"}
         </Button>
-        <Button type="button" size="lg" onClick={handleConfirm} disabled={busy || !rect}>
-          <Check className="size-5" />
-          {busy ? "Processing…" : "Use photo"}
-        </Button>
+        {loadError ? null : (
+          <Button type="button" size="lg" onClick={handleConfirm} disabled={busy || !rect}>
+            <Check className="size-5" />
+            {busy ? "Processing…" : "Use photo"}
+          </Button>
+        )}
       </div>
     </div>
   );

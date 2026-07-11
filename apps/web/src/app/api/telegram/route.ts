@@ -26,9 +26,18 @@ interface TelegramUpdate {
  * owner's account once and use it for the AI calls' per-user metering.
  * Per-user Telegram linking (multiple accounts, one bot) is out of scope.
  */
-let cachedOwnerId: string | null | undefined;
+let cachedOwnerId: string | undefined;
 
-async function resolveOwnerUserId(): Promise<string | null> {
+/**
+ * Exported for regression testing (see __tests__/route.test.ts) — otherwise
+ * only called from POST below.
+ *
+ * Only a positive resolution is cached. During initial setup the owner may
+ * wire up the Telegram webhook before finishing their own Dhaga signup, so
+ * "no admin yet" can be a transient answer — caching it would strand every
+ * later Telegram message behind it for the rest of this warm process.
+ */
+export async function resolveOwnerUserId(): Promise<string | null> {
   if (cachedOwnerId !== undefined) return cachedOwnerId;
   const db = await getDb();
   const ownerEmail = process.env.DHAGA_OWNER_EMAIL;
@@ -41,8 +50,8 @@ async function resolveOwnerUserId(): Promise<string | null> {
         : eq(authUser.isAdmin, true),
     )
     .limit(1);
-  cachedOwnerId = owner?.id ?? null;
-  return cachedOwnerId;
+  if (owner?.id) cachedOwnerId = owner.id;
+  return owner?.id ?? null;
 }
 
 /**

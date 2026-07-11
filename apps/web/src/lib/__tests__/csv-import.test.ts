@@ -31,6 +31,22 @@ describe("contacts CSV parsing", () => {
     expect(receipt).toContain("Met at GITEX");
   });
 
+  it("carries the Google address column into contact.location instead of dropping it", () => {
+    // Google's export puts each contact's address under "Address N -
+    // Formatted", not under any of the name/org columns already mapped.
+    // ContactForm and createContact both read/write contact.location, so a
+    // hardcoded null here would silently erase real address data on import.
+    const csv = [
+      "First Name,Last Name,Organization Name,E-mail 1 - Value,Address 1 - Formatted",
+      "Sarah,Chen,Stripe,sarah@stripe.example,\"123 Market St, San Francisco, CA 94105, USA\"",
+    ].join("\n");
+    const result = parseContactsCsv(csv);
+    if (!result.ok) throw new Error(result.error);
+    expect(result.candidates[0].contact.location).toBe(
+      "123 Market St, San Francisco, CA 94105, USA",
+    );
+  });
+
   it("parses the legacy Google format (Given/Family, Organization 1)", () => {
     const csv = [
       "Name,Given Name,Family Name,Organization 1 - Name,Organization 1 - Title,E-mail 1 - Value",

@@ -12,6 +12,7 @@ import type { ImportCandidate } from "./types";
 const EMAIL_HEADER = /^E-mail \d+ - Value$/;
 const PHONE_HEADER = /^Phone \d+ - Value$/;
 const WEBSITE_HEADER = /^Website \d+ - Value$/;
+const ADDRESS_HEADER = /^Address \d+ - Formatted$/;
 
 export function isGoogleHeader(headers: string[]): boolean {
   return (
@@ -70,7 +71,7 @@ export function googleRowsToCandidates(
         emails: multiValues(record, EMAIL_HEADER),
         phones: multiValues(record, PHONE_HEADER),
         links: multiValues(record, WEBSITE_HEADER),
-        location: null,
+        location: multiValues(record, ADDRESS_HEADER)[0] ?? null,
       },
       receipt,
     });

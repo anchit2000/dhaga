@@ -2,6 +2,7 @@ import { and, cosineDistance, desc, eq, gt, inArray, isNull, notInArray, sql } f
 import { getDb } from "@/lib/db/request-scope";
 import { embeddings, facts, notes } from "@/lib/db/schema";
 import { embedPassages, embedQuery } from "@/lib/ai/embedder";
+import type { DhagaDb } from "@/lib/db";
 
 export type EmbeddingOwner = "note" | "fact" | "contact";
 
@@ -34,8 +35,13 @@ export async function deleteEmbedding(
     .where(and(eq(embeddings.ownerType, ownerType), eq(embeddings.ownerId, ownerId)));
 }
 
-export async function deleteEmbeddingsByContact(contactId: string): Promise<void> {
-  const db = await getDb();
+/** Pass `conn` (e.g. a transaction) so callers like forgetContact can keep
+ *  this delete inside their own atomic cascade instead of a separate connection. */
+export async function deleteEmbeddingsByContact(
+  contactId: string,
+  conn?: DhagaDb,
+): Promise<void> {
+  const db = conn ?? (await getDb());
   await db.delete(embeddings).where(eq(embeddings.contactId, contactId));
 }
 

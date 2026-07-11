@@ -6,6 +6,7 @@ import { createContact } from "@/lib/repo/contacts";
 import {
   countWatched,
   dismissSignal,
+  hasOpenSignal,
   listContactSignals,
   listNewSignals,
   markSignalNoted,
@@ -106,6 +107,34 @@ describe("signal lifecycle (repo/signals.ts)", () => {
     await markSignalNoted(signalId);
 
     expect((await listNewSignals()).some((s) => s.id === signalId)).toBe(false);
+  });
+});
+
+describe("hasOpenSignal — dedup guard for the nightly sweep", () => {
+  it("reports open once an unactioned signal of that kind exists, so the sweep can skip re-inserting it", async () => {
+    // Nothing updates the contact's title/company when a job_change signal
+    // fires (that's an explicit "add as note" action, not an automatic graph
+    // write) — so an unresolved change still looks new on every ~6-day
+    // rescan. Without this guard the sweep would keep inserting a fresh
+    // "new" row for the same still-open change, forever.
+    const id = await createContact(person("Omar Overlap"), "manual");
+    expect(await hasOpenSignal(id, "job_change")).toBe(false);
+
+    await insertSignal(id, { kind: "job_change" });
+    expect(await hasOpenSignal(id, "job_change")).toBe(true);
+    // A different kind for the same contact is a separate alert, not a dup.
+    expect(await hasOpenSignal(id, "news")).toBe(false);
+  });
+
+  it("stops reporting open once the existing signal is dismissed or converted, allowing a genuinely new one through", async () => {
+    const id = await createContact(person("Lena Later"), "manual");
+    const signalId = await insertSignal(id, { kind: "job_change" });
+    await dismissSignal(signalId);
+    expect(await hasOpenSignal(id, "job_change")).toBe(false);
+
+    const secondId = await insertSignal(id, { kind: "job_change" });
+    await markSignalNoted(secondId);
+    expect(await hasOpenSignal(id, "job_change")).toBe(false);
   });
 });
 

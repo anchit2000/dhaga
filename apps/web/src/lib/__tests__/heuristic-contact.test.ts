@@ -42,4 +42,27 @@ describe("heuristicContactParse", () => {
     expect(result.links).toContain("linkedin.com/in/priyanair");
     expect(result.links).toContain("www.freightline.io");
   });
+
+  it("doesn't list the same link twice when one mention ends a sentence", () => {
+    // The URL regex swallows a sentence-ending period into the match itself
+    // ("www.freightline.io." vs "www.freightline.io"), so a same-link mention
+    // that's mid-sentence elsewhere must still collapse to one entry — the
+    // review screen would otherwise show a phantom duplicate link.
+    const result = heuristicContactParse(
+      "Priya Nair\nwww.freightline.io\nAlso see www.freightline.io.",
+    );
+    expect(result.links).toEqual(["www.freightline.io"]);
+  });
+
+  it("recognizes an accented name even when the source encodes it as decomposed Unicode", () => {
+    // Some sources (e.g. macOS-originated text) store "é" as "e" + a
+    // separate combining acute mark (NFD) rather than one precomposed
+    // codepoint (NFC). isNameLike's \p{L}-based regex only matches the
+    // composed form, so without normalizing first this name is silently
+    // dropped and the contact is saved with no name at all.
+    const decomposed = "José García".normalize("NFD");
+    const result = heuristicContactParse(`${decomposed}\njose@example.com`);
+    expect(result.name).toBe(decomposed.normalize("NFC"));
+    expect(result.name).toBe("José García");
+  });
 });

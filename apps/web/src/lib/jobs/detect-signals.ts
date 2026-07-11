@@ -13,6 +13,7 @@ import type { SignalDetectionSummary } from "@dhaga/core/src/api/jobs";
 import { getDb } from "@/lib/db";
 import { companies, contacts, signals } from "@/lib/db/schema";
 import { recordAiAction } from "@/lib/ai/metering";
+import { hasOpenSignal } from "@/lib/repo/signals";
 
 /** Re-scan cadence per watched contact — nightly cron, weekly-ish per contact. */
 const RESCAN_AFTER_DAYS = 6;
@@ -77,7 +78,10 @@ export async function runSignalDetection(): Promise<SignalDetectionSummary> {
       await recordAiAction("signal_detection", classification.model, classification.usage);
 
       const { hasSignal, kind, headline, detail, sourceUrl } = classification.data;
-      if (hasSignal && kind) {
+      // Skip contacts that already have an unactioned signal of this kind —
+      // see hasOpenSignal's doc comment for why the sweep would otherwise
+      // duplicate the same still-open change every rescan.
+      if (hasSignal && kind && !(await hasOpenSignal(contact.id, kind))) {
         await db.insert(signals).values({
           id: randomUUID(),
           contactId: contact.id,

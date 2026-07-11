@@ -23,18 +23,28 @@ function isNameLike(line: string): boolean {
 
 export function heuristicContactParse(rawText: string): ExtractedContact {
   const contact = emptyExtractedContact();
+  // Compose combining-mark (NFD) Unicode into precomposed (NFC) form first.
+  // Some sources (e.g. macOS-originated text) encode an accented letter like
+  // "é" as "e" + a separate combining acute mark — that combining mark isn't
+  // in the \p{L} Letter category, so isNameLike's regex silently rejects an
+  // otherwise-valid accented name unless it's composed first.
+  const text = rawText.normalize("NFC");
 
-  contact.emails = [...new Set(rawText.match(EMAIL_RE) ?? [])];
-  contact.links = [...new Set(rawText.match(URL_RE) ?? [])].map((u) =>
-    u.replace(/[.,;]$/, ""),
-  );
+  contact.emails = [...new Set(text.match(EMAIL_RE) ?? [])];
+  // Dedupe after stripping trailing punctuation, not before — otherwise the
+  // same link seen once mid-sentence and once at a sentence's end (with a
+  // trailing period the URL regex swallows) survives as two Set entries and
+  // only collapses into a visible duplicate after the .map below.
+  contact.links = [
+    ...new Set((text.match(URL_RE) ?? []).map((u) => u.replace(/[.,;]$/, ""))),
+  ];
   // Strip emails/URLs before phone matching so "+1 555..." doesn't collide.
-  const withoutInline = rawText.replace(EMAIL_RE, " ").replace(URL_RE, " ");
+  const withoutInline = text.replace(EMAIL_RE, " ").replace(URL_RE, " ");
   contact.phones = [...new Set(withoutInline.match(PHONE_RE) ?? [])].map((p) =>
     p.trim(),
   );
 
-  const lines = rawText
+  const lines = text
     .split(/\r?\n/)
     .map((line) => line.replace(EMAIL_RE, "").replace(URL_RE, "").replace(PHONE_RE, "").replace(/[|•·]+/g, " ").trim())
     .filter((line) => line.length > 1);

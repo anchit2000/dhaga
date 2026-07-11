@@ -89,4 +89,28 @@ describe("hybrid search over a seeded graph (M6 acceptance)", () => {
   it("returns nothing for words absent from the graph", async () => {
     expect(await hybridSearch("quantum blockchain sommelier")).toHaveLength(0);
   });
+
+  /**
+   * restrictTo comes from a structured filter (session/company/tags) that
+   * already establishes the match — e.g. "who did I meet at the AI summit"
+   * is answered by attendance, not by wording overlap with the note text.
+   * If hybridSearch only ever surfaced contacts it could *also* score by
+   * keyword/semantic overlap, a structurally-matched contact with unrelated
+   * note content would be silently dropped from every AI answer.
+   */
+  it("keeps a structurally-filtered contact even with zero keyword/semantic score", async () => {
+    const filtered = await seed(
+      "Zara Ito", "Engineer", "Globex",
+      "Talked about weekend hiking trips.",
+      [],
+      ["ops"],
+    );
+
+    const hits = await hybridSearch(
+      "quantum blockchain sommelier",
+      new Set([filtered]),
+    );
+
+    expect(hits.map((hit) => hit.contactId)).toContain(filtered);
+  });
 });

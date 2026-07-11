@@ -1,6 +1,7 @@
 import { eq, isNull } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import {
+  cardImages,
   companies,
   contacts,
   edges,
@@ -9,6 +10,7 @@ import {
   notes,
   sessionContacts,
   sessions,
+  signals,
   type ContactRow,
 } from "@/lib/db/schema";
 
@@ -38,6 +40,8 @@ export async function exportEverything(): Promise<Record<string, unknown>> {
     allFacts,
     allEdges,
     allFollowUps,
+    allSignals,
+    allCardImages,
   ] = await Promise.all([
     db.select().from(contacts),
     db.select().from(companies),
@@ -47,6 +51,8 @@ export async function exportEverything(): Promise<Record<string, unknown>> {
     db.select().from(facts).where(isNull(facts.deletedAt)),
     db.select().from(edges).where(isNull(edges.deletedAt)),
     db.select().from(followUps),
+    db.select().from(signals),
+    db.select().from(cardImages),
   ]);
   return {
     exported_at: new Date().toISOString(),
@@ -58,5 +64,7 @@ export async function exportEverything(): Promise<Record<string, unknown>> {
     facts: allFacts,
     edges: allEdges,
     follow_ups: allFollowUps,
+    signals: allSignals,
+    card_images: allCardImages,
   };
 }

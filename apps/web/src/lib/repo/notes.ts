@@ -11,7 +11,7 @@ import {
   type NoteRow,
 } from "@/lib/db/schema";
 import { deleteCardImagesByNote } from "./card-images";
-import { deleteEmbeddingsForNote } from "./embeddings";
+import { deleteEmbedding, deleteEmbeddingsForNote } from "./embeddings";
 
 export type NoteKind = "text" | "voice" | "capture_source" | "enrichment" | "signal";
 
@@ -75,9 +75,11 @@ export async function updateFactText(
   await db.update(facts).set({ text: text.trim() }).where(eq(facts.id, factId));
 }
 
+/** Tombstone a fact. Its embedding goes too — same receipts invariant as deleteNote. */
 export async function deleteFact(factId: string): Promise<void> {
   const db = await getDb();
   await db.update(facts).set({ deletedAt: new Date() }).where(eq(facts.id, factId));
+  await deleteEmbedding("fact", factId);
 }
 
 export async function listOpenFollowUps(contactId: string): Promise<FollowUpRow[]> {

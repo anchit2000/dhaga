@@ -11,7 +11,7 @@ import {
   setFollowUpStatus,
   updateFactText,
 } from "@/lib/repo/notes";
-import { deleteEmbedding, upsertEmbedding } from "@/lib/repo/embeddings";
+import { upsertEmbedding } from "@/lib/repo/embeddings";
 
 export interface NoteFormState {
   notice?: string;
@@ -63,7 +63,6 @@ export async function deleteFactAction(formData: FormData): Promise<void> {
   const factId = String(formData.get("factId") ?? "");
   const contactId = String(formData.get("contactId") ?? "");
   if (!factId) return;
-  await deleteEmbedding("fact", factId);
   await deleteFact(factId);
   revalidatePath(`/app/people/${contactId}`);
 }

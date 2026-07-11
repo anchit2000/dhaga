@@ -87,6 +87,17 @@ export async function hybridSearch(
     }
   }
 
+  // Structured filters are a hard guarantee, not just a ranking hint: a
+  // contact who matches the plan's session/company/tags must surface even if
+  // they have no keyword or semantic score of their own (e.g. "who did I
+  // meet at the AI summit" — attendance is the whole match, not the residual
+  // wording), otherwise restrictTo silently drops them from every answer.
+  if (restrictTo) {
+    for (const id of restrictTo) {
+      if (!hits.has(id)) hits.set(id, { score: 0, matches: [] });
+    }
+  }
+
   if (hits.size === 0) return [];
   const identity = await db
     .select({

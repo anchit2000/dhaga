@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { embeddings } from "@/lib/db/schema";
 import { createContact, forgetContact, getContact } from "@/lib/repo/contacts";
-import { addNote, deleteNote, listFacts, listOpenFollowUps } from "@/lib/repo/notes";
+import { addNote, deleteFact, deleteNote, listFacts, listOpenFollowUps } from "@/lib/repo/notes";
 import { applyExtraction } from "@/lib/repo/graph";
 import { fetchGraphView } from "@/lib/repo/graph-data";
 import type { NoteExtraction } from "@dhaga/core";
@@ -18,6 +18,17 @@ async function seedEmbedding(noteId: string, contactId: string): Promise<void> {
   await db.insert(embeddings).values({
     ownerType: "note",
     ownerId: noteId,
+    contactId,
+    content: "stub",
+    embedding: new Array(384).fill(0),
+  });
+}
+
+async function seedFactEmbedding(factId: string, contactId: string): Promise<void> {
+  const db = await getDb();
+  await db.insert(embeddings).values({
+    ownerType: "fact",
+    ownerId: factId,
     contactId,
     content: "stub",
     embedding: new Array(384).fill(0),
@@ -100,6 +111,23 @@ describe("graph receipts and cascades", () => {
     await deleteNote(noteId);
 
     const after = await db.select().from(embeddings).where(eq(embeddings.ownerId, noteId));
+    expect(after).toHaveLength(0);
+  });
+
+  it("deleting a single fact removes its embedding too, not just the note's", async () => {
+    const id = await createContact({ ...contactInput, name: "Fourth Person" }, "manual");
+    const noteId = await addNote(id, "text", "note with one fact");
+    await applyExtraction(id, noteId, extraction);
+    const [fact] = await listFacts(id);
+    await seedFactEmbedding(fact.id, id);
+
+    const db = await getDb();
+    const before = await db.select().from(embeddings).where(eq(embeddings.ownerId, fact.id));
+    expect(before).toHaveLength(1);
+
+    await deleteFact(fact.id);
+
+    const after = await db.select().from(embeddings).where(eq(embeddings.ownerId, fact.id));
     expect(after).toHaveLength(0);
   });
 

@@ -27,6 +27,18 @@ function relationshipAsFactText(rel: Relationship): string {
  * Person relationships only become edges when the person already exists as
  * a contact; otherwise the information is kept as a fact (no phantom
  * contacts appearing in the user's list).
+ *
+ * Each entity type is written with one multi-row `db.insert(...).values([...])`
+ * instead of N single-row inserts in a loop: a single INSERT statement is
+ * atomic in Postgres, so a failure partway (e.g. the contact being deleted
+ * concurrently, a transient connection blip) can't leave that table
+ * half-written while the rest of the extraction silently vanishes. This is
+ * deliberately *not* one big `db.transaction(...)` around the whole
+ * function — upsertEmbedding() and emitWebhook() make outbound network calls
+ * (embedding model, webhook receiver), and holding a DB connection open
+ * across those under Supabase's 5-connection pool cap would risk exhausting
+ * it. Embeddings/webhooks run after their table's insert has committed, so
+ * success-path behavior is unchanged.
  */
 export async function applyExtraction(
   contactId: string,
@@ -35,18 +47,16 @@ export async function applyExtraction(
 ): Promise<void> {
   const db = await getDb();
 
-  for (const fact of extraction.facts) {
-    const factId = randomUUID();
-    await db.insert(facts).values({
-      id: factId,
-      contactId,
-      type: fact.type,
-      text: fact.text,
-      confidence: fact.confidence,
-      sourceNoteId: noteId,
-    });
-    await upsertEmbedding("fact", factId, contactId, fact.text);
-  }
+  const factRows: (typeof facts.$inferInsert)[] = extraction.facts.map((fact) => ({
+    id: randomUUID(),
+    contactId,
+    type: fact.type,
+    text: fact.text,
+    confidence: fact.confidence,
+    sourceNoteId: noteId,
+  }));
+
+  const edgeRows: (typeof edges.$inferInsert)[] = [];
 
   for (const rel of extraction.relationships) {
     const srcId =
@@ -59,7 +69,7 @@ export async function applyExtraction(
         : await resolvePersonId(rel.object);
 
     if (dstId) {
-      await db.insert(edges).values({
+      edgeRows.push({
         id: randomUUID(),
         srcType: "contact",
         srcId,
@@ -69,36 +79,49 @@ export async function applyExtraction(
         sourceNoteId: noteId,
       });
     } else {
-      const factId = randomUUID();
-      const text = relationshipAsFactText(rel);
-      await db.insert(facts).values({
-        id: factId,
+      factRows.push({
+        id: randomUUID(),
         contactId,
         type: "personal",
-        text,
+        text: relationshipAsFactText(rel),
         confidence: 0.7,
         sourceNoteId: noteId,
       });
-      await upsertEmbedding("fact", factId, contactId, text);
     }
   }
 
-  for (const followUp of extraction.follow_ups) {
-    const followUpId = randomUUID();
-    await db.insert(followUps).values({
-      id: followUpId,
+  if (factRows.length > 0) {
+    await db.insert(facts).values(factRows);
+    for (const row of factRows) {
+      await upsertEmbedding("fact", row.id, contactId, row.text);
+    }
+  }
+
+  if (edgeRows.length > 0) {
+    await db.insert(edges).values(edgeRows);
+  }
+
+  const followUpRows: (typeof followUps.$inferInsert)[] = extraction.follow_ups.map(
+    (followUp) => ({
+      id: randomUUID(),
       contactId,
       action: followUp.action,
       dueHint: followUp.due_hint,
       status: "open",
       sourceNoteId: noteId,
-    });
-    await emitWebhook("followup.created", {
-      id: followUpId,
-      contactId,
-      action: followUp.action,
-      dueHint: followUp.due_hint,
-    });
+    }),
+  );
+
+  if (followUpRows.length > 0) {
+    await db.insert(followUps).values(followUpRows);
+    for (const row of followUpRows) {
+      await emitWebhook("followup.created", {
+        id: row.id,
+        contactId,
+        action: row.action,
+        dueHint: row.dueHint,
+      });
+    }
   }
 
   if (extraction.tags.length > 0) {

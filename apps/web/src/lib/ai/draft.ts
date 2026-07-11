@@ -49,7 +49,9 @@ export async function generateFollowUpDraft(
       tier: "reason",
     });
     await recordAiAction("draft", result.model, result.usage);
-    return { draft: result.data.trim() };
+    const draft = result.data.trim();
+    if (!draft) return { error: "The draft came back empty — try again." };
+    return { draft };
   } catch (error) {
     return {
       error:

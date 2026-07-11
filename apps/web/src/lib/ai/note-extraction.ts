@@ -4,6 +4,7 @@ import {
   getLLMClient,
   hasLLM,
   noteExtractionSchema,
+  type NoteExtraction,
 } from "@dhaga/core";
 import { applyExtraction } from "@/lib/repo/graph";
 import { AiBudgetError, assertAiBudget, recordAiAction } from "./metering";
@@ -36,6 +37,7 @@ export async function extractAndApplyNote(
         "Note saved. Set ANTHROPIC_API_KEY to extract facts from notes automatically.",
     };
   }
+  let extraction: NoteExtraction;
   try {
     await assertAiBudget(userId);
     const result = await getLLMClient().extract({
@@ -45,12 +47,7 @@ export async function extractAndApplyNote(
       tier: "extract",
     });
     await recordAiAction("note_extraction", result.model, result.usage);
-    await applyExtraction(contactId, noteId, result.data);
-    return {
-      applied: true,
-      factCount: result.data.facts.length + result.data.relationships.length,
-      followUpCount: result.data.follow_ups.length,
-    };
+    extraction = result.data;
   } catch (error) {
     const reason =
       error instanceof AiBudgetError ? error.message : "The AI call failed.";
@@ -61,4 +58,24 @@ export async function extractAndApplyNote(
       notice: `Note saved, but facts were not extracted: ${reason}`,
     };
   }
+
+  // Separate try/catch: a failure here means the AI call succeeded and the
+  // graph write is what broke — saying "the AI call failed" would blame the
+  // wrong layer and mislead anyone debugging it.
+  try {
+    await applyExtraction(contactId, noteId, extraction);
+  } catch {
+    return {
+      applied: false,
+      factCount: 0,
+      followUpCount: 0,
+      notice:
+        "Note saved, and facts were extracted, but saving them to the graph failed.",
+    };
+  }
+  return {
+    applied: true,
+    factCount: extraction.facts.length + extraction.relationships.length,
+    followUpCount: extraction.follow_ups.length,
+  };
 }

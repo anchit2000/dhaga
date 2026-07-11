@@ -52,19 +52,30 @@ export async function enrichContact(
     const text = result.data.trim();
     if (!text) return { error: "Enrichment returned nothing." };
     const noteId = await addNote(contactId, "enrichment", text);
-    await upsertEmbedding("note", noteId, contactId, text);
-    const outcome = await extractAndApplyNote(
-      userId,
-      contactId,
-      noteId,
-      detail.contact.name,
-      text,
-    );
-    return {
-      noticed: outcome.applied
-        ? `Enriched — findings saved as a note, ${outcome.factCount} fact${outcome.factCount === 1 ? "" : "s"} extracted with receipts.`
-        : "Enriched — findings saved as a note (fact extraction skipped).",
-    };
+
+    // Once the note is saved it's a durable, user-visible receipt — nothing
+    // past this point may report the generic "Enrichment failed" (the user
+    // would think nothing happened when a note actually exists).
+    try {
+      await upsertEmbedding("note", noteId, contactId, text);
+      const outcome = await extractAndApplyNote(
+        userId,
+        contactId,
+        noteId,
+        detail.contact.name,
+        text,
+      );
+      return {
+        noticed: outcome.applied
+          ? `Enriched — findings saved as a note, ${outcome.factCount} fact${outcome.factCount === 1 ? "" : "s"} extracted with receipts.`
+          : "Enriched — findings saved as a note (fact extraction skipped).",
+      };
+    } catch {
+      return {
+        noticed:
+          "Enriched — findings saved as a note (indexing/fact extraction skipped).",
+      };
+    }
   } catch (error) {
     if (error instanceof AiBudgetError) return { error: error.message };
     if (error instanceof FeatureNotEntitledError) {

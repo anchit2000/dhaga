@@ -56,7 +56,9 @@ export async function generateBrief(
       tier: "reason",
     });
     await recordAiAction("brief", result.model, result.usage);
-    return { brief: result.data.trim() };
+    const brief = result.data.trim();
+    if (!brief) return { error: "The brief came back empty — try again." };
+    return { brief };
   } catch (error) {
     if (error instanceof AiBudgetError) return { error: error.message };
     if (error instanceof FeatureNotEntitledError) {

@@ -15,6 +15,7 @@ const TENANT_TABLES = [
   "embeddings",
   "card_images",
   "ai_actions",
+  "signals",
 ] as const;
 
 /**

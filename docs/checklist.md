@@ -84,7 +84,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Create sessions (from Sessions page and inline in quick-add)
 - [x] Rename/merge sessions
 - [x] Web: active-session default (a session started today is preselected in quick-add)
-- [ ] Mobile (later): time + geohash clustering per BRD §6.2
+- [x] Mobile: time + geohash clustering per BRD §6.2 — `packages/core/src/geo/geohash.ts` + `apps/web/src/lib/repo/session-clustering.ts` (geohash-6, 4h window, "Name this event?" prompt on new cluster); typecheck/lint/build/tests all pass (`a346516`), not pushed; needs on-device verification (no EAS/device access here)
 
 ## 6. Notes & entity extraction (M3, M4)
 

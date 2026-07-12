@@ -3,6 +3,7 @@ import { getDb } from "@/lib/db/request-scope";
 import { settings } from "@/lib/db/schema";
 
 export const STORE_CARD_PHOTOS_KEY = "store_card_photos";
+export const SIGNAL_DETECTION_BATCH_KEY = "signal_detection_pending_batch";
 
 export async function getSetting(key: string): Promise<string | null> {
   const db = await getDb();
@@ -32,4 +33,21 @@ export async function shouldStoreCardPhotos(): Promise<boolean> {
 
 export async function setStoreCardPhotos(enabled: boolean): Promise<void> {
   await setSetting(STORE_CARD_PHOTOS_KEY, enabled ? "on" : "off");
+}
+
+/**
+ * The one Anthropic Message Batch the nightly signal-detection job has in
+ * flight, if any — cross-invocation state so the next cron run can pick up
+ * where the last one left off (batches are asynchronous, up to 24h; a
+ * single ~300s Vercel Function can't wait for one). Reuses this key/value
+ * table rather than a new one: it's a single id, nothing relational about
+ * it (CLAUDE.md Rule 2 — boring storage, no new abstraction for one string).
+ */
+export async function getPendingSignalBatchId(): Promise<string | null> {
+  const value = await getSetting(SIGNAL_DETECTION_BATCH_KEY);
+  return value ? value : null;
+}
+
+export async function setPendingSignalBatchId(batchId: string | null): Promise<void> {
+  await setSetting(SIGNAL_DETECTION_BATCH_KEY, batchId ?? "");
 }

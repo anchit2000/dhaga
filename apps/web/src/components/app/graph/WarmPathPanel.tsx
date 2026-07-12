@@ -4,10 +4,12 @@ import { useActionState, useEffect, useState } from "react";
 import { MoveRight } from "lucide-react";
 import { findWarmPathsAction, type WarmPathState } from "@/lib/actions/graph";
 import { Input } from "@/components/ui/input";
+import {
+  GRAPH_TARGET_RESULTS_DISMISS_MS,
+  GRAPH_TARGET_SEARCH_DEBOUNCE_MS,
+} from "@/utils/constants/graph";
 import type { GraphTarget } from "@/lib/repo/graph-data";
 import { SubmitButton } from "../SubmitButton";
-
-const SEARCH_DEBOUNCE_MS = 300;
 
 /** "Who can intro me to X?" — type to search (contacts + companies aren't
  *  eagerly loaded anymore, see /app/graph's cluster redesign), pick a
@@ -15,22 +17,35 @@ const SEARCH_DEBOUNCE_MS = 300;
 export function WarmPathPanel() {
   const [state, formAction] = useActionState<WarmPathState, FormData>(findWarmPathsAction, {});
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<GraphTarget[]>([]);
+  const [searchResult, setSearchResult] = useState({ query: "", targets: [] as GraphTarget[] });
   const [selected, setSelected] = useState<GraphTarget | null>(null);
+  const normalizedQuery = query.trim();
+  const results =
+    !selected && searchResult.query === normalizedQuery ? searchResult.targets : [];
 
   useEffect(() => {
-    if (selected || !query.trim()) {
-      setResults([]);
-      return;
-    }
+    if (selected || !normalizedQuery) return;
+    const controller = new AbortController();
     const timer = setTimeout(async () => {
-      const res = await fetch(`/api/graph/targets?q=${encodeURIComponent(query)}`);
-      if (!res.ok) return;
-      const data: { targets: GraphTarget[] } = await res.json();
-      setResults(data.targets);
-    }, SEARCH_DEBOUNCE_MS);
-    return () => clearTimeout(timer);
-  }, [query, selected]);
+      try {
+        const res = await fetch(
+          `/api/graph/targets?q=${encodeURIComponent(normalizedQuery)}`,
+          { signal: controller.signal },
+        );
+        if (!res.ok) return;
+        const data: { targets: GraphTarget[] } = await res.json();
+        setSearchResult({ query: normalizedQuery, targets: data.targets });
+      } catch {
+        if (!controller.signal.aborted) {
+          setSearchResult({ query: normalizedQuery, targets: [] });
+        }
+      }
+    }, GRAPH_TARGET_SEARCH_DEBOUNCE_MS);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [normalizedQuery, selected]);
 
   return (
     <div className="space-y-3 rounded-2xl border border-seam bg-panel p-4">
@@ -52,7 +67,12 @@ export function WarmPathPanel() {
               setSelected(null);
               setQuery(event.target.value);
             }}
-            onBlur={() => setTimeout(() => setResults([]), 150)}
+            onBlur={() =>
+              setTimeout(
+                () => setSearchResult({ query: "", targets: [] }),
+                GRAPH_TARGET_RESULTS_DISMISS_MS,
+              )
+            }
             placeholder="Search a person or company…"
             className="h-9 w-56 text-sm"
             aria-label="Warm path target"
@@ -65,7 +85,6 @@ export function WarmPathPanel() {
                     type="button"
                     onClick={() => {
                       setSelected(target);
-                      setResults([]);
                     }}
                     className="flex w-full items-center gap-1 px-2.5 py-1.5 text-left text-sm text-paper hover:bg-paper/[0.05]"
                   >

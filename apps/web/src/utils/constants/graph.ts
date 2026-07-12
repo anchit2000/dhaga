@@ -11,6 +11,8 @@ export const GRAPH_FOCUS_ZOOM = 1.15;
 export const GRAPH_MIN_ZOOM = 0.04;
 export const GRAPH_MAX_ZOOM = 12;
 export const GRAPH_CAMERA_DURATION_MS = 450;
+export const GRAPH_TARGET_SEARCH_DEBOUNCE_MS = 300;
+export const GRAPH_TARGET_RESULTS_DISMISS_MS = 150;
 
 /** Warm-path BFS hop cap — backstop only; contacts are always terminal past hop 0 (see warm-paths.ts). */
 export const WARM_PATH_MAX_HOPS = 5;

@@ -3,6 +3,7 @@ import { getAdminGate } from "@/lib/hosted/gate";
 import { AppNav } from "@/components/app/AppNav";
 
 export const metadata = { title: "Dhaga" };
+export const dynamic = "force-dynamic";
 
 export default async function AppLayout({
   children,

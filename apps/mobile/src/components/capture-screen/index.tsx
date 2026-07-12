@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { StyleSheet, View } from "react-native";
 
 import { CameraCaptureView } from "@/components/camera-capture-view";
@@ -46,12 +47,29 @@ export default function CaptureScreen() {
     openLinkedInAddForm,
   } = useLinkedInQrCapture(settings);
   const { listening, start: startDictation, stop: stopDictation } = useDictation(text, setText, setVoiceHint);
+  // Set when "Save contact" is tapped while dictation is still listening: stopping the
+  // recognizer is async (its last transcript chunk can land after stop() returns), so
+  // submitting immediately can cut off the words the user just spoke. Deferring the
+  // submit to the effect below — which fires once `listening` actually flips to false —
+  // guarantees `text` already has whatever the recognizer finalized before we read it.
+  const submitAfterDictationStop = useRef(false);
+
+  useEffect(() => {
+    if (!listening && submitAfterDictationStop.current) {
+      submitAfterDictationStop.current = false;
+      submitText();
+    }
+  }, [listening, submitText]);
 
   if (!settings) return <View style={styles.screen} />;
 
   function submitTypedText(): void {
-    if (listening) stopDictation();
-    submitText();
+    if (listening) {
+      submitAfterDictationStop.current = true;
+      stopDictation();
+    } else {
+      submitText();
+    }
   }
 
   const dockActions = buildDockActions({

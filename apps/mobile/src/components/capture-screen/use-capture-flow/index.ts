@@ -3,10 +3,12 @@ import * as ImagePicker from "expo-image-picker";
 import { router, useFocusEffect } from "expo-router";
 
 import { type CameraCaptureHandle, type CapturedPhoto } from "@/components/camera-capture-view";
-import { CaptureError, captureContact, renameSession } from "@/lib/api";
+import { CaptureError, captureContact } from "@/lib/api";
 import { getScanLocation } from "@/lib/geolocation";
 import { buildScanPayload } from "@/lib/ocr";
 import { isConfigured, loadSettings } from "@/lib/settings";
+
+import { useSessionNamePrompt } from "./use-session-name";
 
 import type { CaptureRequest } from "@dhaga/core/src/api/capture";
 import type { MobileSettings, ScanOutcome, ScanPath } from "@/types";
@@ -28,9 +30,8 @@ export function useCaptureFlow() {
   const [busy, setBusy] = useState(false);
   const [outcome, setOutcome] = useState<ScanOutcome | null>(null);
   const [pendingPhoto, setPendingPhoto] = useState<CapturedPhoto | null>(null);
-  // M2 auto event grouping (BRD §6.2): id of a just-created session waiting
-  // for its one-time "Name this event?" prompt; null the rest of the time.
-  const [sessionToName, setSessionToName] = useState<string | null>(null);
+  const { sessionToName, setSessionToName, confirmSessionName, dismissSessionPrompt } =
+    useSessionNamePrompt(settings);
 
   useFocusEffect(
     useCallback(() => {
@@ -71,23 +72,6 @@ export function useCaptureFlow() {
     }
   }
 
-  /** Confirms the one-time "Name this event?" prompt after a new session is auto-created. */
-  async function confirmSessionName(name: string): Promise<void> {
-    if (!settings || !sessionToName) return;
-    try {
-      await renameSession(settings, sessionToName, name);
-    } catch {
-      // Non-critical: the session keeps its placeholder name; it can still
-      // be renamed later from the web app's Sessions page.
-    } finally {
-      setSessionToName(null);
-    }
-  }
-
-  function dismissSessionPrompt(): void {
-    setSessionToName(null);
-  }
-
   async function shootCamera(): Promise<void> {
     if (busy) return;
     try {
@@ -117,14 +101,20 @@ export function useCaptureFlow() {
     }
   }
 
-  /** Confirms the crop review step: crop→OCR pipeline for whichever photo (camera or library) started it. */
+  /** Confirms the crop review step: crop→OCR pipeline for whichever photo (camera or library) started it.
+   * Holds `busy` for the whole pipeline, not just `finish()` — otherwise the gap between "crop confirmed"
+   * and "OCR done" leaves the camera/dock fully interactive, letting a second shutter press or library pick
+   * start a concurrent capture (and a second POST /api/capture) before the first one resolves. */
   async function applyCroppedPhoto(uri: string): Promise<void> {
+    if (busy) return;
     setPendingPhoto(null);
+    setBusy(true);
     try {
       const payload = await buildScanPayload(uri);
       await finish(payload.request, payload.path);
     } catch (error) {
       setOutcome({ kind: "error", message: error instanceof Error ? error.message : "Couldn't process that photo." });
+      setBusy(false);
     }
   }
 

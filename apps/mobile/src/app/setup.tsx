@@ -19,6 +19,7 @@ export default function SetupScreen() {
   const [baseUrl, setBaseUrl] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     void loadSettings().then((settings) => {
@@ -32,9 +33,12 @@ export default function SetupScreen() {
   const save = async (): Promise<void> => {
     if (!canSave) return;
     setSaving(true);
+    setError(null);
     try {
       const saved = await saveSettings({ baseUrl, apiKey });
       if (isConfigured(saved)) router.replace("/");
+    } catch {
+      setError("Couldn't save these settings on this device. Try again.");
     } finally {
       setSaving(false);
     }
@@ -81,6 +85,7 @@ export default function SetupScreen() {
             stored only in this phone&apos;s secure storage.
           </Text>
         </View>
+        {error ? <Text style={styles.error}>{error}</Text> : null}
         <Pressable
           style={[styles.saveButton, !canSave && styles.saveDisabled]}
           onPress={() => void save()}
@@ -114,6 +119,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   hint: { color: COLORS.fog, fontSize: 13, lineHeight: 18 },
+  error: { color: COLORS.amber, fontSize: 13, textAlign: "center" },
   saveButton: {
     backgroundColor: COLORS.amber,
     borderRadius: 999,

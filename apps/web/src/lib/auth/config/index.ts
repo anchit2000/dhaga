@@ -7,6 +7,47 @@ import { notifyAccessRequested } from "@/lib/access/notify";
 import { sendPasswordResetEmail, sendVerifyEmail } from "./emails";
 import { buildPlugins } from "./plugins";
 import { socialProviderConfig } from "./social";
+import type { User } from "better-auth";
+
+/**
+ * The signup gate's `create.before` hook body — extracted (rather than left
+ * inline) so it's independently unit-testable. notifyAccessRequested sends
+ * up to two emails (lib/email/send.ts, via Resend); a transient
+ * provider/network failure there must never replace the intended
+ * `APIError("FORBIDDEN", ...)` below with an unrelated 500 — the
+ * confirmation email is a courtesy, not something the signup rejection can
+ * be blocked on. This call site can't reach for next/server's after() the
+ * way the other notifyAccessRequested caller (api/access-requests/route.ts)
+ * does: better-auth's own types allow the hook's `context` to be null (it
+ * isn't guaranteed to run inside an active Next.js request scope), and this
+ * exact function also runs directly against a plain DB connection under
+ * vitest with no HTTP request in play at all — after() would throw there.
+ * A plain try/catch works in every one of those cases.
+ */
+export async function beforeUserCreate(
+  user: User & Record<string, unknown>,
+): Promise<{ data: User & Record<string, unknown> } | void> {
+  const gate = await getSignupGate();
+  const { allowed, reason } = await gate.checkEmail(user.email);
+  if (!allowed) {
+    // The blocked signup attempt doubles as an access request, so
+    // the same email just works once an admin approves it — no
+    // separate "request access" step required first.
+    await gate.requestAccess(user.email);
+    try {
+      await notifyAccessRequested(user.email);
+    } catch {
+      // Swallowed deliberately: the FORBIDDEN rejection below must always
+      // reach the caller, regardless of whether this best-effort
+      // confirmation email succeeds.
+    }
+    throw new APIError("FORBIDDEN", {
+      message:
+        reason ?? "We've sent your access request — check your email once you're approved.",
+    });
+  }
+  return { data: user };
+}
 
 /**
  * Lazily built and cached (not a top-level `await getDb()`): merely
@@ -42,22 +83,7 @@ async function buildAuth() {
     databaseHooks: {
       user: {
         create: {
-          before: async (user) => {
-            const gate = await getSignupGate();
-            const { allowed, reason } = await gate.checkEmail(user.email);
-            if (!allowed) {
-              // The blocked signup attempt doubles as an access request, so
-              // the same email just works once an admin approves it — no
-              // separate "request access" step required first.
-              await gate.requestAccess(user.email);
-              await notifyAccessRequested(user.email);
-              throw new APIError("FORBIDDEN", {
-                message:
-                  reason ?? "We've sent your access request — check your email once you're approved.",
-              });
-            }
-            return { data: user };
-          },
+          before: beforeUserCreate,
         },
       },
     },

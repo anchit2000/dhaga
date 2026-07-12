@@ -44,6 +44,8 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Loading skeletons on data-heavy screens (route `loading.tsx` files)
 - [x] Dark warm theme reused from landing tokens
 - [x] Home dashboard: due reach-outs + open follow-ups across the graph
+- [ ] Fix render-blocking font/animation on first load (BRD §7.6) — Geist Pixel self-hosted via `next/font/local` (was a `display=block` Google Fonts `<link>`, invisible text until it loaded); landing WebGL cursor + GSAP scroll thread deferred via `next/dynamic({ ssr: false })` so they no longer block first paint — 2026-07-12, build verification + push still pending
+- [ ] Cache authenticated `/app/*` navigation so switching pages doesn't re-run the full Postgres query set on every click (BRD §7.6) — per-user scoped, invalidated on mutation, not a raw TTL
 
 ## 3. Data layer (BRD §7.4 — boring storage)
 

@@ -1,80 +1,110 @@
 "use client";
 
-import { useMemo } from "react";
-import { Background, ReactFlow, type Edge } from "@xyflow/react";
+import { useMemo, useReducer } from "react";
+import { toast } from "sonner";
+import { Background, ReactFlow, type NodeMouseHandler } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import {
-  CompanyGraphNode,
-  PersonGraphNode,
-  type BrowserFlowNode,
-} from "./nodes";
-import type { GraphViewData } from "@/lib/repo/graph-data";
+import { CompanyGraphNode, OverflowGraphNode, PersonGraphNode, type BrowserFlowNode } from "./nodes";
+import { DimensionToggle } from "./DimensionToggle";
+import { buildFlow } from "./layout";
+import { graphReducer, initialGraphState } from "./graph-state";
+import type { Cluster, ClusterDimension, GraphViewEdge, GraphViewNode } from "@/lib/repo/graph-data";
 
-const nodeTypes = { person: PersonGraphNode, company: CompanyGraphNode };
+const nodeTypes = { person: PersonGraphNode, company: CompanyGraphNode, overflow: OverflowGraphNode };
 
-/** Deterministic layout: companies on an inner ring, people on an outer ring. */
-function layoutNodes(data: GraphViewData): BrowserFlowNode[] {
-  const people = data.nodes.filter((node) => node.kind === "contact");
-  const orgs = data.nodes.filter((node) => node.kind === "company");
-  const ring = (index: number, total: number, radius: number) => {
-    const angle = (index / Math.max(total, 1)) * 2 * Math.PI - Math.PI / 2;
-    return { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius };
-  };
-  return [
-    ...orgs.map((node, index) => ({
-      id: node.id,
-      type: "company" as const,
-      position: ring(index, orgs.length, orgs.length > 1 ? 170 : 0),
-      style: { width: 1, height: 1 },
-      data: { label: node.label, sublabel: node.sublabel, href: null },
-    })),
-    ...people.map((node, index) => ({
-      id: node.id,
-      type: "person" as const,
-      position: ring(index, people.length, 340),
-      style: { width: 1, height: 1 },
-      data: {
-        label: node.label,
-        sublabel: node.sublabel,
-        href: `/app/people/${node.id}`,
-      },
-    })),
-  ];
+interface ClusterMembersResponse {
+  nodes: GraphViewNode[];
+  edges: GraphViewEdge[];
+  totalCount: number;
+  truncated: boolean;
 }
 
-export function GraphBrowser({ data }: { data: GraphViewData }) {
-  const nodes = useMemo(() => layoutNodes(data), [data]);
-  const edges = useMemo<Edge[]>(
-    () =>
-      data.edges.map((edge) => ({
-        id: edge.id,
-        source: edge.source,
-        target: edge.target,
-        label: edge.label,
-        type: "straight",
-        style: { stroke: "#4a3d2b", strokeWidth: 1.5 },
-        labelStyle: { fill: "#a49a8a", fontSize: 10 },
-        labelBgStyle: { fill: "#16120e", fillOpacity: 0.9 },
-      })),
-    [data],
+export function GraphBrowser({ initialClusters }: { initialClusters: Cluster[] }) {
+  const [state, dispatch] = useReducer(graphReducer, initialClusters, initialGraphState);
+
+  async function switchDimension(dimension: ClusterDimension): Promise<void> {
+    if (dimension === state.dimension || state.clustersLoading) return;
+    dispatch({ type: "dimension-start", dimension });
+    try {
+      const res = await fetch(`/api/graph/clusters?dimension=${dimension}`);
+      if (!res.ok) throw new Error();
+      const data: { clusters: Cluster[] } = await res.json();
+      dispatch({ type: "dimension-success", dimension, clusters: data.clusters });
+    } catch {
+      toast.error("Couldn't load that view — try again.");
+      dispatch({ type: "dimension-success", dimension, clusters: [] });
+    }
+  }
+
+  async function expandCluster(key: string): Promise<void> {
+    if (state.expanded.has(key)) {
+      dispatch({ type: "collapse", key });
+      return;
+    }
+    const cached = state.loaded.get(key);
+    if (cached) {
+      dispatch({ type: "expand-success", key, entry: cached });
+      return;
+    }
+    dispatch({ type: "expand-start", key });
+    const loadedIds = [
+      ...state.clusters.map((cluster) => cluster.key),
+      ...[...state.loaded.values()].flatMap((entry) => entry.contacts.map((contact) => contact.id)),
+    ];
+    try {
+      const params = new URLSearchParams({ dimension: state.dimension, key, loaded: loadedIds.join(",") });
+      const res = await fetch(`/api/graph/cluster-members?${params}`);
+      if (!res.ok) throw new Error();
+      const data: ClusterMembersResponse = await res.json();
+      dispatch({
+        type: "expand-success",
+        key,
+        entry: {
+          contacts: data.nodes,
+          edges: data.edges,
+          overflowCount: data.truncated ? data.totalCount - data.nodes.length : 0,
+        },
+      });
+    } catch {
+      toast.error("Couldn't load that group — try again.");
+      dispatch({ type: "expand-error", key });
+    }
+  }
+
+  const onNodeClick: NodeMouseHandler<BrowserFlowNode> = (_event, node) => {
+    if (node.type === "company") void expandCluster(node.id);
+  };
+
+  const { nodes, edges } = useMemo(
+    () => buildFlow(state.clusters, state.expanded, state.loaded, state.pending),
+    [state.clusters, state.expanded, state.loaded, state.pending],
   );
 
   return (
-    <div className="h-[70vh] overflow-hidden rounded-2xl border border-seam bg-panel/40">
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        fitView
-        fitViewOptions={{ padding: 0.2 }}
-        minZoom={0.2}
-        maxZoom={2}
-        proOptions={{ hideAttribution: true }}
-        nodesConnectable={false}
-        deleteKeyCode={null}
-      >
-        <Background color="#2b241b" gap={28} />
-      </ReactFlow>
+    <div className="space-y-3">
+      <DimensionToggle value={state.dimension} onChange={switchDimension} />
+      <div className="h-[70vh] overflow-hidden rounded-2xl border border-seam bg-panel/40">
+        {state.clustersLoading ? (
+          <div className="flex h-full items-center justify-center text-sm text-fog">Loading…</div>
+        ) : (
+          <ReactFlow
+            key={state.dimension}
+            nodes={nodes}
+            edges={edges}
+            nodeTypes={nodeTypes}
+            onNodeClick={onNodeClick}
+            fitView
+            fitViewOptions={{ padding: 0.2 }}
+            minZoom={0.2}
+            maxZoom={2}
+            proOptions={{ hideAttribution: true }}
+            nodesConnectable={false}
+            deleteKeyCode={null}
+          >
+            <Background color="#2b241b" gap={28} />
+          </ReactFlow>
+        )}
+      </div>
     </div>
   );
 }

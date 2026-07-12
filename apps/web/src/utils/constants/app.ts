@@ -11,10 +11,8 @@ export const APP_NAV_LINKS = [
   { href: "/app/people", label: "People" },
   { href: "/app/sessions", label: "Sessions" },
   { href: "/app/graph", label: "Graph" },
-  { href: "/app/search", label: "Search" },
   { href: "/app/quick-add", label: "Quick add" },
   { href: "/app/import", label: "Import" },
-  { href: "/app/settings", label: "Settings" },
 ] as const;
 
 /** Free-tier cloud AI action cap per calendar month (BRD §8.3). */
@@ -33,6 +31,9 @@ export type CardImageType = (typeof CARD_IMAGE_TYPES)[number];
 
 /** Keep-in-touch cadence choices (docs/ideas.md #2). */
 export const CADENCE_OPTIONS = [
+  { label: "Daily", days: 1 },
+  { label: "Weekly", days: 7 },
+  { label: "Fortnightly", days: 15 },
   { label: "Monthly", days: 30 },
   { label: "Quarterly", days: 90 },
   { label: "Twice a year", days: 180 },

@@ -1,11 +1,23 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
 const plexMono = IBM_Plex_Mono({
   variable: "--font-plex-mono",
   subsets: ["latin"],
   weight: ["400", "500"],
+});
+
+// Geist Pixel isn't in next/font/google's supported list yet, so the single
+// latin-subset weight is self-hosted here instead of loaded from a
+// render-blocking Google Fonts <link> (see next/font/local docs).
+const geistPixel = localFont({
+  src: "./fonts/GeistPixel-latin.woff2",
+  variable: "--font-geist-pixel",
+  display: "swap",
+  weight: "400",
+  style: "normal",
 });
 
 export const metadata: Metadata = {
@@ -40,17 +52,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${plexMono.variable} h-full antialiased`}>
-      {/* Geist Pixel isn't in next/font/google's supported list yet, so it's
-          loaded as a regular Google Fonts stylesheet via the root <head>. */}
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Geist+Pixel&display=block"
-          rel="stylesheet"
-        />
-      </head>
+    <html
+      lang="en"
+      className={`${plexMono.variable} ${geistPixel.variable} h-full antialiased`}
+    >
       {/* suppressHydrationWarning: browser extensions (Grammarly et al.)
           inject attributes into <body> before React hydrates; the warning is
           noise. Suppression is attribute-level and this element only. */}

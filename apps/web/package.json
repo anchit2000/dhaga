@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "seed:dummy-graph": "node scripts/seed-dummy-graph.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

@@ -586,3 +586,61 @@ npm run typecheck --workspace @dhaga/core
 npm run build                            # production build must pass
 npm run test --prefix apps/web           # vitest
 ```
+
+---
+
+## 10. Load-testing `/app/graph` and `/app/people` at scale
+
+Neither page paginates today: `listContacts()` (`apps/web/src/lib/repo/
+contacts/queries.ts:18-48`) selects the entire `contacts` table with no
+`LIMIT`, and `GraphBrowser` (`apps/web/src/components/app/graph/
+GraphBrowser.tsx:16-43`) renders every node/edge through `@xyflow/react`
+(DOM/SVG, no virtualization) after recomputing a full ring layout on every
+load. There is no coded cap on contact count anywhere (checked
+`apps/web/src/utils/constants/plans.ts` — the only metering is the monthly
+AI-action cap, not row count), so the practical ceiling is UI render
+performance, not storage.
+
+**`apps/web/scripts/seed-dummy-graph.mjs`** seeds (or removes) exactly one
+synthetic, RLS-scoped account to test this without touching real data:
+
+```bash
+cd apps/web
+node --env-file=.env.vercel scripts/seed-dummy-graph.mjs create --contacts=1000
+node --env-file=.env.vercel scripts/seed-dummy-graph.mjs recreate --contacts=200   # or any other size
+node --env-file=.env.vercel scripts/seed-dummy-graph.mjs delete                    # tear down when done
+# equivalently: npm run seed:dummy-graph -- <create|delete|recreate> [--contacts=N]
+```
+
+Swap `--env-file=.env.vercel` for whichever env file points `DATABASE_URL`
+at the Postgres you want to load — this needs real Postgres (hosted mode's
+RLS), the same constraint as §3; it does nothing useful against embedded
+PGlite.
+
+What it does: creates one `user` row + a `credential` account (via
+`better-auth/crypto`'s `hashPassword`, so the account logs in through the
+normal `/login` form) at a fixed id/email
+(`loadtest@dhaga.internal` / `LoadTest-Dummy-2026!`, printed on `create`),
+then — with `app.current_user_id` set to that account's id for the whole
+transaction — inserts N contacts, N/15 companies, and N/3 relationship
+edges, all tagged `user_id = dummy-loadtest-user`. Because
+`packages/ee`'s `tenant_isolation` RLS policy (`packages/ee/src/db/
+rls-ddl.ts`) scopes every read/write/delete by that session variable,
+`delete`/`recreate` can only ever see and remove this one account's rows —
+it cannot read or touch any other tenant's data, however large this
+account's own row count gets.
+
+- [ ] **Confirmed by a live run (2026-07-12):** ran `create --contacts=1000`
+      against the deployed Vercel project's Supabase — created 67
+      companies, 1000 contacts, 333 explicit edges (plus the "works at"
+      edges `fetchGraphView` derives from `company_id`,
+      `apps/web/src/lib/repo/graph-data.ts:58-69` — so `/app/graph` renders
+      roughly 2,000+ nodes/edges total for this account). Log in as that
+      account and open `/app/graph` and `/app/people` to feel where render
+      time and pan/zoom actually degrade — re-run `recreate` at other sizes
+      to bracket it. **Not yet done:** nobody has recorded the actual
+      degradation threshold from a live run — this section only confirms
+      the seeding step works, not a measured performance number.
+- [ ] Run `delete` when finished — leaving the dummy account in a shared
+      Supabase project is harmless (it's fully isolated by RLS) but there's
+      no reason to keep it around once you have your numbers.

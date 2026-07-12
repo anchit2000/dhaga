@@ -29,6 +29,9 @@ CREATE TABLE IF NOT EXISTS contacts (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
+CREATE INDEX IF NOT EXISTS contacts_companyId_name_idx ON contacts (company_id, name);
+CREATE INDEX IF NOT EXISTS contacts_location_idx ON contacts (location);
+
 CREATE TABLE IF NOT EXISTS sessions (
   id text PRIMARY KEY,
   name text NOT NULL,
@@ -43,6 +46,8 @@ CREATE TABLE IF NOT EXISTS session_contacts (
   scanned_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (session_id, contact_id)
 );
+
+CREATE INDEX IF NOT EXISTS session_contacts_contactId_idx ON session_contacts (contact_id);
 
 CREATE TABLE IF NOT EXISTS notes (
   id text PRIMARY KEY,
@@ -76,6 +81,9 @@ CREATE TABLE IF NOT EXISTS edges (
   deleted_at timestamptz
 );
 
+CREATE INDEX IF NOT EXISTS edges_srcId_idx ON edges (src_id) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS edges_dstId_idx ON edges (dst_id) WHERE deleted_at IS NULL;
+
 CREATE TABLE IF NOT EXISTS follow_ups (
   id text PRIMARY KEY,
   contact_id text NOT NULL REFERENCES contacts(id),
@@ -87,6 +95,7 @@ CREATE TABLE IF NOT EXISTS follow_ups (
 );
 
 ALTER TABLE contacts ADD COLUMN IF NOT EXISTS tags jsonb NOT NULL DEFAULT '[]';
+CREATE INDEX IF NOT EXISTS contacts_tags_gin_idx ON contacts USING GIN (tags);
 ALTER TABLE contacts ADD COLUMN IF NOT EXISTS reach_out_every_days integer;
 ALTER TABLE contacts ADD COLUMN IF NOT EXISTS last_reached_out_at timestamptz;
 ALTER TABLE contacts ADD COLUMN IF NOT EXISTS watched_for_signals boolean NOT NULL DEFAULT false;

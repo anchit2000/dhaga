@@ -1,55 +1,82 @@
 "use client";
 
-import { useActionState, useRef } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { MoveRight } from "lucide-react";
 import { findWarmPathsAction, type WarmPathState } from "@/lib/actions/graph";
-import { Select } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import type { GraphTarget } from "@/lib/repo/graph-data";
 import { SubmitButton } from "../SubmitButton";
 
-export interface WarmPathTarget {
-  id: string;
-  label: string;
-  kind: "contact" | "company";
-}
+const SEARCH_DEBOUNCE_MS = 300;
 
-/** "Who can intro me to X?" — pick a target, get chains from your people. */
-export function WarmPathPanel({ targets }: { targets: WarmPathTarget[] }) {
-  const [state, formAction] = useActionState<WarmPathState, FormData>(
-    findWarmPathsAction,
-    {},
-  );
-  const selectRef = useRef<HTMLSelectElement>(null);
+/** "Who can intro me to X?" — type to search (contacts + companies aren't
+ *  eagerly loaded anymore, see /app/graph's cluster redesign), pick a
+ *  target, get chains from your people. */
+export function WarmPathPanel() {
+  const [state, formAction] = useActionState<WarmPathState, FormData>(findWarmPathsAction, {});
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<GraphTarget[]>([]);
+  const [selected, setSelected] = useState<GraphTarget | null>(null);
+
+  useEffect(() => {
+    if (selected || !query.trim()) {
+      setResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      const res = await fetch(`/api/graph/targets?q=${encodeURIComponent(query)}`);
+      if (!res.ok) return;
+      const data: { targets: GraphTarget[] } = await res.json();
+      setResults(data.targets);
+    }, SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [query, selected]);
 
   return (
     <div className="space-y-3 rounded-2xl border border-seam bg-panel p-4">
       <form
         action={(formData) => {
-          const option =
-            selectRef.current?.selectedOptions[0]?.textContent ?? "";
-          formData.set("targetLabel", option);
+          if (selected) {
+            formData.set("targetId", selected.id);
+            formData.set("targetLabel", selected.label);
+          }
           formAction(formData);
         }}
         className="flex flex-wrap items-center gap-2"
       >
         <p className="mr-1 text-sm font-medium text-paper">Warm path to</p>
-        <Select
-          ref={selectRef}
-          name="targetId"
-          required
-          defaultValue=""
-          className="h-9 w-56 text-sm"
-          aria-label="Warm path target"
-        >
-          <option value="" disabled>
-            Pick a company or person…
-          </option>
-          {targets.map((target) => (
-            <option key={target.id} value={target.id}>
-              {target.kind === "company" ? "🏢 " : ""}
-              {target.label}
-            </option>
-          ))}
-        </Select>
+        <div className="relative">
+          <Input
+            value={selected ? selected.label : query}
+            onChange={(event) => {
+              setSelected(null);
+              setQuery(event.target.value);
+            }}
+            onBlur={() => setTimeout(() => setResults([]), 150)}
+            placeholder="Search a person or company…"
+            className="h-9 w-56 text-sm"
+            aria-label="Warm path target"
+          />
+          {results.length > 0 ? (
+            <ul className="absolute z-10 mt-1 w-56 rounded-lg border border-seam bg-panel py-1 shadow-lg">
+              {results.map((target) => (
+                <li key={target.id}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelected(target);
+                      setResults([]);
+                    }}
+                    className="flex w-full items-center gap-1 px-2.5 py-1.5 text-left text-sm text-paper hover:bg-paper/[0.05]"
+                  >
+                    {target.kind === "company" ? "🏢 " : ""}
+                    {target.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
         <SubmitButton className="h-9 px-4 text-sm">Find path</SubmitButton>
       </form>
 

@@ -300,6 +300,11 @@ The graph is `edges`; the audit trail is `source_note_id` on facts/edges. Deleti
 - One-tap "forget this person" — cascades contact, notes, facts, edges, embeddings, backups.
 - Data export: full SQLite file + CSV/vCard/JSON at any time. No lock-in is a feature *and* the open-source promise.
 
+### 7.6 Web performance (non-functional requirements)
+
+- Fonts and any decorative/non-critical animation ship self-hosted (`next/font/local`/`next/font/google`) and stay off the critical render path (e.g. lazy client-only components via `next/dynamic({ ssr: false })`) — first paint never blocks on an external font or animation download.
+- Authenticated `/app/*` navigation (nav switches, contact/session detail) must not re-run the full set of Postgres queries on every click. Add a caching layer (e.g. `unstable_cache`/`revalidateTag`, or React `cache()`) scoped per-user and invalidated on mutation — never a raw TTL alone, since these routes are RLS-scoped per-tenant data and a stale/leaked cache entry is a privacy bug, not just a UX one.
+
 ---
 
 ## 8. Open-Source & Sustainability Strategy

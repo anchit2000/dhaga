@@ -1,5 +1,6 @@
 import { PGlite } from "@electric-sql/pglite";
 import { vector } from "@electric-sql/pglite-pgvector";
+import { pg_trgm } from "@electric-sql/pglite/contrib/pg_trgm";
 import { drizzle as drizzlePglite } from "drizzle-orm/pglite";
 import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
@@ -75,7 +76,7 @@ async function initEmbedded(): Promise<DhagaDb> {
     await store.__dhagaClient.close().catch(() => undefined);
     store.__dhagaClient = undefined;
   }
-  store.__dhagaClient ??= new PGlite({ dataDir, extensions: { vector } });
+  store.__dhagaClient ??= new PGlite({ dataDir, extensions: { vector, pg_trgm } });
   await store.__dhagaClient.exec(DDL);
   store.__dhagaDdl = DDL;
   return drizzlePglite(store.__dhagaClient, { schema });

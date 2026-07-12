@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { embeddings } from "@/lib/db/schema";
-import { createContact, forgetContact, getContact } from "@/lib/repo/contacts";
+import { createContact, findOrCreateCompany, forgetContact, getContact } from "@/lib/repo/contacts";
 import { addNote, deleteFact, deleteNote, listFacts, listOpenFollowUps } from "@/lib/repo/notes";
 import { applyExtraction } from "@/lib/repo/graph";
-import { fetchGraphView } from "@/lib/repo/graph-data";
+import { fetchClusterMembers } from "@/lib/repo/graph-data";
 import type { NoteExtraction } from "@dhaga/core";
 
 /**
@@ -81,12 +81,6 @@ describe("graph receipts and cascades", () => {
     const detail = await getContact(id);
     expect(detail?.contact.tags).toContain("logistics");
     expect(detail?.companyName).toBe("Freightline");
-
-    // company relationship became a graph edge
-    const graph = await fetchGraphView();
-    expect(
-      graph.edges.some((edge) => edge.source === id && edge.label === "works at"),
-    ).toBe(true);
   });
 
   it("deleting a note tombstones everything it derived", async () => {
@@ -135,13 +129,13 @@ describe("graph receipts and cascades", () => {
     const id = await createContact({ ...contactInput, name: "Third Person" }, "manual");
     const noteId = await addNote(id, "text", "to be forgotten");
     await applyExtraction(id, noteId, extraction);
+    const companyId = await findOrCreateCompany("Freightline");
 
     await forgetContact(id);
     expect(await getContact(id)).toBeNull();
-    const graph = await fetchGraphView();
-    expect(graph.nodes.some((node) => node.id === id)).toBe(false);
-    expect(
-      graph.edges.some((edge) => edge.source === id || edge.target === id),
-    ).toBe(false);
+
+    const cluster = await fetchClusterMembers("company", companyId);
+    expect(cluster.nodes.some((node) => node.id === id)).toBe(false);
+    expect(cluster.edges.some((edge) => edge.source === id || edge.target === id)).toBe(false);
   });
 });

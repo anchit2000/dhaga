@@ -141,7 +141,8 @@
   --color-fog: #a49a8a;
   --color-amber: #e2a44c;
   --color-ember: #c37731;
-  --font-display: "Geist Pixel", ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-geist-pixel), ui-sans-serif, system-ui,
+    sans-serif;
   /* plain, highly-legible stack for the tiny simulated app-UI text inside
      the phone/desktop mockups, where Geist Pixel's display styling reads
      poorly at 7-10px */
@@ -168,7 +169,7 @@
   --input: #2b241b;
   --ring: #e2a44c;
   --radius: 0.5rem;
-  --font-sans: "Geist Pixel", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-geist-pixel), ui-sans-serif, system-ui, sans-serif;
   --font-geist-mono: var(--font-plex-mono), Consolas, monospace;
 }
 

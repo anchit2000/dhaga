@@ -1,30 +1,30 @@
 import { pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
 import { contacts } from "./contacts";
 
-/** Encounter sessions (M2): "Web Summit 2026" groups the people met there. */
-export const sessions = pgTable("sessions", {
+/** Encounter events (M2): "Web Summit 2026" groups the people met there. */
+export const events = pgTable("events", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   startedAt: timestamp("started_at", { withTimezone: true }).defaultNow().notNull(),
   endedAt: timestamp("ended_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  /** Coarse geohash-6 of where the session's scans happened (M2, BRD §6.2).
-   *  Null for sessions created manually (web quick-add) with no location. */
+  /** Coarse geohash-6 of where the event's scans happened (M2, BRD §6.2).
+   *  Null for events created manually (web quick-add) with no location. */
   geohash: text("geohash"),
 });
 
-export const sessionContacts = pgTable(
-  "session_contacts",
+export const eventContacts = pgTable(
+  "event_contacts",
   {
-    sessionId: text("session_id")
+    eventId: text("event_id")
       .notNull()
-      .references(() => sessions.id),
+      .references(() => events.id),
     contactId: text("contact_id")
       .notNull()
       .references(() => contacts.id),
     scannedAt: timestamp("scanned_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (table) => [primaryKey({ columns: [table.sessionId, table.contactId] })],
+  (table) => [primaryKey({ columns: [table.eventId, table.contactId] })],
 );
 
-export type SessionRow = typeof sessions.$inferSelect;
+export type EventRow = typeof events.$inferSelect;

@@ -6,7 +6,7 @@ import {
 } from "@dhaga/core";
 import { getContact } from "@/lib/repo/contacts";
 import { listFacts, listNotes, listOpenFollowUps } from "@/lib/repo/notes";
-import { listContactSessions } from "@/lib/repo/sessions";
+import { listContactEvents } from "@/lib/repo/events";
 import { AiBudgetError, assertAiBudget, recordAiAction } from "./metering";
 import { FeatureNotEntitledError, requireFeature } from "@/lib/entitlements";
 
@@ -25,10 +25,10 @@ export async function generateBrief(
   }
   const detail = await getContact(contactId);
   if (!detail) return { error: "Contact not found." };
-  const [facts, notes, sessions, followUps] = await Promise.all([
+  const [facts, notes, events, followUps] = await Promise.all([
     listFacts(contactId),
     listNotes(contactId),
-    listContactSessions(contactId),
+    listContactEvents(contactId),
     listOpenFollowUps(contactId),
   ]);
 
@@ -43,7 +43,7 @@ export async function generateBrief(
         contactName: detail.contact.name,
         title: detail.contact.title,
         company: detail.companyName,
-        sessionNames: sessions.map((session) => session.name),
+        eventNames: events.map((event) => event.name),
         facts: facts.slice(0, 12).map((fact) => fact.text),
         noteSnippets: notes
           .slice(0, 5)

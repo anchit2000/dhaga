@@ -17,6 +17,15 @@ export const RELATIONSHIP_PREDICATES = [
   "competitor_of",
 ] as const;
 
+const predicateSchema = z
+  .string()
+  .min(2)
+  .max(64)
+  .regex(/^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$/)
+  .describe(
+    "A concise snake_case relationship, such as parent_of, interviewed_with, or advised",
+  );
+
 export const factSchema = z.object({
   type: z.enum(FACT_TYPES),
   text: z.string().describe("The fact, phrased as a short standalone sentence"),
@@ -27,7 +36,7 @@ export const relationshipSchema = z.object({
   subject: z
     .string()
     .describe('Who the relationship is about; "contact" for the note subject'),
-  predicate: z.enum(RELATIONSHIP_PREDICATES),
+  predicate: predicateSchema,
   object: z.string().describe("The company or person on the other end"),
   object_type: z.enum(["company", "person"]),
 });

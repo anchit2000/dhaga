@@ -4,7 +4,7 @@ export {
   type CompanyRow,
   type ContactRow,
 } from "./contacts";
-export { sessions, sessionContacts, type SessionRow } from "./sessions";
+export { events, eventContacts, type EventRow } from "./events";
 export {
   notes,
   facts,

@@ -8,10 +8,7 @@ export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
 
 export const APP_NAV_LINKS = [
   { href: "/app", label: "Home" },
-  { href: "/app/people", label: "People" },
-  { href: "/app/sessions", label: "Sessions" },
   { href: "/app/graph", label: "Graph" },
-  { href: "/app/quick-add", label: "Quick add" },
 ] as const;
 
 export const HOME_PREVIEW_LIMIT = 5;
@@ -82,9 +79,9 @@ export const SIGNALS_FEED_LIMIT = 8;
 
 /**
  * Auto event grouping (M2, BRD §6.2): scans sharing a geohash-6 within this
- * rolling window join the same session instead of starting a new one.
+ * rolling window join the same event instead of starting a new one.
  */
-export const SESSION_CLUSTER_WINDOW_MS = 4 * 60 * 60 * 1000; // 4 hours
+export const EVENT_CLUSTER_WINDOW_MS = 4 * 60 * 60 * 1000; // 4 hours
 
-/** Name given to a session auto-created by clustering, until the user renames it. */
-export const NEW_SESSION_PLACEHOLDER_NAME = "New session";
+/** Name given to an event auto-created by clustering, until the user renames it. */
+export const NEW_EVENT_PLACEHOLDER_NAME = "New event";

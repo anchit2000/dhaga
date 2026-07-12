@@ -18,10 +18,14 @@ const { QUERY_VECTOR } = vi.hoisted(() => ({
   QUERY_VECTOR: Array.from({ length: 384 }, (_, i) => (i === 0 ? 1 : 0)),
 }));
 
-vi.mock("@/lib/ai/embedder", () => ({
-  embedQuery: vi.fn().mockResolvedValue(QUERY_VECTOR),
-  embedPassages: vi.fn().mockResolvedValue(null),
-}));
+vi.mock("@/lib/ai/embedder", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/ai/embedder")>();
+  return {
+    ...actual,
+    embedQuery: vi.fn().mockResolvedValue(QUERY_VECTOR),
+    embedPassages: vi.fn().mockResolvedValue(null),
+  };
+});
 
 const contactInput = {
   name: "Delete Atomicity Person",

@@ -17,3 +17,9 @@ export interface SearchOptions {
 export interface SearchClient {
   search(query: string, options?: SearchOptions): Promise<SearchResult[]>;
 }
+
+export interface SearchProvider {
+  id: string;
+  isConfigured(): boolean;
+  createClient(): SearchClient;
+}

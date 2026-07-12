@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ExtractedContact } from "@dhaga/core";
 import { ContactForm } from "../ContactForm";
-import { SessionPicker, type SessionOption } from "../SessionPicker";
+import { EventPicker, type EventOption } from "../EventPicker";
 
 /** Review-and-save screen shown once a paste/photo capture has been parsed
  *  into a contact — the shared endpoint every capture mode converges on. */
@@ -12,8 +12,8 @@ export function QuickAddResult({
   sourceText,
   imageBase64,
   imageType,
-  sessions,
-  defaultSessionId,
+  events,
+  defaultEventId,
 }: {
   contact: ExtractedContact;
   via?: "ai" | "heuristic";
@@ -21,8 +21,8 @@ export function QuickAddResult({
   sourceText?: string;
   imageBase64?: string;
   imageType?: string;
-  sessions: SessionOption[];
-  defaultSessionId?: string;
+  events: EventOption[];
+  defaultEventId?: string;
 }) {
   return (
     <div className="space-y-4">
@@ -44,7 +44,7 @@ export function QuickAddResult({
           <input type="hidden" name="sourceText" value={sourceText ?? ""} />
           <input type="hidden" name="imageBase64" value={imageBase64 ?? ""} />
           <input type="hidden" name="imageType" value={imageType ?? ""} />
-          <SessionPicker sessions={sessions} defaultSessionId={defaultSessionId} />
+          <EventPicker events={events} defaultEventId={defaultEventId} />
         </ContactForm>
       </div>
     </div>

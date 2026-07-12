@@ -5,7 +5,7 @@ import { COLORS } from "@/utils/constants";
 /**
  * LinkedIn QR capture (docs/ideas.md; checklist.md's "LinkedIn QR format
  * support", v1.4): shown when the camera reads a LinkedIn profile QR code.
- * Confirms before leaving the app (same posture as SessionNamePrompt) —
+ * Confirms before leaving the app (same posture as EventNamePrompt) —
  * "Add contact" opens the web app's existing Add person form in the
  * browser, prefilled; this component never saves anything itself.
  */

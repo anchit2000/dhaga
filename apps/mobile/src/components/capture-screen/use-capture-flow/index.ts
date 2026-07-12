@@ -8,7 +8,7 @@ import { getScanLocation } from "@/lib/geolocation";
 import { buildScanPayload } from "@/lib/ocr";
 import { isConfigured, loadSettings } from "@/lib/settings";
 
-import { useSessionNamePrompt } from "./use-session-name";
+import { useEventNamePrompt } from "./use-event-name";
 
 import type { CaptureRequest } from "@dhaga/core/src/api/capture";
 import type { MobileSettings, ScanOutcome, ScanPath } from "@/types";
@@ -30,8 +30,8 @@ export function useCaptureFlow() {
   const [busy, setBusy] = useState(false);
   const [outcome, setOutcome] = useState<ScanOutcome | null>(null);
   const [pendingPhoto, setPendingPhoto] = useState<CapturedPhoto | null>(null);
-  const { sessionToName, setSessionToName, confirmSessionName, dismissSessionPrompt } =
-    useSessionNamePrompt(settings);
+  const { eventToName, setEventToName, confirmEventName, dismissEventPrompt } =
+    useEventNamePrompt(settings);
 
   useFocusEffect(
     useCallback(() => {
@@ -50,7 +50,7 @@ export function useCaptureFlow() {
     try {
       const location = await getScanLocation();
       const saved = await captureContact(settings, { ...request, ...location });
-      const session = "session" in saved ? saved.session : null;
+      const event = "event" in saved ? saved.event : null;
       setOutcome({
         kind: "saved",
         name: saved.name,
@@ -58,9 +58,9 @@ export function useCaptureFlow() {
         path,
         seconds: (Date.now() - startedAt) / 1000,
         notice: saved.notice,
-        session,
+        event,
       });
-      if (session?.isNew) setSessionToName(session.id);
+      if (event?.isNew) setEventToName(event.id);
       setText("");
       setVoiceHint(null);
     } catch (error) {
@@ -137,9 +137,9 @@ export function useCaptureFlow() {
     outcome,
     pendingPhoto,
     setPendingPhoto,
-    sessionToName,
-    confirmSessionName,
-    dismissSessionPrompt,
+    eventToName,
+    confirmEventName,
+    dismissEventPrompt,
     shootCamera,
     pickFromLibrary,
     applyCroppedPhoto,

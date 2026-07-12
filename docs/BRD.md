@@ -117,7 +117,7 @@ The MVP must prove one loop end-to-end:
 | # | Feature | Description | Acceptance criteria |
 |---|---|---|---|
 | M1 | Card/badge scan | Camera capture → on-device OCR → structured contact (name, title, company, email, phone) with edit-before-save | ≥90% field accuracy on clean Latin-script cards; <5s scan-to-review |
-| M2 | Auto event grouping | Scans within a time+location cluster grouped as an "Encounter Session"; user names it once ("Web Summit 2026") | Contacts scanned same day/venue auto-attach to the active session |
+| M2 | Auto event grouping | Scans within a time+location cluster grouped as an "Event"; user names it once ("Web Summit 2026") | Contacts scanned same day/venue auto-attach to the active event |
 | M3 | Voice + text notes | Attach a voice note per contact; on-device transcription | Transcript attached in <10s for a 60s note |
 | M4 | Entity extraction | LLM extracts entities/facts from notes: role, intent, personal facts, relationships ("used to work at X", "knows Y") | Structured facts visible on contact; user can correct/delete |
 | M5 | Knowledge graph (v0) | Contacts, companies, events, facts stored as nodes/edges; browsable per contact | "Same company" and "same event" connections render on contact page |
@@ -162,9 +162,9 @@ The MVP must prove one loop end-to-end:
 
 Pure client-side logic — no AI needed for v0:
 - Each scan records `timestamp` + coarse `geohash` (with user permission).
-- Scans within a rolling window (same geohash-6, gaps <4h) cluster into a **Session**.
+- Scans within a rolling window (same geohash-6, gaps <4h) cluster into a **Event**.
 - First scan in a new cluster prompts once: "Name this event?" (pre-filled from calendar if an all-day event matches).
-- Later (v1.2): batch LLM pass suggests merging/splitting sessions and infers "these 3 people were probably in the same conversation" from sub-minute scan proximity.
+- Later (v1.2): batch LLM pass suggests merging/splitting events and infers "these 3 people were probably in the same conversation" from sub-minute scan proximity.
 
 ### 6.3 Notes → Knowledge Graph (M3–M5)
 
@@ -193,7 +193,7 @@ Stage 1 and 3 are skippable for simple queries (keyword fallback), keeping most 
 
 ### 6.5 Follow-up drafts (M7)
 
-Single LLM call: contact + session context + extracted facts + user's writing-style sample → draft. Prompt-cached system prompt makes marginal cost negligible (see §9).
+Single LLM call: contact + event context + extracted facts + user's writing-style sample → draft. Prompt-cached system prompt makes marginal cost negligible (see §9).
 
 ### 6.6 Full-product intelligence (v1.1+)
 
@@ -218,7 +218,7 @@ at our price point. Our channels, all user-initiated or opt-in:
 | "In the news" alerts | Opt-in per-contact watchlist (user stars contacts), nightly/weekly Batch API web search, capped per tier | v1.2 |
 | X/Twitter capture | Extension capture of the viewed profile + user-triggered enrichment (web search reaches public X presence); no API monitoring | v1.1 |
 | Ambient auto-capture | Email/calendar OAuth (Gmail/Outlook) — the only ToS-clean *continuous* channel; explicit opt-in | v1.4 |
-| Relationship strength | Computed from the user's own graph (interaction recency/frequency, notes, sessions) — no external data at all | v1.2 |
+| Relationship strength | Computed from the user's own graph (interaction recency/frequency, notes, events) — no external data at all | v1.2 |
 
 Hard lines: **no scraping, no session piggybacking, no bulk lookup of people who never consented,
 no SMS/call-log ingestion** (blocked by iOS entirely and by Play Store policy anyway). This is the
@@ -242,7 +242,7 @@ scraped behind your back," not "automatic."
 ┌──────────── Mobile App (React Native + Expo, iOS + Android) ────────────┐
 │  Camera → Vision/ML Kit OCR → contact parser                           │
 │  Mic → whisper.cpp transcription                                       │
-│  SQLite (source of truth): contacts/sessions/notes/facts/edges/vectors │
+│  SQLite (source of truth): contacts/events/notes/facts/edges/vectors │
 │  sqlite-vec for on-device semantic search                              │
 │  Sync engine (field-level LWW) ────────────────────┐                    │
 └─────────────────────────────────────────────────── │ ──────────────────┘
@@ -281,8 +281,8 @@ scraped behind your back," not "automatic."
 ```
 contacts(id, name, title, company_id, emails[], phones[], source, created_at, ...)
 companies(id, name, domain, sector, enrichment_json)
-sessions(id, name, started_at, ended_at, geohash, calendar_event_id)
-session_contacts(session_id, contact_id, scanned_at)
+events(id, name, started_at, ended_at, geohash, calendar_event_id)
+event_contacts(event_id, contact_id, scanned_at)
 notes(id, contact_id, kind: voice|text, transcript, audio_path, created_at)
 facts(id, contact_id, type, text, confidence, source_note_id, created_at, deleted_at)
 edges(id, src_type, src_id, predicate, dst_type, dst_id, source_note_id, created_at)
@@ -303,7 +303,7 @@ The graph is `edges`; the audit trail is `source_note_id` on facts/edges. Deleti
 ### 7.6 Web performance (non-functional requirements)
 
 - Fonts and any decorative/non-critical animation ship self-hosted (`next/font/local`/`next/font/google`) and stay off the critical render path (e.g. lazy client-only components via `next/dynamic({ ssr: false })`) — first paint never blocks on an external font or animation download.
-- Authenticated `/app/*` navigation (nav switches, contact/session detail) must not re-run the full set of Postgres queries on every click. Add a caching layer (e.g. `unstable_cache`/`revalidateTag`, or React `cache()`) scoped per-user and invalidated on mutation — never a raw TTL alone, since these routes are RLS-scoped per-tenant data and a stale/leaked cache entry is a privacy bug, not just a UX one.
+- Authenticated `/app/*` navigation (nav switches, contact/event detail) must not re-run the full set of Postgres queries on every click. Add a caching layer (e.g. `unstable_cache`/`revalidateTag`, or React `cache()`) scoped per-user and invalidated on mutation — never a raw TTL alone, since these routes are RLS-scoped per-tenant data and a stale/leaked cache entry is a privacy bug, not just a UX one.
 
 ---
 
@@ -382,7 +382,7 @@ Per-card pipeline (OCR parse ≈ 800 in / 200 out tokens on Haiku): **≈ $0.002
 
 | Risk | Likelihood | Mitigation |
 |---|---|---|
-| Capture friction kills retention (the category's graveyard: Evernote Hello, Humin, CamCard) | High | Obsess over scan-to-saved time (<5s); voice-first notes; value visible on first session (auto-grouping + instant search) |
+| Capture friction kills retention (the category's graveyard: Evernote Hello, Humin, CamCard) | High | Obsess over scan-to-saved time (<5s); voice-first notes; value visible on first event (auto-grouping + instant search) |
 | Business cards decline as a medium | Medium | Cards are the wedge, not the product — badges, QR, email-forwarding capture ship in v1.x; the graph is medium-agnostic |
 | GDPR exposure from enrichment | Medium | User-triggered enrichment only, no bulk scraping, full deletion cascade, EU data residency option on hosted tier |
 | LLM cost blowout at scale | Low | Four-layer defense (§8.2); per-user AI-action metering from day one |

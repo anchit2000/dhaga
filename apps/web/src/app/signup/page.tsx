@@ -12,7 +12,7 @@ interface SignupPageProps {
 }
 
 export default async function SignupPage({ searchParams }: SignupPageProps) {
-  if (await getCurrentUser()) redirect("/app/people");
+  if (await getCurrentUser()) redirect("/app");
   const { email } = await searchParams;
 
   return (

@@ -1,6 +1,6 @@
 import { and, eq, inArray, isNotNull, isNull, or } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
-import { companies, contacts, edges, sessionContacts } from "@/lib/db/schema";
+import { companies, contacts, edges, eventContacts } from "@/lib/db/schema";
 import type { Candidate, PathNode, WarmPath } from "./types";
 
 export async function loadNode(id: string): Promise<PathNode | null> {
@@ -23,7 +23,7 @@ export async function loadNode(id: string): Promise<PathNode | null> {
 /**
  * One BFS hop: given the current frontier (contact ids only ever populated
  * on hop 0; company ids on every hop after), find every directly reachable
- * neighbor via edges, company membership, and session co-attendance —
+ * neighbor via edges, company membership, and event co-attendance —
  * scoped to just that frontier, never the whole graph.
  */
 export async function expandHop(
@@ -59,9 +59,9 @@ export async function expandHop(
       : [],
     contactFrontier.length
       ? db
-          .select({ sessionId: sessionContacts.sessionId, contactId: sessionContacts.contactId })
-          .from(sessionContacts)
-          .where(inArray(sessionContacts.contactId, contactFrontier))
+          .select({ eventId: eventContacts.eventId, contactId: eventContacts.contactId })
+          .from(eventContacts)
+          .where(inArray(eventContacts.contactId, contactFrontier))
       : [],
   ]);
 
@@ -81,22 +81,22 @@ export async function expandHop(
     if (row.companyId) raw.push({ from: row.companyId, to: row.id, kind: "contact" });
   }
 
-  // Session co-attendance, scoped to only the sessions this hop's contacts
-  // actually attended — never all sessions ever.
-  const touchedSessionIds = [...new Set(attendanceRows.map((row) => row.sessionId))];
-  if (touchedSessionIds.length) {
+  // Event co-attendance, scoped to only the events this hop's contacts
+  // actually attended — never all events ever.
+  const touchedEventIds = [...new Set(attendanceRows.map((row) => row.eventId))];
+  if (touchedEventIds.length) {
     const allAttendance = await db
-      .select({ sessionId: sessionContacts.sessionId, contactId: sessionContacts.contactId })
-      .from(sessionContacts)
-      .where(inArray(sessionContacts.sessionId, touchedSessionIds));
-    const bySession = new Map<string, string[]>();
+      .select({ eventId: eventContacts.eventId, contactId: eventContacts.contactId })
+      .from(eventContacts)
+      .where(inArray(eventContacts.eventId, touchedEventIds));
+    const byEvent = new Map<string, string[]>();
     for (const row of allAttendance) {
-      (bySession.get(row.sessionId) ?? bySession.set(row.sessionId, []).get(row.sessionId)!).push(
+      (byEvent.get(row.eventId) ?? byEvent.set(row.eventId, []).get(row.eventId)!).push(
         row.contactId,
       );
     }
     for (const row of attendanceRows) {
-      for (const other of bySession.get(row.sessionId) ?? []) {
+      for (const other of byEvent.get(row.eventId) ?? []) {
         if (other !== row.contactId) raw.push({ from: row.contactId, to: other, kind: "contact" });
       }
     }

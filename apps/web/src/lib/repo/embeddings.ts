@@ -1,8 +1,10 @@
-import { and, cosineDistance, desc, eq, gt, inArray, isNull, notInArray, sql } from "drizzle-orm";
+import { eq, isNull } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
-import { embeddings, facts, notes } from "@/lib/db/schema";
+import { facts, notes } from "@/lib/db/schema";
 import { embedPassages, embedQuery } from "@/lib/ai/embedder";
 import type { DhagaDb } from "@/lib/db";
+import { assertCompatibleVectorDimensions, getEmbeddingProvider } from "@dhaga/core";
+import { getVectorStore } from "./vector-store";
 
 export type EmbeddingOwner = "note" | "fact" | "contact";
 
@@ -15,14 +17,11 @@ export async function upsertEmbedding(
 ): Promise<void> {
   const vectors = await embedPassages([content]);
   if (!vectors) return;
-  const db = await getDb();
-  await db
-    .insert(embeddings)
-    .values({ ownerType, ownerId, contactId, content, embedding: vectors[0] })
-    .onConflictDoUpdate({
-      target: [embeddings.ownerType, embeddings.ownerId],
-      set: { content, embedding: vectors[0] },
-    });
+  const vectorStore = getVectorStore();
+  assertCompatibleVectorDimensions(getEmbeddingProvider(), vectorStore);
+  await vectorStore.upsert([
+    { ownerType, ownerId, contactId, content, vector: vectors[0] },
+  ]);
 }
 
 /** Pass `conn` (e.g. a transaction) so callers like deleteFact can keep
@@ -32,10 +31,7 @@ export async function deleteEmbedding(
   ownerId: string,
   conn?: DhagaDb,
 ): Promise<void> {
-  const db = conn ?? (await getDb());
-  await db
-    .delete(embeddings)
-    .where(and(eq(embeddings.ownerType, ownerType), eq(embeddings.ownerId, ownerId)));
+  await getVectorStore().delete(ownerType, ownerId, { transaction: conn });
 }
 
 /** Pass `conn` (e.g. a transaction) so callers like forgetContact can keep
@@ -44,8 +40,7 @@ export async function deleteEmbeddingsByContact(
   contactId: string,
   conn?: DhagaDb,
 ): Promise<void> {
-  const db = conn ?? (await getDb());
-  await db.delete(embeddings).where(eq(embeddings.contactId, contactId));
+  await getVectorStore().deleteByContact(contactId, { transaction: conn });
 }
 
 export interface SemanticHit {
@@ -61,36 +56,35 @@ export async function semanticSearch(
 ): Promise<SemanticHit[]> {
   const queryVector = await embedQuery(query);
   if (!queryVector) return [];
-  const db = await getDb();
-  const similarity = sql<number>`1 - (${cosineDistance(embeddings.embedding, queryVector)})`;
-  return db
-    .select({
-      contactId: embeddings.contactId,
-      content: embeddings.content,
-      ownerType: embeddings.ownerType,
-      similarity,
-    })
-    .from(embeddings)
-    .where(gt(similarity, 0.5))
-    .orderBy(desc(similarity))
-    .limit(limit);
+  const vectorStore = getVectorStore();
+  if (queryVector.length !== vectorStore.dimensions) {
+    throw new Error(
+      `Query embedding has ${queryVector.length} dimensions, but vector store ` +
+        `"${vectorStore.id}" expects ${vectorStore.dimensions}`,
+    );
+  }
+  return vectorStore.search(queryVector, { limit, minimumSimilarity: 0.5 });
 }
 
 /** How many indexable rows have no embedding yet (for the backfill button). */
 export async function countUnindexed(): Promise<number> {
   const db = await getDb();
-  const indexed = db.select({ id: embeddings.ownerId }).from(embeddings);
   const [noteRows, factRows] = await Promise.all([
     db
       .select({ id: notes.id })
       .from(notes)
-      .where(and(isNull(notes.deletedAt), notInArray(notes.id, indexed))),
+      .where(isNull(notes.deletedAt)),
     db
       .select({ id: facts.id })
       .from(facts)
-      .where(and(isNull(facts.deletedAt), notInArray(facts.id, indexed))),
+      .where(isNull(facts.deletedAt)),
   ]);
-  return noteRows.length + factRows.length;
+  const vectorStore = getVectorStore();
+  const indexed = await Promise.all([
+    ...noteRows.map((row) => vectorStore.has("note", row.id)),
+    ...factRows.map((row) => vectorStore.has("fact", row.id)),
+  ]);
+  return indexed.filter((value) => !value).length;
 }
 
 const indexingStore = globalThis as unknown as { __dhagaIndexing?: boolean };
@@ -112,23 +106,25 @@ export async function ensureIndexed(): Promise<void> {
 /** Index everything missing. Returns how many rows were embedded. */
 export async function backfillEmbeddings(): Promise<number> {
   const db = await getDb();
-  const indexed = db.select({ id: embeddings.ownerId }).from(embeddings);
   const [noteRows, factRows] = await Promise.all([
     db
       .select({ id: notes.id, contactId: notes.contactId, body: notes.body })
       .from(notes)
-      .where(and(isNull(notes.deletedAt), notInArray(notes.id, indexed))),
+      .where(isNull(notes.deletedAt)),
     db
       .select({ id: facts.id, contactId: facts.contactId, text: facts.text })
       .from(facts)
-      .where(and(isNull(facts.deletedAt), notInArray(facts.id, indexed))),
+      .where(isNull(facts.deletedAt)),
   ]);
+  const vectorStore = getVectorStore();
   let count = 0;
   for (const note of noteRows) {
+    if (await vectorStore.has("note", note.id)) continue;
     await upsertEmbedding("note", note.id, note.contactId, note.body);
     count += 1;
   }
   for (const fact of factRows) {
+    if (await vectorStore.has("fact", fact.id)) continue;
     await upsertEmbedding("fact", fact.id, fact.contactId, fact.text);
     count += 1;
   }
@@ -144,6 +140,11 @@ export async function deleteEmbeddingsForNote(noteId: string, conn?: DhagaDb): P
     .select({ id: facts.id })
     .from(facts)
     .where(eq(facts.sourceNoteId, noteId));
-  const ids = [noteId, ...derivedFacts.map((fact) => fact.id)];
-  await db.delete(embeddings).where(inArray(embeddings.ownerId, ids));
+  await getVectorStore().deleteMany(
+    [
+      { ownerType: "note", ownerId: noteId },
+      ...derivedFacts.map((fact) => ({ ownerType: "fact", ownerId: fact.id })),
+    ],
+    { transaction: db },
+  );
 }

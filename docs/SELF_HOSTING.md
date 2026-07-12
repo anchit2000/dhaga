@@ -163,7 +163,7 @@ None of the `packages/ee/.env.example` vars (`DHAGA_HOSTED_MODE`,
 | `BETTER_AUTH_URL` | Yes | Your instance's base URL |
 | `DATABASE_URL` | Only on serverless (Vercel) | Otherwise defaults to embedded PGlite |
 | `ANTHROPIC_API_KEY` | No | AI features degrade to heuristic parsing / disabled without it |
-| `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `DHAGA_OWNER_EMAIL` | No | Session digests only |
+| `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `DHAGA_OWNER_EMAIL` | No | Event digests only |
 | `TELEGRAM_*` | No | Owner-only bot capture |
 | `DHAGA_WEBHOOK_URL` | No | Outbound automation |
 | `SEARCH_PROVIDER`, `FIRECRAWL_API_KEY` | No | Job-change detection + news watchlist |
@@ -173,3 +173,7 @@ None of the `packages/ee/.env.example` vars (`DHAGA_HOSTED_MODE`,
 See [DEPLOYING.md](DEPLOYING.md) for the full deploy walkthrough (Vercel and
 single-server options), including the additional `packages/ee` vars if you
 *do* want the hosted-product features.
+
+To add an LLM, search engine, embedding model, or external vector store, see
+[PROVIDERS.md](PROVIDERS.md). Providers can be distributed as independent npm
+packages and registered from the server startup bootstrap.

@@ -17,6 +17,26 @@ async function resolvePersonId(name: string): Promise<string | null> {
   return row?.id ?? null;
 }
 
+async function resolveOrCreateMentionedPerson(name: string): Promise<string> {
+  const existing = await resolvePersonId(name);
+  if (existing) return existing;
+  const db = await getDb();
+  const id = randomUUID();
+  await db.insert(contacts).values({
+    id,
+    name: name.trim(),
+    title: null,
+    companyId: null,
+    emails: [],
+    phones: [],
+    links: [],
+    location: null,
+    tags: [],
+    source: "mentioned",
+  });
+  return id;
+}
+
 function relationshipAsFactText(rel: Relationship): string {
   return `${rel.predicate.replaceAll("_", " ")} ${rel.object}`;
 }
@@ -24,9 +44,8 @@ function relationshipAsFactText(rel: Relationship): string {
 /**
  * Write one note's extraction into the graph. Every row carries
  * source_note_id — deleting the note tombstones all of this.
- * Person relationships only become edges when the person already exists as
- * a contact; otherwise the information is kept as a fact (no phantom
- * contacts appearing in the user's list).
+ * Unknown named people become lightweight `mentioned` contacts. They can
+ * participate in the graph without cluttering the main People list.
  *
  * Each entity type is written with one multi-row `db.insert(...).values([...])`
  * instead of N single-row inserts in a loop: a single INSERT statement is
@@ -66,7 +85,7 @@ export async function applyExtraction(
     const dstId =
       rel.object_type === "company"
         ? await findOrCreateCompany(rel.object)
-        : await resolvePersonId(rel.object);
+        : await resolveOrCreateMentionedPerson(rel.object);
 
     if (dstId) {
       edgeRows.push({

@@ -98,7 +98,7 @@ display + body, IBM Plex Mono for labels/code. Design tokens live in
 2. **Tiered inference.** Free on-device primitive first (OCR, transcription, embeddings) → smallest capable model → Batch API for latency-insensitive jobs → prompt-cache everything cacheable. Never call a bigger model where a smaller one passes evals.
 3. **Every AI-derived fact keeps a receipt.** Facts and graph edges store `source_note_id`. Deleting a note tombstones its derived facts.
 4. **Structured outputs always.** LLM extraction calls use `output_config.format` with a Zod-derived JSON schema — never parse free-text model output.
-5. **Boring storage.** The graph is relational tables (`contacts`, `companies`, `sessions`, `notes`, `facts`, `edges`, `embeddings`) — no graph DB.
+5. **Boring storage.** The graph is relational tables (`contacts`, `companies`, `events`, `notes`, `facts`, `edges`, `embeddings`) — no graph DB.
 
 ### Planned repo layout (create as milestones need it; update this section as it evolves)
 ```

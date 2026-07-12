@@ -57,7 +57,7 @@ vi.mock("@dhaga/core", async (importOriginal) => {
     ...actual,
     hasSearch: () => true,
     getSearchClient: () => fakeSearchClient,
-    hasLLM: () => true,
+    hasBatchLLM: () => true,
     getBatchLLMClient: () => fakeBatchClient,
   };
 });

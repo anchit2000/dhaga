@@ -8,7 +8,7 @@ import { ThreadMark } from "@/components/brand/ThreadMark";
 export const metadata = { title: "Sign in — Dhaga" };
 
 export default async function LoginPage() {
-  if (await getCurrentUser()) redirect("/app/people");
+  if (await getCurrentUser()) redirect("/app");
 
   return (
     <main className="flex min-h-dvh items-center justify-center bg-ink px-4">

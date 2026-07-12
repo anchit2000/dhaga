@@ -20,7 +20,7 @@ export function PasskeyButton() {
       setPending(false);
       return;
     }
-    router.push("/app/people");
+    router.push("/app");
   }
 
   return (

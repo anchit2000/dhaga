@@ -8,7 +8,7 @@ function escapeHtml(value: string): string {
 }
 
 /** Post-event digest body (v1.2) — pure template, zero AI cost. */
-export function sessionDigestHtml(people: DigestPerson[]): string {
+export function eventDigestHtml(people: DigestPerson[]): string {
   const blocks = people
     .map((person) => {
       const identity = [person.title, person.companyName]

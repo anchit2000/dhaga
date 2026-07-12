@@ -1,4 +1,13 @@
 import type { FeatureExtractionPipeline } from "@huggingface/transformers";
+import {
+  getEmbeddingProvider,
+  DEFAULT_EMBEDDING_DIMENSIONS,
+  registerEmbeddingProvider,
+  selectEmbeddingProvider,
+  type EmbeddingProvider,
+} from "@dhaga/core";
+
+export { getEmbeddingProvider, registerEmbeddingProvider, selectEmbeddingProvider };
 
 /**
  * Local embeddings (BRD cost layer 1: free primitive, no per-call vendor
@@ -12,7 +21,7 @@ const MODEL =
 /** bge models retrieve better when the query (not passages) gets this prefix. */
 const QUERY_PREFIX = "Represent this sentence for searching relevant passages: ";
 
-export const EMBEDDING_DIMENSIONS = 384;
+export const EMBEDDING_DIMENSIONS = DEFAULT_EMBEDDING_DIMENSIONS;
 
 export function embeddingsEnabled(): boolean {
   return process.env.DHAGA_EMBEDDINGS !== "off";
@@ -51,11 +60,25 @@ async function embed(texts: string[]): Promise<number[][] | null> {
   }
 }
 
+const localEmbeddingProvider: EmbeddingProvider = {
+  id: "local-huggingface",
+  dimensions: EMBEDDING_DIMENSIONS,
+  isConfigured: embeddingsEnabled,
+  embedDocuments: embed,
+  async embedQuery(text) {
+    const result = await embed([QUERY_PREFIX + text]);
+    return result?.[0] ?? null;
+  },
+};
+
+registerEmbeddingProvider(localEmbeddingProvider);
+
 export function embedPassages(texts: string[]): Promise<number[][] | null> {
-  return embed(texts);
+  const provider = getEmbeddingProvider();
+  return provider.isConfigured() ? provider.embedDocuments(texts) : Promise.resolve(null);
 }
 
 export async function embedQuery(text: string): Promise<number[] | null> {
-  const result = await embed([QUERY_PREFIX + text]);
-  return result?.[0] ?? null;
+  const provider = getEmbeddingProvider();
+  return provider.isConfigured() ? provider.embedQuery(text) : null;
 }

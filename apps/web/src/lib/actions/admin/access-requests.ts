@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { reviewAccessRequest } from "@dhaga/ee/access-requests";
 import { requireUserId } from "@/lib/auth/guard";
 import { getAdminGate } from "@/lib/hosted/gate";
-import { notifyAccessApproved } from "@/lib/access/notify";
+import { notifyAccessApproved, notifyAccessRejected } from "@/lib/access/notify";
 
 async function requireAdmin(): Promise<string> {
   const userId = await requireUserId();
@@ -27,5 +27,6 @@ export async function rejectAccessRequestAction(formData: FormData): Promise<voi
   const email = String(formData.get("email") ?? "");
   if (!email) return;
   await reviewAccessRequest(email, "rejected", adminUserId);
+  await notifyAccessRejected(email);
   revalidatePath("/app/admin/access-requests");
 }

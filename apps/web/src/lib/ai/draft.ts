@@ -6,7 +6,7 @@ import {
 } from "@dhaga/core";
 import { getContact } from "@/lib/repo/contacts";
 import { listFacts, listNotes } from "@/lib/repo/notes";
-import { listContactSessions } from "@/lib/repo/sessions";
+import { listContactEvents } from "@/lib/repo/events";
 import { AiBudgetError, assertAiBudget, recordAiAction } from "./metering";
 
 export interface DraftResult {
@@ -24,10 +24,10 @@ export async function generateFollowUpDraft(
   }
   const detail = await getContact(contactId);
   if (!detail) return { error: "Contact not found." };
-  const [contactFacts, contactNotes, contactSessions] = await Promise.all([
+  const [contactFacts, contactNotes, contactEvents] = await Promise.all([
     listFacts(contactId),
     listNotes(contactId),
-    listContactSessions(contactId),
+    listContactEvents(contactId),
   ]);
 
   try {
@@ -38,7 +38,7 @@ export async function generateFollowUpDraft(
         contactName: detail.contact.name,
         title: detail.contact.title,
         company: detail.companyName,
-        sessionNames: contactSessions.map((session) => session.name),
+        eventNames: contactEvents.map((event) => event.name),
         facts: contactFacts.slice(0, 10).map((fact) => fact.text),
         noteSnippets: contactNotes
           .slice(0, 5)

@@ -7,7 +7,7 @@ import { ThreadMark } from "@/components/brand/ThreadMark";
 export const metadata = { title: "Reset your password — Dhaga" };
 
 export default async function ForgotPasswordPage() {
-  if (await getCurrentUser()) redirect("/app/people");
+  if (await getCurrentUser()) redirect("/app");
 
   return (
     <main className="flex min-h-dvh items-center justify-center bg-ink px-4">

@@ -20,7 +20,7 @@ export interface BriefContext {
   contactName: string;
   title: string | null;
   company: string | null;
-  sessionNames: string[];
+  eventNames: string[];
   facts: string[];
   noteSnippets: string[];
   openFollowUps: string[];
@@ -32,8 +32,8 @@ export function buildBriefPrompt(context: BriefContext): string {
     `Contact: ${context.contactName}`,
     context.title ? `Title: ${context.title}` : null,
     context.company ? `Company: ${context.company}` : null,
-    context.sessionNames.length
-      ? `Met at: ${context.sessionNames.join(", ")}`
+    context.eventNames.length
+      ? `Met at: ${context.eventNames.join(", ")}`
       : null,
     `Last touch: ${context.lastTouch}`,
     context.facts.length ? `Facts:\n- ${context.facts.join("\n- ")}` : null,

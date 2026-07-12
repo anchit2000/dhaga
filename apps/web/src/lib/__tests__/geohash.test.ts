@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { encodeGeohash } from "@dhaga/core/src/geo/geohash";
 
 /**
- * BRD §6.2 mobile session clustering keys sessions off geohash-6 equality —
+ * BRD §6.2 mobile event clustering keys events off geohash-6 equality —
  * these cases pin down what that comparison actually relies on: a known
  * reference vector, and that "same place" vs "different place" produce the
  * same/different geohash-6 the clustering code will compare.

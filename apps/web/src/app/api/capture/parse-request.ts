@@ -9,7 +9,7 @@ export interface ParsedCaptureRequest {
   scannedAt: Date | null;
 }
 
-/** Invalid/missing timestamp means "no session grouping" — never an error. */
+/** Invalid/missing timestamp means "no event grouping" — never an error. */
 function parseScannedAt(raw: string): Date | null {
   if (!raw) return null;
   const date = new Date(raw);

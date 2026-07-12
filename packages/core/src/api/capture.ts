@@ -34,11 +34,11 @@ export interface CaptureRequest {
 }
 
 /**
- * Which session (M2 auto event grouping, BRD §6.2) a new-contact scan landed
+ * Which event (M2 auto event grouping, BRD §6.2) a new-contact scan landed
  * in — omitted entirely when the request carried no geohash/scannedAt.
- * `isNew` tells the client to prompt once for a session name.
+ * `isNew` tells the client to prompt once for a event name.
  */
-export interface CaptureSessionResult {
+export interface CaptureEventResult {
   id: string;
   isNew: boolean;
 }
@@ -50,7 +50,7 @@ export interface CaptureImageResponse {
   via: "ai";
   photoStored: boolean;
   notice: null;
-  session: CaptureSessionResult | null;
+  event: CaptureEventResult | null;
 }
 
 /** Success shape for the attach-to-contact branch. */
@@ -68,7 +68,7 @@ export interface CaptureTextResponse {
   company: string | null;
   via: CaptureVia;
   notice: string | null;
-  session: CaptureSessionResult | null;
+  event: CaptureEventResult | null;
 }
 
 export type CaptureResponse =

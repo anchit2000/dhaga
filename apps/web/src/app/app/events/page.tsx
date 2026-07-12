@@ -1,50 +1,50 @@
 import Link from "next/link";
 import { requireUserIdForPage } from "@/lib/auth/guard";
-import { listSessions } from "@/lib/repo/sessions";
-import { CreateSessionForm } from "@/components/app/CreateSessionForm";
+import { listEvents } from "@/lib/repo/events";
+import { CreateEventForm } from "@/components/app/CreateEventForm";
 import { EmptyState } from "@/components/app/EmptyState";
 
-export const metadata = { title: "Sessions — Dhaga" };
+export const metadata = { title: "Events — Dhaga" };
 
-export default async function SessionsPage() {
+export default async function EventsPage() {
   await requireUserIdForPage();
-  const sessions = await listSessions();
+  const events = await listEvents();
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl tracking-tight">Sessions</h1>
+        <h1 className="font-display text-2xl tracking-tight">Events</h1>
         <p className="mt-1 text-sm text-fog">
-          One session per event — the people you met there stay grouped.
+          One event per event — the people you met there stay grouped.
         </p>
       </div>
 
-      <CreateSessionForm />
+      <CreateEventForm />
 
-      {sessions.length === 0 ? (
+      {events.length === 0 ? (
         <EmptyState
-          title="No sessions yet"
-          body="Create one above, or attach a session while quick-adding a person."
+          title="No events yet"
+          body="Create one above, or attach a event while quick-adding a person."
         />
       ) : (
         <ul className="divide-y divide-seam overflow-hidden rounded-2xl border border-seam bg-panel">
-          {sessions.map((session) => (
-            <li key={session.id}>
+          {events.map((event) => (
+            <li key={event.id}>
               <Link
-                href={`/app/sessions/${session.id}`}
+                href={`/app/events/${event.id}`}
                 className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-paper/[0.03]"
               >
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-medium text-paper">
-                    {session.name}
+                    {event.name}
                   </span>
                   <span className="block text-xs text-fog">
-                    {session.startedAt.toLocaleDateString()}
+                    {event.startedAt.toLocaleDateString()}
                   </span>
                 </span>
                 <span className="shrink-0 rounded-full border border-seam bg-paper/[0.04] px-2.5 py-0.5 text-xs text-fog">
-                  {session.contactCount}{" "}
-                  {session.contactCount === 1 ? "person" : "people"}
+                  {event.contactCount}{" "}
+                  {event.contactCount === 1 ? "person" : "people"}
                 </span>
               </Link>
             </li>

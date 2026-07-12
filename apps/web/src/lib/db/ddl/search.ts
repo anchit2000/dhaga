@@ -41,9 +41,9 @@ ALTER TABLE follow_ups ADD COLUMN IF NOT EXISTS search_tsv tsvector GENERATED AL
 ) STORED;
 CREATE INDEX IF NOT EXISTS follow_ups_search_tsv_idx ON follow_ups USING GIN (search_tsv);
 
-ALTER TABLE sessions ADD COLUMN IF NOT EXISTS search_tsv tsvector
+ALTER TABLE events ADD COLUMN IF NOT EXISTS search_tsv tsvector
   GENERATED ALWAYS AS (to_tsvector('english', coalesce(name, ''))) STORED;
-CREATE INDEX IF NOT EXISTS sessions_search_tsv_idx ON sessions USING GIN (search_tsv);
+CREATE INDEX IF NOT EXISTS events_search_tsv_idx ON events USING GIN (search_tsv);
 
 ALTER TABLE signals ADD COLUMN IF NOT EXISTS search_tsv tsvector GENERATED ALWAYS AS (
   setweight(to_tsvector('english', coalesce(headline, '')), 'A') ||

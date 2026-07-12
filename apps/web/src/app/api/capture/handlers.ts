@@ -6,12 +6,12 @@ import { addNote } from "@/lib/repo/notes";
 import { upsertEmbedding } from "@/lib/repo/embeddings";
 import { saveCardImage } from "@/lib/repo/card-images";
 import { shouldStoreCardPhotos } from "@/lib/repo/settings";
-import { attachScanToSession } from "@/lib/repo/session-clustering";
+import { attachScanToEvent } from "@/lib/repo/event-clustering";
 import { CARD_IMAGE_TYPES } from "@/utils/constants/app";
 import type {
   CaptureAttachResponse,
   CaptureImageResponse,
-  CaptureSessionResult,
+  CaptureEventResult,
   CaptureTextResponse,
 } from "@dhaga/core/src/api/capture";
 import type { ParsedCaptureRequest } from "./parse-request";
@@ -19,15 +19,15 @@ import type { ParsedCaptureRequest } from "./parse-request";
 /**
  * M2 auto event grouping (BRD §6.2): only attempted when the client sent
  * both a geohash and a valid timestamp — permission-denied or non-mobile
- * clients simply get no session, capture still succeeds.
+ * clients simply get no event, capture still succeeds.
  */
-async function sessionForScan(
+async function eventForScan(
   contactId: string,
   request: ParsedCaptureRequest,
-): Promise<CaptureSessionResult | null> {
+): Promise<CaptureEventResult | null> {
   if (!request.geohash || !request.scannedAt) return null;
-  const result = await attachScanToSession(contactId, request.geohash, request.scannedAt);
-  return { id: result.sessionId, isNew: result.isNew };
+  const result = await attachScanToEvent(contactId, request.geohash, request.scannedAt);
+  return { id: result.eventId, isNew: result.isNew };
 }
 
 /** Card-photo path (mobile/API clients): vision-parse; the photo is kept as
@@ -65,7 +65,7 @@ export async function handleImageCapture(
     via: "ai",
     photoStored,
     notice: null,
-    session: await sessionForScan(id, request),
+    event: await eventForScan(id, request),
   } satisfies CaptureImageResponse);
 }
 
@@ -124,6 +124,6 @@ export async function handleTextCapture(
     company: extraction.contact.company,
     via: extraction.via,
     notice: extraction.notice ?? null,
-    session: await sessionForScan(id, request),
+    event: await eventForScan(id, request),
   } satisfies CaptureTextResponse);
 }

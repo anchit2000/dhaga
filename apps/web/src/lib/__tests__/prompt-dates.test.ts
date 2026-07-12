@@ -40,7 +40,7 @@ describe("date-sensitive prompts carry today's date", () => {
       contactName: "Sam",
       title: null,
       company: null,
-      sessionNames: [],
+      eventNames: [],
       facts: [],
       noteSnippets: [],
     });
@@ -52,7 +52,7 @@ describe("date-sensitive prompts carry today's date", () => {
       contactName: "Sam",
       title: null,
       company: null,
-      sessionNames: [],
+      eventNames: [],
       facts: [],
       noteSnippets: [],
       openFollowUps: [],

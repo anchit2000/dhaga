@@ -1,7 +1,7 @@
 import { eq, ilike, or, sql, type SQL } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { companies, contacts } from "@/lib/db/schema";
-import { SEARCH_WEIGHT_IDENTITY, SEARCH_WEIGHT_TRIGRAM } from "@/utils/constants/search";
+import type { SearchWeights } from "@/utils/constants/search";
 import { buildTsQuery } from "../tokenize";
 import type { KeywordHit } from "./types";
 
@@ -66,7 +66,10 @@ function detailSnippet(
  * Postgres tokenizes an email or URL as a single lexeme — "freightline"
  * alone never matches "rohan@freightline.com" through tsvector.
  */
-export async function contactAndCompanyHits(words: string[]): Promise<KeywordHit[]> {
+export async function contactAndCompanyHits(
+  words: string[],
+  weights: SearchWeights,
+): Promise<KeywordHit[]> {
   if (words.length === 0) return [];
   const db = await getDb();
   const tsq = buildTsQuery(words);
@@ -101,7 +104,7 @@ export async function contactAndCompanyHits(words: string[]): Promise<KeywordHit
 
   return rows.map((row) => ({
     contactId: row.id,
-    score: row.rank * SEARCH_WEIGHT_IDENTITY + (row.trigramMatch ? SEARCH_WEIGHT_TRIGRAM : 0),
+    score: row.rank * weights.identity + (row.trigramMatch ? weights.trigram : 0),
     match: detailSnippet(words, row),
   }));
 }

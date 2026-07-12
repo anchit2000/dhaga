@@ -18,9 +18,16 @@ import { SearchPalette } from "@/components/app/search/SearchPalette";
 import { useNavigationFeedback } from "@/components/app/NavigationFeedback";
 import { cn } from "@/lib/utils";
 import { APP_NAV_LINKS } from "@/utils/constants/app";
+import type { SearchWeights } from "@/utils/constants/search";
 
 /** App-shell header: brand, section nav (scrollable on mobile), profile menu. */
-export function AppNav({ isAdmin }: { isAdmin: boolean }) {
+export function AppNav({
+  isAdmin,
+  initialSearchWeights,
+}: {
+  isAdmin: boolean;
+  initialSearchWeights: SearchWeights;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [signingOut, setSigningOut] = useState(false);
@@ -28,9 +35,9 @@ export function AppNav({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <header className="sticky top-0 z-40 border-b border-seam bg-ink/90 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-5xl items-center gap-4 px-4 sm:px-6">
+      <div className="mx-auto flex h-14 w-full max-w-[1600px] items-center gap-3 px-4 sm:px-8">
         <Link
-          href="/app/people"
+          href="/app"
           className="flex items-center gap-2 font-display text-lg tracking-tight text-paper"
         >
           <ThreadMark size={20} />
@@ -65,8 +72,8 @@ export function AppNav({ isAdmin }: { isAdmin: boolean }) {
             );
           })}
         </nav>
-        <div className="flex flex-1 justify-center">
-          <SearchPalette />
+        <div className="flex min-w-0 flex-1 justify-center">
+          <SearchPalette initialWeights={initialSearchWeights} />
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger
@@ -82,6 +89,16 @@ export function AppNav({ isAdmin }: { isAdmin: boolean }) {
             <span className="sr-only">Account menu</span>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem render={<Link href="/app/people" />}>
+              People
+            </DropdownMenuItem>
+            <DropdownMenuItem render={<Link href="/app/events" />}>
+              Events
+            </DropdownMenuItem>
+            <DropdownMenuItem render={<Link href="/app/quick-add" />}>
+              Quick add
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem render={<Link href="/app/settings" />}>
               Settings
             </DropdownMenuItem>

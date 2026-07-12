@@ -1,6 +1,6 @@
 import { eq, ilike, or, sql, type SQL } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
-import { companies, contacts, sessionContacts, sessions } from "@/lib/db/schema";
+import { companies, contacts, eventContacts, events } from "@/lib/db/schema";
 import type { SearchQueryPlan } from "@dhaga/core";
 
 /**
@@ -14,12 +14,12 @@ export async function contactIdsForPlan(
   const db = await getDb();
   const sets: Set<string>[] = [];
 
-  if (plan.session) {
+  if (plan.event) {
     const rows = await db
-      .select({ contactId: sessionContacts.contactId })
-      .from(sessionContacts)
-      .innerJoin(sessions, eq(sessions.id, sessionContacts.sessionId))
-      .where(ilike(sessions.name, `%${plan.session}%`));
+      .select({ contactId: eventContacts.contactId })
+      .from(eventContacts)
+      .innerJoin(events, eq(events.id, eventContacts.eventId))
+      .where(ilike(events.name, `%${plan.event}%`));
     sets.push(new Set(rows.map((row) => row.contactId)));
   }
 

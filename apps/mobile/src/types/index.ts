@@ -1,6 +1,6 @@
 import type {
   CaptureRequest,
-  CaptureSessionResult,
+  CaptureEventResult,
   CaptureVia,
 } from "@dhaga/core/src/api/capture";
 
@@ -30,7 +30,7 @@ export type ScanOutcome =
       path: ScanPath;
       seconds: number;
       notice: string | null;
-      /** M2 auto event grouping (BRD §6.2): which session this scan landed in, if any. */
-      session: CaptureSessionResult | null;
+      /** M2 auto event grouping (BRD §6.2): which event this scan landed in, if any. */
+      event: CaptureEventResult | null;
     }
   | { kind: "error"; message: string };

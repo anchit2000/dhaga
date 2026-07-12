@@ -1,43 +1,43 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUserIdForPage } from "@/lib/auth/guard";
-import { getSession, listSessionContacts, listSessions } from "@/lib/repo/sessions";
+import { getEvent, listEventContacts, listEvents } from "@/lib/repo/events";
 import { EmailDigestButton } from "@/components/app/EmailDigestButton";
 import { EmptyState } from "@/components/app/EmptyState";
-import { SessionAdmin } from "@/components/app/SessionAdmin";
+import { EventAdmin } from "@/components/app/EventAdmin";
 
-export const metadata = { title: "Session — Dhaga" };
+export const metadata = { title: "Event — Dhaga" };
 
-export default async function SessionPage({
+export default async function EventPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   await requireUserIdForPage();
   const { id } = await params;
-  const session = await getSession(id);
-  if (!session) notFound();
-  const [people, allSessions] = await Promise.all([
-    listSessionContacts(id),
-    listSessions(),
+  const event = await getEvent(id);
+  if (!event) notFound();
+  const [people, allEvents] = await Promise.all([
+    listEventContacts(id),
+    listEvents(),
   ]);
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl tracking-tight">{session.name}</h1>
+        <h1 className="font-display text-2xl tracking-tight">{event.name}</h1>
         <p className="mt-1 text-sm text-fog">
-          Started {session.startedAt.toLocaleDateString()} · {people.length}{" "}
+          Started {event.startedAt.toLocaleDateString()} · {people.length}{" "}
           {people.length === 1 ? "person" : "people"}
         </p>
       </div>
 
-      {people.length > 0 ? <EmailDigestButton sessionId={id} /> : null}
+      {people.length > 0 ? <EmailDigestButton eventId={id} /> : null}
 
-      <SessionAdmin
-        sessionId={id}
-        name={session.name}
-        otherSessions={allSessions
+      <EventAdmin
+        eventId={id}
+        name={event.name}
+        otherEvents={allEvents
           .filter((other) => other.id !== id)
           .map(({ id: otherId, name }) => ({ id: otherId, name }))}
       />
@@ -45,7 +45,7 @@ export default async function SessionPage({
       {people.length === 0 ? (
         <EmptyState
           title="Nobody here yet"
-          body="Quick-add a person and attach this session to them."
+          body="Quick-add a person and attach this event to them."
         />
       ) : (
         <ul className="divide-y divide-seam overflow-hidden rounded-2xl border border-seam bg-panel">

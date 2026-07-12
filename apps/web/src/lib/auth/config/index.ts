@@ -4,7 +4,7 @@ import { APIError } from "better-auth/api";
 import { getDb } from "@/lib/db";
 import { getSignupGate } from "@/lib/hosted/gate";
 import { notifyAccessRequested } from "@/lib/access/notify";
-import { sendPasswordResetEmail, sendVerifyEmail } from "./emails";
+import { sendPasswordResetEmail, sendVerifyEmail, sendWelcomeEmail } from "./emails";
 import { buildPlugins } from "./plugins";
 import { socialProviderConfig } from "./social";
 import type { User } from "better-auth";
@@ -33,13 +33,15 @@ export async function beforeUserCreate(
     // The blocked signup attempt doubles as an access request, so
     // the same email just works once an admin approves it — no
     // separate "request access" step required first.
-    await gate.requestAccess(user.email);
-    try {
-      await notifyAccessRequested(user.email);
-    } catch {
-      // Swallowed deliberately: the FORBIDDEN rejection below must always
-      // reach the caller, regardless of whether this best-effort
-      // confirmation email succeeds.
+    const submitted = await gate.requestAccess(user.email);
+    if (submitted) {
+      try {
+        await notifyAccessRequested(user.email);
+      } catch {
+        // Swallowed deliberately: the FORBIDDEN rejection below must always
+        // reach the caller, regardless of whether this best-effort
+        // confirmation email succeeds.
+      }
     }
     throw new APIError("FORBIDDEN", {
       message:
@@ -64,7 +66,8 @@ async function buildAuth() {
     database: drizzleAdapter(await getDb(), { provider: "pg" }),
     emailAndPassword: {
       enabled: true,
-      requireEmailVerification: false,
+      requireEmailVerification: true,
+      revokeSessionsOnPasswordReset: true,
       sendResetPassword: async ({ user, url }) => {
         await sendPasswordResetEmail(user.email, url);
       },
@@ -73,7 +76,14 @@ async function buildAuth() {
       sendVerificationEmail: async ({ user, url }) => {
         await sendVerifyEmail(user.email, url);
       },
+      sendOnSignUp: true,
+      sendOnSignIn: true,
+      autoSignInAfterVerification: true,
+      afterEmailVerification: async (user) => {
+        await sendWelcomeEmail(user.email).catch(() => undefined);
+      },
     },
+    onAPIError: { errorURL: "/auth/error" },
     socialProviders: socialProviderConfig(),
     user: {
       additionalFields: {
@@ -84,6 +94,13 @@ async function buildAuth() {
       user: {
         create: {
           before: beforeUserCreate,
+          // OAuth providers can create an already-verified user, so they do
+          // not pass through afterEmailVerification.
+          after: async (user) => {
+            if (user.emailVerified) {
+              await sendWelcomeEmail(user.email).catch(() => undefined);
+            }
+          },
         },
       },
     },

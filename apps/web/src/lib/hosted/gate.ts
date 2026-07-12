@@ -27,7 +27,10 @@ export interface SignupGate {
   /** Called when a signup attempt is blocked — files (or no-ops, in core
    *  mode) an access request so the same email can just retry once approved
    *  instead of needing the separate /api/access-requests form first. */
-  requestAccess(email: string): Promise<void>;
+  /** True only when a new pending request was created (or an old rejection
+   *  was reopened after the cooldown). Callers use this to avoid sending a
+   *  fresh confirmation email on every signup retry. */
+  requestAccess(email: string): Promise<boolean>;
 }
 
 export interface PlanSummary {
@@ -52,7 +55,7 @@ export interface AdminGate {
 
 const openSignupGate: SignupGate = {
   checkEmail: async () => ({ allowed: true }),
-  requestAccess: async () => undefined,
+  requestAccess: async () => false,
 };
 const noBillingGate: BillingGate = {
   hasUnlimitedAi: async () => false,

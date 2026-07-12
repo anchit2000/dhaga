@@ -20,7 +20,8 @@ export function SocialButtons({ providers }: SocialButtonsProps) {
     setPendingId(id);
     const { error } = await authClient.signIn.social({
       provider: id,
-      callbackURL: "/app/people",
+      callbackURL: "/app",
+      errorCallbackURL: "/auth/error",
     });
     if (error) setPendingId(undefined);
   }

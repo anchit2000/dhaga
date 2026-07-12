@@ -8,9 +8,9 @@ import type { WarmPath } from "./types";
  * so a path is: You → contact → … → target.
  *
  * Loads only the neighborhood actually reachable from the target, hop by
- * hop (never the whole contacts/companies/edges/session_contacts tables),
+ * hop (never the whole contacts/companies/edges/event_contacts tables),
  * using contacts_companyId_name_idx, edges_srcId_idx/edges_dstId_idx, and
- * session_contacts_contactId_idx (see expand-hop.ts).
+ * event_contacts_contactId_idx (see expand-hop.ts).
  *
  * BFS outward from the target; the first time each contact is reached, the
  * reversed path is a warm path (that contact is your way in). Returns up to

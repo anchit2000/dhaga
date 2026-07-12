@@ -1,9 +1,11 @@
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { settings } from "@/lib/db/schema";
+import { parseSearchWeights, type SearchWeights } from "@/utils/constants/search";
 
 export const STORE_CARD_PHOTOS_KEY = "store_card_photos";
 export const SIGNAL_DETECTION_BATCH_KEY = "signal_detection_pending_batch";
+export const SEARCH_WEIGHTS_KEY = "search_weights";
 
 export async function getSetting(key: string): Promise<string | null> {
   const db = await getDb();
@@ -50,4 +52,13 @@ export async function getPendingSignalBatchId(): Promise<string | null> {
 
 export async function setPendingSignalBatchId(batchId: string | null): Promise<void> {
   await setSetting(SIGNAL_DETECTION_BATCH_KEY, batchId ?? "");
+}
+
+/** User-tuned hybridSearch scoring weights (Search tab's "Tune ranking" panel). */
+export async function getSearchWeights(): Promise<SearchWeights> {
+  return parseSearchWeights(await getSetting(SEARCH_WEIGHTS_KEY));
+}
+
+export async function setSearchWeights(weights: SearchWeights): Promise<void> {
+  await setSetting(SEARCH_WEIGHTS_KEY, JSON.stringify(weights));
 }

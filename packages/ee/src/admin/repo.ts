@@ -1,4 +1,4 @@
-import { count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, ilike } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { getPool } from "../db/pool";
 import { ensureEeSchema } from "../db/bootstrap";
@@ -40,6 +40,17 @@ export async function listUsers(): Promise<AdminUserSummary[]> {
   return rows.map((row) => ({ ...row, isAdmin: row.isAdmin === true }));
 }
 
+export async function listUsersPage({ page, pageSize, name, email, role }: { page: number; pageSize: number; name?: string; email?: string; role?: string }): Promise<{ rows: AdminUserSummary[]; total: number }> {
+  const conn = await db();
+  const conditions = [name ? ilike(eeUser.name, `%${name}%`) : undefined, email ? ilike(eeUser.email, `%${email}%`) : undefined, role ? eq(eeUser.isAdmin, role === "admin") : undefined].filter((value) => value !== undefined);
+  const where = conditions.length > 0 ? and(...conditions) : undefined;
+  const [rows, [total]] = await Promise.all([
+    conn.select().from(eeUser).where(where).orderBy(desc(eeUser.createdAt)).limit(pageSize).offset((page - 1) * pageSize),
+    conn.select({ value: count() }).from(eeUser).where(where),
+  ]);
+  return { rows: rows.map((row) => ({ ...row, isAdmin: row.isAdmin === true })), total: total?.value ?? 0 };
+}
+
 export async function getUser(userId: string): Promise<AdminUserSummary | null> {
   const [row] = await (await db()).select().from(eeUser).where(eq(eeUser.id, userId));
   return row ? { ...row, isAdmin: row.isAdmin === true } : null;
@@ -59,6 +70,17 @@ export async function getSubscription(userId: string): Promise<SubscriptionRow |
 
 export async function listSubscriptions(): Promise<SubscriptionRow[]> {
   return (await db()).select().from(subscriptions).orderBy(desc(subscriptions.createdAt));
+}
+
+export async function listSubscriptionsPage({ page, pageSize, user, plan, status }: { page: number; pageSize: number; user?: string; plan?: string; status?: string }): Promise<{ rows: SubscriptionRow[]; total: number }> {
+  const conn = await db();
+  const conditions = [user ? ilike(subscriptions.userId, `%${user}%`) : undefined, plan ? eq(subscriptions.plan, plan) : undefined, status ? eq(subscriptions.status, status) : undefined].filter((value) => value !== undefined);
+  const where = conditions.length > 0 ? and(...conditions) : undefined;
+  const [rows, [total]] = await Promise.all([
+    conn.select().from(subscriptions).where(where).orderBy(desc(subscriptions.createdAt)).limit(pageSize).offset((page - 1) * pageSize),
+    conn.select({ value: count() }).from(subscriptions).where(where),
+  ]);
+  return { rows, total: total?.value ?? 0 };
 }
 
 export interface AdminDashboardCounts {

@@ -19,7 +19,7 @@ async function seedWithTag(name: string, tag: string): Promise<string> {
 }
 
 function planFor(tags: string[]): SearchQueryPlan {
-  return { session: null, company: null, tags, semantic_query: "" };
+  return { event: null, company: null, tags, semantic_query: "" };
 }
 
 /**
@@ -43,7 +43,7 @@ describe("contactIdsForPlan tag matching", () => {
     expect(ids?.has(retailContact)).toBe(false);
   });
 
-  it("returns undefined (no filter) when the plan has no session/company/tags", async () => {
+  it("returns undefined (no filter) when the plan has no event/company/tags", async () => {
     const ids = await contactIdsForPlan(planFor([]));
     expect(ids).toBeUndefined();
   });

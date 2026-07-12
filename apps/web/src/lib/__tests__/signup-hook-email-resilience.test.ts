@@ -43,6 +43,7 @@ function blockedUser(): User & Record<string, unknown> {
 describe("beforeUserCreate signup hook", () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    mockRequestAccess.mockResolvedValue(true);
   });
 
   it("still rejects with FORBIDDEN when the confirmation email throws", async () => {
@@ -76,6 +77,16 @@ describe("beforeUserCreate signup hook", () => {
     const user = blockedUser();
     await expect(beforeUserCreate(user)).resolves.toEqual({ data: user });
     expect(mockRequestAccess).not.toHaveBeenCalled();
+    expect(mockNotifyAccessRequested).not.toHaveBeenCalled();
+  });
+
+  it("does not resend confirmation for an existing pending request", async () => {
+    mockCheckEmail.mockResolvedValue({ allowed: false, reason: "Still pending." });
+    mockRequestAccess.mockResolvedValue(false);
+
+    await expect(beforeUserCreate(blockedUser())).rejects.toMatchObject({
+      status: "FORBIDDEN",
+    });
     expect(mockNotifyAccessRequested).not.toHaveBeenCalled();
   });
 });

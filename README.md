@@ -69,7 +69,7 @@ running your own instance or Dhaga Cloud's hosted-mode features.
 Pre-launch. The full MVP loop is built — card/badge scan, voice + text
 notes, entity extraction, the knowledge graph, natural-language search, AI
 follow-up drafts, and export — plus v1.1+ features (web quick-add, browser
-extension, Telegram capture, sessions, reminders) and real multi-user
+extension, Telegram capture, events, reminders) and real multi-user
 accounts. Not yet done: mobile app, a verified `docker compose up` (the
 `Dockerfile` and `compose.yml` exist but haven't been run yet), and a live-tested
 Stripe billing flow for Dhaga Cloud. See [checklist.md](docs/checklist.md) for the

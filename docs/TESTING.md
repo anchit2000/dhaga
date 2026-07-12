@@ -71,7 +71,7 @@ to `apps/web`, keep the default Next.js build command.
 | `DHAGA_EMBEDDINGS=off` | Recommended | The local semantic-search embedding model is a heavy native runtime, a poor fit for serverless functions; search still works via keyword matching without it. |
 | `ANTHROPIC_API_KEY` | No (your own key, add whenever) | Every AI feature has a documented degraded mode without it — see the table in §8. |
 | `FIRECRAWL_API_KEY`, `CRON_SECRET` | No | Only needed for the job-change/news signal sweep (§7j). |
-| `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `DHAGA_OWNER_EMAIL` | No | Only for session-digest / waitlist emails. |
+| `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `DHAGA_OWNER_EMAIL` | No | Only for event-digest / waitlist emails. |
 | `DHAGA_HOSTED_MODE`, `DHAGA_ADMIN_EMAILS`, `STRIPE_*` | No, add later | Skip for now — add these once you want to test the admin panel; see §3. |
 
 **Step 6 — deploy, then check function duration isn't a concern.**
@@ -97,7 +97,7 @@ any point within the scheduled hour, not the exact minute. The route always
 **Resetting to blank on this path:** unlike local PGlite, there's no folder
 to delete. Either start a fresh Supabase project, or open the Supabase SQL
 editor and `TRUNCATE` the app's tables yourself (`contacts`, `notes`,
-`facts`, `edges`, `sessions`, `embeddings`, etc. — see
+`facts`, `edges`, `events`, `embeddings`, etc. — see
 `apps/web/src/lib/db/ddl/core.ts` for the full list; the `user`/`session`/
 `account` auth tables are separate and truncating them signs everyone out).
 
@@ -347,9 +347,9 @@ Singapore
       `apps/web/src/components/app/QuickAddForm/QuickAddResult.tsx:31` and
       `apps/web/src/lib/ai/contact-extraction.ts:32`. Fields are pre-filled;
       fix anything wrong.
-- [ ] Type a new session name (e.g. `Web Summit 2026`) in the session
+- [ ] Type a new event name (e.g. `Web Summit 2026`) in the event
       picker, then **Save person**.
-- [ ] On the new contact: the session chip appears, and the pasted text is
+- [ ] On the new contact: the event chip appears, and the pasted text is
       stored as a **capture source** note — that's the receipt for the
       fields.
 - [ ] With a key: the "N of {cap} AI actions used this month" counter
@@ -384,11 +384,11 @@ Singapore
       photo too — `/api/card-image/<id>` returns 404 afterwards (confirmed
       `apps/web/src/app/api/card-image/[id]/route.ts:25`).
 
-### 7e. Sessions
+### 7e. Events
 
-- [ ] **Sessions** lists `Web Summit 2026` with a people count.
+- [ ] **Events** lists `Web Summit 2026` with a people count.
 - [ ] Open it — Nisha is listed; click through back to her page.
-- [ ] Create a second session from the Sessions page directly.
+- [ ] Create a second event from the Events page directly.
 
 ### 7f. Notes → facts with receipts (needs the API key for extraction)
 
@@ -405,7 +405,7 @@ On a contact, add this note:
 - [ ] **Follow-ups** shows the action with the timing hint; the checkmark
       marks it done.
 - [ ] Delete a single fact — only it disappears (its embedding is also
-      cleaned up — `deleteFact` owns this itself, per a same-session fix
+      cleaned up — `deleteFact` owns this itself, per a same-event fix
       noted in `docs/notes-2026-07-07.md`).
 - [ ] Delete the note — its remaining derived facts disappear with it
       (receipts invariant: no fact outlives its source), and the note's own
@@ -484,14 +484,14 @@ On a contact, add this note:
 
 - [ ] On People, the `csv` / `vcard` / `json` links each download a file.
 - [ ] CSV opens in a spreadsheet with correct columns; vCard imports into a
-      contacts app; JSON contains contacts, companies, sessions, notes,
+      contacts app; JSON contains contacts, companies, events, notes,
       facts, edges, follow_ups.
 
 ### 7n. Forget this person (privacy cascade)
 
 - [ ] On a contact, **Forget this person** → browser confirm → gone,
       redirected to People.
-- [ ] Their sessions no longer list them; search finds nothing; a fresh
+- [ ] Their events no longer list them; search finds nothing; a fresh
       JSON export contains no trace (contact, notes, facts, edges,
       follow-ups, embeddings all gone —
       `apps/web/src/lib/repo/contacts/mutations.ts`'s `forgetContact`).
@@ -499,7 +499,7 @@ On a contact, add this note:
 ### 7o. LinkedIn/Google CSV import
 
 - [ ] `/app/import` → upload a LinkedIn "Connections.csv" export → contacts
-      appear with the session/company mapping expected; re-importing the
+      appear with the event/company mapping expected; re-importing the
       same file doesn't create duplicates (whitespace/accent-insensitive
       dedup — see recent commits `de2d9d1`, `0690adb`).
 - [ ] Same for a Google Contacts CSV export — including a location field if
@@ -509,10 +509,10 @@ On a contact, add this note:
 
 - [ ] Join the waitlist / request access on the landing page with a real
       address — a branded confirmation email arrives.
-- [ ] On a session page with people in it, **Email me the digest** — the
+- [ ] On an event page with people in it, **Email me the digest** — the
       digest (people + facts + follow-ups) arrives at `DHAGA_OWNER_EMAIL`.
 - [ ] Unset `DHAGA_OWNER_EMAIL` and retry — clear "Set DHAGA_OWNER_EMAIL…"
-      error, no crash (`apps/web/src/lib/actions/sessions.ts:53`).
+      error, no crash (`apps/web/src/lib/actions/events.ts:53`).
 
 ### 7q. Telegram bot & outbound webhooks (optional envs)
 
@@ -551,6 +551,88 @@ On a contact, add this note:
 - [ ] The contact's notes include the selection with the page URL (receipt).
 - [ ] Signed out: saving shows "Sign in to Dhaga" with a login link.
 
+### 7u. Contact network: pagination, context ranking, and identity resolution
+
+This flow needs `ANTHROPIC_API_KEY` only for turning a note into facts and
+relationships. Loading, filtering, pagination, ranking, promotion, and merge
+are deterministic database operations and must not increase the AI usage
+counter.
+
+**Paginated connections and dynamic filters**
+
+- [ ] Create one company and at least 30 contacts at that company. Open one
+      contact, expand **Network**, then **Show connections**. Confirm only the
+      first bounded page renders and **Load more connections** retrieves the
+      next page without duplicates.
+- [ ] Confirm **Same company** is presented as a filterable affiliation, not
+      as an extracted direct relationship.
+- [ ] Add two contacts to the same event and add a relationship note. Reopen
+      Network and confirm the available filter menu includes the event and
+      the extracted predicate, each with a count.
+- [ ] Add multiple filter tokens, remove one token, clear all filters, and
+      search by name. Confirm filtering happens before pagination and no stale
+      results remain after applying a new filter.
+
+**Open-ended shared context and mentioned people**
+
+- [ ] On Aditi Sharma's profile, add the voice/text note `Attended an
+      interview together with Aaryan Mehta`. Expand Connections and filter by
+      **attended interview with**. Aaryan should appear even when he was not
+      previously in People, labelled **Mentioned person**.
+- [ ] Open Aaryan. Confirm he is absent from the main People list and the page
+      offers **Add to People** and, when a plausible existing contact exists,
+      **Merge with existing**.
+- [ ] Click **Add to People**. Confirm Aaryan now appears in People and the
+      relationship to Aditi remains.
+- [ ] Repeat with a second mentioned person, create a corresponding full
+      contact, then choose **Merge with existing**. Confirm the mentioned
+      profile redirects to the full contact and the original relationship and
+      source-note receipt remain attached to that full contact.
+- [ ] Add a new person manually with the exact name of a single hidden mention.
+      Confirm the mention is promoted instead of creating a duplicate.
+
+**Ambiguous global voice/paste capture**
+
+- [ ] Create three contacts named `Aditi Sharma`, `Aditi Singh`, and `Aditi
+      Mehta`, with different companies or titles.
+- [ ] In global Quick add, dictate or paste `Aditi has a son named Aaryan`.
+      Confirm Dhaga asks **Which person did you mean?** before relationship
+      extraction and shows title/company evidence for all three Aditis.
+- [ ] Select Aditi Sharma. Confirm the note is attached only to her and the
+      resulting `parent of` connection appears only on her profile.
+- [ ] Repeat and select **None of these — create someone new**. Confirm the
+      normal contact-review flow opens rather than updating an arbitrary
+      Aditi.
+- [ ] Paste a full unique name such as `Aditi Sharma has a son named Aaryan`.
+      Confirm the exact full-name match bypasses the ambiguity screen.
+
+**Context-aware relevant people**
+
+- [ ] Create two CEOs: one tagged `fintech` and one with no shared sector,
+      tag, geography, event, or warm path. Open Network → **Find relevant
+      people**, select **Founder**, enter `fintech`, and click **Rank locally**.
+- [ ] Confirm the fintech CEO appears with a concrete explanation and action;
+      the unrelated CEO must not appear merely because their title is CEO.
+- [ ] Try Founder, Sales, Investor, and Any goal with sector, stage, and
+      geography context. Confirm every result states why it matched and the
+      browsing/ranking actions do not increment AI usage.
+
+Targeted automated verification:
+
+```bash
+npm exec --workspace apps/web -- tsc --noEmit
+npm exec --workspace packages/core -- tsc --noEmit
+npm test --workspace apps/web -- --run \
+  src/lib/__tests__/network-retrieval.test.ts \
+  src/lib/__tests__/graph-receipts.test.ts \
+  src/lib/__tests__/contacts-mutations.test.ts
+```
+
+If Vitest fails before collecting tests with a missing schema module, check
+`git status` first. In a shared worktree, another session may be moving or
+deleting that schema file; restore or finish that parallel change before
+interpreting the failure as a network-feature regression.
+
 ---
 
 ## 8. What works with zero API keys vs. what needs one
@@ -574,7 +656,7 @@ offline fallback rather than failing:
 | Telegram bot capture/query | Telegram's `?who...` query answers | `TELEGRAM_*` |
 | Admin panel / access requests / billing | — | `DHAGA_HOSTED_MODE`, real Postgres (`DATABASE_URL`), `DHAGA_ADMIN_EMAILS`; billing also needs `STRIPE_SECRET_KEY` |
 | Job-change/news signal detection | Signal detection itself needs the key | `FIRECRAWL_API_KEY`, `CRON_SECRET` |
-| Session digest emails | — | `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `DHAGA_OWNER_EMAIL` |
+| Event digest emails | — | `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `DHAGA_OWNER_EMAIL` |
 
 ---
 

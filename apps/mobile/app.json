@@ -44,7 +44,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Dhaga uses your coarse location to group scans from the same event into a session. Nothing is captured until you scan."
+          "locationWhenInUsePermission": "Dhaga uses your coarse location to group scans from the same event into a event. Nothing is captured until you scan."
         }
       ],
       [

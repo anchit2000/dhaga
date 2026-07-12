@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { embeddings } from "@/lib/db/schema";
-import { createContact, findOrCreateCompany, forgetContact, getContact } from "@/lib/repo/contacts";
+import { createContact, findOrCreateCompany, forgetContact, getContact, listContacts } from "@/lib/repo/contacts";
+import { listContactConnections } from "@/lib/repo/connections";
 import { addNote, deleteFact, deleteNote, listFacts, listOpenFollowUps } from "@/lib/repo/notes";
 import { applyExtraction } from "@/lib/repo/graph";
 import { fetchClusterMembers } from "@/lib/repo/graph-data";
@@ -69,10 +70,12 @@ describe("graph receipts and cascades", () => {
     await applyExtraction(id, noteId, extraction);
 
     const facts = await listFacts(id);
-    // role fact + unresolved-person relationship stored as a fact
-    expect(facts).toHaveLength(2);
+    // Unknown people become hidden graph mentions rather than lossy text facts.
+    expect(facts).toHaveLength(1);
     for (const fact of facts) expect(fact.sourceNoteId).toBe(noteId);
-    expect(facts.some((fact) => fact.text.includes("knows Mei Tanaka"))).toBe(true);
+    const connections = await listContactConnections(id);
+    expect(connections.some((person) => person.name === "Mei Tanaka" && person.mentioned)).toBe(true);
+    expect((await listContacts()).some((person) => person.name === "Mei Tanaka")).toBe(false);
 
     const followUps = await listOpenFollowUps(id);
     expect(followUps).toHaveLength(1);

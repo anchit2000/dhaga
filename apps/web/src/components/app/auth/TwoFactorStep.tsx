@@ -28,7 +28,7 @@ export function TwoFactorStep() {
       setPending(false);
       return;
     }
-    router.push("/app/people");
+    router.push("/app");
   }
 
   return (

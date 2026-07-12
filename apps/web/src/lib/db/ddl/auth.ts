@@ -32,6 +32,26 @@ ALTER TABLE "user" ADD COLUMN IF NOT EXISTS phone_number_verified boolean;
 CREATE UNIQUE INDEX IF NOT EXISTS user_username_uq ON "user" (username);
 CREATE UNIQUE INDEX IF NOT EXISTS user_phoneNumber_uq ON "user" (phone_number);
 
+-- Email verification was introduced after accounts already existed. Mark the
+-- users present at rollout as verified exactly once so enabling the stricter
+-- Better Auth policy cannot lock out an existing, demo, or bootstrap-admin
+-- account. Fresh databases record the migration before their first signup,
+-- so all future password accounts must verify normally.
+CREATE TABLE IF NOT EXISTS dhaga_auth_migrations (
+  id text PRIMARY KEY,
+  applied_at timestamp NOT NULL DEFAULT now()
+);
+WITH applied AS (
+  INSERT INTO dhaga_auth_migrations (id)
+  VALUES ('grandfather-email-verification-v1')
+  ON CONFLICT DO NOTHING
+  RETURNING id
+)
+UPDATE "user"
+SET email_verified = true, updated_at = now()
+WHERE email_verified = false
+  AND EXISTS (SELECT 1 FROM applied);
+
 CREATE TABLE IF NOT EXISTS session (
   id text PRIMARY KEY,
   expires_at timestamp NOT NULL,

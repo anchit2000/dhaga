@@ -15,7 +15,7 @@ export const MOCK_FEED: FeedItem[] = [
     time: "2m",
   },
   {
-    text: "You scanned 4 cards at Web Summit — grouped into one session",
+    text: "You scanned 4 cards at Web Summit — grouped into one event",
     bold: ["Web Summit"],
     time: "1h",
   },
@@ -50,3 +50,9 @@ export const MOCK_TIMELINE = [
   { label: "Voice note added", date: "JUN 12" },
   { label: "Follow-up email sent", date: "JUN 13" },
 ] as const;
+
+export const MOCK_HOME_PEOPLE = ["Sarah Chen", "Priya Nair", "Rohan Mehta"] as const;
+
+export const MOCK_HOME_EVENTS = ["Web Summit 2026", "Bangalore founders"] as const;
+
+export const MOCK_CAPTURE_ACTIONS = ["Voice", "Camera", "Upload", "Capture"] as const;

@@ -3,7 +3,18 @@ export {
   getContact,
   listAllTags,
   listContacts,
+  listContactsPage,
+  listContactFilterOptions,
+  findContactIdentityCandidates,
+  listMentionMergeCandidates,
   type ContactDetail,
+  type ContactIdentityCandidate,
   type ContactListItem,
 } from "./queries";
-export { createContact, findOrCreateCompany, forgetContact } from "./mutations";
+export {
+  createContact,
+  findOrCreateCompany,
+  forgetContact,
+  mergeMentionedContact,
+  promoteMentionedContact,
+} from "./mutations";

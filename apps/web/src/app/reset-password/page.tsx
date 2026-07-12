@@ -10,7 +10,7 @@ interface ResetPasswordPageProps {
 }
 
 export default async function ResetPasswordPage({ searchParams }: ResetPasswordPageProps) {
-  if (await getCurrentUser()) redirect("/app/people");
+  if (await getCurrentUser()) redirect("/app");
   const { token } = await searchParams;
 
   return (

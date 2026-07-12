@@ -35,7 +35,7 @@ export function LoginForm({ socialProviders }: LoginFormProps) {
     if (magicLinkMode) {
       const { error: linkError } = await authClient.signIn.magicLink({
         email,
-        callbackURL: "/app/people",
+        callbackURL: "/app",
       });
       setPending(false);
       if (linkError) {
@@ -62,7 +62,7 @@ export function LoginForm({ socialProviders }: LoginFormProps) {
       setNeedsTwoFactor(true);
       return;
     }
-    router.replace("/app/people");
+    router.replace("/app");
     router.refresh();
   }
 

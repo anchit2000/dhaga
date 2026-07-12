@@ -1,5 +1,5 @@
 import { requireUserIdForPage } from "@/lib/auth/guard";
-import { getAdminGate } from "@/lib/hosted/gate";
+import { getCachedAppNavigation } from "@/lib/cache/app-navigation";
 import { AppNav } from "@/components/app/AppNav";
 import { NavigationFeedback } from "@/components/app/NavigationFeedback";
 
@@ -12,13 +12,13 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const userId = await requireUserIdForPage();
-  const isAdmin = await (await getAdminGate()).isAdmin(userId);
+  const [isAdmin, searchWeights] = await getCachedAppNavigation(userId);
 
   return (
     <NavigationFeedback>
       <div className="min-h-dvh bg-ink text-paper">
-        <AppNav isAdmin={isAdmin} />
-        <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
+        <AppNav isAdmin={isAdmin} initialSearchWeights={searchWeights} />
+        <main className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-8 sm:py-8">
           {children}
         </main>
       </div>

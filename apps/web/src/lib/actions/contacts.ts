@@ -1,13 +1,19 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUserId } from "@/lib/auth/guard";
-import { createContact, forgetContact } from "@/lib/repo/contacts";
+import {
+  createContact,
+  forgetContact,
+  mergeMentionedContact,
+  promoteMentionedContact,
+} from "@/lib/repo/contacts";
 import { addNote } from "@/lib/repo/notes";
 import { upsertEmbedding } from "@/lib/repo/embeddings";
 import { saveCardImage } from "@/lib/repo/card-images";
 import { shouldStoreCardPhotos } from "@/lib/repo/settings";
-import { addContactToSession, createSession } from "@/lib/repo/sessions";
+import { addContactToEvent, createEvent } from "@/lib/repo/events";
 import { CARD_IMAGE_TYPES } from "@/utils/constants/app";
 import type { ExtractedContact } from "@dhaga/core";
 
@@ -65,12 +71,12 @@ export async function createContactAction(
     await saveCardImage(id, noteId, imageType, imageBase64);
   }
 
-  const newSessionName = field(formData, "newSessionName");
-  const sessionId =
-    newSessionName != null
-      ? await createSession(newSessionName)
-      : field(formData, "sessionId");
-  if (sessionId) await addContactToSession(sessionId, id);
+  const newEventName = field(formData, "newEventName");
+  const eventId =
+    newEventName != null
+      ? await createEvent(newEventName)
+      : field(formData, "eventId");
+  if (eventId) await addContactToEvent(eventId, id);
 
   redirect(`/app/people/${id}`);
 }
@@ -82,4 +88,24 @@ export async function forgetContactAction(formData: FormData): Promise<void> {
   if (!contactId) return;
   await forgetContact(contactId);
   redirect("/app/people");
+}
+
+export async function promoteMentionedContactAction(formData: FormData): Promise<void> {
+  await requireUserId();
+  const contactId = String(formData.get("contactId") ?? "");
+  if (!contactId) return;
+  await promoteMentionedContact(contactId);
+  revalidatePath(`/app/people/${contactId}`);
+  revalidatePath("/app/people");
+}
+
+export async function mergeMentionedContactAction(formData: FormData): Promise<void> {
+  await requireUserId();
+  const mentionId = String(formData.get("mentionId") ?? "");
+  const targetId = String(formData.get("targetId") ?? "");
+  if (!mentionId || !targetId) return;
+  const merged = await mergeMentionedContact(mentionId, targetId);
+  if (!merged) return;
+  revalidatePath("/app/people");
+  redirect(`/app/people/${targetId}`);
 }

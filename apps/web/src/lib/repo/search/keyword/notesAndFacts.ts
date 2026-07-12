@@ -1,11 +1,11 @@
 import { and, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { facts, notes } from "@/lib/db/schema";
-import { SEARCH_HEADLINE_OPTS, SEARCH_WEIGHT_FACTS, SEARCH_WEIGHT_NOTES } from "@/utils/constants/search";
+import { SEARCH_HEADLINE_OPTS, type SearchWeights } from "@/utils/constants/search";
 import { buildTsQuery } from "../tokenize";
 import { stripHeadlineMarkers, type KeywordHit } from "./types";
 
-export async function noteHits(words: string[]): Promise<KeywordHit[]> {
+export async function noteHits(words: string[], weights: SearchWeights): Promise<KeywordHit[]> {
   if (words.length === 0) return [];
   const db = await getDb();
   const tsq = buildTsQuery(words);
@@ -21,12 +21,12 @@ export async function noteHits(words: string[]): Promise<KeywordHit[]> {
     );
   return rows.map((row) => ({
     contactId: row.contactId,
-    score: row.rank * SEARCH_WEIGHT_NOTES,
+    score: row.rank * weights.notes,
     match: `note: ${stripHeadlineMarkers(row.snippet)}`,
   }));
 }
 
-export async function factHits(words: string[]): Promise<KeywordHit[]> {
+export async function factHits(words: string[], weights: SearchWeights): Promise<KeywordHit[]> {
   if (words.length === 0) return [];
   const db = await getDb();
   const tsq = buildTsQuery(words);
@@ -42,7 +42,7 @@ export async function factHits(words: string[]): Promise<KeywordHit[]> {
     );
   return rows.map((row) => ({
     contactId: row.contactId,
-    score: row.rank * SEARCH_WEIGHT_FACTS,
+    score: row.rank * weights.facts,
     match: `fact: ${stripHeadlineMarkers(row.snippet)}`,
   }));
 }

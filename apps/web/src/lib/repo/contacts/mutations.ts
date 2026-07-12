@@ -8,7 +8,7 @@ import {
   facts,
   followUps,
   notes,
-  sessionContacts,
+  eventContacts,
   signals,
 } from "@/lib/db/schema";
 import { deleteEmbeddingsByContact } from "../embeddings";
@@ -59,9 +59,18 @@ export async function createContact(
   const companyId = input.company?.trim()
     ? await findOrCreateCompany(input.company)
     : null;
-  const id = randomUUID();
-  await db.insert(contacts).values({
-    id,
+  const mentionedMatches = await db
+    .select({ id: contacts.id })
+    .from(contacts)
+    .where(
+      and(
+        eq(contacts.source, "mentioned"),
+        ilike(contacts.name, input.name.trim()),
+      ),
+    )
+    .limit(2);
+  const id = mentionedMatches.length === 1 ? mentionedMatches[0].id : randomUUID();
+  const values = {
     name: input.name.trim(),
     title: input.title?.trim() || null,
     companyId,
@@ -69,9 +78,18 @@ export async function createContact(
     phones: input.phones,
     links: input.links,
     location: input.location?.trim() || null,
-    tags: [],
     source,
-  });
+    updatedAt: new Date(),
+  };
+  if (mentionedMatches.length === 1) {
+    await db.update(contacts).set(values).where(eq(contacts.id, id));
+  } else {
+    await db.insert(contacts).values({
+      id,
+      ...values,
+      tags: [],
+    });
+  }
   // Single choke point for all capture surfaces — the natural webhook spot.
   if (!options?.skipWebhook) {
     await emitWebhook("contact.created", { id, name: input.name.trim(), source });
@@ -79,9 +97,47 @@ export async function createContact(
   return id;
 }
 
+export async function promoteMentionedContact(id: string): Promise<boolean> {
+  const db = await getDb();
+  const updated = await db
+    .update(contacts)
+    .set({ source: "manual", updatedAt: new Date() })
+    .where(and(eq(contacts.id, id), eq(contacts.source, "mentioned")))
+    .returning({ id: contacts.id });
+  return updated.length === 1;
+}
+
+export async function mergeMentionedContact(
+  mentionId: string,
+  targetId: string,
+): Promise<boolean> {
+  if (mentionId === targetId) return false;
+  const db = await getDb();
+  return db.transaction(async (tx) => {
+    const [mention] = await tx
+      .select({ id: contacts.id })
+      .from(contacts)
+      .where(and(eq(contacts.id, mentionId), eq(contacts.source, "mentioned")))
+      .limit(1);
+    const [target] = await tx
+      .select({ id: contacts.id })
+      .from(contacts)
+      .where(and(eq(contacts.id, targetId), sql`${contacts.source} <> 'mentioned'`))
+      .limit(1);
+    if (!mention || !target) return false;
+    await tx.update(edges).set({ srcId: targetId }).where(eq(edges.srcId, mentionId));
+    await tx.update(edges).set({ dstId: targetId }).where(eq(edges.dstId, mentionId));
+    await tx
+      .delete(edges)
+      .where(and(eq(edges.srcId, targetId), eq(edges.dstId, targetId)));
+    await tx.delete(contacts).where(eq(contacts.id, mentionId));
+    return true;
+  });
+}
+
 /**
  * "Forget this person" — hard delete, full cascade (BRD §7.5 / GDPR):
- * contact → notes → facts → edges → follow-ups → signals → session links.
+ * contact → notes → facts → edges → follow-ups → signals → event links.
  *
  * Wrapped in one transaction: every statement here is a pure DB delete (no
  * outbound network calls, so no connection-pool-exhaustion risk from holding
@@ -119,7 +175,7 @@ export async function forgetContact(id: string): Promise<void> {
     await tx.delete(signals).where(eq(signals.contactId, id));
     await deleteCardImagesByContact(id, tx); // before notes — card_images FK note_id
     await tx.delete(notes).where(eq(notes.contactId, id));
-    await tx.delete(sessionContacts).where(eq(sessionContacts.contactId, id));
+    await tx.delete(eventContacts).where(eq(eventContacts.contactId, id));
     await deleteEmbeddingsByContact(id, tx);
     await tx.delete(contacts).where(eq(contacts.id, id));
   });

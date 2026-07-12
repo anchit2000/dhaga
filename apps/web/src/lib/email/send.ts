@@ -42,7 +42,14 @@ export async function sendEmail(
 /** Shared warm-dark shell so every Dhaga email looks like the product. */
 export function emailShell(title: string, bodyHtml: string): string {
   return `<!doctype html>
-<html><body style="margin:0;padding:0;background:#0d0b09;font-family:Georgia,'Times New Roman',serif;">
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
+</head>
+<body style="margin:0;padding:0;background:#0d0b09;font-family:Georgia,'Times New Roman',serif;">
   <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
     <p style="color:#e2a44c;font-size:22px;margin:0 0 4px;">dhaga</p>
     <h1 style="color:#f3ede2;font-size:20px;font-weight:500;margin:0 0 16px;">${title}</h1>

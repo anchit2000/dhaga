@@ -77,3 +77,16 @@ export async function sendPasswordResetEmail(email: string, url: string): Promis
     ),
   );
 }
+
+export async function sendWelcomeEmail(email: string): Promise<void> {
+  const appUrl = `${process.env.BETTER_AUTH_URL ?? ""}/app`;
+  await mustSend(
+    email,
+    "Welcome to Dhaga",
+    emailShell(
+      "Welcome to Dhaga",
+      `<p>Your email is verified and your account is ready.</p>
+       ${cta(appUrl, "Open Dhaga")}`,
+    ),
+  );
+}

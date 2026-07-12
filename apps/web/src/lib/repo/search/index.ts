@@ -2,14 +2,14 @@ import { eq, inArray } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { companies, contacts } from "@/lib/db/schema";
 import { semanticSearch } from "../embeddings";
-import { SEARCH_WEIGHT_SEMANTIC } from "@/utils/constants/search";
+import { DEFAULT_SEARCH_WEIGHTS, type SearchWeights } from "@/utils/constants/search";
 import { queryWords } from "./tokenize";
 import {
   contactAndCompanyHits,
   factHits,
   followUpHits,
   noteHits,
-  sessionHits,
+  eventHits,
   signalHits,
   type KeywordHit,
 } from "./keyword";
@@ -39,13 +39,14 @@ function applyHits(hits: HitAccumulator, keywordHits: KeywordHit[], restrictTo?:
 /**
  * Hybrid retrieval (M6 free path — both stages run locally): full-text
  * keyword search (tsvector + trigram, GIN-indexed) over contacts, companies,
- * notes, facts, follow-ups, sessions, and signals, plus semantic similarity
+ * notes, facts, follow-ups, events, and signals, plus semantic similarity
  * over the embeddings index. Optional `restrictTo` narrows to structured-
  * filter candidates (query-understanding stage).
  */
 export async function hybridSearch(
   query: string,
   restrictTo?: Set<string>,
+  weights: SearchWeights = DEFAULT_SEARCH_WEIGHTS,
 ): Promise<SearchHit[]> {
   const words = queryWords(query);
   const db = await getDb();
@@ -56,25 +57,25 @@ export async function hybridSearch(
     if (restrictTo && !restrictTo.has(hit.contactId)) continue;
     const existing = hits.get(hit.contactId) ?? { score: 0, matches: [] };
     const snippet = hit.content.length > 140 ? `${hit.content.slice(0, 140)}…` : hit.content;
-    existing.score += hit.similarity * SEARCH_WEIGHT_SEMANTIC;
+    existing.score += hit.similarity * weights.semantic;
     if (existing.matches.length < 4) existing.matches.push(`related ${hit.ownerType}: ${snippet}`);
     hits.set(hit.contactId, existing);
   }
 
   if (words.length > 0) {
     const sources = await Promise.all([
-      contactAndCompanyHits(words),
-      noteHits(words),
-      factHits(words),
-      followUpHits(words),
-      sessionHits(words),
-      signalHits(words),
+      contactAndCompanyHits(words, weights),
+      noteHits(words, weights),
+      factHits(words, weights),
+      followUpHits(words, weights),
+      eventHits(words, weights),
+      signalHits(words, weights),
     ]);
     for (const source of sources) applyHits(hits, source, restrictTo);
   }
 
   // Structured filters are a hard guarantee, not just a ranking hint: a
-  // contact who matches the plan's session/company/tags must surface even if
+  // contact who matches the plan's event/company/tags must surface even if
   // they have no keyword or semantic score of their own (e.g. "who did I
   // meet at the AI summit" — attendance is the whole match, not the residual
   // wording), otherwise restrictTo silently drops them from every answer.

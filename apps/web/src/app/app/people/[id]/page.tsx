@@ -1,22 +1,19 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUserIdForPage } from "@/lib/auth/guard";
-import { getContact } from "@/lib/repo/contacts";
+import { getContact, listMentionMergeCandidates } from "@/lib/repo/contacts";
 import { listFacts, listNotes, listOpenFollowUps } from "@/lib/repo/notes";
-import { listContactSessions } from "@/lib/repo/sessions";
-import { listContactConnections } from "@/lib/repo/connections";
+import { listContactEvents } from "@/lib/repo/events";
 import { listCardImageRefs } from "@/lib/repo/card-images";
-import { recommendContacts } from "@/lib/repo/recommendations";
 import { isReachOutDue } from "@/lib/repo/reminders";
 import { listContactSignals } from "@/lib/repo/signals";
 import { AddNoteForm } from "@/components/app/contact/AddNoteForm";
 import { CardPhotoStrip } from "@/components/app/contact/CardPhotoStrip";
 import { BriefSection } from "@/components/app/contact/BriefSection";
-import { ConnectionsList } from "@/components/app/contact/ConnectionsList";
 import { ContactSignalList } from "@/components/app/contact/ContactSignalList";
 import { KeepInTouch } from "@/components/app/contact/KeepInTouch";
 import { WatchToggle } from "@/components/app/contact/WatchToggle";
-import { RecommendedList } from "@/components/app/contact/RecommendedList";
+import { OnDemandNetwork } from "@/components/app/contact/OnDemandNetwork";
 import { DetailChips } from "@/components/app/contact/DetailChips";
 import { DraftSection } from "@/components/app/contact/DraftSection";
 import { EnrichButton } from "@/components/app/contact/EnrichButton";
@@ -25,6 +22,7 @@ import { FollowUpList } from "@/components/app/contact/FollowUpList";
 import { ForgetButton } from "@/components/app/contact/ForgetButton";
 import { NoteList } from "@/components/app/contact/NoteList";
 import { Timeline } from "@/components/app/contact/Timeline";
+import { MentionedPersonActions } from "@/components/app/contact/MentionedPersonActions";
 
 export const metadata = { title: "Person — Dhaga" };
 
@@ -42,26 +40,26 @@ export default async function PersonPage({
     contactNotes,
     contactFacts,
     openFollowUps,
-    contactSessions,
-    connections,
-    recommendations,
+    contactEvents,
     cardPhotos,
     contactSignals,
   ] = await Promise.all([
     listNotes(id),
     listFacts(id),
     listOpenFollowUps(id),
-    listContactSessions(id),
-    listContactConnections(id),
-    recommendContacts(id),
+    listContactEvents(id),
     listCardImageRefs(id),
     listContactSignals(id),
   ]);
   const lastTouch = contact.lastReachedOutAt ?? contact.createdAt;
   const isDue = isReachOutDue(contact.reachOutEveryDays, lastTouch);
+  const mergeCandidates =
+    contact.source === "mentioned"
+      ? await listMentionMergeCandidates(id, contact.name)
+      : [];
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6">
       <div className="flex items-start gap-4">
         <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-amber/15 font-display text-xl text-amber">
           {contact.name.charAt(0).toUpperCase()}
@@ -74,15 +72,15 @@ export default async function PersonPage({
             {[contact.title, companyName].filter(Boolean).join(" · ") ||
               "No title or company yet"}
           </p>
-          {contactSessions.length > 0 || contact.tags.length > 0 ? (
+          {contactEvents.length > 0 || contact.tags.length > 0 ? (
             <div className="mt-2 flex flex-wrap gap-1.5">
-              {contactSessions.map((session) => (
+              {contactEvents.map((event) => (
                 <Link
-                  key={session.id}
-                  href={`/app/sessions/${session.id}`}
+                  key={event.id}
+                  href={`/app/events/${event.id}`}
                   className="rounded-full border border-amber/30 bg-amber/10 px-2.5 py-0.5 text-xs text-amber transition-colors hover:bg-amber/20"
                 >
-                  {session.name}
+                  {event.name}
                 </Link>
               ))}
               {contact.tags.map((tag) => (
@@ -98,62 +96,67 @@ export default async function PersonPage({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 rounded-2xl border border-seam bg-panel p-5 sm:grid-cols-2 sm:p-6">
-        <DetailChips label="Email" values={contact.emails} />
-        <DetailChips label="Phone" values={contact.phones} />
-        <DetailChips label="Links" values={contact.links} />
-        <DetailChips
-          label="Location"
-          values={contact.location ? [contact.location] : []}
+      {contact.source === "mentioned" ? (
+        <MentionedPersonActions
+          contactId={id}
+          name={contact.name}
+          candidates={mergeCandidates}
         />
+      ) : null}
+
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="space-y-6">
+          <BriefSection contactId={id} />
+          <OnDemandNetwork contactId={id} />
+          <FollowUpList contactId={id} followUps={openFollowUps} />
+          <section className="space-y-3">
+            <h2 className="font-display text-lg">Facts</h2>
+            <FactList contactId={id} facts={contactFacts} />
+            <EnrichButton contactId={id} />
+          </section>
+          <section className="space-y-3">
+            <h2 className="font-display text-lg">Notes</h2>
+            <AddNoteForm contactId={id} />
+            <NoteList contactId={id} notes={contactNotes} />
+          </section>
+          <DraftSection contactId={id} />
+          <Timeline
+            createdAt={contact.createdAt}
+            source={contact.source}
+            lastReachedOutAt={contact.lastReachedOutAt}
+            events={contactEvents}
+            notes={contactNotes}
+          />
+        </div>
+
+        <aside className="order-first space-y-4 lg:order-last lg:sticky lg:top-20">
+          <div className="grid grid-cols-1 gap-4 rounded-2xl border border-seam bg-panel p-4 sm:grid-cols-2 lg:grid-cols-1">
+            <DetailChips label="Email" values={contact.emails} />
+            <DetailChips label="Phone" values={contact.phones} />
+            <DetailChips label="Links" values={contact.links} />
+            <DetailChips
+              label="Location"
+              values={contact.location ? [contact.location] : []}
+            />
+          </div>
+          <CardPhotoStrip images={cardPhotos} />
+          <KeepInTouch
+            contactId={id}
+            everyDays={contact.reachOutEveryDays}
+            lastTouch={lastTouch.toLocaleDateString()}
+            due={isDue}
+          />
+          <WatchToggle
+            contactId={id}
+            watched={contact.watchedForSignals}
+          />
+          <ContactSignalList
+            contactId={id}
+            contactName={contact.name}
+            signals={contactSignals}
+          />
+        </aside>
       </div>
-
-      <CardPhotoStrip images={cardPhotos} />
-
-      <KeepInTouch
-        contactId={id}
-        everyDays={contact.reachOutEveryDays}
-        lastTouch={lastTouch.toLocaleDateString()}
-        due={isDue}
-      />
-
-      <WatchToggle contactId={id} watched={contact.watchedForSignals} />
-
-      <ContactSignalList
-        contactId={id}
-        contactName={contact.name}
-        signals={contactSignals}
-      />
-
-      <BriefSection contactId={id} />
-
-      <ConnectionsList connections={connections} />
-
-      <RecommendedList recommendations={recommendations} />
-
-      <FollowUpList contactId={id} followUps={openFollowUps} />
-
-      <section className="space-y-3">
-        <h2 className="font-display text-lg">Facts</h2>
-        <FactList contactId={id} facts={contactFacts} />
-        <EnrichButton contactId={id} />
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="font-display text-lg">Notes</h2>
-        <AddNoteForm contactId={id} />
-        <NoteList contactId={id} notes={contactNotes} />
-      </section>
-
-      <DraftSection contactId={id} />
-
-      <Timeline
-        createdAt={contact.createdAt}
-        source={contact.source}
-        lastReachedOutAt={contact.lastReachedOutAt}
-        sessions={contactSessions}
-        notes={contactNotes}
-      />
 
       <div className="border-t border-seam pt-5">
         <ForgetButton contactId={id} name={contact.name} />

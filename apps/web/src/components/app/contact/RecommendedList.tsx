@@ -1,38 +1,33 @@
 import Link from "next/link";
 import type { RecommendedContact } from "@/lib/repo/recommendations";
 
-/**
- * Idea #1: adjacent threads from the user's OWN graph — contacts two hops
- * away (via shared sessions/companies/edges) or sharing tags. Purely local;
- * never suggests people from outside the user's data.
- */
-export function RecommendedList({
-  recommendations,
-}: {
-  recommendations: RecommendedContact[];
-}) {
+export function RecommendedList({ recommendations }: { recommendations: RecommendedContact[] }) {
   if (recommendations.length === 0) return null;
   return (
     <section className="space-y-3">
       <div className="flex items-baseline gap-2">
-        <h2 className="font-display text-lg">Nearby in your network</h2>
-        <span className="text-xs text-fog">
-          your own contacts, two threads away
-        </span>
+        <h2 className="font-display text-lg">Relevant people</h2>
+        <span className="text-xs text-fog">ranked locally, with reasons</span>
       </div>
-      <ul className="flex flex-wrap gap-2">
+      <ul className="grid gap-2 sm:grid-cols-2">
         {recommendations.map((person) => (
           <li key={person.contactId}>
             <Link
               href={`/app/people/${person.contactId}`}
-              className="flex items-center gap-2 rounded-full border border-seam bg-panel py-1.5 pl-1.5 pr-3 transition-colors hover:bg-paper/[0.03]"
+              className="flex h-full items-start gap-2.5 rounded-xl border border-seam bg-panel p-3 transition-colors hover:bg-paper/[0.03]"
             >
-              <span className="flex size-6 items-center justify-center rounded-full bg-amber/15 font-display text-[10px] text-amber">
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-amber/15 font-display text-[10px] text-amber">
                 {person.name.charAt(0).toUpperCase()}
               </span>
-              <span className="text-xs font-medium text-paper">{person.name}</span>
-              <span className="text-[10px] text-fog">
-                {person.reasons.join(" · ")}
+              <span className="min-w-0">
+                <span className="block text-xs font-medium text-paper">{person.name}</span>
+                <span className="block truncate text-[10px] text-fog">
+                  {[person.title, person.companyName].filter(Boolean).join(" · ")}
+                </span>
+                <span className="mt-1 block text-[10px] leading-relaxed text-amber">
+                  {person.reasons.join(" · ")}
+                </span>
+                <span className="mt-1 block text-[10px] text-fog">{person.action}</span>
               </span>
             </Link>
           </li>

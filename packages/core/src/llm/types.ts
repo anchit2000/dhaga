@@ -91,3 +91,23 @@ export interface BatchLLMClient {
   /** One entry per submitted item, in no particular order — match results to requests via `id`. Only valid once isBatchDone() is true. */
   getBatchResults<T>(batchId: string, schema: ZodType<T>): Promise<BatchExtractResult<T>[]>;
 }
+
+export interface LLMProviderCapabilities {
+  structuredOutput: boolean;
+  vision: boolean;
+  webSearch: boolean;
+  batch: boolean;
+}
+
+/**
+ * A complete LLM plugin registration. Keeping configuration discovery and
+ * client construction beside the capability declaration lets callers ask
+ * what a provider can do without checking a provider name.
+ */
+export interface LLMProvider {
+  id: string;
+  capabilities: LLMProviderCapabilities;
+  isConfigured(): boolean;
+  createClient(): LLMClient;
+  createBatchClient?(): BatchLLMClient;
+}

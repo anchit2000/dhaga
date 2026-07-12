@@ -7,7 +7,7 @@ import { Pool } from "pg";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { DDL } from "./ddl";
 import { companies, contacts } from "./schema/contacts";
-import { sessionContacts, sessions } from "./schema/sessions";
+import { eventContacts, events } from "./schema/events";
 import { edges, facts, followUps, notes } from "./schema/notes";
 import { embeddings } from "./schema/embeddings";
 import { signals } from "./schema/signals";
@@ -26,8 +26,8 @@ import { apiKey } from "./schema/api-key";
 const schema = {
   companies,
   contacts,
-  sessions,
-  sessionContacts,
+  events,
+  eventContacts,
   notes,
   facts,
   edges,

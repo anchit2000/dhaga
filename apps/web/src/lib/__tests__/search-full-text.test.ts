@@ -5,7 +5,7 @@ import { companies, signals } from "@/lib/db/schema";
 import { createContact, findOrCreateCompany } from "@/lib/repo/contacts";
 import { addNote } from "@/lib/repo/notes";
 import { applyExtraction } from "@/lib/repo/graph";
-import { createSession, addContactToSession } from "@/lib/repo/sessions";
+import { createEvent, addContactToEvent } from "@/lib/repo/events";
 import { hybridSearch } from "@/lib/repo/search";
 import { emptyExtractedContact, type ExtractedContact, type NoteExtraction } from "@dhaga/core";
 
@@ -16,7 +16,7 @@ function contact(overrides: Partial<ExtractedContact>): ExtractedContact {
 /**
  * Before this change, hybridSearch's keyword phase only looked at
  * name/title/company/tags/facts/notes — a contact findable only by their
- * email, phone, a company's domain/sector, a follow-up, a session they
+ * email, phone, a company's domain/sector, a follow-up, a event they
  * attended, or a proactive-intelligence signal was invisible to plain
  * keyword search (and, with embeddings off, invisible to search at all).
  * Each case below seeds a contact discoverable through exactly one such
@@ -31,7 +31,7 @@ describe("hybridSearch covers every searchable field, not just name/title/facts/
   let domainContact: string;
   let sectorContact: string;
   let followUpContact: string;
-  let sessionContact: string;
+  let eventContact: string;
   let signalContact: string;
 
   beforeAll(async () => {
@@ -83,9 +83,9 @@ describe("hybridSearch covers every searchable field, not just name/title/facts/
     };
     await applyExtraction(followUpContact, followUpNoteId, extraction);
 
-    sessionContact = await createContact(contact({ name: "Oscar Lindqvist" }), "manual");
-    const sessionId = await createSession("Helioscope Robotics Expo");
-    await addContactToSession(sessionId, sessionContact);
+    eventContact = await createContact(contact({ name: "Oscar Lindqvist" }), "manual");
+    const eventId = await createEvent("Helioscope Robotics Expo");
+    await addContactToEvent(eventId, eventContact);
 
     signalContact = await createContact(contact({ name: "Ana Reyes" }), "manual");
     await db.insert(signals).values({
@@ -135,9 +135,9 @@ describe("hybridSearch covers every searchable field, not just name/title/facts/
     expect(hits.map((h) => h.contactId)).toContain(followUpContact);
   });
 
-  it("finds a contact by a session they attended", async () => {
+  it("finds a contact by a event they attended", async () => {
     const hits = await hybridSearch("Helioscope Robotics Expo");
-    expect(hits.map((h) => h.contactId)).toContain(sessionContact);
+    expect(hits.map((h) => h.contactId)).toContain(eventContact);
   });
 
   it("finds a contact by a proactive-intelligence signal", async () => {

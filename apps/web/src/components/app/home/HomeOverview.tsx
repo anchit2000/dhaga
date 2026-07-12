@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CreateEventForm } from "@/components/app/CreateEventForm";
 import { HOME_PREVIEW_LIMIT } from "@/utils/constants/app";
 import type { ContactListItem } from "@/lib/repo/contacts";
-import type { SessionListItem } from "@/lib/repo/sessions";
+import type { EventListItem } from "@/lib/repo/events";
 
-export function HomeOverview({ people, sessions }: { people: ContactListItem[]; sessions: SessionListItem[] }) {
+export function HomeOverview({ people, events }: { people: ContactListItem[]; events: EventListItem[] }) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <Card>
@@ -21,15 +22,16 @@ export function HomeOverview({ people, sessions }: { people: ContactListItem[]; 
         </CardContent>
       </Card>
       <Card>
-        <CardHeader><CardTitle>Recent sessions</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Recent events</CardTitle></CardHeader>
         <CardContent className="space-y-1">
-          {sessions.length === 0 ? <p className="py-4 text-sm text-fog">Group people by an event, trip, or community.</p> : sessions.slice(0, HOME_PREVIEW_LIMIT).map((session) => (
-            <Link key={session.id} href={`/app/sessions/${session.id}`} className="flex min-h-11 items-center justify-between gap-3 rounded-lg px-2 transition-colors hover:bg-paper/[0.04]">
-              <span className="min-w-0"><span className="block truncate text-sm text-paper">{session.name}</span><span className="block text-xs text-fog">{session.startedAt.toLocaleDateString()}</span></span>
-              <span className="text-xs text-fog">{session.contactCount} {session.contactCount === 1 ? "person" : "people"}</span>
+          <div className="pb-3"><CreateEventForm /></div>
+          {events.length === 0 ? <p className="py-4 text-sm text-fog">Group people by an event, trip, or community.</p> : events.slice(0, HOME_PREVIEW_LIMIT).map((event) => (
+            <Link key={event.id} href={`/app/events/${event.id}`} className="flex min-h-11 items-center justify-between gap-3 rounded-lg px-2 transition-colors hover:bg-paper/[0.04]">
+              <span className="min-w-0"><span className="block truncate text-sm text-paper">{event.name}</span><span className="block text-xs text-fog">{event.startedAt.toLocaleDateString()}</span></span>
+              <span className="text-xs text-fog">{event.contactCount} {event.contactCount === 1 ? "person" : "people"}</span>
             </Link>
           ))}
-          <Link href="/app/sessions" className="inline-flex min-h-11 items-center text-xs text-amber hover:underline">View all sessions</Link>
+          <Link href="/app/events" className="inline-flex min-h-11 items-center text-xs text-amber hover:underline">View all events</Link>
         </CardContent>
       </Card>
     </div>

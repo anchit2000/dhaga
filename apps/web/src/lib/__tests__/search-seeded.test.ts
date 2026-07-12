@@ -91,7 +91,7 @@ describe("hybrid search over a seeded graph (M6 acceptance)", () => {
   });
 
   /**
-   * restrictTo comes from a structured filter (session/company/tags) that
+   * restrictTo comes from a structured filter (event/company/tags) that
    * already establishes the match — e.g. "who did I meet at the AI summit"
    * is answered by attendance, not by wording overlap with the note text.
    * If hybridSearch only ever surfaced contacts it could *also* score by

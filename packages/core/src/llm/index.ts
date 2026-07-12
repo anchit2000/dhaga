@@ -1,6 +1,6 @@
 import { AnthropicLLMClient } from "./anthropic-client";
 import { OpenAILLMClient } from "./openai-client";
-import type { BatchLLMClient, LLMClient } from "./types";
+import type { BatchLLMClient, LLMClient, LLMProvider } from "./types";
 
 export type {
   BatchExtractItem,
@@ -13,6 +13,8 @@ export type {
   LLMImage,
   LLMResult,
   LLMUsage,
+  LLMProvider,
+  LLMProviderCapabilities,
   ModelTier,
 } from "./types";
 export { AnthropicLLMClient } from "./anthropic-client";
@@ -48,15 +50,91 @@ export {
 } from "./prompts/brief";
 export { CARD_SCAN_SYSTEM, CARD_SCAN_PROMPT } from "./prompts/card-scan";
 
-/** True when a cloud LLM is configured; features degrade gracefully when not. */
+const providerStore = globalThis as unknown as {
+  __dhagaLLMProviders?: Map<string, LLMProvider>;
+  __dhagaLLMProviderOverride?: string;
+};
+
+function llmProviders(): Map<string, LLMProvider> {
+  providerStore.__dhagaLLMProviders ??= new Map();
+  const providers = providerStore.__dhagaLLMProviders;
+  if (!providers.has("anthropic")) {
+    providers.set("anthropic", {
+      id: "anthropic",
+      capabilities: {
+        structuredOutput: true,
+        vision: true,
+        webSearch: true,
+        batch: true,
+      },
+      isConfigured: () => Boolean(process.env.ANTHROPIC_API_KEY),
+      createClient: () => {
+        const apiKey = process.env.ANTHROPIC_API_KEY;
+        if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set — cloud AI features are unavailable");
+        return new AnthropicLLMClient(apiKey);
+      },
+      createBatchClient: () => {
+        const apiKey = process.env.ANTHROPIC_API_KEY;
+        if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set — cloud AI features are unavailable");
+        return new AnthropicLLMClient(apiKey);
+      },
+    });
+  }
+  if (!providers.has("openai")) {
+    providers.set("openai", {
+      id: "openai",
+      capabilities: {
+        structuredOutput: true,
+        vision: true,
+        webSearch: !process.env.OPENAI_BASE_URL,
+        batch: false,
+      },
+      isConfigured: () => Boolean(process.env.OPENAI_API_KEY),
+      createClient: () => {
+        const apiKey = process.env.OPENAI_API_KEY;
+        if (!apiKey) throw new Error("OPENAI_API_KEY is not set — cloud AI features are unavailable");
+        return new OpenAILLMClient({
+          apiKey,
+          baseURL: process.env.OPENAI_BASE_URL || undefined,
+          extractModel: process.env.OPENAI_EXTRACT_MODEL || "gpt-4.1-mini",
+          reasonModel: process.env.OPENAI_REASON_MODEL || "gpt-4.1",
+        });
+      },
+    });
+  }
+  return providers;
+}
+
+/** Register an LLM supplied by this app or an external package. */
+export function registerLLMProvider(provider: LLMProvider): () => void {
+  if (!provider.id.trim()) throw new Error("LLM provider id cannot be empty");
+  if (provider.capabilities.batch && !provider.createBatchClient) {
+    throw new Error(`LLM provider "${provider.id}" declares batch support without createBatchClient()`);
+  }
+  llmProviders().set(provider.id, provider);
+  return () => llmProviders().delete(provider.id);
+}
+
+/** Select a registered provider programmatically; pass null to use LLM_PROVIDER. */
+export function selectLLMProvider(id: string | null): void {
+  providerStore.__dhagaLLMProviderOverride = id ?? undefined;
+}
+
+export function getLLMProvider(): LLMProvider {
+  const id = providerStore.__dhagaLLMProviderOverride || process.env.LLM_PROVIDER || "anthropic";
+  const provider = llmProviders().get(id);
+  if (!provider) throw new Error(`Unsupported LLM_PROVIDER: ${id}`);
+  return provider;
+}
+
+/** True when an LLM is configured; features degrade gracefully when not. */
 export function hasLLM(): boolean {
-  return getLLMProvider() === "openai"
-    ? Boolean(process.env.OPENAI_API_KEY)
-    : Boolean(process.env.ANTHROPIC_API_KEY);
+  return getLLMProvider().isConfigured();
 }
 
 export function hasBatchLLM(): boolean {
-  return getLLMProvider() === "anthropic" && Boolean(process.env.ANTHROPIC_API_KEY);
+  const provider = getLLMProvider();
+  return provider.capabilities.batch && provider.isConfigured();
 }
 
 /**
@@ -64,25 +142,7 @@ export function hasBatchLLM(): boolean {
  * local-model (Ollama) providers plug in here later without touching callers.
  */
 export function getLLMClient(): LLMClient {
-  if (getLLMProvider() === "openai") {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error("OPENAI_API_KEY is not set — cloud AI features are unavailable");
-    }
-    return new OpenAILLMClient({
-      apiKey,
-      baseURL: process.env.OPENAI_BASE_URL || undefined,
-      extractModel: process.env.OPENAI_EXTRACT_MODEL || "gpt-4.1-mini",
-      reasonModel: process.env.OPENAI_REASON_MODEL || "gpt-4.1",
-    });
-  }
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    throw new Error(
-      "ANTHROPIC_API_KEY is not set — cloud AI features are unavailable",
-    );
-  }
-  return new AnthropicLLMClient(apiKey);
+  return getLLMProvider().createClient();
 }
 
 /**
@@ -93,22 +153,9 @@ export function getLLMClient(): LLMClient {
  * wouldn't need to.
  */
 export function getBatchLLMClient(): BatchLLMClient {
-  if (getLLMProvider() !== "anthropic") {
+  const provider = getLLMProvider();
+  if (!provider.capabilities.batch || !provider.createBatchClient) {
     throw new Error("The configured LLM provider does not support asynchronous batches");
   }
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    throw new Error(
-      "ANTHROPIC_API_KEY is not set — cloud AI features are unavailable",
-    );
-  }
-  return new AnthropicLLMClient(apiKey);
-}
-
-function getLLMProvider(): "anthropic" | "openai" {
-  const provider = process.env.LLM_PROVIDER || "anthropic";
-  if (provider !== "anthropic" && provider !== "openai") {
-    throw new Error(`Unsupported LLM_PROVIDER: ${provider}`);
-  }
-  return provider;
+  return provider.createBatchClient();
 }

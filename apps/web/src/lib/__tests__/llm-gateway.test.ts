@@ -6,9 +6,13 @@ import {
   getLLMClient,
   hasBatchLLM,
   hasLLM,
+  registerLLMProvider,
+  selectLLMProvider,
+  type LLMClient,
 } from "@dhaga/core";
 
 afterEach(() => {
+  selectLLMProvider(null);
   vi.unstubAllEnvs();
 });
 
@@ -36,5 +40,43 @@ describe("LLM gateway provider selection", () => {
   it("fails loud for an unknown provider", () => {
     vi.stubEnv("LLM_PROVIDER", "typo-provider");
     expect(() => hasLLM()).toThrow("Unsupported LLM_PROVIDER");
+  });
+
+  it("loads an externally registered provider without editing the gateway", () => {
+    const client: LLMClient = {
+      extract: async (options) => ({
+        data: options.schema.parse({ value: "ok" }),
+        model: "plugin-model",
+        usage: { inputTokens: 0, outputTokens: 0 },
+      }),
+      complete: async () => ({
+        data: "ok",
+        model: "plugin-model",
+        usage: { inputTokens: 0, outputTokens: 0 },
+      }),
+    };
+    const unregister = registerLLMProvider({
+      id: "test-plugin",
+      capabilities: { structuredOutput: true, vision: false, webSearch: false, batch: false },
+      isConfigured: () => true,
+      createClient: () => client,
+    });
+    selectLLMProvider("test-plugin");
+
+    expect(hasLLM()).toBe(true);
+    expect(hasBatchLLM()).toBe(false);
+    expect(getLLMClient()).toBe(client);
+    unregister();
+  });
+
+  it("rejects an invalid batch capability declaration", () => {
+    expect(() =>
+      registerLLMProvider({
+        id: "broken-batch-plugin",
+        capabilities: { structuredOutput: true, vision: false, webSearch: false, batch: true },
+        isConfigured: () => true,
+        createClient: () => ({}) as LLMClient,
+      }),
+    ).toThrow(/createBatchClient/);
   });
 });

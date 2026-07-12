@@ -17,7 +17,7 @@ export interface DraftContext {
   contactName: string;
   title: string | null;
   company: string | null;
-  sessionNames: string[];
+  eventNames: string[];
   facts: string[];
   noteSnippets: string[];
 }
@@ -27,8 +27,8 @@ export function buildDraftPrompt(context: DraftContext): string {
     `Contact: ${context.contactName}`,
     context.title ? `Title: ${context.title}` : null,
     context.company ? `Company: ${context.company}` : null,
-    context.sessionNames.length
-      ? `Met at: ${context.sessionNames.join(", ")}`
+    context.eventNames.length
+      ? `Met at: ${context.eventNames.join(", ")}`
       : null,
     context.facts.length ? `Known facts:\n- ${context.facts.join("\n- ")}` : null,
     context.noteSnippets.length

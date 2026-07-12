@@ -1,8 +1,8 @@
 import { requireUserIdForPage } from "@/lib/auth/guard";
 import { aiActionsUsedThisMonth, monthlyAiCap } from "@/lib/ai/metering";
-import { listSessions } from "@/lib/repo/sessions";
+import { listEvents } from "@/lib/repo/events";
 import { shouldStoreCardPhotos } from "@/lib/repo/settings";
-import { activeSessionId } from "@/lib/active-session";
+import { activeEventId } from "@/lib/active-event";
 import { QuickAddForm } from "@/components/app/QuickAddForm";
 import { hasLLM } from "@dhaga/core";
 
@@ -10,8 +10,8 @@ export const metadata = { title: "Quick add — Dhaga" };
 
 export default async function QuickAddPage() {
   await requireUserIdForPage();
-  const [sessions, used, storeCardPhotos] = await Promise.all([
-    listSessions(),
+  const [events, used, storeCardPhotos] = await Promise.all([
+    listEvents(),
     hasLLM() ? aiActionsUsedThisMonth() : Promise.resolve(0),
     shouldStoreCardPhotos(),
   ]);
@@ -31,8 +31,8 @@ export default async function QuickAddPage() {
         ) : null}
       </div>
       <QuickAddForm
-        sessions={sessions.map(({ id, name }) => ({ id, name }))}
-        defaultSessionId={activeSessionId(sessions)}
+        events={events.map(({ id, name }) => ({ id, name }))}
+        defaultEventId={activeEventId(events)}
         storeCardPhotos={storeCardPhotos}
       />
     </div>

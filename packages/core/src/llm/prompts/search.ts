@@ -10,7 +10,7 @@ export const SEARCH_QUERY_SYSTEM = `You convert a question about the user's prof
 
 Rules:
 - Extract only what the question actually states or clearly implies — never invent filter values.
-- "session" is an event name only when one is named ("at Web Summit", "from GITEX").
+- "event" is an event name only when one is named ("at Web Summit", "from GITEX").
 - "company" only when the question scopes to a specific organisation.
 - "tags" are lowercase sector/role/topic labels the question implies (e.g. fintech, investor, logistics).
 - "semantic_query" rephrases what the user is looking for as a short standalone search phrase.`;

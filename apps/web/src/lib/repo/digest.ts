@@ -1,6 +1,6 @@
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
-import { companies, contacts, facts, followUps, sessionContacts } from "@/lib/db/schema";
+import { companies, contacts, facts, followUps, eventContacts } from "@/lib/db/schema";
 
 export interface DigestPerson {
   id: string;
@@ -11,8 +11,8 @@ export interface DigestPerson {
   followUps: string[];
 }
 
-/** Everything the post-event digest email needs, one session at a time. */
-export async function sessionDigestData(sessionId: string): Promise<DigestPerson[]> {
+/** Everything the post-event digest email needs, one event at a time. */
+export async function eventDigestData(eventId: string): Promise<DigestPerson[]> {
   const db = await getDb();
   const people = await db
     .select({
@@ -21,10 +21,10 @@ export async function sessionDigestData(sessionId: string): Promise<DigestPerson
       title: contacts.title,
       companyName: companies.name,
     })
-    .from(sessionContacts)
-    .innerJoin(contacts, eq(contacts.id, sessionContacts.contactId))
+    .from(eventContacts)
+    .innerJoin(contacts, eq(contacts.id, eventContacts.contactId))
     .leftJoin(companies, eq(contacts.companyId, companies.id))
-    .where(eq(sessionContacts.sessionId, sessionId));
+    .where(eq(eventContacts.eventId, eventId));
   if (people.length === 0) return [];
 
   const ids = people.map((person) => person.id);

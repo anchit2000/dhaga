@@ -1,5 +1,5 @@
 /**
- * Geohash encoding (BRD §6.2 mobile session clustering) — a small, dependency-free
+ * Geohash encoding (BRD §6.2 mobile event clustering) — a small, dependency-free
  * pure function, not a new npm package: the algorithm is static and well-known
  * (public-domain, same one used by geohash.org). Deliberately not re-exported
  * from ./index.ts (the package barrel pulls in the Anthropic SDK + zod); deep-import

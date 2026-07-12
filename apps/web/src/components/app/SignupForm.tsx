@@ -20,6 +20,7 @@ export function SignupForm({ socialProviders, defaultEmail }: SignupFormProps) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | undefined>();
   const [requested, setRequested] = useState<string | undefined>();
+  const [verificationSent, setVerificationSent] = useState(false);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -43,11 +44,26 @@ export function SignupForm({ socialProviders, defaultEmail }: SignupFormProps) {
       setError(signUpError.message ?? "Couldn't create your account.");
       return;
     }
-    router.push("/app/people");
+    setVerificationSent(true);
+    router.refresh();
   }
 
   if (requested) {
-    return <p className="text-center text-sm text-fog">{requested}</p>;
+    return (
+      <div className="space-y-3 text-center text-sm text-fog" role="status">
+        <p>{requested}</p>
+        <p>There is no account yet. Once approved, use the link in the email to finish signup.</p>
+      </div>
+    );
+  }
+
+  if (verificationSent) {
+    return (
+      <div className="space-y-3 text-center text-sm text-fog" role="status">
+        <p>Check your inbox to verify your email.</p>
+        <p>Your account will be ready after you open the verification link.</p>
+      </div>
+    );
   }
 
   return (

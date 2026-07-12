@@ -8,7 +8,7 @@ import { boolean, index, integer, pgTable, text, timestamp } from "drizzle-orm/p
  * here (unlike the rest of this app's tables) to match the CLI's own output.
  *
  * `session` here is better-auth's login-session table — unrelated to this
- * app's own plural `sessions` (networking-event groupings, see ./sessions.ts).
+ * app's networking `events` table (see ./events.ts).
  */
 export const authUser = pgTable("user", {
   id: text("id").primaryKey(),

@@ -20,6 +20,20 @@ export async function notifyAccessApproved(email: string): Promise<void> {
   });
 }
 
+export async function notifyAccessRejected(email: string): Promise<void> {
+  if (!emailEnabled()) return;
+  await sendEmail({
+    to: email,
+    subject: "An update on your Dhaga access request",
+    html: emailShell(
+      "Access request update",
+      `<p>We can't offer access right now. You can submit a new request after 30 days.</p>
+       <p>Dhaga remains open source at
+       <a href="https://github.com/anchit2000/dhaga" style="color:#e2a44c;">github.com/anchit2000/dhaga</a>.</p>`,
+    ),
+  });
+}
+
 export async function notifyAccessRequested(email: string): Promise<void> {
   if (!emailEnabled()) return;
   await sendEmail({

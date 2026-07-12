@@ -48,9 +48,9 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
-  await submitAccessRequest(email);
+  const submitted = await submitAccessRequest(email);
 
   // Confirmation + owner notification go out after the response.
-  after(() => notifyAccessRequested(email));
+  if (submitted) after(() => notifyAccessRequested(email));
   return Response.json({ ok: true } satisfies AccessRequestResponse);
 }

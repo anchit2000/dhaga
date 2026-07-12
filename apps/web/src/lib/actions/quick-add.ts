@@ -1,9 +1,18 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { requireUserId } from "@/lib/auth/guard";
+import { extractAndApplyNote } from "@/lib/ai/note-extraction";
 import { extractContactFromText } from "@/lib/ai/contact-extraction";
 import { scanCardImage } from "@/lib/ai/card-scan";
 import { shouldStoreCardPhotos } from "@/lib/repo/settings";
+import {
+  findContactIdentityCandidates,
+  getContact,
+  type ContactIdentityCandidate,
+} from "@/lib/repo/contacts";
+import { addNote } from "@/lib/repo/notes";
+import { upsertEmbedding } from "@/lib/repo/embeddings";
 import { CARD_IMAGE_TYPES } from "@/utils/constants/app";
 import type { ExtractedContact, LLMImage } from "@dhaga/core";
 
@@ -19,6 +28,7 @@ export interface QuickAddState {
    *  form so the photo is saved as a visual receipt alongside the contact. */
   imageBase64?: string;
   imageType?: string;
+  matches?: ContactIdentityCandidate[];
 }
 
 export async function extractQuickAddAction(
@@ -28,6 +38,12 @@ export async function extractQuickAddAction(
   const userId = await requireUserId();
   const raw = String(formData.get("raw") ?? "").trim();
   if (!raw) return { error: "Paste some text first." };
+  if (formData.get("skipDisambiguation") !== "true") {
+    const matches = await findContactIdentityCandidates(raw);
+    if (matches.length > 1) {
+      return { matches, sourceText: raw };
+    }
+  }
   const result = await extractContactFromText(userId, raw);
   return {
     contact: result.contact,
@@ -35,6 +51,25 @@ export async function extractQuickAddAction(
     notice: result.notice,
     sourceText: raw,
   };
+}
+
+export async function attachCapturedNoteAction(formData: FormData): Promise<void> {
+  const userId = await requireUserId();
+  const contactId = String(formData.get("contactId") ?? "");
+  const raw = String(formData.get("raw") ?? "").trim();
+  if (!contactId || !raw) return;
+  const detail = await getContact(contactId);
+  if (!detail || detail.contact.source === "mentioned") return;
+  const noteId = await addNote(contactId, "voice", raw);
+  await upsertEmbedding("note", noteId, contactId, raw);
+  await extractAndApplyNote(
+    userId,
+    contactId,
+    noteId,
+    detail.contact.name,
+    raw,
+  );
+  redirect(`/app/people/${contactId}`);
 }
 
 /** Card-photo path (M1): parse the photo; keep it as a visual receipt

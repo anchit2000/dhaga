@@ -6,28 +6,28 @@ interface TimelineEvent {
   detail?: string;
 }
 
-/** v1.3: the relationship over time — captures, sessions, notes, touches. */
+/** v1.3: the relationship over time — captures, events, notes, touches. */
 export function Timeline({
   createdAt,
   source,
   lastReachedOutAt,
-  sessions,
+  events,
   notes,
 }: {
   createdAt: Date;
   source: string;
   lastReachedOutAt: Date | null;
-  sessions: { id: string; name: string; scannedAt: Date }[];
+  events: { id: string; name: string; scannedAt: Date }[];
   notes: NoteRow[];
 }) {
-  const events: TimelineEvent[] = [
+  const timelineEvents: TimelineEvent[] = [
     {
       at: createdAt,
       label: source === "quick_add" ? "Captured via quick add" : "Added manually",
     },
-    ...sessions.map((session) => ({
-      at: session.scannedAt,
-      label: `Met at ${session.name}`,
+    ...events.map((event) => ({
+      at: event.scannedAt,
+      label: `Met at ${event.name}`,
     })),
     ...notes.map((note) => ({
       at: note.createdAt,
@@ -43,7 +43,7 @@ export function Timeline({
     <section className="space-y-3">
       <h2 className="font-display text-lg">Timeline</h2>
       <ol className="relative space-y-0 border-l border-seam pl-4">
-        {events.map((event, index) => (
+        {timelineEvents.map((event, index) => (
           <li key={index} className="relative pb-4 last:pb-0">
             <span
               aria-hidden

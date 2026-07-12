@@ -39,7 +39,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 
 - [ ] Auth: real accounts (better-auth email/password), signed httpOnly session cookie — typecheck/lint/build/test all pass; manual browser click-through + push still pending
 - [x] Every `/app` page + server action validates the session (guard helpers)
-- [x] App layout: nav (People / Sessions / Search / Quick-add), mobile-first at 375px
+- [x] App layout: nav (People / Events / Search / Quick-add), mobile-first at 375px
 - [x] Empty states + error states; submit buttons have loading spinners
 - [x] Loading skeletons on data-heavy screens (route `loading.tsx` files)
 - [x] Dark warm theme reused from landing tokens
@@ -53,7 +53,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Hosted Postgres support: `DATABASE_URL` → node-postgres (unlocks Vercel)
 - [x] `contacts` table
 - [x] `companies` table
-- [x] `sessions` + `session_contacts` tables (M2)
+- [x] `events` + `event_contacts` tables (M2)
 - [x] `notes` table (kind: voice|text|capture_source, body)
 - [x] `facts` table (type, text, confidence, `source_note_id`, `deleted_at`)
 - [x] `edges` table (src/dst typed, predicate, `source_note_id`)
@@ -71,7 +71,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Settings page: per-user "store card photos" toggle + purge-all button
 - [x] Photo deletion cascades: gone with its receipt note, gone with "forget this person"
 - [x] Edit-before-save review form (M1 acceptance: user confirms fields)
-- [x] Assign capture to a session (create/pick "Web Summit 2026")
+- [x] Assign capture to an event (create/pick "Web Summit 2026")
 - [x] Attach source text as first note (receipt for extracted fields)
 - [x] Manual add-contact form (no extraction path)
 - [x] People list with filter + contact detail page
@@ -80,13 +80,13 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] LinkedIn Connections CSV import — user's own LinkedIn data export → bulk contacts, ToS-safe (BRD §6.7) (v1.1); `lib/import/linkedin.ts`, wired into `/app/import`, LinkedIn header format covered by `csv-import.test.ts`/`import-repo.test.ts`
 - [x] Waitlist signups get a confirmation email (Resend)
 
-## 5. Sessions / auto-grouping (M2)
+## 5. Events / auto-grouping (M2)
 
-- [x] Sessions list + session page (contacts met there)
-- [x] Create sessions (from Sessions page and inline in quick-add)
-- [x] Rename/merge sessions
-- [x] Web: active-session default (a session started today is preselected in quick-add)
-- [x] Mobile: time + geohash clustering per BRD §6.2 — `packages/core/src/geo/geohash.ts` + `apps/web/src/lib/repo/session-clustering.ts` (geohash-6, 4h window, "Name this event?" prompt on new cluster); typecheck/lint/build/tests all pass (`a346516`), not pushed; needs on-device verification (no EAS/device access here)
+- [x] Events list + event page (contacts met there)
+- [x] Create events (from Events page and inline in quick-add)
+- [x] Rename/merge events
+- [x] Web: active-event default (an event started today is preselected in quick-add)
+- [x] Mobile: time + geohash clustering per BRD §6.2 — `packages/core/src/geo/geohash.ts` + `apps/web/src/lib/repo/event-clustering.ts` (geohash-6, 4h window, "Name this event?" prompt on new cluster); typecheck/lint/build/tests all pass (`a346516`), not pushed; needs on-device verification (no EAS/device access here)
 
 ## 6. Notes & entity extraction (M3, M4)
 
@@ -101,7 +101,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 ## 7. Knowledge graph v0 (M5)
 
 - [x] Relationship edges written from extraction (`works_at`, `knows`, `used_to_work_at`, …)
-- [x] Contact page: same-company + same-session + edge connections render
+- [x] Contact page: same-company + same-event + edge connections render
 - [x] Graph browser page (React Flow: people/companies, typed edges, ring layout)
 - [x] Tag ontology v0 (tags from extraction, filter chips on People)
 
@@ -115,7 +115,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 
 ## 9. AI follow-up drafts (M7)
 
-- [x] One-tap draft using notes + session context + facts (Sonnet, cache-friendly prompt)
+- [x] One-tap draft using notes + event context + facts (Sonnet, cache-friendly prompt)
 - [ ] Draft references ≥1 note-derived fact (acceptance — verify with a live API key)
 - [x] Edit + copy-to-clipboard flow
 
@@ -131,7 +131,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] "Forget this person" — full cascade delete with confirmation
 - [x] Export: contacts CSV
 - [x] Export: vCard
-- [x] Export: full JSON dump (contacts+sessions+notes+facts+edges)
+- [x] Export: full JSON dump (contacts+events+notes+facts+edges)
 - [x] No contact PII / transcripts / extraction output in server logs
 - [x] Enrichment & cloud AI strictly user-triggered (no background calls)
 
@@ -164,16 +164,16 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [ ] Opt-in news watchlist: per-contact "Watch for job changes & news" toggle (contact page) → nightly cron (`/api/jobs/detect-signals`, `apps/web/vercel.json`) → provider-agnostic web search (`packages/core/src/search`, Firecrawl by default — cheaper per-search than an LLM's own web-search tool) → Haiku classifies hits → `signals` table → Home "Signals" feed + contact page, "Add as note" (receipted) or dismiss. Capped per plan (`PRO_TIER_WATCHLIST_CAP`/`FREE_TIER_WATCHLIST_CAP`). Typecheck/lint/build/tests pass (`signals.test.ts`, `search-client.test.ts`); manual click-through not done (needs live API keys); hosted multi-tenant RLS scoping for this job is a known follow-up (it currently runs against the default connection, correct for self-host, same posture as the Telegram webhook) — **fixed 2026-07-12: separately, `signals` had been left out of `packages/ee`'s `TENANT_TABLES` entirely, so unlike every other tenant table it had no RLS policy at all; `getSignal`/`dismissSignal`/`markSignalNoted` key only by signal id with no ownership check, so this was a real cross-tenant read/dismiss/"add as note" hole in hosted mode, not just the job-connection posture noted above. Added to `TENANT_TABLES` (`rls-ddl.ts`). The nightly job's own non-tenant-scoped connection (this paragraph's original point) is unrelated and still an open follow-up**
 - [x] Keep-in-touch cadence reminders + Home reach-out feed (ideas.md #2)
 - [ ] Automatic relationship-decay detection — built read-time (no nightly job needed): "Going quiet" feed on Home surfaces contacts with no touch in ~8 months and no cadence set (`repo/strength.ts`); typecheck/lint/build/tests pass, manual click-through not done
-- [ ] Relationship-strength score from own-graph data (interaction recency/frequency, notes, sessions — no external data) — built: 0–100 recency×frequency score (`scoreStrength`), ranks the Going-quiet feed strongest-first; tests in `strength.test.ts`, manual click-through not done
-- [x] Post-event digest email (user-triggered from the session page, template-based)
+- [ ] Relationship-strength score from own-graph data (interaction recency/frequency, notes, events — no external data) — built: 0–100 recency×frequency score (`scoreStrength`), ranks the Going-quiet feed strongest-first; tests in `strength.test.ts`, manual click-through not done
+- [x] Post-event digest email (user-triggered from the event page, template-based)
 - [x] Pre-meeting brief on demand ("Brief me ✦" on the contact page, graph-only)
 - [ ] Calendar integration → brief pushed 30 min before the meeting
 
 ## 15. Graph power (v1.3)
 
-- [x] Warm-path finding (BFS over edges/companies/sessions — no AI cost)
+- [x] Warm-path finding (BFS over edges/companies/events — no AI cost)
 - [x] Second-degree suggestions ("Nearby in your network" — ideas.md #1, local-only traversal)
-- [x] Relationship timeline view (captures, sessions, notes, touches on the contact page)
+- [x] Relationship timeline view (captures, events, notes, touches on the contact page)
 - [ ] Watch app / widgets
 
 ## 16. Ecosystem (v1.4)

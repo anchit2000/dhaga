@@ -2,15 +2,15 @@
 
 import { useActionState } from "react";
 import {
-  createSessionAction,
-  type SessionFormState,
-} from "@/lib/actions/sessions";
+  createEventAction,
+  type EventFormState,
+} from "@/lib/actions/events";
 import { Input } from "@/components/ui/input";
 import { SubmitButton } from "./SubmitButton";
 
-export function CreateSessionForm() {
-  const [state, formAction] = useActionState<SessionFormState, FormData>(
-    createSessionAction,
+export function CreateEventForm() {
+  const [state, formAction] = useActionState<EventFormState, FormData>(
+    createEventAction,
     {},
   );
 
@@ -20,10 +20,10 @@ export function CreateSessionForm() {
         <Input
           name="name"
           required
-          placeholder="Name a session — “Web Summit 2026”"
+          placeholder="Name a event — “Web Summit 2026”"
           className="h-10 sm:max-w-sm"
         />
-        <SubmitButton>Create session</SubmitButton>
+        <SubmitButton>Create event</SubmitButton>
       </div>
       {state.error ? (
         <p className="text-sm text-red-400" role="alert">

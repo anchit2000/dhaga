@@ -1,6 +1,6 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
-import { companies, contacts, notes, sessionContacts } from "@/lib/db/schema";
+import { companies, contacts, notes, eventContacts } from "@/lib/db/schema";
 import {
   DECAY_AFTER_DAYS,
   STRENGTH_BANDS,
@@ -13,7 +13,7 @@ import type { StrengthLabel } from "@/utils/constants/app";
 
 /**
  * Relationship decay + strength (BRD §6.7: own-graph data only — touches are
- * notes, session attendance, and explicit "I reached out"; never external
+ * notes, event attendance, and explicit "I reached out"; never external
  * signals). Computed at read time; no nightly job, no stored score.
  */
 
@@ -57,14 +57,14 @@ const lastTouch = sql<Date>`GREATEST(
   ${contacts.createdAt},
   COALESCE(${contacts.lastReachedOutAt}, ${contacts.createdAt}),
   COALESCE(MAX(${notes.createdAt}), ${contacts.createdAt}),
-  COALESCE(MAX(${sessionContacts.scannedAt}), ${contacts.createdAt})
+  COALESCE(MAX(${eventContacts.scannedAt}), ${contacts.createdAt})
 )`;
 
 const windowStart = sql`now() - make_interval(days => ${STRENGTH_WINDOW_DAYS})`;
 
 const recentInteractions = sql<number>`
   COUNT(DISTINCT ${notes.id}) FILTER (WHERE ${notes.createdAt} > ${windowStart})
-  + COUNT(DISTINCT ${sessionContacts.sessionId}) FILTER (WHERE ${sessionContacts.scannedAt} > ${windowStart})
+  + COUNT(DISTINCT ${eventContacts.eventId}) FILTER (WHERE ${eventContacts.scannedAt} > ${windowStart})
   + (CASE WHEN ${contacts.lastReachedOutAt} > ${windowStart} THEN 1 ELSE 0 END)
 `;
 
@@ -91,7 +91,7 @@ export async function listQuietContacts(): Promise<QuietContact[]> {
       notes,
       and(eq(notes.contactId, contacts.id), isNull(notes.deletedAt)),
     )
-    .leftJoin(sessionContacts, eq(sessionContacts.contactId, contacts.id))
+    .leftJoin(eventContacts, eq(eventContacts.contactId, contacts.id))
     .where(isNull(contacts.reachOutEveryDays))
     .groupBy(contacts.id, companies.id)
     .having(sql`${lastTouch} < now() - make_interval(days => ${DECAY_AFTER_DAYS})`);

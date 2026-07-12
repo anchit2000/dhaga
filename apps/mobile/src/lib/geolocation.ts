@@ -12,7 +12,7 @@ export interface ScanLocation {
  * §6.2). Permission is requested here — at the moment of the first scan,
  * not on app launch. Denial, or any location failure, resolves to null so
  * capture never blocks on it: the scan just isn't auto-grouped into a
- * session, same tone as camera-capture-view's permission handling.
+ * event, same tone as camera-capture-view's permission handling.
  */
 export async function getScanLocation(): Promise<ScanLocation | null> {
   try {

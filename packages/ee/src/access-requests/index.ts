@@ -22,8 +22,8 @@ export const signupGate = {
   // Idempotent (onConflictDoNothing): a signup retry never creates a
   // duplicate row or resets an already-pending/approved/rejected request.
   requestAccess: async (email: string) => {
-    if (isBootstrapAdmin(email)) return;
-    await submitAccessRequest(email);
+    if (isBootstrapAdmin(email)) return false;
+    return submitAccessRequest(email);
   },
 };
 

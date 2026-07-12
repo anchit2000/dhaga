@@ -6,7 +6,7 @@ import { CropReviewView } from "@/components/crop-review";
 import { TextCaptureView } from "@/components/text-capture-view";
 import { ResultBanner } from "@/components/result-banner";
 import { BottomDock } from "@/components/bottom-dock";
-import { SessionNamePrompt } from "@/components/session-name-prompt";
+import { EventNamePrompt } from "@/components/event-name-prompt";
 import { LinkedInQrPrompt } from "@/components/linkedin-qr-prompt";
 import { COLORS } from "@/utils/constants";
 
@@ -31,9 +31,9 @@ export default function CaptureScreen() {
     outcome,
     pendingPhoto,
     setPendingPhoto,
-    sessionToName,
-    confirmSessionName,
-    dismissSessionPrompt,
+    eventToName,
+    confirmEventName,
+    dismissEventPrompt,
     shootCamera,
     pickFromLibrary,
     applyCroppedPhoto,
@@ -86,10 +86,10 @@ export default function CaptureScreen() {
 
   return (
     <View style={styles.screen}>
-      <SessionNamePrompt
-        visible={sessionToName != null}
-        onConfirm={(name) => void confirmSessionName(name)}
-        onSkip={dismissSessionPrompt}
+      <EventNamePrompt
+        visible={eventToName != null}
+        onConfirm={(name) => void confirmEventName(name)}
+        onSkip={dismissEventPrompt}
       />
       <LinkedInQrPrompt
         url={linkedInQrUrl}

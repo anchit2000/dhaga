@@ -6,8 +6,8 @@
 const TENANT_TABLES = [
   "companies",
   "contacts",
-  "sessions",
-  "session_contacts",
+  "events",
+  "event_contacts",
   "notes",
   "facts",
   "edges",

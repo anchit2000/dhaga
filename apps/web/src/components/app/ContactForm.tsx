@@ -47,7 +47,7 @@ function fieldsFor(initial: ExtractedContact): FieldSpec[] {
 /**
  * Review-and-save form: used for manual add and for extracted captures.
  * `children` lets callers ride extra fields along (hidden capture source,
- * session picker) — they submit through the same action.
+ * event picker) — they submit through the same action.
  */
 export function ContactForm({
   initial,

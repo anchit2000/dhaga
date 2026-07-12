@@ -1,5 +1,5 @@
 import type { CaptureRequest, CaptureResponse } from "@dhaga/core/src/api/capture";
-import type { SessionRenameRequest, SessionRenameResponse } from "@dhaga/core/src/api/sessions";
+import type { EventRenameRequest, EventRenameResponse } from "@dhaga/core/src/api/events";
 import type { MobileSettings } from "@/types";
 
 /** A capture failure with a message safe to show the user. */
@@ -44,23 +44,23 @@ export async function captureContact(
 }
 
 /**
- * PATCH /api/sessions/[id] with the user's own API key — the one-time
- * "Name this event?" prompt after M2 auto event grouping creates a session.
+ * PATCH /api/events/[id] with the user's own API key — the one-time
+ * "Name this event?" prompt after M2 auto event grouping creates a event.
  */
-export async function renameSession(
+export async function renameEvent(
   settings: MobileSettings,
-  sessionId: string,
+  eventId: string,
   name: string,
-): Promise<SessionRenameResponse> {
+): Promise<EventRenameResponse> {
   let response: Response;
   try {
-    response = await fetch(`${settings.baseUrl}/api/sessions/${sessionId}`, {
+    response = await fetch(`${settings.baseUrl}/api/events/${eventId}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
         "x-api-key": settings.apiKey,
       },
-      body: JSON.stringify({ name } satisfies SessionRenameRequest),
+      body: JSON.stringify({ name } satisfies EventRenameRequest),
     });
   } catch {
     throw new CaptureError(
@@ -68,13 +68,13 @@ export async function renameSession(
     );
   }
   if (!response.ok) {
-    const fallback = `Couldn't rename the session (HTTP ${response.status}).`;
+    const fallback = `Couldn't rename the event (HTTP ${response.status}).`;
     throw new CaptureError(await errorMessage(response, fallback), response.status);
   }
-  return (await response.json()) as SessionRenameResponse;
+  return (await response.json()) as EventRenameResponse;
 }
 
-/** Shared by captureContact and renameSession: both APIs return `{ error }` on failure. */
+/** Shared by captureContact and renameEvent: both APIs return `{ error }` on failure. */
 async function errorMessage(response: Response, fallback: string): Promise<string> {
   if (response.status === 401) {
     return "API key rejected — create one in Dhaga web Settings and enter it on the setup screen.";

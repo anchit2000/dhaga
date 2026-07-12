@@ -5,10 +5,10 @@ import { z } from "zod";
  * natural-language question into filters + a semantic residual.
  */
 export const searchQueryPlanSchema = z.object({
-  session: z
+  event: z
     .string()
     .nullable()
-    .describe("Event/session name if the question names one, else null"),
+    .describe("Event/event name if the question names one, else null"),
   company: z
     .string()
     .nullable()

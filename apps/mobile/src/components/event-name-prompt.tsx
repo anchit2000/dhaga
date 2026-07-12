@@ -5,11 +5,11 @@ import { COLORS } from "@/utils/constants";
 
 /**
  * M2 auto event grouping's one-time prompt (BRD §6.2): shown right after a
- * scan starts a brand-new session ("same geohash, no recent session"), so
- * the placeholder session gets a real name instead of staying "New session".
- * Skipping is fine — the session just keeps its placeholder name.
+ * scan starts a brand-new event ("same geohash, no recent event"), so
+ * the placeholder event gets a real name instead of staying "New event".
+ * Skipping is fine — the event just keeps its placeholder name.
  */
-export function SessionNamePrompt({
+export function EventNamePrompt({
   visible,
   onConfirm,
   onSkip,
@@ -33,7 +33,7 @@ export function SessionNamePrompt({
         <View style={styles.card}>
           <Text style={styles.title}>Name this event?</Text>
           <Text style={styles.subtitle}>
-            You&apos;re at a new place — give this session a name to keep who you meet here together.
+            You&apos;re at a new place — give this event a name to keep who you meet here together.
           </Text>
           <TextInput
             autoFocus

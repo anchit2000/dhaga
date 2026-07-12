@@ -27,7 +27,7 @@ started on the native mobile app. So MVP status splits in two:
 | # | Feature | Web | Mobile |
 |---|---|---|---|
 | M1 | Card scan → structured contact | **Shipped** (photo upload → vision parse → edit-before-save) | In progress — camera → on-device OCR → Haiku parse spike is built but not yet verified on a real Android/iPhone |
-| M2 | Auto event grouping ("sessions") | **Shipped** (create, rename, merge, active-session default) | Planned — time + location clustering |
+| M2 | Auto event grouping | **Shipped** (create, rename, merge, active-event default) | Planned — time + location clustering |
 | M3 | Voice + text notes | **Shipped** (browser speech-to-text + transcript) | Planned — on-device transcription |
 | M4 | Entity extraction (facts, relationships, follow-ups) | **Shipped** | Shares the same backend once mobile capture lands |
 | M5 | Knowledge graph v0 | **Shipped** (contact connections, graph browser, tags) | Shares the same backend |

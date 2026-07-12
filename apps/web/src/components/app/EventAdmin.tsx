@@ -2,7 +2,7 @@
 
 import { useFormStatus } from "react-dom";
 import { Loader2 } from "lucide-react";
-import { mergeSessionAction, renameSessionAction } from "@/lib/actions/sessions";
+import { mergeEventAction, renameEventAction } from "@/lib/actions/events";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 
@@ -23,51 +23,51 @@ function ChipSubmit({ label, confirmText }: { label: string; confirmText?: strin
   );
 }
 
-/** Rename this session, or merge it into another one. */
-export function SessionAdmin({
-  sessionId,
+/** Rename this event, or merge it into another one. */
+export function EventAdmin({
+  eventId,
   name,
-  otherSessions,
+  otherEvents,
 }: {
-  sessionId: string;
+  eventId: string;
   name: string;
-  otherSessions: { id: string; name: string }[];
+  otherEvents: { id: string; name: string }[];
 }) {
   return (
     <div className="flex flex-wrap gap-3 rounded-2xl border border-seam bg-panel p-4">
-      <form action={renameSessionAction} className="flex min-w-0 flex-1 items-center gap-2">
-        <input type="hidden" name="sessionId" value={sessionId} />
+      <form action={renameEventAction} className="flex min-w-0 flex-1 items-center gap-2">
+        <input type="hidden" name="eventId" value={eventId} />
         <Input
           name="name"
           defaultValue={name}
           required
-          aria-label="Session name"
+          aria-label="Event name"
           className="h-8 max-w-60 text-sm"
         />
         <ChipSubmit label="Rename" />
       </form>
-      {otherSessions.length > 0 ? (
-        <form action={mergeSessionAction} className="flex items-center gap-2">
-          <input type="hidden" name="fromId" value={sessionId} />
+      {otherEvents.length > 0 ? (
+        <form action={mergeEventAction} className="flex items-center gap-2">
+          <input type="hidden" name="fromId" value={eventId} />
           <Select
             name="intoId"
             required
             defaultValue=""
-            aria-label="Merge into session"
+            aria-label="Merge into event"
             className="h-8 w-44 text-xs"
           >
             <option value="" disabled>
               Merge into…
             </option>
-            {otherSessions.map((session) => (
-              <option key={session.id} value={session.id}>
-                {session.name}
+            {otherEvents.map((event) => (
+              <option key={event.id} value={event.id}>
+                {event.name}
               </option>
             ))}
           </Select>
           <ChipSubmit
             label="Merge"
-            confirmText={`Merge "${name}" into the selected session? Everyone moves over and "${name}" is deleted.`}
+            confirmText={`Merge "${name}" into the selected event? Everyone moves over and "${name}" is deleted.`}
           />
         </form>
       ) : null}

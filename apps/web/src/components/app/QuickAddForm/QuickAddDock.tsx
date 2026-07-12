@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, type RefObject } from "react";
-import { Camera, Mic, Square, Upload } from "lucide-react";
+import { Camera, Mic, Square, Upload, UserPlus } from "lucide-react";
 import { GlassSurface } from "@/components/ui/glass-surface";
 import { Dock, type DockItemData } from "@/components/ui/dock";
 import { PhotoCropper } from "../PhotoCropper";
@@ -19,10 +19,14 @@ export function QuickAddDock({
   formAction,
   onVoiceStart,
   pasteTextareaRef,
+  captureOpen = false,
+  onCaptureToggle,
 }: {
   formAction: (formData: FormData) => void;
   onVoiceStart: () => void;
   pasteTextareaRef: RefObject<HTMLTextAreaElement | null>;
+  captureOpen?: boolean;
+  onCaptureToggle?: () => void;
 }) {
   const [showCamera, setShowCamera] = useState(false);
   const [photoToCrop, setPhotoToCrop] = useState<File | null>(null);
@@ -62,6 +66,7 @@ export function QuickAddDock({
       : []),
     { icon: <Camera className="size-4" />, label: "Camera", onClick: () => setShowCamera(true) },
     { icon: <Upload className="size-4" />, label: "Upload", onClick: () => fileInputRef.current?.click() },
+    ...(onCaptureToggle ? [{ icon: <UserPlus className="size-4" />, label: "Capture", active: captureOpen, onClick: onCaptureToggle }] : []),
   ];
 
   return (

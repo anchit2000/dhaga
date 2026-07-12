@@ -62,7 +62,9 @@ export class AnthropicLLMClient implements LLMClient {
       output_config: { format: zodOutputFormat(options.schema) },
     });
     if (response.parsed_output == null) {
-      throw new Error("Structured output did not match the expected schema");
+      throw new Error(
+        `Structured output did not match the expected schema (stop_reason: ${response.stop_reason ?? "unknown"})`,
+      );
     }
     return {
       data: response.parsed_output,

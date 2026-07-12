@@ -51,13 +51,14 @@ export function buildFlow(
   expanded: Set<string>,
   loaded: Map<string, ClusterEntry>,
   pending: Set<string>,
+  positions?: Map<string, { x: number; y: number }>,
 ): { nodes: BrowserFlowNode[]; edges: Edge[] } {
   const nodes: BrowserFlowNode[] = [];
   const loadedNodeIds = new Set<string>(clusters.map((cluster) => cluster.key));
   const edgesById = new Map<string, GraphViewEdge>();
 
   clusters.forEach((cluster, index) => {
-    const center = clusterPosition(index);
+    const center = positions?.get(cluster.key) ?? clusterPosition(index);
     nodes.push({
       id: cluster.key,
       type: "company",

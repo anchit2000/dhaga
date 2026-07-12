@@ -12,6 +12,9 @@ export const GRAPH_FOCUS_ZOOM = 1.15;
 export const GRAPH_MIN_ZOOM = 0.04;
 export const GRAPH_MAX_ZOOM = 12;
 export const GRAPH_CAMERA_DURATION_MS = 450;
+export const GRAPH_VIEWPORT_MARGIN = 700;
+export const GRAPH_INITIAL_VIEW_RADIUS = 1_200;
+export const GRAPH_DIRECTION_PAN_RATIO = 0.8;
 export const GRAPH_TARGET_SEARCH_DEBOUNCE_MS = 300;
 export const GRAPH_TARGET_RESULTS_DISMISS_MS = 150;
 

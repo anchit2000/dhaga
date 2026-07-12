@@ -65,7 +65,10 @@ export async function fetchClusterMembers(
   }));
 
   const edgeContextIds = (opts.loadedIds ?? []).slice(-GRAPH_EDGE_CONTEXT_CONTACT_CAP);
-  const candidateIds = [...new Set([...pageRows.map((row) => row.id), ...edgeContextIds])];
+  const companyIds = dimension === "company" ? [key] : [];
+  const candidateIds = [
+    ...new Set([...pageRows.map((row) => row.id), ...edgeContextIds, ...companyIds]),
+  ];
   const edgeRows = candidateIds.length
     ? await db
         .select()
@@ -80,6 +83,16 @@ export async function fetchClusterMembers(
     target: edge.dstId,
     label: edge.predicate.replaceAll("_", " "),
   }));
+  if (dimension === "company") {
+    for (const node of nodes) {
+      viewEdges.push({
+        id: `company-membership:${key}:${node.id}`,
+        source: key,
+        target: node.id,
+        label: "works at",
+      });
+    }
+  }
 
   return { nodes, edges: viewEdges, totalCount, truncated };
 }

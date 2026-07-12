@@ -28,6 +28,11 @@ const DUMMY_NAME = "Dummy Load Test";
 const DUMMY_PASSWORD = "LoadTest-Dummy-2026!";
 
 const EDGE_PREDICATES = ["knows", "introduced_by", "worked_with"];
+const INDUSTRIES = ["SaaS", "Fintech", "Healthcare", "Manufacturing", "Logistics", "Consumer", "Climate"];
+const CITIES = ["Bengaluru", "Mumbai", "Delhi", "Hyderabad", "Pune", "Chennai", "Singapore", "London"];
+const ROLES = ["Founder & CEO", "VP Sales", "Head of Partnerships", "Engineering Director", "Procurement Lead", "Investor", "Advisor"];
+const FIRST_NAMES = ["Aarav", "Aditi", "Arjun", "Diya", "Ishaan", "Kavya", "Meera", "Neel", "Priya", "Rohan", "Sara", "Vikram"];
+const LAST_NAMES = ["Sharma", "Mehta", "Rao", "Kapoor", "Iyer", "Singh", "Patel", "Menon", "Gupta", "Joshi"];
 
 function parseArgs(argv) {
   const command = argv[2];
@@ -93,52 +98,61 @@ async function createDummy(client, contactCount) {
   // app.current_user_id to match user_id on every row this session writes.
   await client.query("SELECT set_config('app.current_user_id', $1, false)", [DUMMY_USER_ID]);
 
-  const companyCount = Math.max(1, Math.round(contactCount / 15));
+  const companyCount = Math.max(1, Math.round(contactCount / 12));
   const companyIds = Array.from({ length: companyCount }, () => randomUUID());
-  const companyRows = companyIds.map((id, i) => [
-    id,
-    `Dummy Co ${String(i + 1).padStart(3, "0")}`,
-    DUMMY_USER_ID,
-  ]);
+  const companyRows = companyIds.map((id, i) => {
+    const industry = INDUSTRIES[i % INDUSTRIES.length];
+    const city = CITIES[i % CITIES.length];
+    return [id, `${city} ${industry} ${String(i + 1).padStart(3, "0")}`, `network-${i + 1}.example`, industry, DUMMY_USER_ID];
+  });
   for (const batch of chunk(companyRows, 500)) {
     const { sql, params } = buildValuesClause(batch);
     await client.query(
-      `INSERT INTO companies (id, name, user_id) VALUES ${sql}`,
+      `INSERT INTO companies (id, name, domain, sector, user_id) VALUES ${sql}`,
       params,
     );
   }
   console.log(`Created ${companyRows.length} dummy companies.`);
 
   const contactIds = Array.from({ length: contactCount }, () => randomUUID());
-  const contactRows = contactIds.map((id, i) => [
-    id,
-    `Dummy Contact ${String(i + 1).padStart(5, "0")}`,
-    "Load Test Role",
-    companyIds[i % companyIds.length],
-    "import",
-    DUMMY_USER_ID,
-  ]);
+  const contactRows = contactIds.map((id, i) => {
+    const companyIndex = i % companyIds.length;
+    const role = ROLES[Math.floor(i / companyIds.length) % ROLES.length];
+    const industry = INDUSTRIES[companyIndex % INDUSTRIES.length];
+    return [
+      id,
+      `${FIRST_NAMES[i % FIRST_NAMES.length]} ${LAST_NAMES[Math.floor(i / FIRST_NAMES.length) % LAST_NAMES.length]}`,
+      role,
+      companyIds[companyIndex],
+      CITIES[companyIndex % CITIES.length],
+      JSON.stringify([industry.toLowerCase(), role.toLowerCase().replaceAll(" ", "-")]),
+      "import",
+      DUMMY_USER_ID,
+    ];
+  });
   for (const batch of chunk(contactRows, 500)) {
     const { sql, params } = buildValuesClause(batch);
     await client.query(
       `INSERT INTO contacts
-         (id, name, title, company_id, emails, phones, links, tags, source, watched_for_signals, user_id)
-       SELECT v.id, v.name, v.title, v.company_id, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb,
+         (id, name, title, company_id, emails, phones, links, location, tags, source, watched_for_signals, user_id)
+       SELECT v.id, v.name, v.title, v.company_id, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, v.location, v.tags::jsonb,
               v.source, false, v.user_id
-       FROM (VALUES ${sql}) AS v(id, name, title, company_id, source, user_id)`,
+       FROM (VALUES ${sql}) AS v(id, name, title, company_id, location, tags, source, user_id)`,
       params,
     );
   }
   console.log(`Created ${contactRows.length} dummy contacts.`);
 
-  const edgeCount = Math.floor(contactCount / 3);
   const edgeRows = [];
-  for (let i = 0; i < edgeCount; i++) {
-    const a = contactIds[Math.floor(Math.random() * contactIds.length)];
-    let b = contactIds[Math.floor(Math.random() * contactIds.length)];
-    if (a === b) continue;
-    const predicate = EDGE_PREDICATES[i % EDGE_PREDICATES.length];
-    edgeRows.push([randomUUID(), "contact", a, predicate, "contact", b, DUMMY_USER_ID]);
+  for (let i = companyCount; i < contactIds.length; i++) {
+    edgeRows.push([randomUUID(), "contact", contactIds[i - companyCount], "worked_with", "contact", contactIds[i], DUMMY_USER_ID]);
+  }
+  for (let i = 0; i < contactIds.length - 1; i += 5) {
+    edgeRows.push([randomUUID(), "contact", contactIds[i], EDGE_PREDICATES[i % EDGE_PREDICATES.length], "contact", contactIds[i + 1], DUMMY_USER_ID]);
+  }
+  for (let i = 0; i < companyIds.length - 1; i++) {
+    const predicates = ["customer_of", "partner_of", "invested_in", "supplies_to"];
+    edgeRows.push([randomUUID(), "company", companyIds[i], predicates[i % predicates.length], "company", companyIds[i + 1], DUMMY_USER_ID]);
   }
   for (const batch of chunk(edgeRows, 500)) {
     const { sql, params } = buildValuesClause(batch);

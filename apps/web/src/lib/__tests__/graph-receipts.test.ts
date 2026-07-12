@@ -93,6 +93,19 @@ describe("graph receipts and cascades", () => {
     expect(await listFacts(id)).toHaveLength(0);
   });
 
+  it("draws company membership from the authoritative company_id relation", async () => {
+    const id = await createContact({ ...contactInput, name: "Visible Member" }, "manual");
+    const companyId = await findOrCreateCompany("Freightline");
+    const cluster = await fetchClusterMembers("company", companyId);
+
+    expect(cluster.edges).toContainEqual({
+      id: `company-membership:${companyId}:${id}`,
+      source: companyId,
+      target: id,
+      label: "works at",
+    });
+  });
+
   it("deleting a note removes its embedding rows too — no caller can leave orphans", async () => {
     const id = await createContact({ ...contactInput, name: "Embedded Person" }, "manual");
     const noteId = await addNote(id, "text", "a note worth indexing");

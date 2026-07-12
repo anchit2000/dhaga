@@ -30,6 +30,10 @@ export function renderResults(
           { credentials: "include" },
         );
         if (!response.ok) return resolve();
+        // A faster later keystroke's response can land before this one — only
+        // render if this call's query still matches what's in the box, or a
+        // slower, now-stale query could overwrite fresher results on screen.
+        if (attachElements.search.value !== query) return resolve();
         const body = (await response.json()) as { contacts: ContactHit[] };
         attachElements.results.replaceChildren(
           ...body.contacts.map((hit) => {

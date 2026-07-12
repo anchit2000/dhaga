@@ -73,7 +73,8 @@ extension, Telegram capture, sessions, reminders) and real multi-user
 accounts. Not yet done: mobile app, a verified `docker compose up` (the
 `Dockerfile` and `compose.yml` exist but haven't been run yet), and a live-tested
 Stripe billing flow for Dhaga Cloud. See [checklist.md](docs/checklist.md) for the
-exact feature-by-feature status and [BRD.md](docs/BRD.md) for the roadmap.
+exact feature-by-feature status, [ROADMAP.md](docs/ROADMAP.md) for what's shipped
+and what's next, and [BRD.md](docs/BRD.md) for the full product requirements.
 
 ## License
 

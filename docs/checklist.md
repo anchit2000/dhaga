@@ -195,7 +195,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [ ] Free tier caps live; Pro (lifetime $79 first-500 / $8 mo) checkout — Stripe Checkout + webhook built (§19); real Stripe Product/Price setup + a live test-mode purchase still needed
 - [x] Self-host docs — [SELF_HOSTING.md](SELF_HOSTING.md) (no `packages/ee` needed)
 - [ ] `docker compose up` — `Dockerfile` + `compose.yml` already exist at repo root (`0c774da`, single-stage Node 22 web image + pgvector/pgvector:pg17 db service with healthchecks); looks complete on read-through but has not actually been run end-to-end (no local Docker available as of 2026-07-07)
-- [ ] Public roadmap + good-first-issues — `docs/ROADMAP.md` written 2026-07-07 (needs linking from README to be truly "public"); good-first-issue candidates drafted but intentionally not posted as real GitHub issues yet (that's a public/outward action for the owner to approve, see `docs/notes-2026-07-07.md`)
+- [ ] Public roadmap + good-first-issues — `docs/ROADMAP.md` written 2026-07-07, now linked from `README.md`'s Status section (2026-07-12); good-first-issue candidates drafted but intentionally not posted as real GitHub issues yet (that's a public/outward action for the owner to approve, see `docs/notes-2026-07-07.md`)
 - [ ] Replace randomuser.me landing portraits with licensed photos before paid marketing
 
 ## 19. SaaS platform — accounts, multi-tenancy, billing, admin (Dhaga Cloud)

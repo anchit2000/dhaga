@@ -50,18 +50,20 @@ export function LoginForm({ socialProviders }: LoginFormProps) {
       email,
       password: String(formData.get("password") ?? ""),
     });
-    setPending(false);
     if (signInError) {
+      setPending(false);
       setError(signInError.message ?? "Wrong email or password.");
       return;
     }
     // The twoFactor plugin adds this at runtime via a response hook — not
     // part of the statically inferred sign-in response type.
     if (data && "twoFactorRedirect" in data && data.twoFactorRedirect) {
+      setPending(false);
       setNeedsTwoFactor(true);
       return;
     }
-    router.push("/app/people");
+    router.replace("/app/people");
+    router.refresh();
   }
 
   if (needsTwoFactor) return <TwoFactorStep />;
@@ -118,7 +120,9 @@ export function LoginForm({ socialProviders }: LoginFormProps) {
         ) : null}
         <Button type="submit" disabled={pending} className="w-full">
           {pending ? <Loader2 className="size-4 animate-spin" /> : null}
-          {magicLinkMode ? "Email me a sign-in link" : "Sign in"}
+          {pending
+            ? magicLinkMode ? "Sending link…" : "Signing in…"
+            : magicLinkMode ? "Email me a sign-in link" : "Sign in"}
         </Button>
         <button
           type="button"

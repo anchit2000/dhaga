@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { CircleUserRound } from "lucide-react";
+import { CircleUserRound, Loader2 } from "lucide-react";
 import { authClient } from "@/lib/auth/client";
 import { ThreadMark } from "@/components/brand/ThreadMark";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SearchPalette } from "@/components/app/search/SearchPalette";
+import { useNavigationFeedback } from "@/components/app/NavigationFeedback";
 import { cn } from "@/lib/utils";
 import { APP_NAV_LINKS } from "@/utils/constants/app";
 
@@ -23,6 +24,7 @@ export function AppNav({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
   const [signingOut, setSigningOut] = useState(false);
+  const { pendingHref } = useNavigationFeedback();
 
   return (
     <header className="sticky top-0 z-40 border-b border-seam bg-ink/90 backdrop-blur">
@@ -40,17 +42,24 @@ export function AppNav({ isAdmin }: { isAdmin: boolean }) {
               link.href === "/app"
                 ? pathname === "/app"
                 : pathname.startsWith(link.href);
+            const pending = link.href === "/app"
+              ? pendingHref === "/app"
+              : pendingHref?.startsWith(link.href);
             return (
               <Link
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "whitespace-nowrap rounded-full px-3 py-1.5 text-sm transition-colors",
+                  "flex whitespace-nowrap rounded-full px-3 py-1.5 text-sm transition-colors",
+                  pending ? "pointer-events-none opacity-70" : null,
                   active
                     ? "bg-amber/15 font-medium text-amber"
                     : "text-fog hover:text-paper",
                 )}
               >
+                {pending ? (
+                  <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                ) : null}
                 {link.label}
               </Link>
             );
@@ -87,9 +96,17 @@ export function AppNav({ isAdmin }: { isAdmin: boolean }) {
               onClick={() => {
                 if (signingOut) return;
                 setSigningOut(true);
-                void authClient.signOut().then(() => router.push("/login"));
+                void authClient.signOut().then(({ error }) => {
+                  if (error) {
+                    setSigningOut(false);
+                    return;
+                  }
+                  router.replace("/login");
+                  router.refresh();
+                });
               }}
             >
+              {signingOut ? <Loader2 className="size-4 animate-spin" /> : null}
               {signingOut ? "Signing out…" : "Sign out"}
             </DropdownMenuItem>
           </DropdownMenuContent>

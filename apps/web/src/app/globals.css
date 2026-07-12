@@ -243,3 +243,51 @@ html {
     box-shadow: 0 0 46px -8px rgba(226, 164, 76, 0.65);
   }
 }
+
+@keyframes dhaga-stitch-travel {
+  0% {
+    transform: translateX(-0.7rem) rotate(35deg);
+  }
+  50% {
+    transform: translateX(0.7rem) rotate(35deg);
+  }
+  100% {
+    transform: translateX(-0.7rem) rotate(35deg);
+  }
+}
+
+.dhaga-stitch {
+  position: relative;
+  display: inline-block;
+  width: 2.75rem;
+  height: 0.75rem;
+  overflow: hidden;
+}
+
+.dhaga-stitch::before {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  border-top: 1px dashed rgba(226, 164, 76, 0.45);
+  content: "";
+}
+
+.dhaga-stitch > span {
+  position: absolute;
+  top: 0.1rem;
+  left: 50%;
+  width: 1.35rem;
+  height: 0.16rem;
+  border-radius: 999px;
+  background: #e2a44c;
+  box-shadow: 0 0 0.6rem rgba(226, 164, 76, 0.7);
+  animation: dhaga-stitch-travel 1.15s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dhaga-stitch > span {
+    animation: none;
+    transform: translateX(-50%);
+  }
+}

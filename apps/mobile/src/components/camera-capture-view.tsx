@@ -1,6 +1,6 @@
 import { forwardRef, useImperativeHandle, useRef } from "react";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { matchLinkedInProfileUrl } from "@dhaga/core/src/capture/linkedin-qr";
 import { CAPTURE_QUALITY, COLORS } from "@/utils/constants";
@@ -40,13 +40,20 @@ export const CameraCaptureView = forwardRef<CameraCaptureHandle, CameraCaptureVi
     if (!permission) return <View style={styles.screen} />;
 
     if (!permission.granted) {
+      // Once the OS stops offering the native prompt (canAskAgain: false), calling
+      // requestPermission() again just silently resolves to the same denied state —
+      // send the user to Settings instead of leaving the button looking dead.
+      const canPromptAgain = permission.canAskAgain;
       return (
         <View style={[styles.screen, styles.centered]}>
           <Text style={styles.permissionText}>
             Dhaga scans business cards with the camera. Nothing is captured until you tap Camera.
           </Text>
-          <Pressable style={styles.grantButton} onPress={() => void requestPermission()}>
-            <Text style={styles.grantLabel}>Allow camera access</Text>
+          <Pressable
+            style={styles.grantButton}
+            onPress={() => void (canPromptAgain ? requestPermission() : Linking.openSettings())}
+          >
+            <Text style={styles.grantLabel}>{canPromptAgain ? "Allow camera access" : "Open Settings"}</Text>
           </Pressable>
         </View>
       );

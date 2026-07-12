@@ -1,9 +1,23 @@
 "use client";
 
-import { useMemo, useReducer } from "react";
+import { useMemo, useReducer, useRef } from "react";
 import { toast } from "sonner";
-import { Background, ReactFlow, type NodeMouseHandler } from "@xyflow/react";
+import {
+  Background,
+  Controls,
+  ReactFlow,
+  type Edge,
+  type NodeMouseHandler,
+  type ReactFlowInstance,
+} from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import {
+  GRAPH_CAMERA_DURATION_MS,
+  GRAPH_FOCUS_ZOOM,
+  GRAPH_INITIAL_ZOOM,
+  GRAPH_MAX_ZOOM,
+  GRAPH_MIN_ZOOM,
+} from "@/utils/constants/graph";
 import { CompanyGraphNode, OverflowGraphNode, PersonGraphNode, type BrowserFlowNode } from "./nodes";
 import { DimensionToggle } from "./DimensionToggle";
 import { buildFlow } from "./layout";
@@ -21,6 +35,7 @@ interface ClusterMembersResponse {
 
 export function GraphBrowser({ initialClusters }: { initialClusters: Cluster[] }) {
   const [state, dispatch] = useReducer(graphReducer, initialClusters, initialGraphState);
+  const flowRef = useRef<ReactFlowInstance<BrowserFlowNode, Edge> | null>(null);
 
   async function switchDimension(dimension: ClusterDimension): Promise<void> {
     if (dimension === state.dimension || state.clustersLoading) return;
@@ -71,14 +86,20 @@ export function GraphBrowser({ initialClusters }: { initialClusters: Cluster[] }
     }
   }
 
-  const onNodeClick: NodeMouseHandler<BrowserFlowNode> = (_event, node) => {
-    if (node.type === "company") void expandCluster(node.id);
-  };
-
   const { nodes, edges } = useMemo(
     () => buildFlow(state.clusters, state.expanded, state.loaded, state.pending),
     [state.clusters, state.expanded, state.loaded, state.pending],
   );
+
+
+  const onNodeClick: NodeMouseHandler<BrowserFlowNode> = (_event, node) => {
+    if (node.type !== "company") return;
+    void flowRef.current?.setCenter(node.position.x, node.position.y, {
+      zoom: GRAPH_FOCUS_ZOOM,
+      duration: GRAPH_CAMERA_DURATION_MS,
+    });
+    void expandCluster(node.id);
+  };
 
   return (
     <div className="space-y-3">
@@ -93,15 +114,28 @@ export function GraphBrowser({ initialClusters }: { initialClusters: Cluster[] }
             edges={edges}
             nodeTypes={nodeTypes}
             onNodeClick={onNodeClick}
-            fitView
-            fitViewOptions={{ padding: 0.2 }}
-            minZoom={0.2}
-            maxZoom={2}
+            onInit={(instance) => {
+              flowRef.current = instance;
+              const home = nodes[0];
+              if (home) {
+                void instance.setCenter(home.position.x, home.position.y, {
+                  zoom: GRAPH_INITIAL_ZOOM,
+                });
+              }
+            }}
+            minZoom={GRAPH_MIN_ZOOM}
+            maxZoom={GRAPH_MAX_ZOOM}
+            panOnScroll
+            zoomOnDoubleClick
+            onlyRenderVisibleElements
+            colorMode="dark"
             proOptions={{ hideAttribution: true }}
             nodesConnectable={false}
             deleteKeyCode={null}
           >
             <Background color="#2b241b" gap={28} />
+            <Controls showFitView={false} showInteractive={false} />
+
           </ReactFlow>
         )}
       </div>

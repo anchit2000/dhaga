@@ -1,5 +1,16 @@
 /** Company drill-down cap on /app/graph — beyond this, show "+N more" and point at search. */
 export const GRAPH_CLUSTER_CONTACT_CAP = 150;
 
+/** Camera and layout values for the progressively explored graph world. */
+export const GRAPH_CLUSTER_SPACING = 900;
+export const GRAPH_LOCAL_RING_RADIUS = 120;
+export const GRAPH_CONTACTS_PER_SHELL = 12;
+export const GRAPH_SHELL_SPACING = 90;
+export const GRAPH_INITIAL_ZOOM = 1;
+export const GRAPH_FOCUS_ZOOM = 1.15;
+export const GRAPH_MIN_ZOOM = 0.04;
+export const GRAPH_MAX_ZOOM = 12;
+export const GRAPH_CAMERA_DURATION_MS = 450;
+
 /** Warm-path BFS hop cap — backstop only; contacts are always terminal past hop 0 (see warm-paths.ts). */
 export const WARM_PATH_MAX_HOPS = 5;

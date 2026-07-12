@@ -1,17 +1,28 @@
 import type { Edge } from "@xyflow/react";
+import {
+  GRAPH_CLUSTER_SPACING,
+  GRAPH_CONTACTS_PER_SHELL,
+  GRAPH_LOCAL_RING_RADIUS,
+  GRAPH_SHELL_SPACING,
+} from "@/utils/constants/graph";
 import type { Cluster, GraphViewEdge } from "@/lib/repo/graph-data";
 import type { ClusterEntry } from "./graph-state";
 import type { BrowserFlowNode } from "./nodes";
 
-const CLUSTER_RING_RADIUS = 170;
-const LOCAL_RING_RADIUS = 90;
-const CONTACTS_PER_SHELL = 14;
-const SHELL_SPACING = 70;
+const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 
 /** Deterministic point on a ring — shared by the cluster ring and each
  *  expanded cluster's local fan-out (same primitive, different center). */
 export function ring(index: number, total: number, radius: number): { x: number; y: number } {
   const angle = (index / Math.max(total, 1)) * 2 * Math.PI - Math.PI / 2;
+  return { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius };
+}
+
+/** Deterministic unbounded position; the largest clusters remain near home. */
+export function clusterPosition(index: number): { x: number; y: number } {
+  if (index === 0) return { x: 0, y: 0 };
+  const radius = GRAPH_CLUSTER_SPACING * Math.sqrt(index);
+  const angle = index * GOLDEN_ANGLE;
   return { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius };
 }
 
@@ -46,7 +57,7 @@ export function buildFlow(
   const edgesById = new Map<string, GraphViewEdge>();
 
   clusters.forEach((cluster, index) => {
-    const center = ring(index, clusters.length, clusters.length > 1 ? CLUSTER_RING_RADIUS : 0);
+    const center = clusterPosition(index);
     nodes.push({
       id: cluster.key,
       type: "company",
@@ -71,10 +82,17 @@ export function buildFlow(
       // Non-exclusive dimensions (tag) can hand back a contact another
       // expanded cluster already placed — first cluster to claim it wins.
       if (loadedNodeIds.has(contact.id)) continue;
-      const shell = Math.floor(placed / CONTACTS_PER_SHELL);
-      const shellIndex = placed % CONTACTS_PER_SHELL;
-      const shellTotal = Math.min(CONTACTS_PER_SHELL, entry.contacts.length - shell * CONTACTS_PER_SHELL);
-      const local = ring(shellIndex, shellTotal, LOCAL_RING_RADIUS + shell * SHELL_SPACING);
+      const shell = Math.floor(placed / GRAPH_CONTACTS_PER_SHELL);
+      const shellIndex = placed % GRAPH_CONTACTS_PER_SHELL;
+      const shellTotal = Math.min(
+        GRAPH_CONTACTS_PER_SHELL,
+        entry.contacts.length - shell * GRAPH_CONTACTS_PER_SHELL,
+      );
+      const local = ring(
+        shellIndex,
+        shellTotal,
+        GRAPH_LOCAL_RING_RADIUS + shell * GRAPH_SHELL_SPACING,
+      );
       nodes.push({
         id: contact.id,
         type: "person",
@@ -87,9 +105,13 @@ export function buildFlow(
     }
 
     if (entry.overflowCount > 0) {
-      const shell = Math.floor(placed / CONTACTS_PER_SHELL);
-      const shellIndex = placed % CONTACTS_PER_SHELL;
-      const local = ring(shellIndex, CONTACTS_PER_SHELL, LOCAL_RING_RADIUS + shell * SHELL_SPACING);
+      const shell = Math.floor(placed / GRAPH_CONTACTS_PER_SHELL);
+      const shellIndex = placed % GRAPH_CONTACTS_PER_SHELL;
+      const local = ring(
+        shellIndex,
+        GRAPH_CONTACTS_PER_SHELL,
+        GRAPH_LOCAL_RING_RADIUS + shell * GRAPH_SHELL_SPACING,
+      );
       nodes.push({
         id: `${cluster.key}__overflow`,
         type: "overflow",

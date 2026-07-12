@@ -31,7 +31,7 @@ export function AskPanel({
             className="h-9 shrink-0 px-4 text-sm"
           >
             {pending ? <Loader2 className="size-4 animate-spin" /> : null}
-            Ask AI ✦
+            Ask Dhaga ✦
           </Button>
         </div>
       ) : (

@@ -15,8 +15,8 @@ export default async function GraphPage() {
       <div>
         <h1 className="font-display text-2xl tracking-tight">Graph</h1>
         <p className="mt-1 text-sm text-fog">
-          Your whole network, by company, tag, or location — click a cluster to
-          see who's in it, click a person to open them.
+          Navigate by company, tag, or location — select a cluster to move there
+          and reveal its neighbourhood.
         </p>
       </div>
       {clusters.length === 0 ? (

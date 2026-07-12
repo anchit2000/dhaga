@@ -24,7 +24,7 @@ type SearchMode = "search" | "ask";
 /**
  * Global search: a nav trigger + Cmd/Ctrl+K open a centered palette with two
  * tabs. "Search" behaves like a real search bar — instant, debounced, local
- * keyword + semantic matching, free. "Ask AI" is the agentic Sonnet pipeline
+ * keyword + semantic matching, free. "Ask Dhaga" is the agentic Sonnet pipeline
  * (query understanding → retrieval → reasoned answer with receipts) — it
  * never auto-fires on keystrokes since it's a metered AI action; only an
  * explicit submit (Enter or the button) runs it.
@@ -125,7 +125,7 @@ export function SearchPalette() {
                 </TabsTrigger>
                 <TabsTrigger value="ask">
                   <Sparkles className="size-3.5" />
-                  Ask AI
+                  Ask Dhaga
                 </TabsTrigger>
               </TabsList>
             </Tabs>

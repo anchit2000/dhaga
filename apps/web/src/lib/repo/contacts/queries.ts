@@ -7,6 +7,7 @@ export interface ContactListItem {
   name: string;
   title: string | null;
   companyName: string | null;
+  tags: string[];
   createdAt: Date;
 }
 
@@ -39,6 +40,7 @@ export async function listContacts(
       name: contacts.name,
       title: contacts.title,
       companyName: companies.name,
+      tags: contacts.tags,
       createdAt: contacts.createdAt,
     })
     .from(contacts)

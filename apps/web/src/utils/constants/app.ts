@@ -12,8 +12,9 @@ export const APP_NAV_LINKS = [
   { href: "/app/sessions", label: "Sessions" },
   { href: "/app/graph", label: "Graph" },
   { href: "/app/quick-add", label: "Quick add" },
-  { href: "/app/import", label: "Import" },
 ] as const;
+
+export const HOME_PREVIEW_LIMIT = 5;
 
 /** Free-tier cloud AI action cap per calendar month (BRD §8.3). */
 export const FREE_TIER_AI_ACTIONS_PER_MONTH = 25;

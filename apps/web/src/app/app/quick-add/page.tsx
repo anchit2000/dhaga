@@ -2,19 +2,11 @@ import { requireUserIdForPage } from "@/lib/auth/guard";
 import { aiActionsUsedThisMonth, monthlyAiCap } from "@/lib/ai/metering";
 import { listSessions } from "@/lib/repo/sessions";
 import { shouldStoreCardPhotos } from "@/lib/repo/settings";
+import { activeSessionId } from "@/lib/active-session";
 import { QuickAddForm } from "@/components/app/QuickAddForm";
 import { hasLLM } from "@dhaga/core";
 
 export const metadata = { title: "Quick add — Dhaga" };
-
-/** M2's active-session default: preselect a session started today. */
-function activeSessionId(
-  sessions: { id: string; startedAt: Date }[],
-): string | undefined {
-  const today = new Date().toDateString();
-  return sessions.find((session) => session.startedAt.toDateString() === today)
-    ?.id;
-}
 
 export default async function QuickAddPage() {
   await requireUserIdForPage();

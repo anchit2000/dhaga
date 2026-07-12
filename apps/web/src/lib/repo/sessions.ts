@@ -81,23 +81,36 @@ export async function renameSession(id: string, name: string): Promise<void> {
   await db.update(sessions).set({ name: name.trim() }).where(eq(sessions.id, id));
 }
 
-/** Move everyone from one session into another, then drop the empty one. */
+/**
+ * Move everyone from one session into another, then drop the empty one.
+ *
+ * Wrapped in one transaction: every statement here is a pure DB read/write
+ * (no outbound network calls), so holding a connection open across all of
+ * them is safe. Without this, a failure partway through — e.g. after some
+ * members are copied into intoId but before fromId's own sessionContacts
+ * rows and the fromId session itself are deleted — leaves a half-merged
+ * state: some contacts belong to both sessions, and the "merged away"
+ * session still exists with some of its original members. All-or-nothing
+ * closes that gap.
+ */
 export async function mergeSessions(
   fromId: string,
   intoId: string,
 ): Promise<void> {
   if (fromId === intoId) return;
   const db = await getDb();
-  const members = await db
-    .select({ contactId: sessionContacts.contactId, scannedAt: sessionContacts.scannedAt })
-    .from(sessionContacts)
-    .where(eq(sessionContacts.sessionId, fromId));
-  for (const member of members) {
-    await db
-      .insert(sessionContacts)
-      .values({ sessionId: intoId, contactId: member.contactId, scannedAt: member.scannedAt })
-      .onConflictDoNothing();
-  }
-  await db.delete(sessionContacts).where(eq(sessionContacts.sessionId, fromId));
-  await db.delete(sessions).where(eq(sessions.id, fromId));
+  await db.transaction(async (tx) => {
+    const members = await tx
+      .select({ contactId: sessionContacts.contactId, scannedAt: sessionContacts.scannedAt })
+      .from(sessionContacts)
+      .where(eq(sessionContacts.sessionId, fromId));
+    for (const member of members) {
+      await tx
+        .insert(sessionContacts)
+        .values({ sessionId: intoId, contactId: member.contactId, scannedAt: member.scannedAt })
+        .onConflictDoNothing();
+    }
+    await tx.delete(sessionContacts).where(eq(sessionContacts.sessionId, fromId));
+    await tx.delete(sessions).where(eq(sessions.id, fromId));
+  });
 }

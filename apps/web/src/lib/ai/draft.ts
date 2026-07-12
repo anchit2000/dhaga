@@ -20,7 +20,7 @@ export async function generateFollowUpDraft(
   contactId: string,
 ): Promise<DraftResult> {
   if (!hasLLM()) {
-    return { error: "Set ANTHROPIC_API_KEY to generate follow-up drafts." };
+    return { error: "Configure an LLM provider to generate follow-up drafts." };
   }
   const detail = await getContact(contactId);
   if (!detail) return { error: "Contact not found." };

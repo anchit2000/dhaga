@@ -34,7 +34,7 @@ export async function extractAndApplyNote(
       factCount: 0,
       followUpCount: 0,
       notice:
-        "Note saved. Set ANTHROPIC_API_KEY to extract facts from notes automatically.",
+        "Note saved. Configure an LLM provider to extract facts automatically.",
     };
   }
   let extraction: NoteExtraction;

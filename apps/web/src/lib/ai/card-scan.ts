@@ -26,7 +26,7 @@ export async function scanCardImage(
   image: LLMImage,
 ): Promise<CardScanResult> {
   if (!hasLLM()) {
-    return { error: "Card scanning needs cloud AI — set ANTHROPIC_API_KEY." };
+    return { error: "Card scanning needs a configured cloud LLM provider." };
   }
   try {
     await assertAiBudget(userId);

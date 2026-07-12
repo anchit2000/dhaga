@@ -56,7 +56,7 @@ export async function answerSearchQuery(
   query: string,
 ): Promise<AiAnswerResult> {
   if (!hasLLM()) {
-    return { notice: "Set ANTHROPIC_API_KEY to get AI answers over your graph." };
+    return { notice: "Configure an LLM provider to get AI answers over your graph." };
   }
   try {
     await assertAiBudget(userId);

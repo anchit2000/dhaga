@@ -1,4 +1,4 @@
-import { getBatchLLMClient, hasLLM, hasSearch } from "@dhaga/core";
+import { getBatchLLMClient, hasBatchLLM, hasSearch } from "@dhaga/core";
 import type { SignalDetectionSummary } from "@dhaga/core/src/api/jobs";
 import { getPendingSignalBatchId } from "@/lib/repo/settings";
 import { processPendingBatch } from "./process-pending-batch";
@@ -35,7 +35,7 @@ import { submitNewBatch } from "./submit-new-batch";
  */
 export async function runSignalDetection(): Promise<SignalDetectionSummary> {
   if (!hasSearch()) return { scanned: 0, created: 0, skipped: "no_search" };
-  if (!hasLLM()) return { scanned: 0, created: 0, skipped: "no_llm" };
+  if (!hasBatchLLM()) return { scanned: 0, created: 0, skipped: "no_llm" };
 
   const batchClient = getBatchLLMClient();
   const pendingBatchId = await getPendingSignalBatchId();

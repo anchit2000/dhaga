@@ -28,6 +28,7 @@ export {
 } from "./schemas/signal";
 export {
   AnthropicLLMClient,
+  OpenAILLMClient,
   BRIEF_SYSTEM,
   CARD_SCAN_PROMPT,
   CARD_SCAN_SYSTEM,
@@ -49,6 +50,7 @@ export {
   type EnrichmentSubject,
   getBatchLLMClient,
   getLLMClient,
+  hasBatchLLM,
   hasLLM,
   type BatchExtractItem,
   type BatchExtractResult,
@@ -61,6 +63,7 @@ export {
   type LLMResult,
   type LLMUsage,
   type ModelTier,
+  type OpenAILLMClientOptions,
 } from "./llm";
 export {
   SIGNAL_DETECTION_SYSTEM,

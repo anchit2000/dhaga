@@ -21,7 +21,7 @@ export async function generateBrief(
   contactId: string,
 ): Promise<BriefResult> {
   if (!hasLLM()) {
-    return { error: "Set ANTHROPIC_API_KEY to generate briefs." };
+    return { error: "Configure an LLM provider to generate briefs." };
   }
   const detail = await getContact(contactId);
   if (!detail) return { error: "Contact not found." };

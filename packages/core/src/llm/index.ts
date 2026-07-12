@@ -1,4 +1,5 @@
 import { AnthropicLLMClient } from "./anthropic-client";
+import { OpenAILLMClient } from "./openai-client";
 import type { BatchLLMClient, LLMClient } from "./types";
 
 export type {
@@ -15,6 +16,7 @@ export type {
   ModelTier,
 } from "./types";
 export { AnthropicLLMClient } from "./anthropic-client";
+export { OpenAILLMClient, type OpenAILLMClientOptions } from "./openai-client";
 export {
   CONTACT_PARSE_SYSTEM,
   buildContactParsePrompt,
@@ -48,7 +50,13 @@ export { CARD_SCAN_SYSTEM, CARD_SCAN_PROMPT } from "./prompts/card-scan";
 
 /** True when a cloud LLM is configured; features degrade gracefully when not. */
 export function hasLLM(): boolean {
-  return Boolean(process.env.ANTHROPIC_API_KEY);
+  return getLLMProvider() === "openai"
+    ? Boolean(process.env.OPENAI_API_KEY)
+    : Boolean(process.env.ANTHROPIC_API_KEY);
+}
+
+export function hasBatchLLM(): boolean {
+  return getLLMProvider() === "anthropic" && Boolean(process.env.ANTHROPIC_API_KEY);
 }
 
 /**
@@ -56,6 +64,18 @@ export function hasLLM(): boolean {
  * local-model (Ollama) providers plug in here later without touching callers.
  */
 export function getLLMClient(): LLMClient {
+  if (getLLMProvider() === "openai") {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error("OPENAI_API_KEY is not set — cloud AI features are unavailable");
+    }
+    return new OpenAILLMClient({
+      apiKey,
+      baseURL: process.env.OPENAI_BASE_URL || undefined,
+      extractModel: process.env.OPENAI_EXTRACT_MODEL || "gpt-4.1-mini",
+      reasonModel: process.env.OPENAI_REASON_MODEL || "gpt-4.1",
+    });
+  }
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     throw new Error(
@@ -73,6 +93,9 @@ export function getLLMClient(): LLMClient {
  * wouldn't need to.
  */
 export function getBatchLLMClient(): BatchLLMClient {
+  if (getLLMProvider() !== "anthropic") {
+    throw new Error("The configured LLM provider does not support asynchronous batches");
+  }
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     throw new Error(
@@ -80,4 +103,12 @@ export function getBatchLLMClient(): BatchLLMClient {
     );
   }
   return new AnthropicLLMClient(apiKey);
+}
+
+function getLLMProvider(): "anthropic" | "openai" {
+  const provider = process.env.LLM_PROVIDER || "anthropic";
+  if (provider !== "anthropic" && provider !== "openai") {
+    throw new Error(`Unsupported LLM_PROVIDER: ${provider}`);
+  }
+  return provider;
 }

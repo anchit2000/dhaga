@@ -27,7 +27,7 @@ export async function enrichContact(
   contactId: string,
 ): Promise<EnrichResult> {
   if (!hasLLM()) {
-    return { error: "Set ANTHROPIC_API_KEY to enable enrichment." };
+    return { error: "Configure an LLM provider to enable enrichment." };
   }
   const detail = await getContact(contactId);
   if (!detail) return { error: "Contact not found." };

@@ -24,7 +24,7 @@ export async function extractContactFromText(
   userId: string,
   rawText: string,
 ): Promise<ContactExtractionResult> {
-  if (!hasLLM()) {
+  if (process.env.CONTACT_PARSE_STRATEGY === "heuristic" || !hasLLM()) {
     return {
       contact: heuristicContactParse(rawText),
       via: "heuristic",

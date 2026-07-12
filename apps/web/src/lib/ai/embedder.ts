@@ -1,7 +1,4 @@
-import {
-  pipeline,
-  type FeatureExtractionPipeline,
-} from "@huggingface/transformers";
+import type { FeatureExtractionPipeline } from "@huggingface/transformers";
 
 /**
  * Local embeddings (BRD cost layer 1: free primitive, no per-call vendor
@@ -26,13 +23,19 @@ const store = globalThis as unknown as {
 };
 
 function getExtractor(): Promise<FeatureExtractionPipeline | null> {
-  store.__dhagaEmbedder ??= pipeline("feature-extraction", MODEL, {
-    dtype: "q8",
-  }).catch(() => {
-    // Model unavailable (offline first run, unsupported platform). Cache the
-    // failure for this process; callers fall back to keyword search.
-    return null;
-  });
+  // Import lazily: this pulls in onnxruntime-node's native binary as a side
+  // effect, which must not happen unless embeddings are actually used —
+  // otherwise DHAGA_EMBEDDINGS=off can't prevent it (see Dockerfile comment
+  // re: glibc-only native deps; unsupported on Vercel serverless).
+  store.__dhagaEmbedder ??= import("@huggingface/transformers")
+    .then(({ pipeline }) =>
+      pipeline("feature-extraction", MODEL, { dtype: "q8" }),
+    )
+    .catch(() => {
+      // Model unavailable (offline first run, unsupported platform). Cache the
+      // failure for this process; callers fall back to keyword search.
+      return null;
+    });
   return store.__dhagaEmbedder;
 }
 

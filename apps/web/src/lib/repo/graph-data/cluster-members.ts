@@ -1,7 +1,10 @@
 import { and, count, eq, ilike, inArray, isNull, sql, type SQL } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { contacts, edges } from "@/lib/db/schema";
-import { GRAPH_CLUSTER_CONTACT_CAP } from "@/utils/constants/graph";
+import {
+  GRAPH_CLUSTER_CONTACT_CAP,
+  GRAPH_EDGE_CONTEXT_CONTACT_CAP,
+} from "@/utils/constants/graph";
 import {
   OTHER_TAG_KEY,
   UNASSIGNED_KEY,
@@ -28,7 +31,8 @@ function scopeFilter(dimension: ClusterDimension, key: string): SQL {
  * Level-1 "drill into a cluster" — fetches one cluster's contacts, capped
  * (GRAPH_CLUSTER_CONTACT_CAP + 1 rows so "is it truncated" is free in the
  * common case), plus edges connecting nodes already loaded on the canvas.
- * Bounded by the cap and `loadedIds.length`, never by total graph size.
+ * Bounded by the contact cap and the client's capped edge context, never by
+ * total graph size.
  */
 export async function fetchClusterMembers(
   dimension: ClusterDimension,
@@ -60,7 +64,8 @@ export async function fetchClusterMembers(
     sublabel: row.title,
   }));
 
-  const candidateIds = [...new Set([...pageRows.map((row) => row.id), ...(opts.loadedIds ?? [])])];
+  const edgeContextIds = (opts.loadedIds ?? []).slice(-GRAPH_EDGE_CONTEXT_CONTACT_CAP);
+  const candidateIds = [...new Set([...pageRows.map((row) => row.id), ...edgeContextIds])];
   const edgeRows = candidateIds.length
     ? await db
         .select()

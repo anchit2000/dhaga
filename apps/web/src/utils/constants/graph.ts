@@ -1,5 +1,6 @@
 /** Company drill-down cap on /app/graph — beyond this, show "+N more" and point at search. */
 export const GRAPH_CLUSTER_CONTACT_CAP = 150;
+export const GRAPH_EDGE_CONTEXT_CONTACT_CAP = 100;
 
 /** Camera and layout values for the progressively explored graph world. */
 export const GRAPH_CLUSTER_SPACING = 900;

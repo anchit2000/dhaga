@@ -13,6 +13,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import {
   GRAPH_CAMERA_DURATION_MS,
+  GRAPH_EDGE_CONTEXT_CONTACT_CAP,
   GRAPH_FOCUS_ZOOM,
   GRAPH_INITIAL_ZOOM,
   GRAPH_MAX_ZOOM,
@@ -62,12 +63,13 @@ export function GraphBrowser({ initialClusters }: { initialClusters: Cluster[] }
       return;
     }
     dispatch({ type: "expand-start", key });
-    const loadedIds = [
-      ...state.clusters.map((cluster) => cluster.key),
-      ...[...state.loaded.values()].flatMap((entry) => entry.contacts.map((contact) => contact.id)),
-    ];
+    const loadedIds = [...state.expanded]
+      .flatMap((clusterKey) => state.loaded.get(clusterKey)?.contacts ?? [])
+      .map((contact) => contact.id)
+      .slice(-GRAPH_EDGE_CONTEXT_CONTACT_CAP);
     try {
-      const params = new URLSearchParams({ dimension: state.dimension, key, loaded: loadedIds.join(",") });
+      const params = new URLSearchParams({ dimension: state.dimension, key });
+      if (loadedIds.length > 0) params.set("loaded", loadedIds.join(","));
       const res = await fetch(`/api/graph/cluster-members?${params}`);
       if (!res.ok) throw new Error();
       const data: ClusterMembersResponse = await res.json();
@@ -90,7 +92,6 @@ export function GraphBrowser({ initialClusters }: { initialClusters: Cluster[] }
     () => buildFlow(state.clusters, state.expanded, state.loaded, state.pending),
     [state.clusters, state.expanded, state.loaded, state.pending],
   );
-
 
   const onNodeClick: NodeMouseHandler<BrowserFlowNode> = (_event, node) => {
     if (node.type !== "company") return;
@@ -131,11 +132,11 @@ export function GraphBrowser({ initialClusters }: { initialClusters: Cluster[] }
             colorMode="dark"
             proOptions={{ hideAttribution: true }}
             nodesConnectable={false}
+            nodesDraggable={false}
             deleteKeyCode={null}
           >
             <Background color="#2b241b" gap={28} />
             <Controls showFitView={false} showInteractive={false} />
-
           </ReactFlow>
         )}
       </div>

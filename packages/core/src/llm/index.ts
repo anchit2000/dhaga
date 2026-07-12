@@ -1,7 +1,11 @@
 import { AnthropicLLMClient } from "./anthropic-client";
-import type { LLMClient } from "./types";
+import type { BatchLLMClient, LLMClient } from "./types";
 
 export type {
+  BatchExtractItem,
+  BatchExtractResult,
+  BatchLLMClient,
+  BatchResultStatus,
   CompleteOptions,
   ExtractOptions,
   LLMClient,
@@ -52,6 +56,23 @@ export function hasLLM(): boolean {
  * local-model (Ollama) providers plug in here later without touching callers.
  */
 export function getLLMClient(): LLMClient {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      "ANTHROPIC_API_KEY is not set — cloud AI features are unavailable",
+    );
+  }
+  return new AnthropicLLMClient(apiKey);
+}
+
+/**
+ * Batch-capable factory (Interface Segregation — see BatchLLMClient's doc
+ * comment in ./types): only for callers that specifically need async batch
+ * submission, e.g. the nightly signal-detection job. Anthropic is the only
+ * provider that implements it today; a future Ollama/BYO-key LLMClient
+ * wouldn't need to.
+ */
+export function getBatchLLMClient(): BatchLLMClient {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     throw new Error(

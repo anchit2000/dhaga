@@ -4,7 +4,7 @@ import { contacts } from "./contacts";
 /**
  * Proactive-intelligence signals (BRD §5.2 v1.2, §6.7): job-change and news
  * watchlist hits, both produced by the same web-search detection job (see
- * lib/jobs/detect-signals.ts). Never auto-applied to the graph — "add as
+ * lib/jobs/detect-signals/). Never auto-applied to the graph — "add as
  * note" is an explicit user action, so the receipts invariant holds.
  */
 export const signals = pgTable("signals", {

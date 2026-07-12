@@ -122,7 +122,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Every AI call logged to `ai_actions` (feature, model, tokens in/out)
 - [x] Free-tier cap enforced (25/month, `DHAGA_AI_MONTHLY_CAP` override) with clear UI message
 - [x] Prompt caching markers on stable system prompts (engages once prompts exceed the model's cacheable minimum)
-- [ ] Batch API for nightly jobs — the first nightly job now exists (`lib/jobs/detect-signals.ts`, §14) but calls Haiku synchronously per watched contact rather than through the Batch API; volume is naturally bounded by the per-plan watchlist cap today, so this is a follow-up optimization, not blocking
+- [x] Batch API for nightly jobs — `lib/jobs/detect-signals/` (§14) is now a two-phase job through Anthropic's Message Batches API (`BatchLLMClient`, `packages/core/src/llm`): each run applies the previous run's finished batch (dedup + signal insert + metering, unchanged) then submits one fresh batch for whatever's newly due, persisting the pending batch id via `settings` (`getPendingSignalBatchId`/`setPendingSignalBatchId`). Vercel Hobby's once-daily cron means a contact's signal now lands with a ~1-day lag instead of immediately — accepted tradeoff for a job that was already nightly and latency-insensitive. Typecheck/lint/tests pass (`signal-detection-batch.test.ts`); no live-API manual run
 
 ## 11. Privacy & export (M8, BRD §7.5)
 

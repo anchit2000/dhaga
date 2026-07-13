@@ -23,7 +23,7 @@ export const STORY_STEPS: StoryStep[] = [
     id: "scan",
     kicker: "Capture",
     title: "Scan anything in five seconds.",
-    body: "Card, badge, QR, or a LinkedIn page. OCR runs on your phone — the contact is structured before the handshake ends.",
+    body: "Card, badge, QR, or a LinkedIn page — one photo, read by AI in seconds. The contact is structured before the handshake ends.",
   },
   {
     id: "circles",

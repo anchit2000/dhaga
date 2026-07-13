@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono } from "next/font/google";
 import localFont from "next/font/local";
+import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
@@ -65,6 +66,7 @@ export default function RootLayout({
         className="min-h-full flex flex-col bg-ink text-paper"
       >
         {children}
+        <Analytics />
         <SpeedInsights />
       </body>
     </html>

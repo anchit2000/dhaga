@@ -41,7 +41,8 @@ jobs:
             apps/web/src/app/app/admin \
             apps/web/src/app/api/access-requests \
             apps/web/src/app/api/stripe \
-            apps/web/src/lib/actions/admin
+            apps/web/src/lib/actions/admin \
+            apps/web/src/components/app/table/AdminTables.tsx
           sed -i '/"@dhaga\/ee": "\*",/d' apps/web/package.json
           sed -i 's/\["@dhaga\/core", "@dhaga\/ee"\]/["@dhaga\/core"]/' apps/web/next.config.ts
       - run: npm install

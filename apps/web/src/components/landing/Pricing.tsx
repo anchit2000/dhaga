@@ -24,8 +24,8 @@ export function Pricing() {
       <div className="relative mx-auto max-w-6xl">
         <SectionHeading
           eyebrow="Pricing"
-          heading="Pay once, remember forever."
-          intro="No subscription required to own your own memory. The lifetime tier exists because we resent renting our contacts back, too."
+          heading="Renew once a year. Not every month."
+          intro="One annual plan, simple as that — no monthly meter running while you're not looking. The founding price locks in before public launch."
         />
         <div className="mt-12 grid items-stretch gap-6 md:grid-cols-3">
           {PRICING_PLANS.map((plan, i) => (

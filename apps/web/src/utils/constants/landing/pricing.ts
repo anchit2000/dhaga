@@ -15,14 +15,14 @@ export const PRICING_PLANS: PricingPlan[] = [
     cta: "Start free",
   },
   {
-    tier: "Lifetime",
+    tier: "Annual",
     price: "$79",
     strikePrice: "$99",
-    per: "once. That's it.",
+    per: "/year, billed annually",
     highlight: true,
     badge: "Founding price — first 500 seats",
     features: [
-      "Everything in Pro, forever",
+      "Everything in Pro, all year",
       "All future updates included",
       "Founding-member badge in the repo",
       "Locks in before public launch pricing",
@@ -68,11 +68,11 @@ export const FAQ_ITEMS: FaqItem[] = [
   {
     question: "How does the AI pricing work?",
     answer:
-      "Most of Dhaga runs free on your device — scanning, transcription, grouping, search over your graph. Cloud AI (extraction, drafts, enrichment) is metered: 25 actions/month free, unlimited on Pro and Lifetime. Power users can plug in their own API key or a local model and pay us nothing for AI.",
+      "Most of Dhaga runs free on your device — scanning, transcription, grouping, search over your graph. Cloud AI (extraction, drafts, enrichment) is metered: 25 actions/month free, unlimited on Pro and Annual. Power users can plug in their own API key or a local model and pay us nothing for AI.",
   },
   {
-    question: "Why a lifetime price?",
+    question: "Why annual instead of monthly?",
     answer:
-      "Because we also resent renting our own contacts back. Subscriptions fund the hosted sync and team features; the lifetime tier exists for people who want to pay once and own their memory. The $79 founding price is capped at 500 seats, then it goes to $99.",
+      "We'd rather sell you a year at a fair, fixed price than meter every action and surprise you with a bill after a busy conference month. Subscriptions fund the hosted sync and team features; the annual tier exists for people who'd rather make one pricing decision a year, not twelve. The $79 founding price is capped at 500 seats, then it goes to $99/yr.",
   },
 ];

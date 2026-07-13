@@ -79,7 +79,7 @@ export const COMPARISON_ROWS: ComparisonRow[] = [
   },
   {
     feature: "Price",
-    dhaga: "$79 once",
+    dhaga: "$79/yr",
     cardApps: "$6+/mo",
     personalCrms: "$10–18/mo",
     enterprise: "$2,000+/seat/yr",

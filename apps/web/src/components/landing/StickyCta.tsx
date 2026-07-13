@@ -27,8 +27,8 @@ export function StickyCta({ isSignedIn }: StickyCtaProps) {
     <div className="fixed inset-x-0 bottom-0 z-50 border-t border-seam bg-panel/95 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-3">
         <p className="text-sm text-fog">
-          <span className="font-medium text-paper">Founding lifetime — $79</span>{" "}
-          for the first 500 seats. Then $99.
+          <span className="font-medium text-paper">Founding annual — $79/yr</span>{" "}
+          for the first 500 seats. Then $99/yr.
         </p>
         <div className="flex items-center gap-3">
           <Button render={<Link href="#request-access" />} size="sm">

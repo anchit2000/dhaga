@@ -13,7 +13,7 @@ export function FinalCta() {
           intro={
             <>
               Request access to the beta. The first 500 approved signups lock
-              the $79 founding lifetime price — after that it&apos;s $99, and
+              the $79 founding annual price — after that it&apos;s $99/yr, and
               that&apos;s a promise we keep in public.
             </>
           }

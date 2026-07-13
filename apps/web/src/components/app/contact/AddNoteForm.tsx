@@ -6,12 +6,13 @@ import { addNoteAction, type NoteFormState } from "@/lib/actions/notes";
 import { Textarea } from "@/components/ui/textarea";
 import { SubmitButton } from "../SubmitButton";
 import { useDictation } from "./useDictation";
+import { DictationProgress } from "./DictationProgress";
 
 export function AddNoteForm({ contactId }: { contactId: string }) {
   const formRef = useRef<HTMLFormElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [dictated, setDictated] = useState(false);
-  const { supported, listening, start, stop } = useDictation((text) => {
+  const { supported, listening, transcribing, loadingProgress, start, stop } = useDictation((text) => {
     const el = textareaRef.current;
     if (!el) return;
     el.value = el.value ? `${el.value.replace(/\s+$/, "")} ${text}` : text;
@@ -56,7 +57,8 @@ export function AddNoteForm({ contactId }: { contactId: string }) {
           <button
             type="button"
             onClick={listening ? stop : start}
-            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-xs transition-colors ${
+            disabled={transcribing || loadingProgress !== null}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-xs transition-colors disabled:opacity-60 ${
               listening
                 ? "border-red-400/50 text-red-400"
                 : "border-seam text-fog hover:text-paper"
@@ -76,6 +78,7 @@ export function AddNoteForm({ contactId }: { contactId: string }) {
             )}
           </button>
         ) : null}
+        <DictationProgress loadingProgress={loadingProgress} transcribing={transcribing} />
       </div>
     </form>
   );

@@ -1,13 +1,14 @@
 "use client";
 
 import { useRef, useState, type RefObject } from "react";
-import { Camera, Mic, Square, Upload, UserPlus } from "lucide-react";
+import { Camera, Loader2, Mic, Square, Upload, UserPlus } from "lucide-react";
 import { GlassSurface } from "@/components/ui/glass-surface";
 import { Dock, type DockItemData } from "@/components/ui/dock";
 import { PhotoCropper } from "../PhotoCropper";
 import { WebcamCapture } from "../WebcamCapture";
 import { downscalePhoto } from "../downscalePhoto";
 import { useDictation } from "../contact/useDictation";
+import { DictationProgress } from "../contact/DictationProgress";
 
 /**
  * Floating quick-add dock: voice dictation, live webcam capture, and file
@@ -31,11 +32,19 @@ export function QuickAddDock({
   const [showCamera, setShowCamera] = useState(false);
   const [photoToCrop, setPhotoToCrop] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { supported: dictationSupported, listening, start, stop } = useDictation((text) => {
+  const {
+    supported: dictationSupported,
+    listening,
+    transcribing,
+    loadingProgress,
+    start,
+    stop,
+  } = useDictation((text) => {
     const el = pasteTextareaRef.current;
     if (!el) return;
     el.value = el.value ? `${el.value.replace(/\s+$/, "")} ${text}` : text;
   });
+  const dictationBusy = transcribing || loadingProgress !== null;
 
   function submitPhoto(file: File): void {
     void downscalePhoto(file).then((downscaled) => {
@@ -49,10 +58,17 @@ export function QuickAddDock({
     ...(dictationSupported
       ? [
           {
-            icon: listening ? <Square className="size-4" /> : <Mic className="size-4" />,
-            label: listening ? "Stop" : "Voice",
+            icon: dictationBusy ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : listening ? (
+              <Square className="size-4" />
+            ) : (
+              <Mic className="size-4" />
+            ),
+            label: dictationBusy ? "Loading" : listening ? "Stop" : "Voice",
             active: listening,
             onClick: () => {
+              if (dictationBusy) return;
               if (listening) {
                 stop();
                 return;
@@ -101,7 +117,12 @@ export function QuickAddDock({
           }}
         />
       ) : null}
-      <div className="pointer-events-none fixed inset-x-0 bottom-6 z-30 flex justify-center px-4">
+      <div className="pointer-events-none fixed inset-x-0 bottom-6 z-30 flex flex-col items-center gap-2 px-4">
+        {dictationBusy ? (
+          <div className="pointer-events-auto rounded-full border border-seam bg-panel px-3 py-1">
+            <DictationProgress loadingProgress={loadingProgress} transcribing={transcribing} />
+          </div>
+        ) : null}
         <GlassSurface width="fit-content" height={88} borderRadius={28} backgroundOpacity={0.35} className="pointer-events-auto px-1">
           <Dock items={items} />
         </GlassSurface>

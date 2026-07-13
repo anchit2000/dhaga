@@ -9,6 +9,7 @@ import { SearchResults } from "./SearchResults";
 import { AskPanel } from "./AskPanel";
 import { WeightTuner } from "./WeightTuner";
 import { useSearchPalette, type SearchMode } from "./useSearchPalette";
+import { DictationProgress } from "@/components/app/contact/DictationProgress";
 
 /**
  * Global search: a nav trigger + Cmd/Ctrl+K open a centered palette with two
@@ -67,8 +68,9 @@ export function SearchPalette({
                 <button
                   type="button"
                   onClick={p.dictation.listening ? p.dictation.stop : p.dictation.start}
+                  disabled={p.dictation.transcribing || p.dictation.loadingProgress !== null}
                   aria-label={p.dictation.listening ? "Stop dictation" : "Search by voice"}
-                  className={`flex size-8 shrink-0 items-center justify-center rounded-full border transition-colors ${
+                  className={`flex size-8 shrink-0 items-center justify-center rounded-full border transition-colors disabled:opacity-60 ${
                     p.dictation.listening
                       ? "border-red-400/50 text-red-400"
                       : "border-seam text-fog hover:text-paper"
@@ -78,6 +80,10 @@ export function SearchPalette({
                 </button>
               ) : null}
             </form>
+            <DictationProgress
+              loadingProgress={p.dictation.loadingProgress}
+              transcribing={p.dictation.transcribing}
+            />
 
             <div className="flex items-center justify-between gap-2">
               <Tabs

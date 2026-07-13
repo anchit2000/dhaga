@@ -2,12 +2,13 @@ import { headers } from "next/headers";
 import { requireUserIdForPage } from "@/lib/auth/guard";
 import { getAuth } from "@/lib/auth/config";
 import { getBillingGate } from "@/lib/hosted/gate";
-import { shouldStoreCardPhotos } from "@/lib/repo/settings";
+import { getSttEngine, shouldStoreCardPhotos } from "@/lib/repo/settings";
 import { countCardImages } from "@/lib/repo/card-images";
 import { getSuggestedClusters } from "@/lib/repo/suggestions";
 import { ImportPanel } from "@/components/app/import/ImportPanel";
 import { SuggestionsPanel } from "@/components/app/import/SuggestionsPanel";
 import { CardPhotoSetting } from "@/components/app/settings/CardPhotoSetting";
+import { VoiceInputSetting } from "@/components/app/settings/VoiceInputSetting";
 import { ApiKeysSetting } from "@/components/app/settings/ApiKeysSetting";
 import { BillingSetting } from "@/components/app/settings/BillingSetting";
 import { SecuritySetting } from "@/components/app/settings/SecuritySetting";
@@ -17,14 +18,16 @@ export const metadata = { title: "Settings — Dhaga" };
 export default async function SettingsPage() {
   const userId = await requireUserIdForPage();
   const auth = await getAuth();
-  const [storePhotos, photoCount, apiKeys, planSummary, session, clusters] = await Promise.all([
-    shouldStoreCardPhotos(),
-    countCardImages(),
-    auth.api.listApiKeys({ headers: await headers() }),
-    (await getBillingGate()).getPlanSummary(userId),
-    auth.api.getSession({ headers: await headers() }),
-    getSuggestedClusters(),
-  ]);
+  const [storePhotos, sttEngine, photoCount, apiKeys, planSummary, session, clusters] =
+    await Promise.all([
+      shouldStoreCardPhotos(),
+      getSttEngine(),
+      countCardImages(),
+      auth.api.listApiKeys({ headers: await headers() }),
+      (await getBillingGate()).getPlanSummary(userId),
+      auth.api.getSession({ headers: await headers() }),
+      getSuggestedClusters(),
+    ]);
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -41,6 +44,7 @@ export default async function SettingsPage() {
         twoFactorEnabled={Boolean((session?.user as { twoFactorEnabled?: boolean })?.twoFactorEnabled)}
       />
       <CardPhotoSetting enabled={storePhotos} count={photoCount} />
+      <VoiceInputSetting engine={sttEngine} />
       <ApiKeysSetting keys={apiKeys.apiKeys} />
       <section id="import" className="scroll-mt-20 space-y-4 rounded-2xl border border-seam bg-panel p-5">
         <div>

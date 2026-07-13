@@ -6,6 +6,9 @@ import { parseSearchWeights, type SearchWeights } from "@/utils/constants/search
 export const STORE_CARD_PHOTOS_KEY = "store_card_photos";
 export const SIGNAL_DETECTION_BATCH_KEY = "signal_detection_pending_batch";
 export const SEARCH_WEIGHTS_KEY = "search_weights";
+export const STT_ENGINE_KEY = "stt_engine";
+
+export type SttEngine = "browser" | "local";
 
 export async function getSetting(key: string): Promise<string | null> {
   const db = await getDb();
@@ -61,4 +64,19 @@ export async function getSearchWeights(): Promise<SearchWeights> {
 
 export async function setSearchWeights(weights: SearchWeights): Promise<void> {
   await setSetting(SEARCH_WEIGHTS_KEY, JSON.stringify(weights));
+}
+
+/**
+ * Voice dictation engine: "browser" (Web Speech API — free, but unsupported
+ * on Firefox and silently broken on Brave/vanilla Chromium, which block the
+ * network call it depends on) or "local" (on-device Whisper via
+ * transformers.js — works everywhere, first use downloads the model).
+ */
+export async function getSttEngine(): Promise<SttEngine> {
+  const value = await getSetting(STT_ENGINE_KEY);
+  return value === "local" ? "local" : "browser";
+}
+
+export async function setSttEngine(engine: SttEngine): Promise<void> {
+  await setSetting(STT_ENGINE_KEY, engine);
 }

@@ -2,11 +2,15 @@
 
 import { useRef, useState, useSyncExternalStore } from "react";
 import { noSubscription } from "@/lib/utils";
+import { useSttEngine } from "./SttEngineContext";
+import { useLocalWhisper } from "./useLocalWhisper";
 
 /**
  * Browser speech recognition (M3's voice capture, web edition): free, no
  * API cost, no audio leaves the capture pipeline we don't control — the
- * browser engine transcribes and we only ever see text.
+ * browser engine transcribes and we only ever see text. Unsupported on
+ * Firefox and silently broken on Brave/vanilla Chromium (they block the
+ * network call this depends on) — see useLocalWhisper for the fallback.
  */
 
 interface RecognitionResultEvent {
@@ -35,7 +39,19 @@ function getCtor(): RecognitionCtor | undefined {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition;
 }
 
-export function useDictation(onFinalText: (text: string) => void) {
+export interface DictationState {
+  supported: boolean;
+  listening: boolean;
+  /** True while a recorded clip is being transcribed (local engine only —
+   *  the browser engine streams results live, so there's no separate wait). */
+  transcribing: boolean;
+  /** Model download percentage on first local-engine use; null otherwise. */
+  loadingProgress: number | null;
+  start(): void;
+  stop(): void;
+}
+
+function useBrowserDictation(onFinalText: (text: string) => void): DictationState {
   // SSR-safe support check without a hydration mismatch.
   const supported = useSyncExternalStore(
     noSubscription,
@@ -69,5 +85,16 @@ export function useDictation(onFinalText: (text: string) => void) {
     recognitionRef.current?.stop();
   }
 
-  return { supported, listening, start, stop };
+  return { supported, listening, transcribing: false, loadingProgress: null, start, stop };
+}
+
+/** Dispatches to the browser's native engine or the on-device Whisper
+ *  fallback per the user's Settings choice — callers never know which. */
+export function useDictation(onFinalText: (text: string) => void): DictationState {
+  const engine = useSttEngine();
+  // Hooks must run unconditionally; the inactive engine stays idle (no
+  // mic/model work happens until its own start() is called).
+  const browser = useBrowserDictation(onFinalText);
+  const local = useLocalWhisper(onFinalText);
+  return engine === "local" ? local : browser;
 }

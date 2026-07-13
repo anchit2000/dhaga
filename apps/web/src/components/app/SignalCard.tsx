@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { addSignalAsNoteAction, dismissSignalAction } from "@/lib/actions/signals";
 
 export interface SignalCardData {
@@ -20,9 +23,13 @@ export interface SignalCardData {
 export function SignalCard({
   signal,
   showContact,
+  onContactClick,
 }: {
   signal: SignalCardData;
   showContact: boolean;
+  /** When provided (Home's feed), opens the contact detail Sheet instead of
+   *  navigating — the contact page's own list leaves this unset. */
+  onContactClick?: (contactId: string) => void;
 }) {
   return (
     <li className="rounded-xl border border-amber/25 bg-amber/[0.05] p-3">
@@ -33,12 +40,23 @@ export function SignalCard({
               {signal.kind === "job_change" ? "Job change" : "News"}
             </span>
             {showContact ? (
-              <Link
-                href={`/app/people/${signal.contactId}`}
-                className="text-sm font-medium text-paper hover:underline"
-              >
-                {signal.contactName}
-              </Link>
+              onContactClick ? (
+                <Button
+                  render={<div />}
+                  variant="ghost"
+                  onClick={() => onContactClick(signal.contactId)}
+                  className="h-auto rounded-md p-0 text-sm font-medium normal-case text-paper hover:bg-transparent hover:underline"
+                >
+                  {signal.contactName}
+                </Button>
+              ) : (
+                <Link
+                  href={`/app/people/${signal.contactId}`}
+                  className="text-sm font-medium text-paper hover:underline"
+                >
+                  {signal.contactName}
+                </Link>
+              )
             ) : null}
             {showContact && signal.companyName ? (
               <span className="text-xs text-fog">{signal.companyName}</span>

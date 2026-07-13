@@ -86,17 +86,6 @@ export const PRO_TIER_WATCHLIST_CAP = 25;
 /** How many new signals the Home feed shows before "+N more". */
 export const SIGNALS_FEED_LIMIT = 8;
 
-/**
- * Home's chronological activity feed (signals, events, reach-outs, new
- * contacts merged in `@/lib/repo/activity`): overall row cap, and the fetch
- * limit for the two sources that support one (events, contacts) — signals/
- * quiet/due-reachout queries have no natural per-source limit upstream.
- */
-export const HOME_ACTIVITY_FEED_LIMIT = 30;
-
-/** A feed row within this long counts as "Now" rather than "Today". */
-export const ACTIVITY_NOW_WINDOW_MS = 60 * 60 * 1000;
-
 /** How many notes/facts the Home feed's contact detail panel previews. */
 export const CONTACT_SUMMARY_NOTE_LIMIT = 3;
 export const CONTACT_SUMMARY_FACT_LIMIT = 3;

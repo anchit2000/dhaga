@@ -3,7 +3,7 @@ import { MOCK_CIRCLES } from "@/utils/constants/landing";
 export function Sidebar() {
   return (
     <div className="hidden w-44 shrink-0 flex-col border-r border-seam bg-panel-2/60 p-3 text-left sm:flex">
-      <div className="flex items-center gap-1.5 rounded-md border border-seam bg-ink/60 px-2.5 py-1.5 text-fog">
+      <div className="flex items-center gap-1.5 rounded-md border border-seam bg-well/60 px-2.5 py-1.5 text-fog">
         <SearchIcon />
         <span className="text-xs">Search</span>
       </div>

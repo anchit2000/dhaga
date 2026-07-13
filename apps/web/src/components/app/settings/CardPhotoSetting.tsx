@@ -17,7 +17,7 @@ function ToggleSubmit({ enabled }: { enabled: boolean }) {
       aria-checked={enabled}
       aria-label="Store card photos"
       className={`relative h-7 w-12 shrink-0 rounded-full border transition-colors disabled:opacity-60 ${
-        enabled ? "border-amber/50 bg-amber/30" : "border-seam bg-paper/[0.06]"
+        enabled ? "border-amber/50 bg-amber/30" : "border-seam bg-wash/[0.06]"
       }`}
     >
       <span
@@ -25,7 +25,7 @@ function ToggleSubmit({ enabled }: { enabled: boolean }) {
           enabled ? "left-6 bg-amber" : "left-0.5 bg-fog/60"
         }`}
       >
-        {pending ? <Loader2 className="size-3 animate-spin text-ink" /> : null}
+        {pending ? <Loader2 className="size-3 animate-spin text-on-accent" /> : null}
       </span>
     </button>
   );

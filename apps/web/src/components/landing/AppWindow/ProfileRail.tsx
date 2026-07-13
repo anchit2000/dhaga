@@ -37,7 +37,7 @@ export function ProfileRail() {
       </div>
 
       <div className="mt-auto pt-4">
-        <div className="rounded-md border border-amber/40 bg-amber/10 px-3 py-2 text-center text-[11px] font-medium text-amber">
+        <div className="rounded-md border border-amber/40 bg-amber/10 px-3 py-2 text-center text-[11px] font-medium text-ember">
           Draft follow-up ✦
         </div>
       </div>

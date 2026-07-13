@@ -30,7 +30,7 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
           <SignupForm socialProviders={enabledSocialProviders()} defaultEmail={email} />
           <p className="mt-6 text-center text-sm text-fog">
             Already have an account?{" "}
-            <Link href="/login" className="text-amber hover:underline">
+            <Link href="/login" className="text-ember hover:underline">
               Sign in
             </Link>
           </p>

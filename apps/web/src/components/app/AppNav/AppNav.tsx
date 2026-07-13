@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { GlassSurface } from "@/components/ui/glass-surface";
+import { ModeToggle } from "@/components/brand/ModeToggle";
 import { ThreadMark } from "@/components/brand/ThreadMark";
 import { SearchPalette } from "@/components/app/search/SearchPalette";
 import type { SearchWeights } from "@/utils/constants/search";
@@ -51,6 +52,7 @@ export function AppNav({
                 <SearchPalette initialWeights={initialSearchWeights} />
               </div>
             </div>
+            <ModeToggle />
             <MoreMenu />
             <ProfileMenu isAdmin={isAdmin} />
           </div>

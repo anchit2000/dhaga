@@ -12,14 +12,14 @@ interface UserRow { id: string; name: string; email: string; isAdmin: boolean; c
 interface SubscriptionRow { id: string; userId: string; plan: string; status: string; currentPeriodEnd: Date | null; }
 
 const USER_COLUMNS: DataTableColumn<UserRow>[] = [
-  { id: "name", label: "Name", value: (row) => row.name, render: (row) => <Link href={`/app/admin/users/${row.id}`} className="hover:text-amber">{row.name}</Link> },
+  { id: "name", label: "Name", value: (row) => row.name, render: (row) => <Link href={`/app/admin/users/${row.id}`} className="hover:text-ember">{row.name}</Link> },
   { id: "email", label: "Email", value: (row) => row.email },
   { id: "joined", label: "Joined", value: (row) => row.createdAt.toLocaleDateString() },
   { id: "role", label: "Role", value: (row) => row.isAdmin ? "admin" : "user", options: USER_ROLE_OPTIONS, render: (row) => row.isAdmin ? <Badge>admin</Badge> : "user" },
 ];
 
 const SUBSCRIPTION_COLUMNS: DataTableColumn<SubscriptionRow>[] = [
-  { id: "user", label: "User", value: (row) => row.userId, render: (row) => <Link href={`/app/admin/users/${row.userId}`} className="hover:text-amber">{row.userId}</Link> },
+  { id: "user", label: "User", value: (row) => row.userId, render: (row) => <Link href={`/app/admin/users/${row.userId}`} className="hover:text-ember">{row.userId}</Link> },
   { id: "plan", label: "Plan", value: (row) => row.plan, options: SUBSCRIPTION_PLAN_OPTIONS, render: (row) => <Badge>{row.plan}</Badge> },
   { id: "status", label: "Status", value: (row) => row.status, options: SUBSCRIPTION_STATUS_OPTIONS, render: (row) => <Badge variant={row.status === "active" ? "default" : "secondary"}>{row.status}</Badge> },
   { id: "renews", label: "Renews", value: (row) => row.currentPeriodEnd?.toLocaleDateString() ?? "", render: (row) => row.currentPeriodEnd?.toLocaleDateString() ?? "—" },

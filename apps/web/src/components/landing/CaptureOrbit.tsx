@@ -56,7 +56,7 @@ export function CaptureOrbit() {
                 style={{ transform: `translateX(${item.radius}px)` }}
               >
                 <div
-                  className="flex size-9 items-center justify-center rounded-full border border-white/15 bg-white/10 text-amber shadow-[0_0_14px_-4px_rgba(226,164,76,0.45)] backdrop-blur-md"
+                  className="flex size-9 items-center justify-center rounded-full border border-seam bg-panel/60 text-ember shadow-[0_0_14px_-4px_rgba(226,164,76,0.45)] backdrop-blur-md"
                   style={{
                     animation: `dhaga-orbit-counter ${item.duration}s linear infinite`,
                     marginLeft: -18,

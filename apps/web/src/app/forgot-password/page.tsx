@@ -23,7 +23,7 @@ export default async function ForgotPasswordPage() {
           </p>
           <ForgotPasswordForm />
           <p className="mt-6 text-center text-sm text-fog">
-            <Link href="/login" className="text-amber hover:underline">
+            <Link href="/login" className="text-ember hover:underline">
               Back to sign in
             </Link>
           </p>

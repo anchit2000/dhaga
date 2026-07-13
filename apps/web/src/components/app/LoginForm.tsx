@@ -99,7 +99,7 @@ export function LoginForm({ socialProviders }: LoginFormProps) {
               <Label htmlFor="password" className="text-fog">
                 Password
               </Label>
-              <Link href="/forgot-password" className="text-xs text-amber hover:underline">
+              <Link href="/forgot-password" className="text-xs text-ember hover:underline">
                 Forgot password?
               </Link>
             </div>

@@ -26,7 +26,7 @@ export function FollowUpList({
                 type="submit"
                 aria-label="Mark done"
                 title="Mark done"
-                className="flex size-5 items-center justify-center rounded-full border border-amber/50 text-amber transition-colors hover:bg-amber/15"
+                className="flex size-5 items-center justify-center rounded-full border border-amber/50 text-ember transition-colors hover:bg-amber/15"
               >
                 <Check className="size-3" />
               </button>

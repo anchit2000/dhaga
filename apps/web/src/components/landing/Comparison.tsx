@@ -15,7 +15,7 @@ export function Comparison() {
   return (
     <section className="mx-auto max-w-6xl px-6 py-24" id="compare">
       <SectionHeading eyebrow="Compare" heading="Everyone else stops at the contact." />
-      <div className="mt-12 overflow-x-auto rounded-2xl border border-paper/10 bg-panel/40 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.9)]">
+      <div className="mt-12 overflow-x-auto rounded-2xl border border-wash/10 bg-panel/40 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.9)]">
         <table className="w-full min-w-[760px] border-collapse text-sm">
           <thead>
             <tr>
@@ -31,7 +31,7 @@ export function Comparison() {
                     {brand.marks.map((mark) => (
                       <span
                         key={mark.letter}
-                        className={`flex size-7 items-center justify-center rounded-lg text-xs font-bold text-ink ring-2 ring-panel ${
+                        className={`flex size-7 items-center justify-center rounded-lg text-xs font-bold text-on-accent ring-2 ring-panel ${
                           brand.us ? "font-display text-base" : ""
                         }`}
                         style={{ backgroundColor: mark.color }}
@@ -40,7 +40,7 @@ export function Comparison() {
                       </span>
                     ))}
                   </div>
-                  <p className={`mt-2.5 font-medium ${brand.us ? "text-amber" : "text-paper"}`}>
+                  <p className={`mt-2.5 font-medium ${brand.us ? "text-ember" : "text-paper"}`}>
                     {brand.name}
                   </p>
                   <p className="text-xs text-fog/80">{brand.sub}</p>
@@ -50,7 +50,7 @@ export function Comparison() {
           </thead>
           <tbody>
             {COMPARISON_ROWS.map((row, rowIndex) => (
-              <tr key={row.feature} className="group border-t border-seam/60 transition-colors hover:bg-paper/[0.02]">
+              <tr key={row.feature} className="group border-t border-seam/60 transition-colors hover:bg-wash/[0.02]">
                 <td className="px-6 py-4 text-paper">{row.feature}</td>
                 {CELL_KEYS.map((key, colIndex) => (
                   <td
@@ -82,7 +82,7 @@ function Cell({ value, us }: { value: string; us: boolean }) {
   if (value.startsWith("✓")) {
     return (
       <span className="flex items-center gap-2">
-        <span className={`flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${us ? "bg-amber text-ink" : "bg-paper/10 text-paper"}`}>
+        <span className={`flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${us ? "bg-amber text-on-accent" : "bg-wash/10 text-paper"}`}>
           ✓
         </span>
         {value.slice(1).trim()}
@@ -92,7 +92,7 @@ function Cell({ value, us }: { value: string; us: boolean }) {
   if (value.startsWith("✗")) {
     return (
       <span className="flex items-center gap-2 text-fog/60">
-        <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-paper/[0.05] text-[10px]">
+        <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-wash/[0.05] text-[10px]">
           —
         </span>
         {value.slice(1).trim()}

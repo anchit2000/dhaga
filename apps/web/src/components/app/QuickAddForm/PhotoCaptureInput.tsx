@@ -37,9 +37,9 @@ export function PhotoCaptureInput({
   return (
     <label className="flex min-h-36 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-seam bg-panel/40 p-6 text-center transition-colors hover:border-amber/40">
       {checking ? (
-        <Loader2 className="size-6 animate-spin text-amber" aria-hidden />
+        <Loader2 className="size-6 animate-spin text-ember" aria-hidden />
       ) : (
-        <Camera className="size-6 text-amber" aria-hidden />
+        <Camera className="size-6 text-ember" aria-hidden />
       )}
       <span className="text-sm text-paper">
         {checking ? "Checking photo…" : "Take or choose a card photo"}

@@ -90,7 +90,7 @@ export function ContactDetailSheet({
                     {summary.tags.map((tag) => (
                       <span
                         key={tag}
-                        className="rounded-full border border-seam bg-paper/[0.04] px-2.5 py-0.5 text-xs text-fog"
+                        className="rounded-full border border-seam bg-wash/[0.04] px-2.5 py-0.5 text-xs text-fog"
                       >
                         {tag}
                       </span>
@@ -119,7 +119,7 @@ export function ContactDetailSheet({
 
             <Link
               href={`/app/people/${summary.id}`}
-              className="inline-flex min-h-11 items-center gap-1 text-sm text-amber hover:underline"
+              className="inline-flex min-h-11 items-center gap-1 text-sm text-ember hover:underline"
             >
               View full profile <ArrowRight className="size-3.5" />
             </Link>

@@ -25,7 +25,7 @@ export default async function LoginPage() {
           <LoginForm socialProviders={enabledSocialProviders()} />
           <p className="mt-6 text-center text-sm text-fog">
             No account?{" "}
-            <Link href="/signup" className="text-amber hover:underline">
+            <Link href="/signup" className="text-ember hover:underline">
               Create one
             </Link>
           </p>

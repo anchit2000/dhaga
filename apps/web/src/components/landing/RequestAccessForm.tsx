@@ -35,7 +35,7 @@ export function RequestAccessForm() {
 
   if (submitted) {
     return (
-      <p role="status" className="mt-8 text-amber">
+      <p role="status" className="mt-8 text-ember">
         Request received — we&apos;ll email you when you&apos;re approved.
         Founding-price seats are assigned in request order.
       </p>
@@ -50,7 +50,7 @@ export function RequestAccessForm() {
         required
         placeholder="you@company.com"
         aria-label="Email address"
-        className="h-12 min-w-60 flex-1 border-seam bg-ink text-base placeholder:text-fog/50"
+        className="h-12 min-w-60 flex-1 border-seam bg-well text-base placeholder:text-fog/50"
       />
       <Button type="submit" size="lg" disabled={loading}>
         {loading ? "Requesting…" : "Request access"}

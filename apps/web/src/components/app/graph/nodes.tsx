@@ -82,7 +82,7 @@ export function CompanyGraphNode({ data }: NodeProps<Node<BrowserNodeData, "comp
           ) : null}
         </span>
         {isCluster ? (
-          <span className="absolute -top-2 -right-2 flex min-w-4 items-center justify-center rounded-full bg-amber px-1 py-0.5 text-[9px] font-semibold text-ink">
+          <span className="absolute -top-2 -right-2 flex min-w-4 items-center justify-center rounded-full bg-amber px-1 py-0.5 text-[9px] font-semibold text-on-accent">
             {data.contactCount}
           </span>
         ) : null}

@@ -14,7 +14,7 @@ export function PeopleTable({ people, total, page, pageSize, filters, options }:
   options: { titles: string[]; companies: string[]; tags: string[] };
 }) {
   const columns: DataTableColumn<PersonRow>[] = [
-    { id: "name", label: "Name", value: (row) => row.name, render: (row) => <Link href={`/app/people/${row.id}`} className="font-medium text-paper hover:text-amber">{row.name}</Link> },
+    { id: "name", label: "Name", value: (row) => row.name, render: (row) => <Link href={`/app/people/${row.id}`} className="font-medium text-paper hover:text-ember">{row.name}</Link> },
     { id: "title", label: "Title", value: (row) => row.title ?? "", options: options.titles, render: (row) => row.title || "—", className: "text-fog" },
     { id: "company", label: "Company", value: (row) => row.companyName ?? "", options: options.companies, render: (row) => row.companyName || "—", className: "text-fog" },
     { id: "tags", label: "Tags", value: (row) => row.tags.join(", "), options: options.tags, render: (row) => row.tags.join(", ") || "—", className: "max-w-64 truncate text-fog" },

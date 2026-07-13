@@ -14,7 +14,7 @@ const BAND = 0.09;
 const START_PROGRESS = -BAND;
 const END_PROGRESS = 1 + BAND;
 
-const THREAD_COLOR = "#cfc8be";
+const THREAD_COLOR = "var(--brand-fog)";
 
 // Deterministic "tangle" shape: a handful of non-integer-ratio sine
 // harmonics that never line up into a clean repeating wave, so the thread

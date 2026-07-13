@@ -17,7 +17,7 @@ export function StatsBand() {
             <Reveal key={stat.num} delay={i * 120}>
               <p
                 className={`font-display text-6xl tabular-nums ${
-                  i === STATS.length - 1 ? "text-amber" : "text-paper"
+                  i === STATS.length - 1 ? "text-ember" : "text-paper"
                 }`}
               >
                 <CountUp target={Number(stat.num)} />

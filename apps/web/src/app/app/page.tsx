@@ -27,7 +27,7 @@ export default async function HomePage() {
 
   return <div className="space-y-8 pb-16">
     <div className="flex flex-wrap items-end justify-between gap-3">
-      <div><p className="font-mono text-[10px] uppercase tracking-widest text-amber">Your network, threaded</p><h1 className="mt-1 font-display text-2xl tracking-tight">Home</h1></div>
+      <div><p className="font-mono text-[10px] uppercase tracking-widest text-ember">Your network, threaded</p><h1 className="mt-1 font-display text-2xl tracking-tight">Home</h1></div>
       <Button render={<Link href="/app/people/new" />} variant="outline" size="sm">Add manually</Button>
     </div>
 

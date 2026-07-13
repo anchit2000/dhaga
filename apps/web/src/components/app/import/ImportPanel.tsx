@@ -79,7 +79,7 @@ export function ImportPanel() {
   if (candidates.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-seam bg-panel p-8 text-center">
-        <Upload className="mx-auto size-6 text-amber" />
+        <Upload className="mx-auto size-6 text-ember" />
         <p className="mt-3 text-sm text-paper">
           Google Contacts or LinkedIn Connections CSV
         </p>

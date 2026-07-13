@@ -15,16 +15,16 @@ export function Hero() {
   return (
     <section className="relative overflow-hidden pt-36 pb-8" id="product">
       <ThreadCanvas />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_20%,transparent_0%,#0d0b09_90%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_20%,transparent_0%,var(--brand-ink)_90%)]" />
       <div className="relative mx-auto max-w-6xl px-6 text-center">
-        <p className={`font-mono text-xs uppercase tracking-[0.22em] text-amber ${RISE}`}>
+        <p className={`font-mono text-xs uppercase tracking-[0.22em] text-ember ${RISE}`}>
           {HERO.eyebrow}
         </p>
         <h1
           className={`mx-auto mt-6 max-w-4xl text-balance font-display text-5xl leading-[1.04] font-medium sm:text-7xl ${RISE}`}
           style={{ animationDelay: "0.12s" }}
         >
-          Every <em className="text-amber italic">thread</em>, remembered.
+          Every <em className="text-ember italic">thread</em>, remembered.
         </h1>
         <p
           className={`mx-auto mt-6 max-w-2xl text-pretty text-lg text-fog ${RISE}`}

@@ -55,7 +55,7 @@ export function WebcamCapture({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-ink/95 p-4">
+    <div className="dark fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-ink/95 p-4">
       <button
         type="button"
         onClick={onClose}
@@ -79,7 +79,7 @@ export function WebcamCapture({
           <button
             type="button"
             onClick={capture}
-            className="flex items-center gap-2 rounded-full bg-amber px-6 py-3 font-medium text-ink transition-opacity hover:opacity-90"
+            className="flex items-center gap-2 rounded-full bg-amber px-6 py-3 font-medium text-on-accent transition-opacity hover:opacity-90"
           >
             <Camera className="size-5" />
             Capture card

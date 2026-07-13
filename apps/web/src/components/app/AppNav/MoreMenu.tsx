@@ -26,7 +26,7 @@ export function MoreMenu() {
           <Button
             variant="ghost"
             size="icon"
-            className={cn("rounded-full", active ? "text-amber" : "text-fog hover:text-paper")}
+            className={cn("rounded-full", active ? "text-ember" : "text-fog hover:text-paper")}
           />
         }
       >

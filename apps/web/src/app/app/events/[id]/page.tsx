@@ -53,7 +53,7 @@ export default async function EventPage({
             <li key={person.id}>
               <Link
                 href={`/app/people/${person.id}`}
-                className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-paper/[0.03]"
+                className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-wash/[0.03]"
               >
                 <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-amber/15 font-display text-sm text-amber">
                   {person.name.charAt(0).toUpperCase()}

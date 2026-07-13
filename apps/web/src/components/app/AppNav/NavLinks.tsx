@@ -26,7 +26,7 @@ export function NavLinks() {
               "flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-sm transition-colors",
               pending ? "pointer-events-none opacity-70" : null,
               active
-                ? "bg-amber/15 font-medium text-amber"
+                ? "bg-amber/15 font-medium text-ember"
                 : "text-fog hover:text-paper",
             )}
           >

@@ -12,7 +12,7 @@ function SmallSubmit({ label }: { label: string }) {
     <button
       type="submit"
       disabled={pending}
-      className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-amber/40 px-3 py-1.5 text-xs text-amber transition-colors hover:bg-amber/10 disabled:pointer-events-none"
+      className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-amber/40 px-3 py-1.5 text-xs text-ember transition-colors hover:bg-amber/10 disabled:pointer-events-none"
     >
       {pending ? <Loader2 className="size-3 animate-spin" /> : null}
       {label}

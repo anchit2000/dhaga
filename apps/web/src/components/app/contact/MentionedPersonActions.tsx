@@ -47,7 +47,7 @@ export function MentionedPersonActions({
             name="targetId"
             required
             aria-label="Existing person to merge with"
-            className="h-9 min-w-56 rounded-full border border-seam bg-ink px-3 text-xs"
+            className="h-9 min-w-56 rounded-full border border-seam bg-well px-3 text-xs"
           >
             <option value="">Choose the same person…</option>
             {candidates.map((candidate) => (
@@ -59,7 +59,7 @@ export function MentionedPersonActions({
               </option>
             ))}
           </select>
-          <button className="h-9 rounded-full border border-amber/40 px-3 text-xs text-amber">
+          <button className="h-9 rounded-full border border-amber/40 px-3 text-xs text-ember">
             Merge relationships
           </button>
         </form>

@@ -29,7 +29,7 @@ export function FeatureStory() {
   }, []);
 
   return (
-    <section className="border-y border-seam bg-[radial-gradient(ellipse_70%_50%_at_70%_30%,#16120e,#0d0b09)]">
+    <section className="border-y border-seam bg-[radial-gradient(ellipse_70%_50%_at_70%_30%,var(--brand-panel),var(--brand-ink))]">
       <div className="mx-auto max-w-6xl px-6 py-24">
         <SectionHeading
           eyebrow="The product"
@@ -48,7 +48,7 @@ export function FeatureStory() {
                 }}
                 className="flex min-h-[75vh] flex-col justify-center py-10 lg:min-h-[80vh]"
               >
-                <p className="font-mono text-xs uppercase tracking-[0.2em] text-amber">
+                <p className="font-mono text-xs uppercase tracking-[0.2em] text-ember">
                   {String(i + 1).padStart(2, "0")} · {step.kicker}
                 </p>
                 <h3

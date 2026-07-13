@@ -23,14 +23,14 @@ export function DashboardPreview() {
 
       <div className="space-y-3 p-4 pb-16">
         <div>
-          <p className="font-mono text-[8px] uppercase tracking-widest text-amber">Your network, threaded</p>
+          <p className="font-mono text-[8px] uppercase tracking-widest text-ember">Your network, threaded</p>
           <p className="font-display text-lg text-paper">Home</p>
         </div>
 
         <section className="overflow-hidden rounded-lg border border-seam bg-panel">
           <div className="flex items-center justify-between border-b border-seam px-3 py-2">
             <span className="text-xs font-medium text-paper">Updates</span>
-            <span className="font-mono text-[8px] uppercase tracking-widest text-amber">Today</span>
+            <span className="font-mono text-[8px] uppercase tracking-widest text-ember">Today</span>
           </div>
           {MOCK_FEED.slice(0, 3).map((item) => (
             <div key={item.text} className="flex items-center gap-2 border-b border-seam/60 px-3 py-2 last:border-0">
@@ -47,7 +47,7 @@ export function DashboardPreview() {
         </div>
       </div>
 
-      <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1 rounded-2xl border border-paper/15 bg-panel-2/90 p-1.5 shadow-xl">
+      <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1 rounded-2xl border border-wash/15 bg-panel-2/90 p-1.5 shadow-xl">
         {MOCK_CAPTURE_ACTIONS.map((label) => (
           <div key={label} className="flex min-w-10 flex-col items-center gap-0.5 text-[7px] text-fog">
             <span className="flex size-7 items-center justify-center rounded-full border border-seam">{captureIcon(label)}</span>
@@ -71,7 +71,7 @@ function PreviewList({ title, items, action }: { title: string; items: readonly 
     <section className="rounded-lg border border-seam bg-panel p-3">
       <p className="text-xs font-medium text-paper">{title}</p>
       <div className="mt-2 space-y-1.5">{items.map((item) => <p key={item} className="truncate text-[9px] text-fog">{item}</p>)}</div>
-      <p className="mt-2 text-[9px] text-amber">{action}</p>
+      <p className="mt-2 text-[9px] text-ember">{action}</p>
     </section>
   );
 }

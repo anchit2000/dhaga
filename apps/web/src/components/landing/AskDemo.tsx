@@ -17,7 +17,7 @@ export function AskDemo() {
         <div className="mt-6 grid gap-5 lg:grid-cols-2">
           {ASK_EXAMPLES.map((example) => (
             <div key={example.query} className="rounded-lg border border-seam bg-panel p-6">
-              <p className="font-mono text-sm text-amber">ask&gt; {example.query}</p>
+              <p className="font-mono text-sm text-ember">ask&gt; {example.query}</p>
               <p className="mt-4 text-sm text-paper">
                 <span className="font-semibold">{example.answerName}</span> —{" "}
                 {example.answer}
@@ -79,7 +79,7 @@ function QueryTyper() {
 
   return (
     <div className="mt-10 flex max-w-2xl items-baseline gap-3 rounded-lg border border-seam bg-ink/80 px-5 py-4 font-mono text-sm">
-      <span className="shrink-0 text-amber">ask&gt;</span>
+      <span className="shrink-0 text-ember">ask&gt;</span>
       <span className="min-h-5 text-paper">
         {text}
         <span className="ml-0.5 inline-block h-4 w-2 animate-pulse bg-amber align-middle" />

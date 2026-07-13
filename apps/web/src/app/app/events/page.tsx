@@ -32,7 +32,7 @@ export default async function EventsPage() {
             <li key={event.id}>
               <Link
                 href={`/app/events/${event.id}`}
-                className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-paper/[0.03]"
+                className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-wash/[0.03]"
               >
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-medium text-paper">
@@ -42,7 +42,7 @@ export default async function EventsPage() {
                     {event.startedAt.toLocaleDateString()}
                   </span>
                 </span>
-                <span className="shrink-0 rounded-full border border-seam bg-paper/[0.04] px-2.5 py-0.5 text-xs text-fog">
+                <span className="shrink-0 rounded-full border border-seam bg-wash/[0.04] px-2.5 py-0.5 text-xs text-fog">
                   {event.contactCount}{" "}
                   {event.contactCount === 1 ? "person" : "people"}
                 </span>

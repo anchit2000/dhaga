@@ -10,7 +10,7 @@ export function PhoneShell({
 }) {
   return (
     <div
-      className={`font-ui relative overflow-hidden rounded-[2.4rem] border border-paper/15 bg-ink shadow-[0_1px_0_rgba(255,255,255,0.08)_inset,0_40px_100px_-20px_rgba(0,0,0,0.9)] ring-4 ring-black/60 ${className}`}
+      className={`font-ui relative overflow-hidden rounded-[2.4rem] border border-wash/15 bg-ink shadow-[0_1px_0_rgba(255,255,255,0.08)_inset,0_40px_100px_-20px_rgba(0,0,0,0.9)] ring-4 ring-black/60 ${className}`}
     >
       {/* dynamic island */}
       <div className="absolute left-1/2 top-2.5 z-10 h-5 w-20 -translate-x-1/2 rounded-full bg-black" />

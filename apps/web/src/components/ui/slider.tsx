@@ -16,7 +16,7 @@ function Slider({
       {...props}
     >
       <SliderPrimitive.Control className="flex w-full items-center py-2">
-        <SliderPrimitive.Track className="relative h-1.5 w-full grow rounded-full bg-paper/10">
+        <SliderPrimitive.Track className="relative h-1.5 w-full grow rounded-full bg-wash/10">
           <SliderPrimitive.Indicator
             data-slot="slider-indicator"
             className="absolute h-full rounded-full bg-amber"

@@ -7,7 +7,7 @@ export function Feed() {
     <div className="min-w-0 flex-1 border-r border-seam text-left">
       <div className="flex items-center justify-between border-b border-seam px-4 py-2.5">
         <span className="text-sm font-medium text-paper">Home</span>
-        <span className="font-mono text-[10px] uppercase tracking-widest text-amber">
+        <span className="font-mono text-[10px] uppercase tracking-widest text-ember">
           Today
         </span>
       </div>
@@ -15,7 +15,7 @@ export function Feed() {
         {MOCK_FEED.map((item) => (
           <div
             key={item.text}
-            className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-paper/[0.03]"
+            className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-wash/[0.03]"
           >
             {item.personId ? (
               <Headshot personId={item.personId} className="mt-0.5 size-6" />

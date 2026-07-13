@@ -14,7 +14,7 @@ function SaveButton() {
       type="submit"
       disabled={pending}
       aria-label="Save fact"
-      className="rounded-full p-1 text-amber transition-colors hover:bg-amber/15 disabled:pointer-events-none"
+      className="rounded-full p-1 text-ember transition-colors hover:bg-amber/15 disabled:pointer-events-none"
     >
       {pending ? (
         <Loader2 className="size-3.5 animate-spin" />
@@ -73,7 +73,7 @@ export function FactItem({ contactId, factId, text, type, receipt }: FactItemPro
             aria-label="Edit fact"
             title="Edit fact"
             onClick={() => setEditing(true)}
-            className="rounded-full p-1 text-fog/60 transition-colors hover:bg-paper/[0.06] hover:text-paper"
+            className="rounded-full p-1 text-fog/60 transition-colors hover:bg-wash/[0.06] hover:text-paper"
           >
             <Pencil className="size-3.5" />
           </button>

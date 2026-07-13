@@ -86,7 +86,7 @@ export function WarmPathPanel() {
                     onClick={() => {
                       setSelected(target);
                     }}
-                    className="flex w-full items-center gap-1 px-2.5 py-1.5 text-left text-sm text-paper hover:bg-paper/[0.05]"
+                    className="flex w-full items-center gap-1 px-2.5 py-1.5 text-left text-sm text-paper hover:bg-wash/[0.05]"
                   >
                     {target.kind === "company" ? "🏢 " : ""}
                     {target.label}
@@ -135,7 +135,7 @@ function PathChip({
     <span
       className={
         kind === "company"
-          ? "rounded-md border border-seam bg-paper/[0.05] px-2 py-0.5 text-xs text-paper/90"
+          ? "rounded-md border border-seam bg-wash/[0.05] px-2 py-0.5 text-xs text-paper/90"
           : kind === "you"
             ? "rounded-full bg-amber/20 px-2 py-0.5 text-xs font-medium text-amber"
             : "rounded-full border border-amber/30 bg-amber/10 px-2 py-0.5 text-xs text-amber"

@@ -16,9 +16,9 @@ export function Shell({
 }) {
   return (
     <div
-      className={`font-ui overflow-hidden rounded-2xl border border-paper/10 bg-gradient-to-b from-panel to-panel-2 shadow-[0_1px_0_rgba(255,255,255,0.06)_inset,0_50px_140px_-30px_rgba(0,0,0,0.9)] ring-1 ring-black/40 ${className}`}
+      className={`font-ui overflow-hidden rounded-2xl border border-wash/10 bg-gradient-to-b from-panel to-panel-2 shadow-[0_1px_0_rgba(255,255,255,0.06)_inset,0_50px_140px_-30px_rgba(0,0,0,0.9)] ring-1 ring-black/40 ${className}`}
     >
-      <div className="flex items-center gap-1.5 border-b border-paper/[0.07] bg-panel-2/80 px-4 py-2.5 backdrop-blur">
+      <div className="flex items-center gap-1.5 border-b border-wash/[0.07] bg-panel-2/80 px-4 py-2.5 backdrop-blur">
         <span className="size-2.5 rounded-full bg-[#f2635a]/80" />
         <span className="size-2.5 rounded-full bg-[#f5bd4f]/80" />
         <span className="size-2.5 rounded-full bg-[#61c454]/80" />

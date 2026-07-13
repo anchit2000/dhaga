@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { ModeToggle } from "@/components/brand/ModeToggle";
 import { ThreadMark } from "@/components/brand/ThreadMark";
 
 const NAV_LINKS = [
@@ -35,7 +36,8 @@ export function Header({ isSignedIn }: HeaderProps) {
             </Link>
           ))}
         </nav>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <ModeToggle />
           {isSignedIn ? (
             <Button render={<Link href="/app" />} size="sm">
               Dashboard

@@ -28,7 +28,7 @@ export default async function AuthErrorPage({ searchParams }: AuthErrorPageProps
         </p>
         <Link
           href={accessRequested ? "/" : "/login"}
-          className="mt-6 inline-block text-sm text-amber hover:underline"
+          className="mt-6 inline-block text-sm text-ember hover:underline"
         >
           {accessRequested ? "Back to Dhaga" : "Back to sign in"}
         </Link>

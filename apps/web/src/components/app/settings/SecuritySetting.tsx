@@ -66,7 +66,7 @@ export function SecuritySetting({ twoFactorEnabled: initialEnabled }: SecuritySe
             Two-factor authentication is {enabled ? "on" : "off"}
           </div>
           {setup ? (
-            <div className="space-y-2 rounded-lg border border-seam bg-ink p-3 text-sm">
+            <div className="space-y-2 rounded-lg border border-seam bg-well p-3 text-sm">
               <p className="text-fog">
                 Scan this in your authenticator app (or paste it as a setup URI):
               </p>

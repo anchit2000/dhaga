@@ -7,7 +7,7 @@ const WAVE_BARS = [0.5, 0.9, 0.6, 1, 0.7, 0.4, 0.85, 0.55, 0.95, 0.65, 0.45, 0.8
 /** Phone screen: voice note recording → facts with receipts. */
 export function VoiceScreen() {
   return (
-    <div className="flex h-full flex-col bg-gradient-to-b from-[#1a1510] to-ink">
+    <div className="flex h-full flex-col bg-gradient-to-b from-panel to-ink">
       <StatusBar />
       <ScreenHeader title="Voice note" chip="0:23 · recording" />
       <div className="min-h-0 flex-1 px-4">
@@ -15,7 +15,7 @@ export function VoiceScreen() {
           <Headshot personId="rohan" className="size-8" />
           <div>
             <p className="text-[11px] font-medium text-paper">Rohan Mehta</p>
-            <p className="font-mono text-[8px] text-amber">
+            <p className="font-mono text-[8px] text-ember">
               <span className="mr-1 inline-block size-1.5 animate-pulse rounded-full bg-red-400 align-middle" />
               Listening…
             </p>
@@ -62,7 +62,7 @@ export function VoiceScreen() {
 /** Phone screen: the Pulse tab — proactive alerts. */
 export function AlertsScreen() {
   return (
-    <div className="flex h-full flex-col bg-gradient-to-b from-[#1a1510] to-ink">
+    <div className="flex h-full flex-col bg-gradient-to-b from-panel to-ink">
       <StatusBar />
       <ScreenHeader title="Home" chip="3 new" />
       <div className="min-h-0 flex-1 space-y-2 px-4">
@@ -73,7 +73,7 @@ export function AlertsScreen() {
         ].map((alert, i) => (
           <div
             key={alert.title}
-            className="flex items-start gap-2.5 rounded-xl border border-paper/10 bg-paper/[0.06] p-2.5 opacity-0 backdrop-blur motion-safe:animate-[dhaga-rise_0.5s_ease-out_forwards] motion-reduce:opacity-100"
+            className="flex items-start gap-2.5 rounded-xl border border-wash/10 bg-wash/[0.06] p-2.5 opacity-0 backdrop-blur motion-safe:animate-[dhaga-rise_0.5s_ease-out_forwards] motion-reduce:opacity-100"
             style={{ animationDelay: `${0.3 + i * 0.35}s` }}
           >
             <Headshot personId={alert.personId} className="size-8" />
@@ -83,7 +83,7 @@ export function AlertsScreen() {
                 <span className="font-mono text-[7px] text-fog/60">{alert.time}</span>
               </div>
               <p className="text-[9px] leading-snug text-fog">{alert.body}</p>
-              <span className="mt-1.5 inline-block rounded-full border border-amber/40 bg-amber/10 px-2 py-0.5 text-[8px] font-medium text-amber">
+              <span className="mt-1.5 inline-block rounded-full border border-amber/40 bg-amber/10 px-2 py-0.5 text-[8px] font-medium text-ember">
                 {i === 0 ? "Draft note ✦" : i === 1 ? "Say hi" : "Reach out"}
               </span>
             </div>
@@ -104,7 +104,7 @@ export function IdleScreen() {
     { id: "mei", sub: "Aerolane · via Priya" },
   ];
   return (
-    <div className="flex h-full flex-col bg-gradient-to-b from-[#1a1510] to-ink">
+    <div className="flex h-full flex-col bg-gradient-to-b from-panel to-ink">
       <StatusBar />
       <ScreenHeader title="People" chip="212 threads" />
       <div className="min-h-0 flex-1 space-y-1.5 px-4">

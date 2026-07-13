@@ -21,7 +21,7 @@ export function EventPicker({
   defaultEventId?: string;
 }) {
   return (
-    <div className="grid grid-cols-1 gap-4 rounded-xl border border-seam bg-paper/[0.02] p-4 sm:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 rounded-xl border border-seam bg-wash/[0.02] p-4 sm:grid-cols-2">
       <div>
         <Label htmlFor="eventId" className="mb-2 text-fog">
           Event

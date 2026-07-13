@@ -105,7 +105,7 @@ export function OnDemandNetwork({ contactId }: { contactId: string }) {
               value={connectionQuery}
               onChange={(event) => setConnectionQuery(event.target.value)}
               placeholder="Filter people…"
-              className="h-8 min-w-40 flex-1 rounded-full border border-seam bg-ink px-3 text-xs outline-none focus:border-amber/50"
+              className="h-8 min-w-40 flex-1 rounded-full border border-seam bg-well px-3 text-xs outline-none focus:border-amber/50"
             />
             <select
               value=""
@@ -114,7 +114,7 @@ export function OnDemandNetwork({ contactId }: { contactId: string }) {
                 if (value) setSelectedFacets((current) => [...new Set([...current, value])]);
               }}
               aria-label="Relationship filter"
-              className="h-8 max-w-full rounded-full border border-seam bg-ink px-3 text-xs text-paper outline-none focus:border-amber/50"
+              className="h-8 max-w-full rounded-full border border-seam bg-well px-3 text-xs text-paper outline-none focus:border-amber/50"
             >
               <option value="">All relationship types</option>
               {facets
@@ -191,7 +191,7 @@ export function OnDemandNetwork({ contactId }: { contactId: string }) {
               value={intent}
               onChange={(event) => setIntent(event.target.value as NetworkIntent)}
               aria-label="Your goal"
-              className="h-8 rounded-full border border-seam bg-ink px-3 text-xs text-paper outline-none focus:border-amber/50"
+              className="h-8 rounded-full border border-seam bg-well px-3 text-xs text-paper outline-none focus:border-amber/50"
             >
               <option value="general">Any goal</option>
               <option value="founder">Founder</option>
@@ -202,7 +202,7 @@ export function OnDemandNetwork({ contactId }: { contactId: string }) {
               value={context}
               onChange={(event) => setContext(event.target.value)}
               placeholder="Useful context: fintech, India, seed stage…"
-              className="h-8 rounded-full border border-seam bg-ink px-3 text-xs outline-none focus:border-amber/50"
+              className="h-8 rounded-full border border-seam bg-well px-3 text-xs outline-none focus:border-amber/50"
             />
             <LoadButton loading={loading.nearby} onClick={() => loadNearby(undefined, true)}>
               Rank locally
@@ -249,7 +249,7 @@ function LoadButton({ loading, onClick, children }: { loading: boolean; onClick:
       type="button"
       disabled={loading}
       onClick={onClick}
-      className="inline-flex h-8 items-center justify-center gap-1.5 rounded-full border border-amber/35 px-3 text-xs text-amber transition-colors hover:bg-amber/10 disabled:opacity-60"
+      className="inline-flex h-8 items-center justify-center gap-1.5 rounded-full border border-amber/35 px-3 text-xs text-ember transition-colors hover:bg-amber/10 disabled:opacity-60"
     >
       {loading ? <Loader2 className="size-3 animate-spin" /> : null}
       {children}

@@ -58,7 +58,7 @@ export function GoingQuiet({
               <input type="hidden" name="contactId" value={person.id} />
               <button
                 type="submit"
-                className="rounded-full border border-amber/40 px-3 py-1.5 text-xs text-amber transition-colors hover:bg-amber/10"
+                className="rounded-full border border-amber/40 px-3 py-1.5 text-xs text-ember transition-colors hover:bg-amber/10"
               >
                 I reached out ✓
               </button>
@@ -71,7 +71,7 @@ export function GoingQuiet({
           +{overflow} more quietly fading —{" "}
           <Link
             href="/app/people"
-            className="text-amber underline-offset-2 hover:underline"
+            className="text-ember underline-offset-2 hover:underline"
           >
             see everyone
           </Link>

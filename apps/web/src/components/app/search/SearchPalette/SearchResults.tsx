@@ -43,7 +43,7 @@ export function SearchResults({
               <Link
                 href={`/app/people/${hit.contactId}`}
                 onClick={onNavigate}
-                className="block rounded-xl border border-seam bg-panel p-4 transition-colors hover:bg-paper/[0.03]"
+                className="block rounded-xl border border-seam bg-panel p-4 transition-colors hover:bg-wash/[0.03]"
               >
                 <p className="text-sm font-medium text-paper">
                   {hit.name}

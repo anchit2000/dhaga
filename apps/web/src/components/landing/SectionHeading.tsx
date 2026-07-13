@@ -64,7 +64,7 @@ export function SectionHeading({
 
   return (
     <div ref={root} className={align === "center" ? "text-center" : ""}>
-      <p className="relative inline-block font-mono text-xs uppercase tracking-[0.22em] text-amber">
+      <p className="relative inline-block font-mono text-xs uppercase tracking-[0.22em] text-ember">
         {eyebrow}
         <span
           data-underline

@@ -72,7 +72,7 @@ export function ApiKeysSetting({ keys }: { keys: ApiKeySummary[] }) {
 
       {state.key ? (
         <div className="rounded-lg border border-amber/30 bg-amber/10 p-3 text-sm">
-          <p className="mb-1 text-amber">
+          <p className="mb-1 text-ember">
             Copy this now — it won&apos;t be shown again.
           </p>
           <code className="block overflow-x-auto text-xs text-paper">{state.key}</code>

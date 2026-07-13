@@ -9,7 +9,7 @@ const EXTRACTED_FIELDS = [
 /** Phone screen: a real-proportion business card in the viewfinder, fields extracting. */
 export function ScanScreen() {
   return (
-    <div className="flex h-full flex-col bg-gradient-to-b from-[#1a1510] to-ink">
+    <div className="flex h-full flex-col bg-gradient-to-b from-panel to-ink">
       <StatusBar />
       <ScreenHeader title="Scan" chip="Web Summit 2026" />
 
@@ -22,12 +22,13 @@ export function ScanScreen() {
           <Bracket className="bottom-0 right-0 border-b-2 border-r-2" />
 
           {/* the card — real business-card proportions (3.5in × 2in) */}
-          <div className="flex aspect-[7/4] rotate-[-1.5deg] flex-col justify-between rounded-md bg-gradient-to-br from-[#faf7f0] to-[#ece5d6] px-3 py-2 text-ink shadow-[0_10px_30px_-8px_rgba(0,0,0,0.7),0_1px_0_rgba(255,255,255,0.6)_inset]">
+          {/* the physical card's ink stays fixed regardless of app theme — it's paper, not UI chrome */}
+          <div className="flex aspect-[7/4] rotate-[-1.5deg] flex-col justify-between rounded-md bg-gradient-to-br from-[#faf7f0] to-[#ece5d6] px-3 py-2 text-[#0d0b09] shadow-[0_10px_30px_-8px_rgba(0,0,0,0.7),0_1px_0_rgba(255,255,255,0.6)_inset]">
             <div className="flex items-center justify-between gap-2">
               <span className="flex size-4 shrink-0 items-center justify-center rounded-[3px] bg-[#1f3a33] font-ui text-[8px] font-semibold text-[#e8dcc0]">
                 M
               </span>
-              <span className="truncate whitespace-nowrap font-mono text-[6px] uppercase tracking-[0.18em] text-ink/50">
+              <span className="truncate whitespace-nowrap font-mono text-[6px] uppercase tracking-[0.18em] text-[#0d0b09]/50">
                 Meridian Capital
               </span>
             </div>
@@ -35,17 +36,17 @@ export function ScanScreen() {
               <p className="font-ui text-[13px] font-semibold leading-none tracking-tight">
                 Nisha Shah
               </p>
-              <p className="mt-0.5 whitespace-nowrap text-[6.5px] uppercase tracking-[0.12em] text-ink/60">
+              <p className="mt-0.5 whitespace-nowrap text-[6.5px] uppercase tracking-[0.12em] text-[#0d0b09]/60">
                 Principal · Early Stage
               </p>
             </div>
-            <div className="flex items-end justify-between gap-2 border-t border-ink/10 pt-1">
-              <p className="min-w-0 truncate whitespace-nowrap text-[6px] leading-snug text-ink/70">
+            <div className="flex items-end justify-between gap-2 border-t border-[#0d0b09]/10 pt-1">
+              <p className="min-w-0 truncate whitespace-nowrap text-[6px] leading-snug text-[#0d0b09]/70">
                 nisha@meridian.vc · meridian.vc
               </p>
               <div className="grid shrink-0 grid-cols-4 gap-[1px]" aria-hidden="true">
                 {QR_DOTS.map((on, i) => (
-                  <span key={i} className={`size-[2.5px] ${on ? "bg-ink/70" : "bg-transparent"}`} />
+                  <span key={i} className={`size-[2.5px] ${on ? "bg-[#0d0b09]/70" : "bg-transparent"}`} />
                 ))}
               </div>
             </div>
@@ -67,13 +68,13 @@ export function ScanScreen() {
               </span>
               <span className="flex min-w-0 items-center gap-1.5 text-[10px] text-paper">
                 <span className="truncate whitespace-nowrap">{field.value}</span>
-                <span className="shrink-0 text-amber">✓</span>
+                <span className="shrink-0 text-ember">✓</span>
               </span>
             </div>
           ))}
         </div>
 
-        <div className="mt-3 whitespace-nowrap rounded-full bg-gradient-to-b from-[#f0bc6e] to-[#d18f36] py-2 text-center text-[11px] font-semibold text-ink shadow-lg">
+        <div className="mt-3 whitespace-nowrap rounded-full bg-gradient-to-b from-[#f0bc6e] to-[#d18f36] py-2 text-center text-[11px] font-semibold text-on-accent shadow-lg">
           Save contact
         </div>
       </div>

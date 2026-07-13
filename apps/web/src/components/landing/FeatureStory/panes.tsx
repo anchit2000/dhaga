@@ -5,7 +5,7 @@ export function SearchPane() {
   return (
     <div className="flex min-w-0 flex-1 flex-col p-5">
       <div className="flex items-baseline gap-2.5 rounded-lg border border-amber/40 bg-ink/70 px-4 py-3 font-mono text-sm shadow-[0_0_24px_-8px_rgba(226,164,76,0.5)]">
-        <span className="text-amber">ask&gt;</span>
+        <span className="text-ember">ask&gt;</span>
         <span className="text-paper">
           who do I know in logistics?
           <span className="ml-0.5 inline-block h-3.5 w-1.5 animate-pulse bg-amber align-middle" />
@@ -79,7 +79,7 @@ export function DraftPane() {
           <span className="text-[10px] italic text-fog/70">
             built from your voice note · edit anything
           </span>
-          <span className="rounded-full bg-gradient-to-b from-[#f0bc6e] to-[#d18f36] px-4 py-1.5 text-[11px] font-semibold text-ink shadow">
+          <span className="rounded-full bg-gradient-to-b from-[#f0bc6e] to-[#d18f36] px-4 py-1.5 text-[11px] font-semibold text-on-accent shadow">
             Send
           </span>
         </div>

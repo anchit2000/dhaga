@@ -43,7 +43,7 @@ export default function PrivacyPage() {
         everything, export anytime. The long version is the code —{" "}
         <a
           href="https://github.com/anchit2000/dhaga"
-          className="text-amber underline-offset-2 hover:underline"
+          className="text-ember underline-offset-2 hover:underline"
         >
           it&apos;s open source
         </a>

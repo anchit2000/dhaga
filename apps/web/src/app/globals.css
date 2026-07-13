@@ -10,19 +10,6 @@
   --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -48,75 +35,6 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-:root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
-
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
-}
-
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -131,16 +49,22 @@
 
 /* ───────────────────────── Dhaga brand ───────────────────────── */
 
-@theme {
-  /* warm near-black ground with amber thread glow (see BRD + landing identity) */
-  --color-ink: #0d0b09;
-  --color-panel: #16120e;
-  --color-panel-2: #1d1812;
-  --color-seam: #2b241b;
-  --color-paper: #f3ede2;
-  --color-fog: #a49a8a;
-  --color-amber: #e2a44c;
-  --color-ember: #c37731;
+@theme inline {
+  /* warm near-black ground with amber thread glow (see BRD + landing identity) —
+     indirected through --brand-* so /app/** can flip light/dark via the
+     .dark class while the marketing site (forced .dark on its own root)
+     stays pixel-identical */
+  --color-ink: var(--brand-ink);
+  --color-panel: var(--brand-panel);
+  --color-panel-2: var(--brand-panel-2);
+  --color-seam: var(--brand-seam);
+  --color-paper: var(--brand-paper);
+  --color-fog: var(--brand-fog);
+  --color-amber: var(--brand-amber);
+  --color-ember: var(--brand-ember);
+  --color-well: var(--brand-well);
+  --color-on-accent: var(--brand-on-accent);
+  --color-wash: var(--brand-wash);
   --font-display: var(--font-geist-pixel), ui-sans-serif, system-ui,
     sans-serif;
   /* plain, highly-legible stack for the tiny simulated app-UI text inside
@@ -149,28 +73,59 @@
   --font-ui: ui-sans-serif, system-ui, -apple-system, sans-serif;
 }
 
-/* Dark-warm defaults so shadcn primitives match the brand without per-use overrides */
+/* Light mode (/app/** default via next-themes). The marketing site forces
+   its own .dark ancestor and never sees these. */
 :root {
-  --background: #0d0b09;
-  --foreground: #f3ede2;
-  --card: #16120e;
-  --card-foreground: #f3ede2;
-  --popover: #16120e;
-  --popover-foreground: #f3ede2;
-  --primary: #e2a44c;
-  --primary-foreground: #0d0b09;
-  --secondary: #1d1812;
-  --secondary-foreground: #f3ede2;
-  --muted: #1d1812;
-  --muted-foreground: #a49a8a;
-  --accent: #1d1812;
-  --accent-foreground: #f3ede2;
-  --border: #2b241b;
-  --input: #2b241b;
-  --ring: #e2a44c;
+  --brand-ink: #f2ebdc;
+  --brand-panel: #fdfbf6;
+  --brand-panel-2: #ece1cb;
+  --brand-seam: #ddd0b6;
+  --brand-paper: #241d15;
+  --brand-fog: #7d715c;
+  --brand-amber: #e2a44c;
+  --brand-ember: #9c5a1f;
+  --brand-well: #e8dcc0;
+  --brand-on-accent: #1c150d;
+  --brand-wash: #1c150d;
+
+  --background: var(--brand-ink);
+  --foreground: var(--brand-paper);
+  --card: var(--brand-panel);
+  --card-foreground: var(--brand-paper);
+  --popover: var(--brand-panel);
+  --popover-foreground: var(--brand-paper);
+  --primary: var(--brand-amber);
+  --primary-foreground: var(--brand-on-accent);
+  --secondary: var(--brand-panel-2);
+  --secondary-foreground: var(--brand-paper);
+  --muted: var(--brand-panel-2);
+  --muted-foreground: var(--brand-fog);
+  --accent: var(--brand-panel-2);
+  --accent-foreground: var(--brand-paper);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: var(--brand-seam);
+  --input: var(--brand-seam);
+  --ring: var(--brand-amber);
   --radius: 0.5rem;
   --font-sans: var(--font-geist-pixel), ui-sans-serif, system-ui, sans-serif;
   --font-geist-mono: var(--font-plex-mono), Consolas, monospace;
+}
+
+/* Dark mode (unchanged values) — the marketing site's default, and /app/**'s
+   default until a user opts into light. */
+.dark {
+  --brand-ink: #0d0b09;
+  --brand-panel: #16120e;
+  --brand-panel-2: #1d1812;
+  --brand-seam: #2b241b;
+  --brand-paper: #f3ede2;
+  --brand-fog: #a49a8a;
+  --brand-amber: #e2a44c;
+  --brand-ember: #c37731;
+  --brand-well: #0a0806;
+  --brand-on-accent: #0d0b09;
+  --brand-wash: #f3ede2;
+  --destructive: oklch(0.704 0.191 22.216);
 }
 
 ::selection {

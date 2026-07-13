@@ -54,12 +54,12 @@ export function PersonNode({ data }: NodeProps<PersonFlowNode>) {
           </span>
         ) : null}
         {badge ? (
-          <span className="absolute bottom-full mb-2 animate-pulse whitespace-nowrap rounded-full bg-amber px-2.5 py-1 text-[10px] font-semibold text-ink shadow-lg">
+          <span className="absolute bottom-full mb-2 animate-pulse whitespace-nowrap rounded-full bg-amber px-2.5 py-1 text-[10px] font-semibold text-on-accent shadow-lg">
             Job change · Stripe → new co
           </span>
         ) : null}
         {draft ? (
-          <span className="absolute bottom-full mb-2 whitespace-nowrap rounded-md border border-amber/50 bg-panel px-2.5 py-1.5 text-[10px] text-amber shadow-lg">
+          <span className="absolute bottom-full mb-2 whitespace-nowrap rounded-md border border-amber/50 bg-panel px-2.5 py-1.5 text-[10px] text-ember shadow-lg">
             Draft follow-up ✦
           </span>
         ) : null}
@@ -91,7 +91,7 @@ export function AnnotationNode({ data }: NodeProps<AnnotationFlowNode>) {
         className="pointer-events-none h-[280px] w-[360px] -translate-x-1/2 -translate-y-1/2 rounded-[50%] border border-dashed border-amber/60 transition-opacity duration-700"
         style={{ opacity: data.visible ? 1 : 0 }}
       >
-        <span className="absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap font-mono text-[10px] uppercase tracking-widest text-amber">
+        <span className="absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap font-mono text-[10px] uppercase tracking-widest text-ember">
           Web Summit 2026 — auto-grouped
         </span>
       </div>
@@ -99,7 +99,7 @@ export function AnnotationNode({ data }: NodeProps<AnnotationFlowNode>) {
   }
   return (
     <span
-      className="pointer-events-none block -translate-x-1/2 -translate-y-1/2 -rotate-6 whitespace-nowrap font-mono text-[11px] text-amber transition-opacity duration-700"
+      className="pointer-events-none block -translate-x-1/2 -translate-y-1/2 -rotate-6 whitespace-nowrap font-mono text-[11px] text-ember transition-opacity duration-700"
       style={{ opacity: data.visible ? 1 : 0 }}
     >
       warm path → Aerolane

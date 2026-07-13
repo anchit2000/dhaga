@@ -14,7 +14,7 @@ export function RecommendedList({ recommendations }: { recommendations: Recommen
           <li key={person.contactId}>
             <Link
               href={`/app/people/${person.contactId}`}
-              className="flex h-full items-start gap-2.5 rounded-xl border border-seam bg-panel p-3 transition-colors hover:bg-paper/[0.03]"
+              className="flex h-full items-start gap-2.5 rounded-xl border border-seam bg-panel p-3 transition-colors hover:bg-wash/[0.03]"
             >
               <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-amber/15 font-display text-[10px] text-amber">
                 {person.name.charAt(0).toUpperCase()}
@@ -24,7 +24,7 @@ export function RecommendedList({ recommendations }: { recommendations: Recommen
                 <span className="block truncate text-[10px] text-fog">
                   {[person.title, person.companyName].filter(Boolean).join(" · ")}
                 </span>
-                <span className="mt-1 block text-[10px] leading-relaxed text-amber">
+                <span className="mt-1 block text-[10px] leading-relaxed text-ember">
                   {person.reasons.join(" · ")}
                 </span>
                 <span className="mt-1 block text-[10px] text-fog">{person.action}</span>

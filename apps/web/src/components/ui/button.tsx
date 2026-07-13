@@ -9,9 +9,9 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-gradient-to-b from-[#f0bc6e] to-[#d18f36] font-semibold text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.4),inset_0_-1px_0_rgba(0,0,0,0.2),0_1px_2px_rgba(0,0,0,0.4),0_12px_32px_-12px_rgba(226,164,76,0.55)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.4),inset_0_-1px_0_rgba(0,0,0,0.2),0_1px_2px_rgba(0,0,0,0.4),0_16px_40px_-12px_rgba(226,164,76,0.8)] hover:brightness-[1.06] active:brightness-95",
+          "bg-gradient-to-b from-[#f0bc6e] to-[#d18f36] font-semibold text-on-accent shadow-[inset_0_1px_0_rgba(255,255,255,0.4),inset_0_-1px_0_rgba(0,0,0,0.2),0_1px_2px_rgba(0,0,0,0.4),0_12px_32px_-12px_rgba(226,164,76,0.55)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.4),inset_0_-1px_0_rgba(0,0,0,0.2),0_1px_2px_rgba(0,0,0,0.4),0_16px_40px_-12px_rgba(226,164,76,0.8)] hover:brightness-[1.06] active:brightness-95",
         outline:
-          "border-paper/15 bg-paper/[0.04] text-paper backdrop-blur-sm hover:border-paper/30 hover:bg-paper/[0.08]",
+          "border-wash/15 bg-wash/[0.04] text-paper backdrop-blur-sm hover:border-wash/30 hover:bg-wash/[0.08]",
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
         ghost:

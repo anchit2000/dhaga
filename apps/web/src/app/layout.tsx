@@ -3,6 +3,7 @@ import { IBM_Plex_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { ThemeProvider } from "next-themes";
 import "./globals.css";
 
 const plexMono = IBM_Plex_Mono({
@@ -56,6 +57,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      // suppressHydrationWarning: next-themes sets class/style="color-scheme"
+      // on <html> from a pre-hydration script, which never matches the
+      // server-rendered markup by design (see next-themes docs).
+      suppressHydrationWarning
       className={`${plexMono.variable} ${geistPixel.variable} h-full antialiased`}
     >
       {/* suppressHydrationWarning: browser extensions (Grammarly et al.)
@@ -65,7 +70,9 @@ export default function RootLayout({
         suppressHydrationWarning
         className="min-h-full flex flex-col bg-ink text-paper"
       >
-        {children}
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          {children}
+        </ThemeProvider>
         <Analytics />
         <SpeedInsights />
       </body>

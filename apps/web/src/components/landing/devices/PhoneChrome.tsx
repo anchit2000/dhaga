@@ -46,7 +46,7 @@ export type TabId = (typeof TABS)[number]["id"];
 
 export function TabBar({ active }: { active: TabId }) {
   return (
-    <div className="mt-auto flex items-end justify-between border-t border-paper/[0.07] bg-ink/80 px-4 pb-4 pt-1.5 backdrop-blur">
+    <div className="mt-auto flex items-end justify-between border-t border-wash/[0.07] bg-ink/80 px-4 pb-4 pt-1.5 backdrop-blur">
       {TABS.map((tab) => {
         const Icon = tab.icon;
         const isActive = tab.id === active;
@@ -54,7 +54,7 @@ export function TabBar({ active }: { active: TabId }) {
           return (
             <span
               key={tab.id}
-              className={`-mt-4 flex size-9 items-center justify-center rounded-full text-ink shadow-[0_6px_18px_-4px_rgba(226,164,76,0.7)] ${
+              className={`-mt-4 flex size-9 items-center justify-center rounded-full text-on-accent shadow-[0_6px_18px_-4px_rgba(226,164,76,0.7)] ${
                 isActive
                   ? "bg-gradient-to-b from-[#f0bc6e] to-[#d18f36] ring-2 ring-amber/40"
                   : "bg-gradient-to-b from-[#f0bc6e] to-[#d18f36]"
@@ -68,7 +68,7 @@ export function TabBar({ active }: { active: TabId }) {
           <span
             key={tab.id}
             className={`flex flex-col items-center gap-0.5 text-[7px] ${
-              isActive ? "text-amber" : "text-fog/70"
+              isActive ? "text-ember" : "text-fog/70"
             }`}
           >
             <Icon />

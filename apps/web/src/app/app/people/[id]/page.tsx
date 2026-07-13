@@ -89,7 +89,7 @@ export default async function PersonPage({
                 {contact.tags.map((tag) => (
                   <span
                     key={tag}
-                    className="rounded-full border border-seam bg-paper/[0.04] px-2.5 py-0.5 text-xs text-fog"
+                    className="rounded-full border border-seam bg-wash/[0.04] px-2.5 py-0.5 text-xs text-fog"
                   >
                     {tag}
                   </span>

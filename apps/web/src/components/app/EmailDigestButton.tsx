@@ -18,7 +18,7 @@ export function EmailDigestButton({ eventId }: { eventId: string }) {
         <SubmitButton className="h-9 px-4 text-sm">Email me the digest</SubmitButton>
       </form>
       {state.sent ? (
-        <p className="text-xs text-amber/90" role="status">
+        <p className="text-xs text-ember/90" role="status">
           Sent — check your inbox.
         </p>
       ) : null}

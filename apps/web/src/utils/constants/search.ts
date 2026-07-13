@@ -32,6 +32,14 @@ export const DEFAULT_SEARCH_WEIGHTS: SearchWeights = {
 export const SEARCH_WEIGHT_MIN = 0;
 export const SEARCH_WEIGHT_MAX = 20;
 
+/** Minimum Postgres `word_similarity` score (0-1) for a query word to count
+ *  as a fuzzy/typo match against a contact's name — e.g. "amchit" vs.
+ *  "anchit" scores ~0.4. Below the built-in `pg_trgm.word_similarity_threshold`
+ *  default of 0.6, which is tuned for longer substrings, not single-letter
+ *  typos in short names — so this is enforced in the query itself instead
+ *  of relying on that GUC. */
+export const NAME_FUZZY_MATCH_THRESHOLD = 0.3;
+
 /** Order + labels for the tuning panel, one slider per hybridSearch source. */
 export const SEARCH_WEIGHT_FIELDS: { key: keyof SearchWeights; label: string }[] = [
   { key: "semantic", label: "Semantic similarity" },

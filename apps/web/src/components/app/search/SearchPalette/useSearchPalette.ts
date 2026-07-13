@@ -80,7 +80,12 @@ export function useSearchPalette(initialWeights: SearchWeights) {
     setShowTuner,
     formId,
     dispatch: mode === "search" ? searchDispatch : askDispatch,
-    search: { state: searchState, pending: searchPending },
+    // Stale the instant the query outruns the last dispatched search, not just
+    // while the request is in flight — otherwise the 300ms debounce window
+    // shows the previous query's results at full opacity with no cue that a
+    // newer search is queued, which reads as "search stopped working" until
+    // results suddenly swap in.
+    search: { state: searchState, pending: searchPending || query.trim() !== searchState.query },
     ask: { state: askState, pending: askPending },
     dictation,
   };

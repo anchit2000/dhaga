@@ -61,7 +61,7 @@ export function SearchPalette({
                     ? "Filter by name, fact, or note…"
                     : "Who did I meet in logistics who mentioned an AI budget?"
                 }
-                className="h-9 flex-1 border-none bg-transparent px-0 shadow-none focus-visible:ring-0"
+                className="h-9 flex-1 border-none bg-transparent px-0 py-0 shadow-none focus-visible:ring-0"
               />
               {p.dictation.supported ? (
                 <button

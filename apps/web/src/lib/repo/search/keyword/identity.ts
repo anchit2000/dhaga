@@ -1,7 +1,7 @@
 import { eq, ilike, or, sql, type SQL } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { companies, contacts } from "@/lib/db/schema";
-import type { SearchWeights } from "@/utils/constants/search";
+import { NAME_FUZZY_MATCH_THRESHOLD, type SearchWeights } from "@/utils/constants/search";
 import { buildTsQuery } from "../tokenize";
 import type { KeywordHit } from "./types";
 
@@ -10,6 +10,30 @@ import type { KeywordHit } from "./types";
  *  guarantee `words` is non-empty, so `or()` never returns undefined. */
 function anyFragmentMatches(column: SQL, words: string[]): SQL {
   return or(...words.map((word) => ilike(column, `%${word}%`))) as SQL;
+}
+
+/** OR of a `word_similarity` typo check per word against the lowercased
+ *  name — catches transpositions/substitutions prefix tsquery can't (e.g.
+ *  "Amchit" finding "Anchit"). `word_similarity` (not plain `similarity`)
+ *  scores the word against its best-matching substring of the name, so a
+ *  first-name typo isn't diluted by an unrelated surname. Not GIN-backed —
+ *  a per-row function call, fine at one user's contact-list scale. */
+function anyNameSimilarity(words: string[]): SQL {
+  return or(
+    ...words.map(
+      (word) =>
+        sql`word_similarity(${word}, lower(${contacts.name})) > ${NAME_FUZZY_MATCH_THRESHOLD}`,
+    ),
+  ) as SQL;
+}
+
+/** Summed `word_similarity` score per word, folded into `identity`'s rank
+ *  alongside ts_rank — same additive scoring model, same weight bucket. */
+function nameSimilarityScore(words: string[]): SQL {
+  return sql.join(
+    words.map((word) => sql`word_similarity(${word}, lower(${contacts.name}))`),
+    sql` + `,
+  );
 }
 
 function firstMatch(words: string[], value: string | null | undefined): string | undefined {
@@ -62,7 +86,8 @@ function detailSnippet(
 
 /**
  * contacts + companies: name/title/location/tags and company name/sector
- * via tsvector rank; emails/phones/links/company domain via trigram, since
+ * via tsvector rank, plus a word_similarity fuzzy pass on name for typos;
+ * emails/phones/links/company domain via trigram fragment match, since
  * Postgres tokenizes an email or URL as a single lexeme — "freightline"
  * alone never matches "rohan@freightline.com" through tsvector.
  */
@@ -77,6 +102,7 @@ export async function contactAndCompanyHits(
   const phonesMatch = anyFragmentMatches(sql`${contacts.phones}::text`, words);
   const linksMatch = anyFragmentMatches(sql`${contacts.links}::text`, words);
   const domainMatch = anyFragmentMatches(sql`${companies.domain}`, words);
+  const nameFuzzyMatch = anyNameSimilarity(words);
 
   const rows = await db
     .select({
@@ -91,6 +117,7 @@ export async function contactAndCompanyHits(
       rank: sql<number>`
         ts_rank(${contacts}.search_tsv, to_tsquery('english', ${tsq}))
         + coalesce(ts_rank(${companies}.search_tsv, to_tsquery('english', ${tsq})), 0)
+        + (${nameSimilarityScore(words)})
       `,
       trigramMatch: sql<boolean>`(${emailsMatch} or ${phonesMatch} or ${linksMatch} or ${domainMatch})`,
     })
@@ -100,6 +127,7 @@ export async function contactAndCompanyHits(
       ${contacts}.search_tsv @@ to_tsquery('english', ${tsq})
       or ${companies}.search_tsv @@ to_tsquery('english', ${tsq})
       or ${emailsMatch} or ${phonesMatch} or ${linksMatch} or ${domainMatch}
+      or ${nameFuzzyMatch}
     )`);
 
   return rows.map((row) => ({

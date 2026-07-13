@@ -4,7 +4,6 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import type { Edge, ReactFlowInstance, Viewport } from "@xyflow/react";
 import {
   GRAPH_CAMERA_DURATION_MS,
-  GRAPH_DIRECTION_PAN_RATIO,
   GRAPH_FOCUS_ZOOM,
   GRAPH_INITIAL_ZOOM,
 } from "@/utils/constants/graph";
@@ -48,16 +47,12 @@ export function useViewportNavigation(clusters: Cluster[]) {
 
   async function navigate(direction: keyof DirectionCounts): Promise<void> {
     const instance = flowRef.current;
-    const element = containerRef.current;
-    if (!instance || !element) return;
-    const viewport = instance.getViewport();
-    const dx = element.clientWidth * GRAPH_DIRECTION_PAN_RATIO;
-    const dy = element.clientHeight * GRAPH_DIRECTION_PAN_RATIO;
-    if (direction === "east") viewport.x -= dx;
-    if (direction === "west") viewport.x += dx;
-    if (direction === "south") viewport.y -= dy;
-    if (direction === "north") viewport.y += dy;
-    await instance.setViewport(viewport, { duration: GRAPH_CAMERA_DURATION_MS });
+    const target = result.targets[direction];
+    if (!instance || !target) return;
+    await instance.setCenter(target.x, target.y, {
+      zoom: instance.getZoom(),
+      duration: GRAPH_CAMERA_DURATION_MS,
+    });
     syncBounds(instance.getViewport());
   }
 

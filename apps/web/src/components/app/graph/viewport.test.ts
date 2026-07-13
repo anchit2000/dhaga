@@ -15,6 +15,9 @@ describe("graph viewport virtualization", () => {
 
     expect(result.visibleClusters.length).toBeLessThan(50);
     expect(result.visibleClusters.length + unloaded).toBe(clusters.length);
+    for (const direction of ["north", "east", "south", "west"] as const) {
+      expect(result.directions[direction] === 0).toBe(result.targets[direction] === null);
+    }
   });
 
   it("translates the React Flow viewport into world coordinates", () => {
@@ -24,5 +27,24 @@ describe("graph viewport virtualization", () => {
       minY: 25,
       maxY: 325,
     });
+  });
+
+  it("targets the nearest off-screen cluster in each advertised direction", () => {
+    const clusters: Cluster[] = Array.from({ length: 100 }, (_, index) => ({
+      key: `company-${index}`,
+      label: `Company ${index}`,
+      contactCount: 1,
+    }));
+    const result = graphViewport(clusters, {
+      minX: -100,
+      maxX: 100,
+      minY: -100,
+      maxY: 100,
+    });
+
+    for (const direction of ["north", "east", "south", "west"] as const) {
+      expect(result.directions[direction]).toBeGreaterThan(0);
+      expect(result.targets[direction]).not.toBeNull();
+    }
   });
 });

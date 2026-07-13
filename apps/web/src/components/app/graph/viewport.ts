@@ -19,10 +19,13 @@ export interface DirectionCounts {
   west: number;
 }
 
+export type DirectionTargets = Record<keyof DirectionCounts, { x: number; y: number } | null>;
+
 export interface GraphViewportResult {
   visibleClusters: Cluster[];
   positions: Map<string, { x: number; y: number }>;
   directions: DirectionCounts;
+  targets: DirectionTargets;
 }
 
 export const INITIAL_WORLD_BOUNDS: WorldBounds = {
@@ -49,6 +52,13 @@ export function graphViewport(clusters: Cluster[], bounds: WorldBounds): GraphVi
   const positions = new Map<string, { x: number; y: number }>();
   const visibleClusters: Cluster[] = [];
   const directions: DirectionCounts = { north: 0, east: 0, south: 0, west: 0 };
+  const targets: DirectionTargets = { north: null, east: null, south: null, west: null };
+  const targetDistances: Record<keyof DirectionCounts, number> = {
+    north: Number.POSITIVE_INFINITY,
+    east: Number.POSITIVE_INFINITY,
+    south: Number.POSITIVE_INFINITY,
+    west: Number.POSITIVE_INFINITY,
+  };
   const centerX = (bounds.minX + bounds.maxX) / 2;
   const centerY = (bounds.minY + bounds.maxY) / 2;
 
@@ -66,9 +76,16 @@ export function graphViewport(clusters: Cluster[], bounds: WorldBounds): GraphVi
     }
     const dx = position.x - centerX;
     const dy = position.y - centerY;
-    if (Math.abs(dx) > Math.abs(dy)) directions[dx > 0 ? "east" : "west"]++;
-    else directions[dy > 0 ? "south" : "north"]++;
+    const direction = Math.abs(dx) > Math.abs(dy)
+      ? (dx > 0 ? "east" : "west")
+      : (dy > 0 ? "south" : "north");
+    directions[direction]++;
+    const distance = Math.hypot(dx, dy);
+    if (distance < targetDistances[direction]) {
+      targetDistances[direction] = distance;
+      targets[direction] = position;
+    }
   });
 
-  return { visibleClusters, positions, directions };
+  return { visibleClusters, positions, directions, targets };
 }

@@ -21,7 +21,7 @@ export function DirectionIndicators({ counts, onNavigate }: DirectionIndicatorsP
 function Indicator({ className, count, onClick, icon }: { className: string; count: number; onClick: () => void; icon: React.ReactNode }) {
   if (count === 0) return null;
   return (
-    <Button type="button" variant="outline" size="sm" onClick={onClick} className={`absolute z-10 gap-1 bg-ink/90 text-xs backdrop-blur ${className}`}>
+    <Button type="button" variant="outline" size="sm" onClick={onClick} aria-label={`Show ${count.toLocaleString()} more groups`} className={`absolute z-10 gap-1 bg-ink/90 text-xs backdrop-blur ${className}`}>
       <span className="size-3.5">{icon}</span>
       {count.toLocaleString()} more
     </Button>

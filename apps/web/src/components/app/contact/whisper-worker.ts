@@ -2,18 +2,14 @@
  * Web Worker: on-device speech-to-text via transformers.js + Whisper base.
  * Runs off the main thread so model load/inference never blocks the UI.
  * Model + weights are cached by the browser after the first download
- * (transformers.js uses the Cache API / IndexedDB automatically).
+ * (transformers.js uses the Cache API / IndexedDB automatically). Shared by
+ * both dictation engines (batch and real-time) — same model, same cache,
+ * only the generation options per-request differ.
  */
 
+import type { WorkerRequest, WorkerResponse } from "./whisper-protocol";
+
 const MODEL_ID = "onnx-community/whisper-base";
-
-type WorkerRequest = { type: "transcribe"; audio: Float32Array };
-
-type WorkerResponse =
-  | { status: "loading"; progress: number }
-  | { status: "ready" }
-  | { status: "complete"; text: string }
-  | { status: "error"; message: string };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Transcriber = (audio: Float32Array, options?: Record<string, unknown>) => Promise<any>;
@@ -25,7 +21,7 @@ function post(message: WorkerResponse): void {
 }
 
 /** Lazy + memoized: the ~40MB (q8) model only downloads once the user
- *  actually opts into local transcription, never on worker creation. */
+ *  actually opts into an on-device engine, never on worker creation. */
 function getTranscriber(): Promise<Transcriber> {
   transcriberPromise ??= import("@huggingface/transformers").then(async ({ pipeline }) => {
     // Track the single largest-known total so multi-file progress reads as
@@ -63,10 +59,14 @@ self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
   try {
     const transcriber = await getTranscriber();
     post({ status: "ready" });
-    const result = await transcriber(event.data.audio, {
-      chunk_length_s: 30,
-      stride_length_s: 5,
-    });
+    // Real-time passes re-transcribe a short rolling buffer many times a
+    // second, so they skip the long-clip chunking and cap generated tokens
+    // to stay fast; batch passes get the full chunk/stride treatment since
+    // they only run once, after the user stops.
+    const result = await transcriber(
+      event.data.audio,
+      event.data.realtime ? { max_new_tokens: 64 } : { chunk_length_s: 30, stride_length_s: 5 },
+    );
     const text = Array.isArray(result) ? result.map((r) => r.text).join(" ") : result.text;
     post({ status: "complete", text: (text ?? "").trim() });
   } catch (error) {

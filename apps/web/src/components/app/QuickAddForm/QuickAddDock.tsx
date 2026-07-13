@@ -37,6 +37,7 @@ export function QuickAddDock({
     listening,
     transcribing,
     loadingProgress,
+    partialText,
     start,
     stop,
   } = useDictation((text) => {
@@ -120,7 +121,7 @@ export function QuickAddDock({
       <div className="pointer-events-none fixed inset-x-0 bottom-6 z-30 flex flex-col items-center gap-2 px-4">
         {dictationBusy ? (
           <div className="pointer-events-auto rounded-full border border-seam bg-panel px-3 py-1">
-            <DictationProgress loadingProgress={loadingProgress} transcribing={transcribing} />
+            <DictationProgress loadingProgress={loadingProgress} transcribing={transcribing} partialText={partialText} />
           </div>
         ) : null}
         <GlassSurface width="fit-content" height={88} borderRadius={28} backgroundOpacity={0.35} className="pointer-events-auto px-1">

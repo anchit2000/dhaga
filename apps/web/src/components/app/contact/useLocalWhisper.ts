@@ -2,6 +2,8 @@
 
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { decodeTo16kMono } from "./whisper-audio";
+import type { WorkerResponse } from "./whisper-protocol";
 
 /**
  * On-device dictation via Whisper (transformers.js), for browsers where the
@@ -10,19 +12,6 @@ import { toast } from "sonner";
  * Records with MediaRecorder, decodes to 16kHz mono, and transcribes in a
  * Web Worker so the ~40MB model download and inference never block the UI.
  */
-
-type WorkerMessage =
-  | { status: "loading"; progress: number }
-  | { status: "ready" }
-  | { status: "complete"; text: string }
-  | { status: "error"; message: string };
-
-async function decodeTo16kMono(blob: Blob): Promise<Float32Array> {
-  const arrayBuffer = await blob.arrayBuffer();
-  const context = new OfflineAudioContext(1, 1, 16000);
-  const decoded = await context.decodeAudioData(arrayBuffer);
-  return decoded.getChannelData(0);
-}
 
 export function useLocalWhisper(onFinalText: (text: string) => void) {
   const supported = typeof MediaRecorder !== "undefined";
@@ -36,7 +25,7 @@ export function useLocalWhisper(onFinalText: (text: string) => void) {
   function getWorker(): Worker {
     if (!workerRef.current) {
       const worker = new Worker(new URL("./whisper-worker.ts", import.meta.url), { type: "module" });
-      worker.onmessage = (event: MessageEvent<WorkerMessage>) => {
+      worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
         const message = event.data;
         if (message.status === "loading") setLoadingProgress(message.progress);
         else if (message.status === "ready") setLoadingProgress(null);
@@ -87,5 +76,5 @@ export function useLocalWhisper(onFinalText: (text: string) => void) {
     recorderRef.current?.stop();
   }
 
-  return { supported, listening, transcribing, loadingProgress, start, stop };
+  return { supported, listening, transcribing, loadingProgress, partialText: null, start, stop };
 }

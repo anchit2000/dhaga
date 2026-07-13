@@ -83,6 +83,7 @@ export function SearchPalette({
             <DictationProgress
               loadingProgress={p.dictation.loadingProgress}
               transcribing={p.dictation.transcribing}
+              partialText={p.dictation.partialText}
             />
 
             <div className="flex items-center justify-between gap-2">

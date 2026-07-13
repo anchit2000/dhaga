@@ -8,7 +8,7 @@ export const SIGNAL_DETECTION_BATCH_KEY = "signal_detection_pending_batch";
 export const SEARCH_WEIGHTS_KEY = "search_weights";
 export const STT_ENGINE_KEY = "stt_engine";
 
-export type SttEngine = "browser" | "local";
+export type SttEngine = "browser" | "local" | "realtime";
 
 export async function getSetting(key: string): Promise<string | null> {
   const db = await getDb();
@@ -69,12 +69,14 @@ export async function setSearchWeights(weights: SearchWeights): Promise<void> {
 /**
  * Voice dictation engine: "browser" (Web Speech API — free, but unsupported
  * on Firefox and silently broken on Brave/vanilla Chromium, which block the
- * network call it depends on) or "local" (on-device Whisper via
- * transformers.js — works everywhere, first use downloads the model).
+ * network call it depends on), "local" (on-device Whisper via
+ * transformers.js, record-then-transcribe — works everywhere, first use
+ * downloads the model), or "realtime" (same on-device model, but
+ * re-transcribes continuously while speaking — WebGPU browsers only).
  */
 export async function getSttEngine(): Promise<SttEngine> {
   const value = await getSetting(STT_ENGINE_KEY);
-  return value === "local" ? "local" : "browser";
+  return value === "local" || value === "realtime" ? value : "browser";
 }
 
 export async function setSttEngine(engine: SttEngine): Promise<void> {

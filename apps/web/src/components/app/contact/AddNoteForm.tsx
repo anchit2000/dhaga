@@ -12,7 +12,7 @@ export function AddNoteForm({ contactId }: { contactId: string }) {
   const formRef = useRef<HTMLFormElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [dictated, setDictated] = useState(false);
-  const { supported, listening, transcribing, loadingProgress, start, stop } = useDictation((text) => {
+  const { supported, listening, transcribing, loadingProgress, partialText, start, stop } = useDictation((text) => {
     const el = textareaRef.current;
     if (!el) return;
     el.value = el.value ? `${el.value.replace(/\s+$/, "")} ${text}` : text;
@@ -78,7 +78,7 @@ export function AddNoteForm({ contactId }: { contactId: string }) {
             )}
           </button>
         ) : null}
-        <DictationProgress loadingProgress={loadingProgress} transcribing={transcribing} />
+        <DictationProgress loadingProgress={loadingProgress} transcribing={transcribing} partialText={partialText} />
       </div>
     </form>
   );

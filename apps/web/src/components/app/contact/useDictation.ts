@@ -4,6 +4,7 @@ import { useRef, useState, useSyncExternalStore } from "react";
 import { noSubscription } from "@/lib/utils";
 import { useSttEngine } from "./SttEngineContext";
 import { useLocalWhisper } from "./useLocalWhisper";
+import { useRealtimeWhisper } from "./useRealtimeWhisper";
 
 /**
  * Browser speech recognition (M3's voice capture, web edition): free, no
@@ -47,6 +48,8 @@ export interface DictationState {
   transcribing: boolean;
   /** Model download percentage on first local-engine use; null otherwise. */
   loadingProgress: number | null;
+  /** Live rolling transcript while listening — real-time engine only. */
+  partialText: string | null;
   start(): void;
   stop(): void;
 }
@@ -85,16 +88,19 @@ function useBrowserDictation(onFinalText: (text: string) => void): DictationStat
     recognitionRef.current?.stop();
   }
 
-  return { supported, listening, transcribing: false, loadingProgress: null, start, stop };
+  return { supported, listening, transcribing: false, loadingProgress: null, partialText: null, start, stop };
 }
 
-/** Dispatches to the browser's native engine or the on-device Whisper
- *  fallback per the user's Settings choice — callers never know which. */
+/** Dispatches to the browser's native engine or one of the on-device Whisper
+ *  engines per the user's Settings choice — callers never know which. */
 export function useDictation(onFinalText: (text: string) => void): DictationState {
   const engine = useSttEngine();
-  // Hooks must run unconditionally; the inactive engine stays idle (no
-  // mic/model work happens until its own start() is called).
+  // Hooks must run unconditionally; the inactive engine(s) stay idle (no
+  // mic/model work happens until their own start() is called).
   const browser = useBrowserDictation(onFinalText);
   const local = useLocalWhisper(onFinalText);
-  return engine === "local" ? local : browser;
+  const realtime = useRealtimeWhisper(onFinalText);
+  if (engine === "local") return local;
+  if (engine === "realtime") return realtime;
+  return browser;
 }

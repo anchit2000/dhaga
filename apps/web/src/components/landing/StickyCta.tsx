@@ -4,8 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
+interface StickyCtaProps {
+  isSignedIn: boolean;
+}
+
 /** Slide-up bar after meaningful scroll. Dismissible, remembers dismissal for the session. */
-export function StickyCta() {
+export function StickyCta({ isSignedIn }: StickyCtaProps) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -17,7 +21,7 @@ export function StickyCta() {
     return () => removeEventListener("scroll", onScroll);
   }, []);
 
-  if (!visible) return null;
+  if (isSignedIn || !visible) return null;
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 border-t border-seam bg-panel/95 backdrop-blur">
@@ -30,17 +34,18 @@ export function StickyCta() {
           <Button render={<Link href="#request-access" />} size="sm">
             Reserve a seat
           </Button>
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="icon-sm"
             aria-label="Dismiss"
-            className="text-fog transition-colors hover:text-paper"
+            className="text-fog hover:bg-transparent hover:text-paper"
             onClick={() => {
               sessionStorage.setItem("dhaga-cta-dismissed", "1");
               setVisible(false);
             }}
           >
             ✕
-          </button>
+          </Button>
         </div>
       </div>
     </div>

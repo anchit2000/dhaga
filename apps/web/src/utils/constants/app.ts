@@ -1,14 +1,23 @@
 /** App-shell constants (the product UI under /app, not the landing page). */
 
+import { CalendarDays, CirclePlus, Home, Users, Waypoints } from "lucide-react";
 import type { CaptureImageType } from "@dhaga/core/src/api/capture";
 
 export const SESSION_COOKIE = "dhaga_session";
 
 export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
 
+/** Primary nav pills, always visible. */
 export const APP_NAV_LINKS = [
-  { href: "/app", label: "Home" },
-  { href: "/app/graph", label: "Graph" },
+  { href: "/app", label: "Home", icon: Home },
+  { href: "/app/graph", label: "Graph", icon: Waypoints },
+] as const;
+
+/** Secondary destinations, tucked under the nav's "More" menu. */
+export const APP_MORE_LINKS = [
+  { href: "/app/people", label: "People", icon: Users },
+  { href: "/app/events", label: "Events", icon: CalendarDays },
+  { href: "/app/quick-add", label: "Quick add", icon: CirclePlus },
 ] as const;
 
 export const HOME_PREVIEW_LIMIT = 5;
@@ -76,6 +85,21 @@ export const PRO_TIER_WATCHLIST_CAP = 25;
 
 /** How many new signals the Home feed shows before "+N more". */
 export const SIGNALS_FEED_LIMIT = 8;
+
+/**
+ * Home's chronological activity feed (signals, events, reach-outs, new
+ * contacts merged in `@/lib/repo/activity`): overall row cap, and the fetch
+ * limit for the two sources that support one (events, contacts) — signals/
+ * quiet/due-reachout queries have no natural per-source limit upstream.
+ */
+export const HOME_ACTIVITY_FEED_LIMIT = 30;
+
+/** A feed row within this long counts as "Now" rather than "Today". */
+export const ACTIVITY_NOW_WINDOW_MS = 60 * 60 * 1000;
+
+/** How many notes/facts the Home feed's contact detail panel previews. */
+export const CONTACT_SUMMARY_NOTE_LIMIT = 3;
+export const CONTACT_SUMMARY_FACT_LIMIT = 3;
 
 /**
  * Auto event grouping (M2, BRD §6.2): scans sharing a geohash-6 within this

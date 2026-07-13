@@ -10,12 +10,16 @@ import { HowItWorks, StatsBand } from "@/components/landing/Sections";
 import { OpenSource } from "@/components/landing/OpenSource";
 import { Pricing } from "@/components/landing/Pricing";
 import { StickyCta } from "@/components/landing/StickyCta";
+import { getCurrentUser } from "@/lib/auth/guard";
 
-export default function Home() {
+export default async function Home() {
+  const user = await getCurrentUser();
+  const isSignedIn = !!user;
+
   return (
     <main className="relative">
       <DeferredDecor />
-      <Header />
+      <Header isSignedIn={isSignedIn} />
       <Hero />
       <StatsBand />
       <HowItWorks />
@@ -27,7 +31,7 @@ export default function Home() {
       <Faq />
       <FinalCta />
       <Footer />
-      <StickyCta />
+      <StickyCta isSignedIn={isSignedIn} />
     </main>
   );
 }

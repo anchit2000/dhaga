@@ -1,14 +1,31 @@
 import { requireUserIdForPage } from "@/lib/auth/guard";
-import { fetchGraphClusters } from "@/lib/repo/graph-data";
+import { getContact } from "@/lib/repo/contacts";
+import { fetchGraphClusters, UNASSIGNED_KEY } from "@/lib/repo/graph-data";
 import { EmptyState } from "@/components/app/EmptyState";
 import { GraphBrowser } from "@/components/app/graph/GraphBrowser";
 import { WarmPathPanel } from "@/components/app/graph/WarmPathPanel";
 
 export const metadata = { title: "Graph — Dhaga" };
 
-export default async function GraphPage() {
+export default async function GraphPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
   await requireUserIdForPage();
+  const { focus } = await searchParams;
   const clusters = await fetchGraphClusters("company");
+
+  let focusTarget: { contactId: string; clusterKey: string } | null = null;
+  let focusMissing = false;
+  if (focus) {
+    const detail = await getContact(focus);
+    if (detail) {
+      focusTarget = { contactId: focus, clusterKey: detail.contact.companyId ?? UNASSIGNED_KEY };
+    } else {
+      focusMissing = true;
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -27,7 +44,11 @@ export default async function GraphPage() {
       ) : (
         <>
           <WarmPathPanel />
-          <GraphBrowser initialClusters={clusters} />
+          <GraphBrowser
+            initialClusters={clusters}
+            focusTarget={focusTarget}
+            focusMissing={focusMissing}
+          />
         </>
       )}
     </div>

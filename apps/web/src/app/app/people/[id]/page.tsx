@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Waypoints } from "lucide-react";
 import { requireUserIdForPage } from "@/lib/auth/guard";
 import { getContact, listMentionMergeCandidates } from "@/lib/repo/contacts";
 import { listFacts, listNotes, listOpenFollowUps } from "@/lib/repo/notes";
@@ -7,6 +8,7 @@ import { listContactEvents } from "@/lib/repo/events";
 import { listCardImageRefs } from "@/lib/repo/card-images";
 import { isReachOutDue } from "@/lib/repo/reminders";
 import { listContactSignals } from "@/lib/repo/signals";
+import { Button } from "@/components/ui/button";
 import { AddNoteForm } from "@/components/app/contact/AddNoteForm";
 import { CardPhotoStrip } from "@/components/app/contact/CardPhotoStrip";
 import { BriefSection } from "@/components/app/contact/BriefSection";
@@ -60,40 +62,50 @@ export default async function PersonPage({
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
-      <div className="flex items-start gap-4">
-        <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-amber/15 font-display text-xl text-amber">
-          {contact.name.charAt(0).toUpperCase()}
-        </span>
-        <div className="min-w-0">
-          <h1 className="truncate font-display text-2xl tracking-tight">
-            {contact.name}
-          </h1>
-          <p className="mt-0.5 text-sm text-fog">
-            {[contact.title, companyName].filter(Boolean).join(" · ") ||
-              "No title or company yet"}
-          </p>
-          {contactEvents.length > 0 || contact.tags.length > 0 ? (
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {contactEvents.map((event) => (
-                <Link
-                  key={event.id}
-                  href={`/app/events/${event.id}`}
-                  className="rounded-full border border-amber/30 bg-amber/10 px-2.5 py-0.5 text-xs text-amber transition-colors hover:bg-amber/20"
-                >
-                  {event.name}
-                </Link>
-              ))}
-              {contact.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-full border border-seam bg-paper/[0.04] px-2.5 py-0.5 text-xs text-fog"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          ) : null}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex items-start gap-4">
+          <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-amber/15 font-display text-xl text-amber">
+            {contact.name.charAt(0).toUpperCase()}
+          </span>
+          <div className="min-w-0">
+            <h1 className="truncate font-display text-2xl tracking-tight">
+              {contact.name}
+            </h1>
+            <p className="mt-0.5 text-sm text-fog">
+              {[contact.title, companyName].filter(Boolean).join(" · ") ||
+                "No title or company yet"}
+            </p>
+            {contactEvents.length > 0 || contact.tags.length > 0 ? (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {contactEvents.map((event) => (
+                  <Link
+                    key={event.id}
+                    href={`/app/events/${event.id}`}
+                    className="rounded-full border border-amber/30 bg-amber/10 px-2.5 py-0.5 text-xs text-amber transition-colors hover:bg-amber/20"
+                  >
+                    {event.name}
+                  </Link>
+                ))}
+                {contact.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full border border-seam bg-paper/[0.04] px-2.5 py-0.5 text-xs text-fog"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+          </div>
         </div>
+        <Button
+          render={<Link href={`/app/graph?focus=${id}`} />}
+          variant="outline"
+          size="sm"
+        >
+          <Waypoints />
+          View in graph
+        </Button>
       </div>
 
       {contact.source === "mentioned" ? (

@@ -26,16 +26,19 @@ export function clusterPosition(index: number): { x: number; y: number } {
   return { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius };
 }
 
-function edgeStyle(edge: GraphViewEdge): Edge {
+function edgeStyle(edge: GraphViewEdge, highlighted: boolean): Edge {
   return {
     id: edge.id,
     source: edge.source,
     target: edge.target,
     label: edge.label,
     type: "straight",
-    style: { stroke: "#4a3d2b", strokeWidth: 1.5 },
-    labelStyle: { fill: "#a49a8a", fontSize: 10 },
+    style: highlighted
+      ? { stroke: "#e2a44c", strokeWidth: 2.5 }
+      : { stroke: "#4a3d2b", strokeWidth: 1.5 },
+    labelStyle: { fill: highlighted ? "#e2a44c" : "#a49a8a", fontSize: 10 },
     labelBgStyle: { fill: "#16120e", fillOpacity: 0.9 },
+    zIndex: highlighted ? 1 : 0,
   };
 }
 
@@ -52,6 +55,7 @@ export function buildFlow(
   loaded: Map<string, ClusterEntry>,
   pending: Set<string>,
   positions?: Map<string, { x: number; y: number }>,
+  focusedId?: string | null,
 ): { nodes: BrowserFlowNode[]; edges: Edge[] } {
   const nodes: BrowserFlowNode[] = [];
   const loadedNodeIds = new Set<string>(clusters.map((cluster) => cluster.key));
@@ -99,7 +103,12 @@ export function buildFlow(
         type: "person",
         position: { x: center.x + local.x, y: center.y + local.y },
         style: { width: 1, height: 1 },
-        data: { label: contact.label, sublabel: contact.sublabel, href: `/app/people/${contact.id}` },
+        data: {
+          label: contact.label,
+          sublabel: contact.sublabel,
+          href: `/app/people/${contact.id}`,
+          highlighted: contact.id === focusedId,
+        },
       });
       loadedNodeIds.add(contact.id);
       placed++;
@@ -127,7 +136,9 @@ export function buildFlow(
 
   const edges = [...edgesById.values()]
     .filter((edge) => loadedNodeIds.has(edge.source) && loadedNodeIds.has(edge.target))
-    .map(edgeStyle);
+    .map((edge) =>
+      edgeStyle(edge, focusedId != null && (edge.source === focusedId || edge.target === focusedId)),
+    );
 
   return { nodes, edges };
 }

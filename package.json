@@ -18,6 +18,7 @@
     "dev": "npm run dev --prefix apps/web",
     "build": "npm run build --prefix apps/web",
     "lint": "npm run lint --prefix apps/web",
-    "start": "npm run start --prefix apps/web"
+    "start": "npm run start --prefix apps/web",
+    "test:e2e:graph-focus": "node tests/scripts/verify-graph-focus.mjs"
   }
 }

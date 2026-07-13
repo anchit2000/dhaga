@@ -33,3 +33,4 @@
    integrations section once real third-party integrations ship (e.g.
    Google Contacts, LinkedIn CSV, calendar sync from idea #4 above) — orbit
    real integration logos instead of generic capture-method glyphs.
+8. I should be able to view, add, delete and merge companies also

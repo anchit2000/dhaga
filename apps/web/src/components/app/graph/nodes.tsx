@@ -12,6 +12,8 @@ export interface BrowserNodeData extends Record<string, unknown> {
   contactCount?: number | null;
   expanded?: boolean;
   pending?: boolean;
+  /** Set on a person node deep-linked from a contact's profile — drives the focus glow. */
+  highlighted?: boolean;
 }
 
 export interface OverflowNodeData extends Record<string, unknown> {
@@ -34,7 +36,13 @@ function NodeHandles() {
 export function PersonGraphNode({ data }: NodeProps<Node<BrowserNodeData, "person">>) {
   const body = (
     <span className="flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1">
-      <span className="flex size-10 items-center justify-center rounded-full border border-amber/40 bg-amber/15 font-display text-sm text-amber shadow-[0_0_18px_-6px_rgba(226,164,76,0.8)]">
+      <span
+        className={
+          data.highlighted
+            ? "flex size-10 items-center justify-center rounded-full border-2 border-amber bg-amber/25 font-display text-sm text-amber shadow-[0_0_28px_-4px_rgba(226,164,76,1)]"
+            : "flex size-10 items-center justify-center rounded-full border border-amber/40 bg-amber/15 font-display text-sm text-amber shadow-[0_0_18px_-6px_rgba(226,164,76,0.8)]"
+        }
+      >
         {data.label.charAt(0).toUpperCase()}
       </span>
       <span className="max-w-28 truncate rounded-full bg-ink/80 px-2 py-0.5 text-[10px] text-paper">

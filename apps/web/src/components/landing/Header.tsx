@@ -10,7 +10,11 @@ const NAV_LINKS = [
   { href: "#faq", label: "FAQ" },
 ];
 
-export function Header() {
+interface HeaderProps {
+  isSignedIn: boolean;
+}
+
+export function Header({ isSignedIn }: HeaderProps) {
   return (
     <header className="fixed inset-x-0 top-0 z-40 bg-gradient-to-b from-ink via-ink/80 to-transparent">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
@@ -32,15 +36,23 @@ export function Header() {
           ))}
         </nav>
         <div className="flex items-center gap-4">
-          <Link
-            href="/login"
-            className="hidden text-sm text-fog transition-colors hover:text-paper sm:inline"
-          >
-            Sign in
-          </Link>
-          <Button render={<Link href="#request-access" />} size="sm">
-            Request access
-          </Button>
+          {isSignedIn ? (
+            <Button render={<Link href="/app" />} size="sm">
+              Dashboard
+            </Button>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="hidden text-sm text-fog transition-colors hover:text-paper sm:inline"
+              >
+                Sign in
+              </Link>
+              <Button render={<Link href="#request-access" />} size="sm">
+                Request access
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </header>

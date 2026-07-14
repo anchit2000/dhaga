@@ -22,14 +22,30 @@
 -- — e.g. dhaga_app.zgnpoeddgsrgpivqpkdk. The plain role name below is
 -- still just "dhaga_app"; only the pooler's routing prefix differs.
 
-CREATE ROLE dhaga_app WITH LOGIN PASSWORD '<CHANGE_ME>'
-  NOBYPASSRLS NOSUPERUSER NOCREATEDB NOCREATEROLE;
+-- Idempotent (safe to re-run this whole script from scratch): some hosted
+-- SQL editors (Supabase's included) run a pasted script as one transaction
+-- and roll back everything — including an already-succeeded CREATE ROLE —
+-- if a later statement in the same paste errors.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'dhaga_app') THEN
+    EXECUTE format(
+      'CREATE ROLE dhaga_app WITH LOGIN PASSWORD %L NOBYPASSRLS NOSUPERUSER NOCREATEDB NOCREATEROLE',
+      '<CHANGE_ME>'
+    );
+  END IF;
+END $$;
 
 -- Required before the ownership transfer below: reassigning a table TO a
 -- role needs either superuser or membership in that role (the ability to
 -- SET ROLE to it) — Supabase's "postgres" role is a powerful admin role but
 -- not a true Postgres superuser, so this GRANT is not optional here.
 GRANT dhaga_app TO CURRENT_USER;
+
+-- If a table is locked by another active connection (e.g. the app itself,
+-- still live on the old role while you run this), fail fast with a clear
+-- error instead of hanging until the client eventually disconnects.
+SET lock_timeout = '5s';
 
 -- Move ownership of every existing table so dhaga_app can run the app's own
 -- boot-time DDL (CREATE TABLE/ADD COLUMN IF NOT EXISTS, ENABLE/FORCE ROW

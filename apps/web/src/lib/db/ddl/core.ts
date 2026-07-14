@@ -133,6 +133,18 @@ CREATE TABLE IF NOT EXISTS settings (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- Self-heals databases where "settings" pre-dates this table's primary key
+-- (CREATE TABLE IF NOT EXISTS above is a no-op against an existing table,
+-- so it can never retroactively add a missing constraint on its own).
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conrelid = 'settings'::regclass AND contype = 'p'
+  ) THEN
+    ALTER TABLE settings ADD PRIMARY KEY (key);
+  END IF;
+END $$;
+
 CREATE TABLE IF NOT EXISTS card_images (
   id text PRIMARY KEY,
   contact_id text NOT NULL REFERENCES contacts(id),

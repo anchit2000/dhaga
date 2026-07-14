@@ -4,9 +4,7 @@ import { getAuth } from "@/lib/auth/config";
 import { getBillingGate } from "@/lib/hosted/gate";
 import { getSttEngine, shouldStoreCardPhotos } from "@/lib/repo/settings";
 import { countCardImages } from "@/lib/repo/card-images";
-import { getSuggestedClusters } from "@/lib/repo/suggestions";
 import { ImportPanel } from "@/components/app/import/ImportPanel";
-import { SuggestionsPanel } from "@/components/app/import/SuggestionsPanel";
 import { CardPhotoSetting } from "@/components/app/settings/CardPhotoSetting";
 import { VoiceInputSetting } from "@/components/app/settings/VoiceInputSetting";
 import { ApiKeysSetting } from "@/components/app/settings/ApiKeysSetting";
@@ -18,7 +16,7 @@ export const metadata = { title: "Settings — Dhaga" };
 export default async function SettingsPage() {
   const userId = await requireUserIdForPage();
   const auth = await getAuth();
-  const [storePhotos, sttEngine, photoCount, apiKeys, planSummary, session, clusters] =
+  const [storePhotos, sttEngine, photoCount, apiKeys, planSummary, session] =
     await Promise.all([
       shouldStoreCardPhotos(),
       getSttEngine(),
@@ -26,7 +24,6 @@ export default async function SettingsPage() {
       auth.api.listApiKeys({ headers: await headers() }),
       (await getBillingGate()).getPlanSummary(userId),
       auth.api.getSession({ headers: await headers() }),
-      getSuggestedClusters(),
     ]);
 
   return (
@@ -63,12 +60,6 @@ export default async function SettingsPage() {
           </p>
         </div>
       </section>
-      {clusters.length > 0 ? (
-        <section className="space-y-3">
-          <h2 className="font-display text-lg">Suggested groups</h2>
-          <SuggestionsPanel clusters={clusters} />
-        </section>
-      ) : null}
     </div>
   );
 }

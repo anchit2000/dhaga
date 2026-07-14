@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { hasLLM } from "@dhaga/core";
 import { HomeDashboard } from "@/components/app/home/HomeDashboard";
+import { SuggestionsPanel } from "@/components/app/import/SuggestionsPanel";
 import { QuickAddForm } from "@/components/app/QuickAddForm";
 import { Button } from "@/components/ui/button";
 import { activeEventId } from "@/lib/active-event";
@@ -12,6 +13,7 @@ import { listEvents } from "@/lib/repo/events";
 import { shouldStoreCardPhotos } from "@/lib/repo/settings";
 import { listNewSignals } from "@/lib/repo/signals";
 import { listQuietContacts } from "@/lib/repo/strength";
+import { getSuggestedClusters } from "@/lib/repo/suggestions";
 import { HOME_PREVIEW_LIMIT } from "@/utils/constants/app";
 
 export const metadata = { title: "Home — Dhaga" };
@@ -19,10 +21,10 @@ export const metadata = { title: "Home — Dhaga" };
 export default async function HomePage() {
   await requireUserIdForPage();
   const llmEnabled = hasLLM();
-  const [people, events, dueReachOuts, openFollowUps, quietContacts, newSignals, used, storeCardPhotos] = await Promise.all([
+  const [people, events, dueReachOuts, openFollowUps, quietContacts, newSignals, used, storeCardPhotos, suggestedClusters] = await Promise.all([
     listContacts(undefined, undefined, HOME_PREVIEW_LIMIT), listEvents(HOME_PREVIEW_LIMIT), listDueReachOuts(), listAllOpenFollowUps(),
     listQuietContacts(), listNewSignals(), llmEnabled ? aiActionsUsedThisMonth() : Promise.resolve(0),
-    shouldStoreCardPhotos(),
+    shouldStoreCardPhotos(), getSuggestedClusters(),
   ]);
 
   return <div className="space-y-8 pb-16">
@@ -32,6 +34,13 @@ export default async function HomePage() {
     </div>
 
     <HomeDashboard people={people} events={events} dueReachOuts={dueReachOuts} openFollowUps={openFollowUps} quietContacts={quietContacts} newSignals={newSignals} />
+
+    {suggestedClusters.length > 0 ? (
+      <section className="space-y-3">
+        <h2 className="font-display text-lg">Suggested groups</h2>
+        <SuggestionsPanel clusters={suggestedClusters} />
+      </section>
+    ) : null}
 
     <QuickAddForm events={events.map(({ id, name }) => ({ id, name }))} defaultEventId={activeEventId(events)} storeCardPhotos={storeCardPhotos} homeDock aiUsage={llmEnabled ? `${used} of ${monthlyAiCap()} AI actions used` : undefined} />
   </div>;

@@ -22,14 +22,14 @@ function EngineOption({
 }) {
   const { pending } = useFormStatus();
   return (
-    <form action={setSttEngineAction} className="flex-1">
+    <form action={setSttEngineAction}>
       <input type="hidden" name="engine" value={value} />
       <button
         type="submit"
         disabled={pending || active || disabled}
         aria-pressed={active}
-        className={`w-full rounded-xl border p-4 text-left transition-colors disabled:cursor-default ${
-          active ? "border-amber/50 bg-amber/10" : "border-seam hover:border-wash/30"
+        className={`h-full w-full cursor-pointer rounded-xl border p-4 text-left transition-colors disabled:cursor-default ${
+          active ? "border-amber/50 bg-amber/10" : "border-seam hover:border-amber/40 hover:bg-amber/[0.05]"
         } ${disabled && !active ? "opacity-50" : ""}`}
       >
         <div className="flex items-center justify-between gap-2">

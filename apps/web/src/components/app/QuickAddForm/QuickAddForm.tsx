@@ -80,6 +80,7 @@ export function QuickAddForm({
       notice={state.notice}
       captureOpen={captureOpen}
       onCaptureToggle={homeDock ? () => setCaptureOpen((open) => !open) : undefined}
+      inDialog={homeDock}
     />
   );
 

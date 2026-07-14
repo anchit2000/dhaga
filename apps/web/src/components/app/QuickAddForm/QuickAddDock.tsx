@@ -22,12 +22,18 @@ export function QuickAddDock({
   pasteTextareaRef,
   captureOpen = false,
   onCaptureToggle,
+  floating = true,
 }: {
   formAction: (formData: FormData) => void;
   onVoiceStart: () => void;
   pasteTextareaRef: RefObject<HTMLTextAreaElement | null>;
   captureOpen?: boolean;
   onCaptureToggle?: () => void;
+  /** Fixed-to-viewport bottom bar (standalone page). Set false to render
+   *  in-flow instead — needed inside the capture Dialog, whose CSS transform
+   *  makes it the containing block for `fixed` descendants, which otherwise
+   *  pins the dock to the dialog's own bottom edge and overlaps its content. */
+  floating?: boolean;
 }) {
   const [showCamera, setShowCamera] = useState(false);
   const [photoToCrop, setPhotoToCrop] = useState<File | null>(null);
@@ -118,13 +124,25 @@ export function QuickAddDock({
           }}
         />
       ) : null}
-      <div className="pointer-events-none fixed inset-x-0 bottom-6 z-30 flex flex-col items-center gap-2 px-4">
+      <div
+        className={
+          floating
+            ? "pointer-events-none fixed inset-x-0 bottom-6 z-30 flex flex-col items-center gap-2 px-4"
+            : "flex flex-col items-center gap-2"
+        }
+      >
         {dictationBusy ? (
-          <div className="pointer-events-auto rounded-full border border-seam bg-panel px-3 py-1">
+          <div className={`rounded-full border border-seam bg-panel px-3 py-1 ${floating ? "pointer-events-auto" : ""}`}>
             <DictationProgress loadingProgress={loadingProgress} transcribing={transcribing} partialText={partialText} />
           </div>
         ) : null}
-        <GlassSurface width="fit-content" height={88} borderRadius={28} backgroundOpacity={0.35} className="pointer-events-auto px-1">
+        <GlassSurface
+          width="fit-content"
+          height={88}
+          borderRadius={28}
+          backgroundOpacity={0.35}
+          className={`px-1 ${floating ? "pointer-events-auto" : ""}`}
+        >
           <Dock items={items} />
         </GlassSurface>
       </div>

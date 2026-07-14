@@ -21,6 +21,7 @@ export function CaptureForm({
   notice,
   captureOpen,
   onCaptureToggle,
+  inDialog = false,
 }: {
   mode: Mode;
   setMode: (mode: Mode) => void;
@@ -33,6 +34,9 @@ export function CaptureForm({
   notice?: string;
   captureOpen: boolean;
   onCaptureToggle?: () => void;
+  /** True when rendered inside the capture Dialog, where the dock must sit
+   *  in-flow instead of floating (see QuickAddDock's `floating` prop). */
+  inDialog?: boolean;
 }) {
   return (
     <div className="space-y-4">
@@ -87,6 +91,7 @@ export function CaptureForm({
         pasteTextareaRef={pasteTextareaRef}
         captureOpen={captureOpen}
         onCaptureToggle={onCaptureToggle}
+        floating={!inDialog}
       />
 
       {photoToCrop ? (

@@ -1,10 +1,18 @@
 "use client";
 
 import { useRef, useState, useSyncExternalStore } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { noSubscription } from "@/lib/utils";
 import { useSttEngine } from "./SttEngineContext";
 import { useLocalWhisper } from "./useLocalWhisper";
 import { useRealtimeWhisper } from "./useRealtimeWhisper";
+import { getSpeechRecognitionCtor, type SpeechRecognitionLike } from "./browser-speech";
+
+/** How long to let the browser engine listen with zero results (not even
+ *  an interim one) before treating it as the Brave/vanilla-Chromium silent
+ *  failure rather than the user just not having spoken yet. */
+const SILENT_FAILURE_MS = 3_000;
 
 /**
  * Browser speech recognition (M3's voice capture, web edition): free, no
@@ -13,32 +21,6 @@ import { useRealtimeWhisper } from "./useRealtimeWhisper";
  * Firefox and silently broken on Brave/vanilla Chromium (they block the
  * network call this depends on) — see useLocalWhisper for the fallback.
  */
-
-interface RecognitionResultEvent {
-  resultIndex: number;
-  results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }>;
-}
-
-interface SpeechRecognitionLike {
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  start(): void;
-  stop(): void;
-  onresult: ((event: RecognitionResultEvent) => void) | null;
-  onend: (() => void) | null;
-  onerror: (() => void) | null;
-}
-
-type RecognitionCtor = new () => SpeechRecognitionLike;
-
-function getCtor(): RecognitionCtor | undefined {
-  const w = window as unknown as {
-    SpeechRecognition?: RecognitionCtor;
-    webkitSpeechRecognition?: RecognitionCtor;
-  };
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition;
-}
 
 export interface DictationState {
   supported: boolean;
@@ -58,33 +40,66 @@ function useBrowserDictation(onFinalText: (text: string) => void): DictationStat
   // SSR-safe support check without a hydration mismatch.
   const supported = useSyncExternalStore(
     noSubscription,
-    () => Boolean(getCtor()),
+    () => Boolean(getSpeechRecognitionCtor()),
     () => false,
   );
+  const router = useRouter();
   const [listening, setListening] = useState(false);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function clearSilenceTimer(): void {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+  }
 
   function start(): void {
-    const Ctor = getCtor();
+    const Ctor = getSpeechRecognitionCtor();
     if (!Ctor || listening) return;
     const recognition = new Ctor();
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = navigator.language || "en-US";
     recognition.onresult = (event) => {
+      clearSilenceTimer();
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
         if (result.isFinal) onFinalText(result[0].transcript.trim());
       }
     };
-    recognition.onend = () => setListening(false);
-    recognition.onerror = () => setListening(false);
+    recognition.onend = () => {
+      clearSilenceTimer();
+      setListening(false);
+    };
+    recognition.onerror = () => {
+      clearSilenceTimer();
+      setListening(false);
+    };
     recognitionRef.current = recognition;
     recognition.start();
     setListening(true);
+    // Brave and vanilla Chromium expose SpeechRecognition but block the
+    // network call it depends on, so it just listens forever with no
+    // interim or final results — no onerror ever fires. Zero results after
+    // a few seconds (plenty of time for even a short utterance to produce
+    // at least an interim result) is the only signal we get that it's
+    // silently broken rather than the user not having spoken yet.
+    silenceTimerRef.current = setTimeout(() => {
+      toast("Browser dictation isn't picking up any speech", {
+        description:
+          "This happens in Brave and some Chromium builds that block the recognition service it depends on. Try the on-device model instead.",
+        action: {
+          label: "Open settings",
+          onClick: () => router.push("/app/settings#voice-dictation"),
+        },
+      });
+    }, SILENT_FAILURE_MS);
   }
 
   function stop(): void {
+    clearSilenceTimer();
     recognitionRef.current?.stop();
   }
 

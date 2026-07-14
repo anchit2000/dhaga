@@ -107,7 +107,7 @@ export function VoiceInputSetting({ engine }: { engine: SttEngine }) {
   );
   const modelLoad = useSyncExternalStore(subscribeModelLoad, getModelLoadState, getModelLoadServerState);
   return (
-    <div className="space-y-4 rounded-2xl border border-seam bg-panel p-5 sm:p-6">
+    <div id="voice-dictation" className="scroll-mt-20 space-y-4 rounded-2xl border border-seam bg-panel p-5 sm:p-6">
       <div>
         <p className="text-sm font-medium text-paper">Voice dictation</p>
         <p className="mt-1 text-sm text-fog">

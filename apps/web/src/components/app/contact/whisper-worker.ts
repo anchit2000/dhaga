@@ -55,6 +55,15 @@ function getTranscriber(): Promise<Transcriber> {
 }
 
 self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
+  if (event.data.type === "warmup") {
+    try {
+      await getTranscriber();
+      post({ status: "ready" });
+    } catch (error) {
+      post({ status: "error", message: error instanceof Error ? error.message : "Model load failed." });
+    }
+    return;
+  }
   if (event.data.type !== "transcribe") return;
   try {
     const transcriber = await getTranscriber();

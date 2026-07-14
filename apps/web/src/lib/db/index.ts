@@ -85,6 +85,14 @@ async function initEmbedded(): Promise<DhagaDb> {
 export function getDb(): Promise<DhagaDb> {
   if (!store.__dhagaDb || store.__dhagaDdl !== DDL) {
     const url = process.env.DATABASE_URL;
+    // Embedded PGlite needs a writable dataDir; Vercel's function filesystem
+    // is read-only, so a missing DATABASE_URL there fails as a confusing
+    // EROFS mkdir deep in PGlite's init rather than this actionable message.
+    if (!url && process.env.VERCEL) {
+      throw new Error(
+        "DATABASE_URL is not set. Dhaga's embedded PGlite mode requires a writable filesystem and cannot run on Vercel — set DATABASE_URL to a hosted Postgres connection string (e.g. Supabase) in the project's Environment Variables.",
+      );
+    }
     store.__dhagaDb = url ? initHosted(url) : initEmbedded();
   }
   return store.__dhagaDb;

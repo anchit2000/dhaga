@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { settings } from "@/lib/db/schema";
 import { parseSearchWeights, type SearchWeights } from "@/utils/constants/search";
@@ -22,13 +22,19 @@ export async function getSetting(key: string): Promise<string | null> {
 
 export async function setSetting(key: string, value: string): Promise<void> {
   const db = await getDb();
-  await db
-    .insert(settings)
-    .values({ key, value, updatedAt: new Date() })
-    .onConflictDoUpdate({
-      target: settings.key,
-      set: { value, updatedAt: new Date() },
-    });
+  // Raw SQL, not Drizzle's onConflictDoUpdate({ target: settings.key }):
+  // this table's actual primary key differs by mode — plain (key) when
+  // self-hosted, composite (user_id, key) under EE's per-tenant RLS (see
+  // packages/ee/src/db/rls-ddl.ts) — but Postgres always names a table's
+  // primary key constraint "<table>_pkey" regardless of its columns, so
+  // conflict-by-constraint-name resolves correctly in both without this
+  // function ever needing to know which mode is active.
+  await db.execute(sql`
+    insert into settings (key, value, updated_at)
+    values (${key}, ${value}, now())
+    on conflict on constraint settings_pkey
+    do update set value = excluded.value, updated_at = excluded.updated_at
+  `);
 }
 
 /** Whether scanned card photos are kept as visual receipts (default: yes). */

@@ -65,6 +65,72 @@ account once it's live.
   multi-tenant isolation is Postgres Row-Level Security, which the embedded
   PGlite database doesn't support.
 
+### ⚠ The Postgres role DATABASE_URL connects as matters — a lot
+
+Hosted mode's tenant isolation is *entirely* Row-Level Security (see
+`packages/ee/src/db/rls-ddl.ts`) — every query core code runs is
+tenant-agnostic by design and relies on RLS policies to filter rows. RLS is
+enforced per **role**, not per connection: a role with the `BYPASSRLS`
+attribute ignores every RLS policy on every table, silently, regardless of
+`FORCE ROW LEVEL SECURITY`. **Managed Postgres providers' default
+admin/owner role commonly has `BYPASSRLS` out of the box** — Supabase's
+`postgres` role does. If `DATABASE_URL` connects as that role, every signed-in
+user sees every other user's data, with no error anywhere, because nothing
+is malformed — RLS is just never evaluated for that role. This is exactly
+what shipped originally on this project's own hosted deployment and leaked
+one account's contacts into another's.
+
+**Before going live in hosted mode on any provider** (Supabase, Neon,
+self-hosted — this isn't Supabase-specific, it's how Postgres RLS works
+everywhere):
+
+1. Run [`packages/ee/scripts/create-app-role.sql`](../packages/ee/scripts/create-app-role.sql)
+   against the target database. It creates a dedicated `dhaga_app` role
+   with `NOBYPASSRLS` and moves table ownership to it (ownership, not just
+   `GRANT`s, is required — the app's own boot-time DDL runs `ALTER TABLE`
+   statements to evolve the schema and enable RLS).
+2. Point `DATABASE_URL` at `dhaga_app`, not the provider's default role.
+   Supabase specifically: the pooler (`pooler.supabase.com`) routes by a
+   `<role>.<project_ref>` username — e.g. `dhaga_app.zgnpoeddgsrgpivqpkdk` —
+   not the plain role name; only the connection *username* changes shape,
+   the role itself is still just `dhaga_app`.
+3. As of this project's `packages/ee/src/db/bootstrap.ts`, the app checks
+   this itself at boot — `SELECT rolbypassrls FROM pg_roles WHERE rolname
+   = current_user`, and refuses to start (loud error naming this doc) if
+   the connecting role has `BYPASSRLS`. Don't rely on this alone for a
+   fresh setup, though — check via the script's own verification query
+   *before* traffic hits it, not after.
+
+### Migrating off Supabase (or any hosted Postgres) later
+
+Low-risk by design: the app never uses Supabase-specific APIs (no
+`@supabase/supabase-js`, no Supabase Auth/Storage/Realtime) — it's Better
+Auth + plain `pg`/Drizzle against a connection string, using only the
+standard `pgvector` and `pg_trgm` Postgres extensions. The schema is
+self-provisioning (`initHosted()` in `apps/web/src/lib/db/index.ts` runs the
+app's own idempotent DDL on every boot), so this is mostly a **data**
+migration, not a code change:
+
+1. On the new Postgres target: install the `pgvector` and `pg_trgm`
+   extensions, then run `packages/ee/scripts/create-app-role.sql` against
+   it to create `dhaga_app` there too (self-hosted Postgres usually keeps
+   extensions in the `public` schema rather than Supabase's separate
+   `extensions` schema — skip that one `GRANT USAGE ON SCHEMA extensions`
+   line if so).
+2. `pg_dump --no-owner --no-acl <source> | psql <target>` (or
+   `pg_restore --no-owner --no-acl` if using the custom format) — `--no-owner`
+   matters because the dump would otherwise try to assign ownership to a
+   `dhaga_app` role that doesn't exist yet in the target cluster (roles are
+   cluster-level, not part of a database dump).
+3. Re-run just the ownership-reassignment loop from
+   `create-app-role.sql` (the `ALTER TABLE ... OWNER TO dhaga_app` loop +
+   grants) against the target — `--no-owner` left everything owned by
+   whichever role ran the restore.
+4. Point `DATABASE_URL` at the new target (with `dhaga_app`'s credentials)
+   and redeploy. The boot-time check in `packages/ee/src/db/bootstrap.ts`
+   will refuse to start if anything about the role is wrong — treat that as
+   the migration's final verification, not just a safety net.
+
 ## Option B — a single persistent server (the real deployment today)
 
 Any Linux VPS (Hetzner/DigitalOcean/EC2) or PaaS with a volume

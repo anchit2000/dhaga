@@ -1,0 +1,53 @@
+-- Creates the Postgres role Dhaga's DATABASE_URL should connect as in hosted
+-- (DHAGA_HOSTED_MODE) mode, and moves table ownership to it.
+--
+-- Why this exists: packages/ee's multi-tenant isolation is entirely
+-- Row-Level Security (see src/db/rls-ddl.ts) — every "core" query is
+-- tenant-agnostic and relies on RLS policies to filter rows by the
+-- connecting session's app.current_user_id. RLS is enforced per *role*,
+-- not per connection: a role with the BYPASSRLS attribute ignores every
+-- RLS policy on every table, full stop, regardless of FORCE ROW LEVEL
+-- SECURITY. Managed Postgres providers' default admin role commonly has
+-- BYPASSRLS out of the box (Supabase's "postgres" role does). If
+-- DATABASE_URL connects as that role, every tenant sees every other
+-- tenant's data — silently, with no error, because nothing is malformed;
+-- RLS is just never being evaluated at all for that role.
+--
+-- Run this once against the target Postgres database (Supabase: Dashboard
+-- -> SQL Editor; self-hosted: psql), then point DATABASE_URL at the role
+-- created here instead of the database's default admin/owner role.
+--
+-- Supabase specifically: the connection username through their pooler
+-- (pooler.supabase.com) is "<role>.<project_ref>", not the plain role name
+-- — e.g. dhaga_app.zgnpoeddgsrgpivqpkdk. The plain role name below is
+-- still just "dhaga_app"; only the pooler's routing prefix differs.
+
+CREATE ROLE dhaga_app WITH LOGIN PASSWORD '<CHANGE_ME>'
+  NOBYPASSRLS NOSUPERUSER NOCREATEDB NOCREATEROLE;
+
+-- Move ownership of every existing table so dhaga_app can run the app's own
+-- boot-time DDL (CREATE TABLE/ADD COLUMN IF NOT EXISTS, ENABLE/FORCE ROW
+-- LEVEL SECURITY, CREATE POLICY) — those are ALTER TABLE operations, which
+-- need ownership, not just GRANTed DML privileges.
+DO $$
+DECLARE
+  tbl text;
+BEGIN
+  FOR tbl IN SELECT tablename FROM pg_tables WHERE schemaname = 'public'
+  LOOP
+    EXECUTE format('ALTER TABLE public.%I OWNER TO dhaga_app', tbl);
+  END LOOP;
+END $$;
+
+GRANT USAGE, CREATE ON SCHEMA public TO dhaga_app;
+-- Supabase only: pgvector/pg_trgm live in a separate "extensions" schema.
+-- Self-hosted Postgres with extensions installed directly in "public" can
+-- skip this line.
+GRANT USAGE ON SCHEMA extensions TO dhaga_app;
+ALTER DEFAULT PRIVILEGES FOR ROLE dhaga_app IN SCHEMA public GRANT ALL ON TABLES TO dhaga_app;
+ALTER DEFAULT PRIVILEGES FOR ROLE dhaga_app IN SCHEMA public GRANT ALL ON SEQUENCES TO dhaga_app;
+
+-- Verify before switching DATABASE_URL over: must return exactly one row
+-- with rolbypassrls = false. If this ever comes back true, stop — do not
+-- point DATABASE_URL at this role.
+SELECT rolname, rolbypassrls, rolsuper FROM pg_roles WHERE rolname = 'dhaga_app';

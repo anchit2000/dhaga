@@ -76,8 +76,23 @@ async function initEmbedded(): Promise<DhagaDb> {
     await store.__dhagaClient.close().catch(() => undefined);
     store.__dhagaClient = undefined;
   }
-  store.__dhagaClient ??= new PGlite({ dataDir, extensions: { vector, pg_trgm } });
-  await store.__dhagaClient.exec(DDL);
+  try {
+    store.__dhagaClient ??= new PGlite({ dataDir, extensions: { vector, pg_trgm } });
+    await store.__dhagaClient.exec(DDL);
+  } catch (error) {
+    // Confirmed on Vercel: a missing DATABASE_URL falls through to here, and
+    // the function filesystem being read-only surfaces as a bare EROFS mkdir
+    // crash with no indication of the actual misconfiguration. process.env.VERCEL
+    // isn't a reliable signal to pre-empt this (a project can have "Automatically
+    // expose System Environment Variables" turned off), so catch the real
+    // failure at its source instead of guessing at the hosting environment.
+    if (error instanceof Error && (error as NodeJS.ErrnoException).code === "EROFS") {
+      throw new Error(
+        "Cannot create the embedded database: this filesystem is read-only (typical of serverless hosts like Vercel). Set DATABASE_URL to a hosted Postgres connection string (e.g. Supabase) in your environment variables.",
+      );
+    }
+    throw error;
+  }
   store.__dhagaDdl = DDL;
   return drizzlePglite(store.__dhagaClient, { schema });
 }
@@ -85,14 +100,6 @@ async function initEmbedded(): Promise<DhagaDb> {
 export function getDb(): Promise<DhagaDb> {
   if (!store.__dhagaDb || store.__dhagaDdl !== DDL) {
     const url = process.env.DATABASE_URL;
-    // Embedded PGlite needs a writable dataDir; Vercel's function filesystem
-    // is read-only, so a missing DATABASE_URL there fails as a confusing
-    // EROFS mkdir deep in PGlite's init rather than this actionable message.
-    if (!url && process.env.VERCEL) {
-      throw new Error(
-        "DATABASE_URL is not set. Dhaga's embedded PGlite mode requires a writable filesystem and cannot run on Vercel — set DATABASE_URL to a hosted Postgres connection string (e.g. Supabase) in the project's Environment Variables.",
-      );
-    }
     store.__dhagaDb = url ? initHosted(url) : initEmbedded();
   }
   return store.__dhagaDb;

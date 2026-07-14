@@ -3,6 +3,15 @@ export interface RecognitionResultEvent {
   results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }>;
 }
 
+/** `error` is a string enum per the Web Speech API spec — "no-speech",
+ *  "aborted", "audio-capture", "network", "not-allowed",
+ *  "service-not-allowed", etc. Left as `string` rather than an exhaustive
+ *  union since callers only branch on a couple of known values and treat
+ *  the rest as a generic failure. */
+export interface RecognitionErrorEvent {
+  error: string;
+}
+
 export interface SpeechRecognitionLike {
   lang: string;
   continuous: boolean;
@@ -11,7 +20,7 @@ export interface SpeechRecognitionLike {
   stop(): void;
   onresult: ((event: RecognitionResultEvent) => void) | null;
   onend: (() => void) | null;
-  onerror: (() => void) | null;
+  onerror: ((event: RecognitionErrorEvent) => void) | null;
 }
 
 export type RecognitionCtor = new () => SpeechRecognitionLike;

@@ -55,6 +55,22 @@ function useBrowserDictation(onFinalText: (text: string) => void): DictationStat
     }
   }
 
+  /** The "switch to on-device" nudge, shared by the two ways we detect a
+   *  broken browser engine: a "network" error (Brave/most Chromium, which
+   *  block the recognition service and fail within a couple seconds) and
+   *  the silence timeout below (engines that instead hang with no result
+   *  and no error at all). */
+  function notifyEngineBroken(): void {
+    toast("Browser dictation isn't working here", {
+      description:
+        "This happens in Brave and some Chromium builds that block the recognition service it depends on. Try the on-device model instead.",
+      action: {
+        label: "Open settings",
+        onClick: () => router.push("/app/settings#voice-dictation"),
+      },
+    });
+  }
+
   function start(): void {
     const Ctor = getSpeechRecognitionCtor();
     if (!Ctor || listening) return;
@@ -73,29 +89,28 @@ function useBrowserDictation(onFinalText: (text: string) => void): DictationStat
       clearSilenceTimer();
       setListening(false);
     };
-    recognition.onerror = () => {
+    recognition.onerror = (event) => {
       clearSilenceTimer();
       setListening(false);
+      // "aborted" is our own stop() call; "no-speech" is a normal timeout
+      // with nothing said — neither means the engine itself is broken.
+      if (event.error === "aborted" || event.error === "no-speech") return;
+      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+        toast.error("Microphone access was denied or unavailable.");
+        return;
+      }
+      // "network" is Brave/most Chromium blocking the recognition service —
+      // the exact case this feature exists to catch, and it fails fast
+      // enough (a couple seconds) that the silence timeout below never gets
+      // a chance to fire on its own.
+      notifyEngineBroken();
     };
     recognitionRef.current = recognition;
     recognition.start();
     setListening(true);
-    // Brave and vanilla Chromium expose SpeechRecognition but block the
-    // network call it depends on, so it just listens forever with no
-    // interim or final results — no onerror ever fires. Zero results after
-    // a few seconds (plenty of time for even a short utterance to produce
-    // at least an interim result) is the only signal we get that it's
-    // silently broken rather than the user not having spoken yet.
-    silenceTimerRef.current = setTimeout(() => {
-      toast("Browser dictation isn't picking up any speech", {
-        description:
-          "This happens in Brave and some Chromium builds that block the recognition service it depends on. Try the on-device model instead.",
-        action: {
-          label: "Open settings",
-          onClick: () => router.push("/app/settings#voice-dictation"),
-        },
-      });
-    }, SILENT_FAILURE_MS);
+    // Fallback for engines that, unlike the "network" case above, hang with
+    // no result and no error at all rather than failing fast.
+    silenceTimerRef.current = setTimeout(notifyEngineBroken, SILENT_FAILURE_MS);
   }
 
   function stop(): void {

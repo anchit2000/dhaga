@@ -25,6 +25,12 @@
 CREATE ROLE dhaga_app WITH LOGIN PASSWORD '<CHANGE_ME>'
   NOBYPASSRLS NOSUPERUSER NOCREATEDB NOCREATEROLE;
 
+-- Required before the ownership transfer below: reassigning a table TO a
+-- role needs either superuser or membership in that role (the ability to
+-- SET ROLE to it) — Supabase's "postgres" role is a powerful admin role but
+-- not a true Postgres superuser, so this GRANT is not optional here.
+GRANT dhaga_app TO CURRENT_USER;
+
 -- Move ownership of every existing table so dhaga_app can run the app's own
 -- boot-time DDL (CREATE TABLE/ADD COLUMN IF NOT EXISTS, ENABLE/FORCE ROW
 -- LEVEL SECURITY, CREATE POLICY) — those are ALTER TABLE operations, which

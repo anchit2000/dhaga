@@ -11,6 +11,12 @@ import type { WorkerRequest, WorkerResponse } from "./whisper-protocol";
 
 const MODEL_ID = "onnx-community/whisper-base";
 
+/** Without a language hint, Whisper runs its own language-ID pass on every
+ *  chunk — unreliable on the short, few-hundred-ms clips the realtime
+ *  engine starts with. Hardcoded rather than derived from the browser
+ *  locale since only English is supported right now. */
+const LANGUAGE_HINT = "en";
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Transcriber = (audio: Float32Array, options?: Record<string, unknown>) => Promise<any>;
 
@@ -72,10 +78,10 @@ self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
     // second, so they skip the long-clip chunking and cap generated tokens
     // to stay fast; batch passes get the full chunk/stride treatment since
     // they only run once, after the user stops.
-    const result = await transcriber(
-      event.data.audio,
-      event.data.realtime ? { max_new_tokens: 64 } : { chunk_length_s: 30, stride_length_s: 5 },
-    );
+    const result = await transcriber(event.data.audio, {
+      language: LANGUAGE_HINT,
+      ...(event.data.realtime ? { max_new_tokens: 64 } : { chunk_length_s: 30, stride_length_s: 5 }),
+    });
     const text = Array.isArray(result) ? result.map((r) => r.text).join(" ") : result.text;
     post({ status: "complete", text: (text ?? "").trim() });
   } catch (error) {

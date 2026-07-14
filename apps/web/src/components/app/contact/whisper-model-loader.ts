@@ -3,14 +3,17 @@
 import type { WorkerRequest, WorkerResponse } from "./whisper-protocol";
 
 /**
- * Background prefetch for the on-device Whisper model, independent of the
- * per-recording workers in useLocalWhisper/useRealtimeWhisper. Runs in its
- * own Worker so it shares the browser's Cache API storage with them (a
- * later transcribe-time pipeline() call reuses whatever this already
- * fetched) without unifying the worker instances themselves. Module-level
+ * Single shared Worker for on-device Whisper: background model prefetch
+ * (Settings/login) AND every actual transcribe call from
+ * useLocalWhisper/useRealtimeWhisper. Unified deliberately — a separate
+ * warmup-only worker used to leave the real transcribe worker's own
+ * pipeline() cold, so a model that was already "ready" per Settings still
+ * paid the full inference-session construction cost (not just the
+ * network download) on first real recording. One worker means warming it
+ * once actually warms the thing that does the work. Module-level
  * singleton: survives across component mounts (Settings, the app shell,
- * the dictation UI) so the download and its progress are the same one
- * everywhere, for as long as the tab stays open.
+ * the dictation UI) so state is the same one everywhere, for as long as
+ * the tab stays open.
  */
 
 export type ModelLoadState =
@@ -24,6 +27,9 @@ const IDLE: ModelLoadState = { status: "idle" };
 let worker: Worker | null = null;
 let state: ModelLoadState = IDLE;
 const listeners = new Set<() => void>();
+/** Only one recording engine is ever active at a time, so a single slot
+ *  is enough to route a transcribe request's response back to its caller. */
+let transcribeListener: ((message: WorkerResponse) => void) | null = null;
 
 function setState(next: ModelLoadState): void {
   state = next;
@@ -38,6 +44,8 @@ function getWorker(): Worker {
       if (message.status === "loading") setState({ status: "loading", progress: message.progress });
       else if (message.status === "ready") setState({ status: "ready" });
       else if (message.status === "error") setState({ status: "error", message: message.message });
+      transcribeListener?.(message);
+      if (message.status === "complete" || message.status === "error") transcribeListener = null;
     };
   }
   return worker;
@@ -52,17 +60,28 @@ export function ensureModelLoaded(): void {
   getWorker().postMessage(request);
 }
 
-/** Terminating the worker aborts whatever fetch is in flight — there's no
- *  byte-range resume, so a later retry restarts that file's download. */
+/** Terminating the worker aborts whatever fetch (or transcription) is in
+ *  flight — there's no byte-range resume, so a later retry restarts that
+ *  file's download from scratch. */
 export function cancelModelLoad(): void {
   worker?.terminate();
   worker = null;
+  transcribeListener = null;
   setState(IDLE);
 }
 
 export function retryModelLoad(): void {
   cancelModelLoad();
   ensureModelLoaded();
+}
+
+/** Runs one transcribe request on the shared worker — used by both
+ *  dictation engines instead of each keeping its own Worker. Transfers
+ *  the buffer to avoid copying it across the worker boundary. */
+export function transcribe(audio: Float32Array, realtime: boolean, onMessage: (message: WorkerResponse) => void): void {
+  transcribeListener = onMessage;
+  const request: WorkerRequest = { type: "transcribe", audio, realtime };
+  getWorker().postMessage(request, [audio.buffer]);
 }
 
 export function subscribeModelLoad(listener: () => void): () => void {

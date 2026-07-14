@@ -115,7 +115,7 @@ export function VoiceInputSetting({ engine }: { engine: SttEngine }) {
           every word on your device — none ever uploads audio.
         </p>
       </div>
-      <div className="flex flex-col gap-2 sm:flex-row">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         <EngineOption
           value="browser"
           active={engine === "browser"}

@@ -31,9 +31,9 @@ export function DictationProgress({
   }
   if (partialText) {
     return (
-      <span className="inline-flex items-center gap-1.5 text-xs italic text-fog">
-        <span className="inline-block size-1.5 shrink-0 animate-pulse rounded-full bg-amber" />
-        {partialText}
+      <span className="flex w-full min-w-0 basis-full items-start gap-1.5 text-xs italic text-fog">
+        <span className="mt-0.5 inline-block size-1.5 shrink-0 animate-pulse rounded-full bg-amber" />
+        <span className="min-w-0 break-words">{partialText}</span>
       </span>
     );
   }

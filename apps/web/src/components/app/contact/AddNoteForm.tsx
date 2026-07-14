@@ -51,7 +51,7 @@ export function AddNoteForm({ contactId }: { contactId: string }) {
         </p>
       ) : null}
       {state.notice ? <p className="text-sm text-ember/90">{state.notice}</p> : null}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <SubmitButton>Add note</SubmitButton>
         {supported ? (
           <button

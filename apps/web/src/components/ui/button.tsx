@@ -1,5 +1,6 @@
 import { Button as ButtonPrimitive } from "@base-ui/react/button"
 import { cva, type VariantProps } from "class-variance-authority"
+import { Loader2 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -46,16 +47,36 @@ function Button({
   variant = "default",
   size = "default",
   nativeButton,
+  loading = false,
+  disabled,
+  children,
   ...props
-}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+}: ButtonPrimitive.Props &
+  VariantProps<typeof buttonVariants> & { loading?: boolean }) {
   return (
     <ButtonPrimitive
       data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={cn(buttonVariants({ variant, size, className }), loading && "relative")}
       // When `render` swaps in a Link/anchor, tell Base UI it's not a native <button>
       nativeButton={nativeButton ?? props.render === undefined}
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
       {...props}
-    />
+    >
+      {loading ? (
+        <>
+          {/* Overlay keeps the button's width — children stay laid out but
+              hidden (visibility inherits through display:contents) while a
+              centered spinner sits on top, so nothing shifts. */}
+          <span className="absolute inset-0 flex items-center justify-center" aria-hidden>
+            <Loader2 className="size-4 animate-spin" />
+          </span>
+          <span className="contents invisible">{children}</span>
+        </>
+      ) : (
+        children
+      )}
+    </ButtonPrimitive>
   )
 }
 

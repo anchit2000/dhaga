@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Camera, Loader2 } from "lucide-react";
+import { useNavigationFeedback } from "@/components/app/NavigationFeedback";
 import { detectLinkedInQrUrl } from "./detect-linkedin-qr";
 
 /**
@@ -20,17 +20,19 @@ export function PhotoCaptureInput({
   storeCardPhotos: boolean;
   onPhotoSelected: (file: File) => void;
 }) {
-  const router = useRouter();
+  const { navigate } = useNavigationFeedback();
   const [checking, setChecking] = useState(false);
 
   async function handleFile(file: File): Promise<void> {
     setChecking(true);
     const linkedInUrl = await detectLinkedInQrUrl(file);
-    setChecking(false);
     if (linkedInUrl) {
-      router.push(`/app/people/new?linkedin=${encodeURIComponent(linkedInUrl)}`);
+      // Keep the "checking" spinner up through the nav; navigate() also lights
+      // the app-shell top bar so the jump doesn't feel like a dead click.
+      navigate(`/app/people/new?linkedin=${encodeURIComponent(linkedInUrl)}`);
       return;
     }
+    setChecking(false);
     onPhotoSelected(file);
   }
 

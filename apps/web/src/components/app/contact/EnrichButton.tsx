@@ -3,6 +3,8 @@
 import { useActionState } from "react";
 import { enrichContactAction } from "@/lib/actions/enrich";
 import type { EnrichResult } from "@/lib/ai/enrich";
+import { ThreadLoader } from "@/components/brand/ThreadLoader";
+import { ENRICH_MESSAGES } from "@/utils/constants/loader-messages";
 import { SubmitButton } from "../SubmitButton";
 
 /**
@@ -10,7 +12,7 @@ import { SubmitButton } from "../SubmitButton";
  * saved as a note — delete it to remove everything enrichment derived.
  */
 export function EnrichButton({ contactId }: { contactId: string }) {
-  const [state, formAction] = useActionState<EnrichResult, FormData>(
+  const [state, formAction, pending] = useActionState<EnrichResult, FormData>(
     enrichContactAction,
     {},
   );
@@ -23,10 +25,14 @@ export function EnrichButton({ contactId }: { contactId: string }) {
           Enrich from public web ✦
         </SubmitButton>
       </form>
-      <p className="text-xs text-fog">
-        Searches the public web for their footprint — cited, saved as a note,
-        fully deletable.
-      </p>
+      {pending ? (
+        <ThreadLoader messages={ENRICH_MESSAGES} />
+      ) : (
+        <p className="text-xs text-fog">
+          Searches the public web for their footprint — cited, saved as a note,
+          fully deletable.
+        </p>
+      )}
       {state.noticed ? (
         <p className="w-full text-xs text-amber/90" role="status">
           {state.noticed}

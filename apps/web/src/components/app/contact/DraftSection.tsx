@@ -4,11 +4,13 @@ import { useActionState, useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { draftFollowUpAction, type DraftState } from "@/lib/actions/drafts";
 import { Textarea } from "@/components/ui/textarea";
+import { ThreadLoader } from "@/components/brand/ThreadLoader";
+import { DRAFT_MESSAGES } from "@/utils/constants/loader-messages";
 import { SubmitButton } from "../SubmitButton";
 
 /** M7: one-tap follow-up draft — editable, copy-to-clipboard. */
 export function DraftSection({ contactId }: { contactId: string }) {
-  const [state, formAction] = useActionState<DraftState, FormData>(
+  const [state, formAction, pending] = useActionState<DraftState, FormData>(
     draftFollowUpAction,
     {},
   );
@@ -33,7 +35,9 @@ export function DraftSection({ contactId }: { contactId: string }) {
           {state.error}
         </p>
       ) : null}
-      {state.draft ? (
+      {pending ? (
+        <ThreadLoader messages={DRAFT_MESSAGES} />
+      ) : state.draft ? (
         <div className="space-y-2">
           <Textarea
             value={text}

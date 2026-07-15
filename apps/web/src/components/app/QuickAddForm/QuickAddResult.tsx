@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { profileFromExtracted } from "@dhaga/core";
 import type { ExtractedContact } from "@dhaga/core";
 import { ContactForm } from "../ContactForm";
 import { EventPicker, type EventOption } from "../EventPicker";
@@ -39,7 +40,7 @@ export function QuickAddResult({
       </div>
       {notice ? <p className="text-sm text-fog">{notice}</p> : null}
       <div className="rounded-2xl border border-seam bg-panel p-5 sm:p-6">
-        <ContactForm initial={contact} submitLabel="Save person">
+        <ContactForm initial={profileFromExtracted(contact)} submitLabel="Save person">
           <input type="hidden" name="source" value="quick_add" />
           <input type="hidden" name="sourceText" value={sourceText ?? ""} />
           <input type="hidden" name="imageBase64" value={imageBase64 ?? ""} />

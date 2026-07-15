@@ -1,5 +1,6 @@
-import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ThreadLoader } from "@/components/brand/ThreadLoader";
+import { ASK_MESSAGES } from "@/utils/constants/loader-messages";
 import type { AskAiState } from "@/lib/actions/search";
 
 /**
@@ -27,10 +28,9 @@ export function AskPanel({
           <Button
             type="submit"
             form={formId}
-            disabled={pending}
+            loading={pending}
             className="h-9 shrink-0 px-4 text-sm"
           >
-            {pending ? <Loader2 className="size-4 animate-spin" /> : null}
             Ask Dhaga ✦
           </Button>
         </div>
@@ -40,7 +40,9 @@ export function AskPanel({
         </p>
       )}
 
-      {state.answer ? (
+      {pending ? (
+        <ThreadLoader messages={ASK_MESSAGES} className="px-1 py-2" />
+      ) : state.answer ? (
         <p className="whitespace-pre-wrap text-sm leading-relaxed text-paper">
           {state.answer}
         </p>

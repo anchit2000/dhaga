@@ -1,14 +1,23 @@
-import Link from "next/link";
 import { requireUserIdForPage } from "@/lib/auth/guard";
-import { listEvents } from "@/lib/repo/events";
+import { listEventFilterOptions, listEventsPage } from "@/lib/repo/events";
 import { CreateEventForm } from "@/components/app/CreateEventForm";
+import { EventsTable } from "@/components/app/EventsTable";
 import { EmptyState } from "@/components/app/EmptyState";
+import { DEFAULT_TABLE_PAGE_SIZE, TABLE_PAGE_SIZES } from "@/utils/constants/table";
 
 export const metadata = { title: "Events — Dhaga" };
 
-export default async function EventsPage() {
+export default async function EventsPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   await requireUserIdForPage();
-  const events = await listEvents();
+  const params = await searchParams;
+  const requestedPageSize = Number(params.pageSize);
+  const pageSize = TABLE_PAGE_SIZES.includes(requestedPageSize as (typeof TABLE_PAGE_SIZES)[number]) ? requestedPageSize : DEFAULT_TABLE_PAGE_SIZE;
+  const page = Math.max(1, Number(params.page) || 1);
+  const filters = { name: params.name ?? "", tags: params.tags ?? "" };
+  const [{ rows: events, total }, options] = await Promise.all([
+    listEventsPage({ page, pageSize, name: filters.name, tag: filters.tags }),
+    listEventFilterOptions(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -19,37 +28,15 @@ export default async function EventsPage() {
         </p>
       </div>
 
-      <CreateEventForm />
+      <CreateEventForm withStyle />
 
-      {events.length === 0 ? (
+      {total === 0 && !filters.name && !filters.tags ? (
         <EmptyState
           title="No events yet"
           body="Create one above, or attach a event while quick-adding a person."
         />
       ) : (
-        <ul className="divide-y divide-seam overflow-hidden rounded-2xl border border-seam bg-panel">
-          {events.map((event) => (
-            <li key={event.id}>
-              <Link
-                href={`/app/events/${event.id}`}
-                className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-wash/[0.03]"
-              >
-                <span className="min-w-0">
-                  <span className="block truncate text-sm font-medium text-paper">
-                    {event.name}
-                  </span>
-                  <span className="block text-xs text-fog">
-                    {event.startedAt.toLocaleDateString()}
-                  </span>
-                </span>
-                <span className="shrink-0 rounded-full border border-seam bg-wash/[0.04] px-2.5 py-0.5 text-xs text-fog">
-                  {event.contactCount}{" "}
-                  {event.contactCount === 1 ? "person" : "people"}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <EventsTable events={events} total={total} page={page} pageSize={pageSize} filters={filters} options={options} />
       )}
     </div>
   );

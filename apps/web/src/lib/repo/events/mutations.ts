@@ -1,68 +1,39 @@
 import { randomUUID } from "node:crypto";
-import { count, desc, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
-import {
-  contacts,
-  eventContacts,
-  events,
-  type EventRow,
-} from "@/lib/db/schema";
+import { eventContacts, events } from "@/lib/db/schema";
 
-export interface EventListItem extends EventRow {
-  contactCount: number;
-}
-
-export async function listEvents(limit?: number): Promise<EventListItem[]> {
-  const db = await getDb();
-  const result = db
-    .select({
-      event: events,
-      contactCount: count(eventContacts.contactId),
-    })
-    .from(events)
-    .leftJoin(eventContacts, eq(eventContacts.eventId, events.id))
-    .groupBy(events.id)
-    .orderBy(desc(events.startedAt));
-  const rows = await (limit ? result.limit(limit) : result);
-  return rows.map((row) => ({ ...row.event, contactCount: row.contactCount }));
-}
-
-export async function getEvent(id: string): Promise<EventRow | null> {
-  const db = await getDb();
-  const [row] = await db.select().from(events).where(eq(events.id, id)).limit(1);
-  return row ?? null;
-}
-
-export async function listEventContacts(eventId: string) {
-  const db = await getDb();
-  return db
-    .select({
-      id: contacts.id,
-      name: contacts.name,
-      title: contacts.title,
-      scannedAt: eventContacts.scannedAt,
-    })
-    .from(eventContacts)
-    .innerJoin(contacts, eq(eventContacts.contactId, contacts.id))
-    .where(eq(eventContacts.eventId, eventId))
-    .orderBy(desc(eventContacts.scannedAt));
-}
-
-export async function listContactEvents(contactId: string) {
-  const db = await getDb();
-  return db
-    .select({ id: events.id, name: events.name, scannedAt: eventContacts.scannedAt })
-    .from(eventContacts)
-    .innerJoin(events, eq(eventContacts.eventId, events.id))
-    .where(eq(eventContacts.contactId, contactId))
-    .orderBy(desc(eventContacts.scannedAt));
-}
-
-export async function createEvent(name: string, geohash?: string | null): Promise<string> {
+export async function createEvent(
+  name: string,
+  opts?: { geohash?: string | null; emoji?: string | null; color?: string | null; tags?: string[] },
+): Promise<string> {
   const db = await getDb();
   const id = randomUUID();
-  await db.insert(events).values({ id, name: name.trim(), geohash: geohash ?? null });
+  await db.insert(events).values({
+    id,
+    name: name.trim(),
+    geohash: opts?.geohash ?? null,
+    emoji: opts?.emoji ?? null,
+    color: opts?.color ?? null,
+    tags: opts?.tags ?? [],
+  });
   return id;
+}
+
+/** Update a group's decoration. Omitted keys are left untouched. */
+export async function updateEventMeta(
+  id: string,
+  meta: { color?: string | null; emoji?: string | null; tags?: string[] },
+): Promise<void> {
+  const db = await getDb();
+  await db
+    .update(events)
+    .set({
+      ...(meta.color !== undefined ? { color: meta.color } : {}),
+      ...(meta.emoji !== undefined ? { emoji: meta.emoji } : {}),
+      ...(meta.tags !== undefined ? { tags: meta.tags } : {}),
+    })
+    .where(eq(events.id, id));
 }
 
 export async function addContactToEvent(

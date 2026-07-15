@@ -4,11 +4,13 @@ import { useActionState, useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { generateBriefAction } from "@/lib/actions/brief";
 import type { BriefResult } from "@/lib/ai/brief";
+import { ThreadLoader } from "@/components/brand/ThreadLoader";
+import { BRIEF_MESSAGES } from "@/utils/constants/loader-messages";
 import { SubmitButton } from "../SubmitButton";
 
 /** v1.2: one-tap pre-meeting dossier from the graph, with copy. */
 export function BriefSection({ contactId }: { contactId: string }) {
-  const [state, formAction] = useActionState<BriefResult, FormData>(
+  const [state, formAction, pending] = useActionState<BriefResult, FormData>(
     generateBriefAction,
     {},
   );
@@ -30,7 +32,9 @@ export function BriefSection({ contactId }: { contactId: string }) {
           {state.error}
         </p>
       ) : null}
-      {state.brief ? (
+      {pending ? (
+        <ThreadLoader messages={BRIEF_MESSAGES} />
+      ) : state.brief ? (
         <div className="space-y-2">
           <div className="whitespace-pre-wrap rounded-2xl border border-amber/25 bg-amber/[0.04] p-4 text-sm leading-relaxed text-paper">
             {state.brief}

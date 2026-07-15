@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Waypoints } from "lucide-react";
+import { Pencil, Waypoints } from "lucide-react";
 import { requireUserIdForPage } from "@/lib/auth/guard";
 import { getContact, listMentionMergeCandidates } from "@/lib/repo/contacts";
 import { listFacts, listNotes, listOpenFollowUps } from "@/lib/repo/notes";
@@ -20,7 +20,7 @@ import { ContactSignalList } from "@/components/app/contact/ContactSignalList";
 import { KeepInTouch } from "@/components/app/contact/KeepInTouch";
 import { WatchToggle } from "@/components/app/contact/WatchToggle";
 import { OnDemandNetwork } from "@/components/app/contact/OnDemandNetwork";
-import { DetailChips } from "@/components/app/contact/DetailChips";
+import { ContactInfoCard } from "@/components/app/contact/ContactInfoCard";
 import { DraftSection } from "@/components/app/contact/DraftSection";
 import { EnrichButton } from "@/components/app/contact/EnrichButton";
 import { ExtractionStatus } from "@/components/app/contact/ExtractionStatus";
@@ -78,6 +78,9 @@ export default async function PersonPage({
           <div className="min-w-0">
             <h1 className="truncate font-display text-2xl tracking-tight">
               {contact.name}
+              {contact.nickname ? (
+                <span className="ml-2 text-lg text-fog">“{contact.nickname}”</span>
+              ) : null}
             </h1>
             <p className="mt-0.5 text-sm text-fog">
               {[contact.title, companyName].filter(Boolean).join(" · ") ||
@@ -106,14 +109,24 @@ export default async function PersonPage({
             ) : null}
           </div>
         </div>
-        <Button
-          render={<Link href={`/app/graph?focus=${id}`} />}
-          variant="outline"
-          size="sm"
-        >
-          <Waypoints />
-          View in graph
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            render={<Link href={`/app/people/${id}/edit`} />}
+            variant="outline"
+            size="sm"
+          >
+            <Pencil />
+            Edit
+          </Button>
+          <Button
+            render={<Link href={`/app/graph?focus=${id}`} />}
+            variant="outline"
+            size="sm"
+          >
+            <Waypoints />
+            View in graph
+          </Button>
+        </div>
       </div>
 
       {contact.source === "mentioned" ? (
@@ -151,15 +164,7 @@ export default async function PersonPage({
         </div>
 
         <aside className="order-first space-y-4 lg:order-last lg:sticky lg:top-20">
-          <div className="grid grid-cols-1 gap-4 rounded-2xl border border-seam bg-panel p-4 sm:grid-cols-2 lg:grid-cols-1">
-            <DetailChips label="Email" values={contact.emails} />
-            <DetailChips label="Phone" values={contact.phones} />
-            <DetailChips label="Links" values={contact.links} />
-            <DetailChips
-              label="Location"
-              values={contact.location ? [contact.location] : []}
-            />
-          </div>
+          <ContactInfoCard detail={detail} />
           <CardPhotoStrip images={cardPhotos} />
           <KeepInTouch
             contactId={id}

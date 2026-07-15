@@ -38,7 +38,8 @@ export async function runEnrichmentSearch(
       name: detail.contact.name,
       title: detail.contact.title,
       company: detail.companyName,
-      links: detail.contact.links,
+      // getContact normalises methods to objects; the prompt wants bare URLs.
+      links: detail.contact.links.map((link) => link.value),
     }),
     tier: "reason",
     maxTokens: 2048,

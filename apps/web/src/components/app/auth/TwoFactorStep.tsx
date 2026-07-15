@@ -28,7 +28,8 @@ export function TwoFactorStep() {
       setPending(false);
       return;
     }
-    router.push("/app");
+    router.replace("/app");
+    router.refresh();
   }
 
   return (

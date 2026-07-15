@@ -1,11 +1,17 @@
 "use client";
 
-import { createContext, useContext, useState } from "react";
-import { usePathname } from "next/navigation";
+import { createContext, useCallback, useContext, useState, useTransition } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { StitchLoader } from "@/components/brand/StitchLoader";
+
+interface NavigateOptions {
+  replace?: boolean;
+}
 
 interface NavigationFeedbackValue {
   pendingHref?: string;
+  /** Programmatic navigation (router.push/replace) that also shows the top bar. */
+  navigate: (href: string, options?: NavigateOptions) => void;
 }
 
 interface PendingNavigation {
@@ -13,7 +19,9 @@ interface PendingNavigation {
   href: string;
 }
 
-const NavigationFeedbackContext = createContext<NavigationFeedbackValue>({});
+const NavigationFeedbackContext = createContext<NavigationFeedbackValue>({
+  navigate: () => {},
+});
 
 export function useNavigationFeedback(): NavigationFeedbackValue {
   return useContext(NavigationFeedbackContext);
@@ -22,10 +30,23 @@ export function useNavigationFeedback(): NavigationFeedbackValue {
 /** One app-shell boundary that gives every internal link immediate feedback. */
 export function NavigationFeedback({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [, startTransition] = useTransition();
   const [pendingNavigation, setPendingNavigation] = useState<PendingNavigation>();
   const pendingHref = pendingNavigation?.fromPathname === pathname
     ? pendingNavigation.href
     : undefined;
+
+  const navigate = useCallback(
+    (href: string, options?: NavigateOptions): void => {
+      setPendingNavigation({ fromPathname: pathname, href });
+      startTransition(() => {
+        if (options?.replace) router.replace(href);
+        else router.push(href);
+      });
+    },
+    [pathname, router],
+  );
 
   function handleClick(event: React.MouseEvent<HTMLDivElement>): void {
     if (
@@ -53,7 +74,7 @@ export function NavigationFeedback({ children }: { children: React.ReactNode }) 
   }
 
   return (
-    <NavigationFeedbackContext value={{ pendingHref }}>
+    <NavigationFeedbackContext value={{ pendingHref, navigate }}>
       <div onClickCapture={handleClick} aria-busy={pendingHref !== undefined}>
         {pendingHref ? (
           <div className="pointer-events-none fixed inset-x-0 top-0 z-[100] flex h-1 items-center overflow-hidden bg-amber/10">

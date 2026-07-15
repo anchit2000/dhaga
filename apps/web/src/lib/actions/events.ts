@@ -3,13 +3,45 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUserId } from "@/lib/auth/guard";
-import { createEvent, mergeEvents, renameEvent, getEvent } from "@/lib/repo/events";
+import { createEvent, mergeEvents, renameEvent, getEvent, updateEventMeta } from "@/lib/repo/events";
 import { eventDigestData } from "@/lib/repo/digest";
 import { eventDigestHtml } from "@/lib/email/digest";
 import { emailEnabled, emailShell, ownerEmail, sendEmail } from "@/lib/email/send";
+import {
+  EVENT_COLOR_TOKENS,
+  EVENT_EMOJIS,
+  EVENT_TAG_MAX,
+  EVENT_TAG_MAX_LENGTH,
+} from "@/utils/constants/events";
 
 export interface EventFormState {
   error?: string;
+}
+
+/** Only accept a colour token / emoji the palette actually offers; else clear it. */
+function parseColor(raw: FormDataEntryValue | null): string | null {
+  const value = String(raw ?? "").trim();
+  return EVENT_COLOR_TOKENS.includes(value) ? value : null;
+}
+
+function parseEmoji(raw: FormDataEntryValue | null): string | null {
+  const value = String(raw ?? "").trim();
+  return EVENT_EMOJIS.includes(value) ? value : null;
+}
+
+/** Normalise user-authored tags: trim, lowercase, cap length, dedupe, cap count. */
+function parseTags(raw: FormDataEntryValue[]): string[] {
+  const tags: string[] = [];
+  const seen = new Set<string>();
+  for (const entry of raw) {
+    const tag = String(entry).trim().toLocaleLowerCase().slice(0, EVENT_TAG_MAX_LENGTH);
+    if (tag && !seen.has(tag)) {
+      seen.add(tag);
+      tags.push(tag);
+    }
+    if (tags.length >= EVENT_TAG_MAX) break;
+  }
+  return tags;
 }
 
 export async function createEventAction(
@@ -19,7 +51,10 @@ export async function createEventAction(
   await requireUserId();
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return { error: "Give the event a name." };
-  const id = await createEvent(name);
+  const id = await createEvent(name, {
+    emoji: parseEmoji(formData.get("emoji")),
+    color: parseColor(formData.get("color")),
+  });
   redirect(`/app/events/${id}`);
 }
 
@@ -31,6 +66,21 @@ export async function renameEventAction(formData: FormData): Promise<void> {
   await renameEvent(eventId, name);
   revalidatePath(`/app/events/${eventId}`);
   revalidatePath("/app/events");
+}
+
+/** Save a group's colour, emoji, and tags from the detail-page editor. */
+export async function updateEventMetaAction(formData: FormData): Promise<void> {
+  await requireUserId();
+  const eventId = String(formData.get("eventId") ?? "");
+  if (!eventId) return;
+  await updateEventMeta(eventId, {
+    color: parseColor(formData.get("color")),
+    emoji: parseEmoji(formData.get("emoji")),
+    tags: parseTags(formData.getAll("tags")),
+  });
+  revalidatePath(`/app/events/${eventId}`);
+  revalidatePath("/app/events");
+  revalidatePath("/app");
 }
 
 export interface DigestState {

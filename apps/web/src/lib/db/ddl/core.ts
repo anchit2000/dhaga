@@ -100,6 +100,23 @@ CREATE TABLE IF NOT EXISTS edges (
 CREATE INDEX IF NOT EXISTS edges_srcId_idx ON edges (src_id) WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS edges_dstId_idx ON edges (dst_id) WHERE deleted_at IS NULL;
 
+-- Pending person→person relationships awaiting the user's "which contact?"
+-- confirmation before an edge is written (see repo/edge-suggestions.ts).
+CREATE TABLE IF NOT EXISTS edge_suggestions (
+  id text PRIMARY KEY,
+  src_contact_id text NOT NULL REFERENCES contacts(id),
+  predicate text NOT NULL,
+  object_name text NOT NULL,
+  object_type text NOT NULL,
+  candidate_ids jsonb NOT NULL DEFAULT '[]',
+  status text NOT NULL DEFAULT 'pending',
+  source_note_id text REFERENCES notes(id),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  resolved_at timestamptz
+);
+
+CREATE INDEX IF NOT EXISTS edge_suggestions_pending_idx ON edge_suggestions (created_at DESC) WHERE status = 'pending';
+
 CREATE TABLE IF NOT EXISTS follow_ups (
   id text PRIMARY KEY,
   contact_id text NOT NULL REFERENCES contacts(id),

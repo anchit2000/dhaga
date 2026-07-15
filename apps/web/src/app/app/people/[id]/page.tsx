@@ -12,6 +12,7 @@ import { listContactEvents } from "@/lib/repo/events";
 import { listCardImageRefs } from "@/lib/repo/card-images";
 import { isReachOutDue } from "@/lib/repo/reminders";
 import { listContactSignals } from "@/lib/repo/signals";
+import { listContactRelationships } from "@/lib/repo/relationships";
 import { Button } from "@/components/ui/button";
 import { AddNoteForm } from "@/components/app/contact/AddNoteForm";
 import { CardPhotoStrip } from "@/components/app/contact/CardPhotoStrip";
@@ -28,6 +29,7 @@ import { FactList } from "@/components/app/contact/FactList";
 import { FollowUpList } from "@/components/app/contact/FollowUpList";
 import { ForgetButton } from "@/components/app/contact/ForgetButton";
 import { NoteList } from "@/components/app/contact/NoteList";
+import { RelationshipList } from "@/components/app/contact/RelationshipList";
 import { Timeline } from "@/components/app/contact/Timeline";
 import { MentionedPersonActions } from "@/components/app/contact/MentionedPersonActions";
 
@@ -51,6 +53,7 @@ export default async function PersonPage({
     cardPhotos,
     contactSignals,
     extractionJobRows,
+    contactRelationships,
   ] = await Promise.all([
     listNotes(id),
     listFacts(id),
@@ -59,6 +62,7 @@ export default async function PersonPage({
     listCardImageRefs(id),
     listContactSignals(id),
     listRecentExtractionJobs(id),
+    listContactRelationships(id),
   ]);
   const extractionJobs = extractionJobRows.map((row) => toExtractionJobView(row));
   const lastTouch = contact.lastReachedOutAt ?? contact.createdAt;
@@ -140,6 +144,7 @@ export default async function PersonPage({
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="space-y-6">
           <BriefSection contactId={id} />
+          <RelationshipList relationships={contactRelationships} />
           <OnDemandNetwork contactId={id} />
           <FollowUpList contactId={id} followUps={openFollowUps} />
           <section className="space-y-3">

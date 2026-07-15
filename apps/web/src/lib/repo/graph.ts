@@ -1,11 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { eq, ilike } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
-import { contacts, edges, facts, followUps } from "@/lib/db/schema";
+import { contacts, edges, edgeSuggestions, facts, followUps } from "@/lib/db/schema";
 import { findOrCreateCompany } from "./contacts";
+import { resolvePersonObject } from "./edge-suggestions";
 import { upsertEmbedding } from "./embeddings";
 import { emitWebhook } from "@/lib/webhooks";
-import type { NoteExtraction, Relationship } from "@dhaga/core";
+import type { NoteExtraction } from "@dhaga/core";
 
 async function resolvePersonId(name: string): Promise<string | null> {
   const db = await getDb();
@@ -17,35 +18,12 @@ async function resolvePersonId(name: string): Promise<string | null> {
   return row?.id ?? null;
 }
 
-async function resolveOrCreateMentionedPerson(name: string): Promise<string> {
-  const existing = await resolvePersonId(name);
-  if (existing) return existing;
-  const db = await getDb();
-  const id = randomUUID();
-  await db.insert(contacts).values({
-    id,
-    name: name.trim(),
-    title: null,
-    companyId: null,
-    emails: [],
-    phones: [],
-    links: [],
-    location: null,
-    tags: [],
-    source: "mentioned",
-  });
-  return id;
-}
-
-function relationshipAsFactText(rel: Relationship): string {
-  return `${rel.predicate.replaceAll("_", " ")} ${rel.object}`;
-}
-
 /**
  * Write one note's extraction into the graph. Every row carries
  * source_note_id — deleting the note tombstones all of this.
- * Unknown named people become lightweight `mentioned` contacts. They can
- * participate in the graph without cluttering the main People list.
+ * An unambiguous new person becomes a lightweight `mentioned` contact and is
+ * linked immediately; an ambiguous one (a name that matches more than one, or
+ * only fuzzily) is held as an edge suggestion for the user to confirm.
  *
  * Each entity type is written with one multi-row `db.insert(...).values([...])`
  * instead of N single-row inserts in a loop: a single INSERT statement is
@@ -79,35 +57,48 @@ export async function applyExtraction(
   }));
 
   const edgeRows: (typeof edges.$inferInsert)[] = [];
+  const suggestionRows: (typeof edgeSuggestions.$inferInsert)[] = [];
 
   for (const rel of extraction.relationships) {
     const srcId =
       rel.subject.toLowerCase() === "contact"
         ? contactId
         : ((await resolvePersonId(rel.subject)) ?? contactId);
-    const dstId =
-      rel.object_type === "company"
-        ? await findOrCreateCompany(rel.object)
-        : await resolveOrCreateMentionedPerson(rel.object);
 
-    if (dstId) {
+    if (rel.object_type === "company") {
       edgeRows.push({
         id: randomUUID(),
         srcType: "contact",
         srcId,
         predicate: rel.predicate,
-        dstType: rel.object_type,
-        dstId,
+        dstType: "company",
+        dstId: await findOrCreateCompany(rel.object),
+        sourceNoteId: noteId,
+      });
+      continue;
+    }
+
+    // A person on the other end: link immediately when unambiguous, otherwise
+    // hold it as a suggestion for the user to confirm which contact is meant.
+    const resolution = await resolvePersonObject(rel.object);
+    if (resolution.kind === "edge") {
+      edgeRows.push({
+        id: randomUUID(),
+        srcType: "contact",
+        srcId,
+        predicate: rel.predicate,
+        dstType: "person",
+        dstId: resolution.dstId,
         sourceNoteId: noteId,
       });
     } else {
-      factRows.push({
+      suggestionRows.push({
         id: randomUUID(),
-        contactId,
-        type: "personal",
-        text: relationshipAsFactText(rel),
-        confidence: 0.7,
-        unverified,
+        srcContactId: srcId,
+        predicate: rel.predicate,
+        objectName: rel.object,
+        objectType: "person",
+        candidateIds: resolution.candidateIds,
         sourceNoteId: noteId,
       });
     }
@@ -122,6 +113,10 @@ export async function applyExtraction(
 
   if (edgeRows.length > 0) {
     await db.insert(edges).values(edgeRows);
+  }
+
+  if (suggestionRows.length > 0) {
+    await db.insert(edgeSuggestions).values(suggestionRows);
   }
 
   const followUpRows: (typeof followUps.$inferInsert)[] = extraction.follow_ups.map(

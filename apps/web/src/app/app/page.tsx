@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { dayLoad, findOpenSlots, hasLLM } from "@dhaga/core";
 import { HomeDashboard } from "@/components/app/home/HomeDashboard";
+import { RelationshipInbox } from "@/components/app/relationships/RelationshipInbox";
 import { SuggestionsPanel } from "@/components/app/import/SuggestionsPanel";
 import { OnboardingTour } from "@/components/app/onboarding";
 import { QuickAddForm } from "@/components/app/QuickAddForm";
@@ -18,6 +19,7 @@ import { getSchedulePrefs } from "@/lib/repo/suggestion-settings";
 import { listNewSignals } from "@/lib/repo/signals";
 import { listQuietContacts } from "@/lib/repo/strength";
 import { getSuggestedClusters } from "@/lib/repo/suggestions";
+import { listPendingEdgeSuggestions } from "@/lib/repo/edge-suggestions";
 import { HOME_PREVIEW_LIMIT } from "@/utils/constants/app";
 import { DEFAULT_MEETING_DURATION_MINUTES } from "@/utils/constants/suggestions";
 
@@ -28,11 +30,12 @@ const WEEK_MS = 7 * 86_400_000;
 export default async function HomePage() {
   await requireUserIdForPage();
   const llmEnabled = hasLLM();
-  const [people, events, dueReachOuts, openFollowUps, quietContacts, newSignals, used, storeCardPhotos, suggestedClusters, calendarConnected, prefs, seenTour] =
+  const [people, events, dueReachOuts, openFollowUps, quietContacts, newSignals, used, storeCardPhotos, suggestedClusters, calendarConnected, prefs, seenTour, pendingSuggestions] =
     await Promise.all([
       listContacts(undefined, undefined, HOME_PREVIEW_LIMIT), listEvents(HOME_PREVIEW_LIMIT), listDueReachOuts(), listAllOpenFollowUps(),
       listQuietContacts(), listNewSignals(), llmEnabled ? aiActionsUsedThisMonth() : Promise.resolve(0),
       shouldStoreCardPhotos(), getSuggestedClusters(), hasCalendarConnection(), getSchedulePrefs(), hasSeenOnboardingTour(),
+      listPendingEdgeSuggestions(),
     ]);
 
   const now = new Date();
@@ -59,6 +62,8 @@ export default async function HomePage() {
       <div><p className="font-mono text-[10px] uppercase tracking-widest text-ember">Your network, threaded</p><h1 className="mt-1 font-display text-2xl tracking-tight">Home</h1></div>
       <Button render={<Link href="/app/people/new" />} variant="outline" size="sm">Add manually</Button>
     </div>
+
+    <RelationshipInbox suggestions={pendingSuggestions} />
 
     <HomeDashboard
       people={people}

@@ -11,6 +11,7 @@ const TENANT_TABLES = [
   "notes",
   "facts",
   "edges",
+  "edge_suggestions",
   "follow_ups",
   "embeddings",
   "card_images",

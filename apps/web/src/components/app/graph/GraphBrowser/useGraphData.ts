@@ -32,6 +32,19 @@ export function useGraphData(initialClusters: Cluster[]) {
     }
   }
 
+  async function loadFocusRelationships(contactId: string): Promise<void> {
+    try {
+      const res = await fetch(
+        `/api/graph/relationships?contactId=${encodeURIComponent(contactId)}`,
+      );
+      if (!res.ok) return;
+      const data: { nodes: GraphViewNode[]; edges: GraphViewEdge[] } = await res.json();
+      dispatch({ type: "focus-relationships", relationships: data });
+    } catch {
+      // Non-fatal: the interpersonal overlay just won't draw.
+    }
+  }
+
   async function expandCluster(key: string): Promise<void> {
     if (state.expanded.has(key)) {
       dispatch({ type: "collapse", key });
@@ -73,5 +86,5 @@ export function useGraphData(initialClusters: Cluster[]) {
     }
   }
 
-  return { state, switchDimension, expandCluster };
+  return { state, switchDimension, expandCluster, loadFocusRelationships };
 }

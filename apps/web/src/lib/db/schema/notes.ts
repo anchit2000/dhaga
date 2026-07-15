@@ -1,4 +1,4 @@
-import { boolean, pgTable, real, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, jsonb, pgTable, real, text, timestamp } from "drizzle-orm/pg-core";
 import { contacts } from "./contacts";
 
 export const notes = pgTable("notes", {
@@ -43,6 +43,27 @@ export const edges = pgTable("edges", {
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
 
+/**
+ * A pending person→person relationship the extractor found but could not link
+ * unambiguously (e.g. the note says "Ajay" and two contacts are named Ajay, or
+ * the closest match isn't exact). Held for the user to confirm which contact it
+ * means — or to create a new one — before an edge is written. Receipt-linked.
+ */
+export const edgeSuggestions = pgTable("edge_suggestions", {
+  id: text("id").primaryKey(),
+  srcContactId: text("src_contact_id")
+    .notNull()
+    .references(() => contacts.id),
+  predicate: text("predicate").notNull(),
+  objectName: text("object_name").notNull(),
+  objectType: text("object_type").notNull(), // "person" (kept for future kinds)
+  candidateIds: jsonb("candidate_ids").$type<string[]>().notNull().default([]),
+  status: text("status").notNull().default("pending"), // pending | confirmed | dismissed
+  sourceNoteId: text("source_note_id").references(() => notes.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+});
+
 export const followUps = pgTable("follow_ups", {
   id: text("id").primaryKey(),
   contactId: text("contact_id")
@@ -58,4 +79,5 @@ export const followUps = pgTable("follow_ups", {
 export type NoteRow = typeof notes.$inferSelect;
 export type FactRow = typeof facts.$inferSelect;
 export type EdgeRow = typeof edges.$inferSelect;
+export type EdgeSuggestionRow = typeof edgeSuggestions.$inferSelect;
 export type FollowUpRow = typeof followUps.$inferSelect;

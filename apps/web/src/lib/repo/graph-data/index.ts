@@ -1,6 +1,10 @@
 // Split per the 150-line rule; import paths unchanged (@/lib/repo/graph-data).
 export { fetchGraphClusters } from "./clusters";
 export { fetchClusterMembers } from "./cluster-members";
+export {
+  fetchContactRelationshipGraph,
+  type ContactRelationshipGraph,
+} from "./relationships";
 export { searchGraphTargets } from "./targets";
 export {
   OTHER_TAG_KEY,

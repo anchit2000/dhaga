@@ -11,10 +11,12 @@ export {
   notes,
   facts,
   edges,
+  edgeSuggestions,
   followUps,
   type NoteRow,
   type FactRow,
   type EdgeRow,
+  type EdgeSuggestionRow,
   type FollowUpRow,
 } from "./notes";
 export { embeddings, type EmbeddingRow } from "./embeddings";

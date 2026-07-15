@@ -6,6 +6,13 @@ export interface ClusterEntry {
   overflowCount: number;
 }
 
+/** A deep-linked contact's direct relationships, overlaid on top of the
+ *  cluster view so the interpersonal edges draw across company clusters. */
+export interface FocusRelationships {
+  nodes: GraphViewNode[];
+  edges: GraphViewEdge[];
+}
+
 export interface GraphState {
   dimension: ClusterDimension;
   clusters: Cluster[];
@@ -13,6 +20,7 @@ export interface GraphState {
   expanded: Set<string>;
   loaded: Map<string, ClusterEntry>;
   pending: Set<string>;
+  focusRelationships: FocusRelationships | null;
 }
 
 export type GraphAction =
@@ -21,7 +29,8 @@ export type GraphAction =
   | { type: "expand-start"; key: string }
   | { type: "expand-success"; key: string; entry: ClusterEntry }
   | { type: "expand-error"; key: string }
-  | { type: "collapse"; key: string };
+  | { type: "collapse"; key: string }
+  | { type: "focus-relationships"; relationships: FocusRelationships };
 
 export function initialGraphState(clusters: Cluster[]): GraphState {
   return {
@@ -31,6 +40,7 @@ export function initialGraphState(clusters: Cluster[]): GraphState {
     expanded: new Set(),
     loaded: new Map(),
     pending: new Set(),
+    focusRelationships: null,
   };
 }
 
@@ -43,7 +53,10 @@ export function graphReducer(state: GraphState, action: GraphAction): GraphState
         clustersLoading: true,
         expanded: new Set(),
         pending: new Set(),
+        focusRelationships: null,
       };
+    case "focus-relationships":
+      return { ...state, focusRelationships: action.relationships };
     case "dimension-success":
       // A stale response from a dimension the user has since switched away from.
       if (action.dimension !== state.dimension) return state;

@@ -29,7 +29,8 @@ export function GraphBrowser({
   focusTarget?: FocusTarget | null;
   focusMissing?: boolean;
 }) {
-  const { state, switchDimension, expandCluster } = useGraphData(initialClusters);
+  const { state, switchDimension, expandCluster, loadFocusRelationships } =
+    useGraphData(initialClusters);
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const {
     setContainer,
@@ -49,8 +50,16 @@ export function GraphBrowser({
         state.pending,
         viewportResult.positions,
         focusedId,
+        state.focusRelationships,
       ),
-    [viewportResult, state.expanded, state.loaded, state.pending, focusedId],
+    [
+      viewportResult,
+      state.expanded,
+      state.loaded,
+      state.pending,
+      focusedId,
+      state.focusRelationships,
+    ],
   );
 
   const { kickoff, clearFocus } = useGraphFocus({
@@ -87,6 +96,9 @@ export function GraphBrowser({
             onPaneClick={clearFocus}
             onInit={(instance) => {
               void initialize(instance).then(kickoff);
+              if (focusTarget?.contactId) {
+                void loadFocusRelationships(focusTarget.contactId);
+              }
             }}
             onMoveEnd={(_event, nextViewport) => syncBounds(nextViewport)}
             minZoom={GRAPH_MIN_ZOOM}

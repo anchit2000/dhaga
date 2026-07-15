@@ -1,30 +1,15 @@
 import type { Edge } from "@xyflow/react";
 import {
-  GRAPH_CLUSTER_SPACING,
   GRAPH_CONTACTS_PER_SHELL,
   GRAPH_LOCAL_RING_RADIUS,
+  GRAPH_RELATION_RING_RADIUS,
   GRAPH_SHELL_SPACING,
 } from "@/utils/constants/graph";
-import type { Cluster, GraphViewEdge } from "@/lib/repo/graph-data";
-import type { ClusterEntry } from "./graph-state";
-import type { BrowserFlowNode } from "./nodes";
-
-const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
-
-/** Deterministic point on a ring — shared by the cluster ring and each
- *  expanded cluster's local fan-out (same primitive, different center). */
-export function ring(index: number, total: number, radius: number): { x: number; y: number } {
-  const angle = (index / Math.max(total, 1)) * 2 * Math.PI - Math.PI / 2;
-  return { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius };
-}
-
-/** Deterministic unbounded position; the largest clusters remain near home. */
-export function clusterPosition(index: number): { x: number; y: number } {
-  if (index === 0) return { x: 0, y: 0 };
-  const radius = GRAPH_CLUSTER_SPACING * Math.sqrt(index);
-  const angle = index * GOLDEN_ANGLE;
-  return { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius };
-}
+import type { GraphViewEdge } from "@/lib/repo/graph-data";
+import type { Cluster } from "@/lib/repo/graph-data";
+import type { ClusterEntry, FocusRelationships } from "../graph-state";
+import type { BrowserFlowNode } from "../nodes";
+import { clusterPosition, ring } from "./positions";
 
 function edgeStyle(edge: GraphViewEdge, highlighted: boolean): Edge {
   return {
@@ -56,6 +41,7 @@ export function buildFlow(
   pending: Set<string>,
   positions?: Map<string, { x: number; y: number }>,
   focusedId?: string | null,
+  focusRelationships?: FocusRelationships | null,
 ): { nodes: BrowserFlowNode[]; edges: Edge[] } {
   const nodes: BrowserFlowNode[] = [];
   const loadedNodeIds = new Set<string>(clusters.map((cluster) => cluster.key));
@@ -133,6 +119,36 @@ export function buildFlow(
 
     for (const edge of entry.edges) edgesById.set(edge.id, edge);
   });
+
+  // Overlay a focused contact's interpersonal relationships: fan any neighbour
+  // not already on the canvas around the focused node, then add the edges — so
+  // "Ajay --parent of--> Anchit" draws even though they sit in different
+  // company clusters. Needs the focused node placed first (its cluster expanded
+  // by the focus kickoff), hence this runs after the cluster loop.
+  if (focusRelationships && focusedId != null) {
+    const focusedNode = nodes.find((node) => node.id === focusedId);
+    if (focusedNode) {
+      const center = focusedNode.position;
+      const missing = focusRelationships.nodes.filter((node) => !loadedNodeIds.has(node.id));
+      missing.forEach((neighbour, index) => {
+        const local = ring(index, missing.length, GRAPH_RELATION_RING_RADIUS);
+        nodes.push({
+          id: neighbour.id,
+          type: "person",
+          position: { x: center.x + local.x, y: center.y + local.y },
+          style: { width: 1, height: 1 },
+          data: {
+            label: neighbour.label,
+            sublabel: neighbour.sublabel,
+            href: `/app/people/${neighbour.id}`,
+            highlighted: false,
+          },
+        });
+        loadedNodeIds.add(neighbour.id);
+      });
+      for (const edge of focusRelationships.edges) edgesById.set(edge.id, edge);
+    }
+  }
 
   const edges = [...edgesById.values()]
     .filter((edge) => loadedNodeIds.has(edge.source) && loadedNodeIds.has(edge.target))

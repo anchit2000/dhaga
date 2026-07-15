@@ -41,6 +41,12 @@ export {
   type NoteExtraction,
 } from "./schemas/extraction";
 export {
+  RELATIONSHIP_ROLES,
+  humanizePredicate,
+  relationshipRole,
+  type RelationshipRoles,
+} from "./relationships";
+export {
   SIGNAL_KINDS,
   signalDetectionSchema,
   type SignalDetection,

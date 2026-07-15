@@ -8,7 +8,7 @@ import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { DDL } from "./ddl";
 import { companies, contacts } from "./schema/contacts";
 import { eventContacts, events } from "./schema/events";
-import { edges, facts, followUps, notes } from "./schema/notes";
+import { edges, edgeSuggestions, facts, followUps, notes } from "./schema/notes";
 import { embeddings } from "./schema/embeddings";
 import { extractionJobs } from "./schema/jobs";
 import { signals } from "./schema/signals";
@@ -33,6 +33,7 @@ const schema = {
   notes,
   facts,
   edges,
+  edgeSuggestions,
   followUps,
   embeddings,
   extractionJobs,

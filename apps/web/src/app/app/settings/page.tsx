@@ -1,10 +1,19 @@
 import { headers } from "next/headers";
+import { listConnectableCalendarProviders } from "@dhaga/core";
 import { requireUserIdForPage } from "@/lib/auth/guard";
 import { getAuth } from "@/lib/auth/config";
 import { getBillingGate } from "@/lib/hosted/gate";
 import { getSttEngine, shouldStoreCardPhotos } from "@/lib/repo/settings";
+import { listCalendarConnections } from "@/lib/repo/calendar";
+import {
+  getDailySuggestionCount,
+  getSchedulePrefs,
+  isDailyDigestEnabled,
+} from "@/lib/repo/suggestion-settings";
 import { countCardImages } from "@/lib/repo/card-images";
 import { ImportPanel } from "@/components/app/import/ImportPanel";
+import { CalendarConnectionsSetting } from "@/components/app/settings/CalendarConnectionsSetting";
+import { SuggestionsSetting } from "@/components/app/settings/SuggestionsSetting";
 import { CardPhotoSetting } from "@/components/app/settings/CardPhotoSetting";
 import { VoiceInputSetting } from "@/components/app/settings/VoiceInputSetting";
 import { ApiKeysSetting } from "@/components/app/settings/ApiKeysSetting";
@@ -13,18 +22,37 @@ import { SecuritySetting } from "@/components/app/settings/SecuritySetting";
 
 export const metadata = { title: "Settings — Dhaga" };
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ calendar?: string }>;
+}) {
   const userId = await requireUserIdForPage();
   const auth = await getAuth();
-  const [storePhotos, sttEngine, photoCount, apiKeys, planSummary, session] =
-    await Promise.all([
-      shouldStoreCardPhotos(),
-      getSttEngine(),
-      countCardImages(),
-      auth.api.listApiKeys({ headers: await headers() }),
-      (await getBillingGate()).getPlanSummary(userId),
-      auth.api.getSession({ headers: await headers() }),
-    ]);
+  const { calendar: calendarStatus } = await searchParams;
+  const [
+    storePhotos,
+    sttEngine,
+    photoCount,
+    apiKeys,
+    planSummary,
+    session,
+    calendarConnections,
+    suggestionCount,
+    schedulePrefs,
+    digestEnabled,
+  ] = await Promise.all([
+    shouldStoreCardPhotos(),
+    getSttEngine(),
+    countCardImages(),
+    auth.api.listApiKeys({ headers: await headers() }),
+    (await getBillingGate()).getPlanSummary(userId),
+    auth.api.getSession({ headers: await headers() }),
+    listCalendarConnections(),
+    getDailySuggestionCount(),
+    getSchedulePrefs(),
+    isDailyDigestEnabled(),
+  ]);
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -40,6 +68,12 @@ export default async function SettingsPage() {
         // not part of the base session type getSession() is statically typed with.
         twoFactorEnabled={Boolean((session?.user as { twoFactorEnabled?: boolean })?.twoFactorEnabled)}
       />
+      <CalendarConnectionsSetting
+        providers={listConnectableCalendarProviders()}
+        connections={calendarConnections}
+        status={calendarStatus}
+      />
+      <SuggestionsSetting count={suggestionCount} prefs={schedulePrefs} digestEnabled={digestEnabled} />
       <CardPhotoSetting enabled={storePhotos} count={photoCount} />
       <VoiceInputSetting engine={sttEngine} />
       <ApiKeysSetting keys={apiKeys.apiKeys} />

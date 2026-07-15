@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { hasLLM } from "@dhaga/core";
+import { dayLoad, findOpenSlots, hasLLM } from "@dhaga/core";
 import { HomeDashboard } from "@/components/app/home/HomeDashboard";
 import { SuggestionsPanel } from "@/components/app/import/SuggestionsPanel";
 import { QuickAddForm } from "@/components/app/QuickAddForm";
@@ -7,25 +7,50 @@ import { Button } from "@/components/ui/button";
 import { activeEventId } from "@/lib/active-event";
 import { aiActionsUsedThisMonth, monthlyAiCap } from "@/lib/ai/metering";
 import { requireUserIdForPage } from "@/lib/auth/guard";
+import { getFreeBusy, hasCalendarConnection } from "@/lib/repo/calendar";
 import { listContacts } from "@/lib/repo/contacts";
+import { buildDailySuggestions } from "@/lib/repo/daily-suggestions";
 import { listAllOpenFollowUps, listDueReachOuts } from "@/lib/repo/reminders";
 import { listEvents } from "@/lib/repo/events";
 import { shouldStoreCardPhotos } from "@/lib/repo/settings";
+import { getSchedulePrefs } from "@/lib/repo/suggestion-settings";
 import { listNewSignals } from "@/lib/repo/signals";
 import { listQuietContacts } from "@/lib/repo/strength";
 import { getSuggestedClusters } from "@/lib/repo/suggestions";
 import { HOME_PREVIEW_LIMIT } from "@/utils/constants/app";
+import { DEFAULT_MEETING_DURATION_MINUTES } from "@/utils/constants/suggestions";
 
 export const metadata = { title: "Home — Dhaga" };
+
+const WEEK_MS = 7 * 86_400_000;
 
 export default async function HomePage() {
   await requireUserIdForPage();
   const llmEnabled = hasLLM();
-  const [people, events, dueReachOuts, openFollowUps, quietContacts, newSignals, used, storeCardPhotos, suggestedClusters] = await Promise.all([
-    listContacts(undefined, undefined, HOME_PREVIEW_LIMIT), listEvents(HOME_PREVIEW_LIMIT), listDueReachOuts(), listAllOpenFollowUps(),
-    listQuietContacts(), listNewSignals(), llmEnabled ? aiActionsUsedThisMonth() : Promise.resolve(0),
-    shouldStoreCardPhotos(), getSuggestedClusters(),
-  ]);
+  const [people, events, dueReachOuts, openFollowUps, quietContacts, newSignals, used, storeCardPhotos, suggestedClusters, calendarConnected, prefs] =
+    await Promise.all([
+      listContacts(undefined, undefined, HOME_PREVIEW_LIMIT), listEvents(HOME_PREVIEW_LIMIT), listDueReachOuts(), listAllOpenFollowUps(),
+      listQuietContacts(), listNewSignals(), llmEnabled ? aiActionsUsedThisMonth() : Promise.resolve(0),
+      shouldStoreCardPhotos(), getSuggestedClusters(), hasCalendarConnection(), getSchedulePrefs(),
+    ]);
+
+  const now = new Date();
+  const weekAhead = new Date(now.getTime() + WEEK_MS);
+  const busy = calendarConnected ? await getFreeBusy({ from: now, to: weekAhead }) : [];
+  const { suggestions } = await buildDailySuggestions({ date: now, prefs, busy });
+  const slots = calendarConnected
+    ? findOpenSlots({
+        range: { from: now, to: weekAhead },
+        busy,
+        durationMinutes: DEFAULT_MEETING_DURATION_MINUTES,
+        workingHours: { startHour: prefs.startHour, endHour: prefs.endHour },
+        utcOffsetMinutes: prefs.utcOffsetMinutes,
+        maxSlots: 3,
+        now,
+      })
+    : [];
+  const meetingCountToday = dayLoad({ day: now, busy, utcOffsetMinutes: prefs.utcOffsetMinutes }).meetingCount;
+  const shownDue = suggestions.filter((item) => item.bucket !== "graph").length;
 
   return <div className="space-y-8 pb-16">
     <div className="flex flex-wrap items-end justify-between gap-3">
@@ -33,7 +58,19 @@ export default async function HomePage() {
       <Button render={<Link href="/app/people/new" />} variant="outline" size="sm">Add manually</Button>
     </div>
 
-    <HomeDashboard people={people} events={events} dueReachOuts={dueReachOuts} openFollowUps={openFollowUps} quietContacts={quietContacts} newSignals={newSignals} />
+    <HomeDashboard
+      people={people}
+      events={events}
+      suggestions={suggestions}
+      calendarConnected={calendarConnected}
+      slots={slots}
+      overloaded={meetingCountToday >= prefs.overloadThreshold}
+      meetingCountToday={meetingCountToday}
+      moreDue={Math.max(0, dueReachOuts.length - shownDue)}
+      openFollowUps={openFollowUps}
+      quietContacts={quietContacts}
+      newSignals={newSignals}
+    />
 
     {suggestedClusters.length > 0 ? (
       <section className="space-y-3">

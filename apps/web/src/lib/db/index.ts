@@ -11,6 +11,7 @@ import { eventContacts, events } from "./schema/events";
 import { edges, facts, followUps, notes } from "./schema/notes";
 import { embeddings } from "./schema/embeddings";
 import { signals } from "./schema/signals";
+import { calendarConnections } from "./schema/calendar";
 import { aiActions, settings } from "./schema/meta";
 import { cardImages } from "./schema/card-images";
 import {
@@ -34,6 +35,7 @@ const schema = {
   followUps,
   embeddings,
   signals,
+  calendarConnections,
   aiActions,
   settings,
   cardImages,

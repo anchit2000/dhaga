@@ -125,7 +125,7 @@ export async function listRecentExtractionJobs(contactId: string): Promise<Extra
     .orderBy(desc(extractionJobs.createdAt));
 }
 
-export function toExtractionJobView(row: ExtractionJobRow, now: number): ExtractionJobView {
+export function toExtractionJobView(row: ExtractionJobRow, now: number = Date.now()): ExtractionJobView {
   const active = row.status === "pending" || row.status === "running";
   return {
     id: row.id,

@@ -33,6 +33,7 @@ export function useExtractionPoller(
   const polling = useRef(false);
   const failures = useRef(0);
   const lastSig = useRef(signature(initialJobs));
+  const pollRef = useRef<() => void>(() => {});
 
   const trigger = useCallback((jobId: string) => {
     // Fire-and-forget: the worker's atomic claim dedupes double-fires, and
@@ -41,6 +42,12 @@ export function useExtractionPoller(
       method: "POST",
       keepalive: true,
     }).catch(() => undefined);
+  }, []);
+
+  // Schedule the next tick through a ref so the self-rescheduling loop always
+  // calls the latest `poll` without capturing it before it's declared.
+  const scheduleNext = useCallback(() => {
+    timer.current = setTimeout(() => void pollRef.current(), EXTRACTION_POLL_INTERVAL_MS);
   }, []);
 
   const poll = useCallback(async () => {
@@ -60,7 +67,7 @@ export function useExtractionPoller(
     if (next === null) {
       failures.current += 1;
       if (failures.current < 5) {
-        timer.current = setTimeout(poll, EXTRACTION_POLL_INTERVAL_MS);
+        scheduleNext();
       } else {
         polling.current = false;
       }
@@ -76,21 +83,32 @@ export function useExtractionPoller(
     }
     for (const job of next) if (job.status === "pending") trigger(job.id);
     if (next.some(isActive)) {
-      timer.current = setTimeout(poll, EXTRACTION_POLL_INTERVAL_MS);
+      scheduleNext();
     } else {
       polling.current = false;
     }
-  }, [contactId, router, trigger]);
+  }, [contactId, router, trigger, scheduleNext]);
+
+  useEffect(() => {
+    pollRef.current = poll;
+  }, [poll]);
 
   const ensurePolling = useCallback(() => {
     if (polling.current) return;
     polling.current = true;
-    timer.current = setTimeout(poll, EXTRACTION_POLL_INTERVAL_MS);
-  }, [poll]);
+    scheduleNext();
+  }, [scheduleNext]);
 
+  // Sync state to the server's job set during render (React's alternative to
+  // calling setState in an effect) whenever it materially changes.
   const initialSig = signature(initialJobs);
-  useEffect(() => {
+  const [prevInitialSig, setPrevInitialSig] = useState(initialSig);
+  if (initialSig !== prevInitialSig) {
+    setPrevInitialSig(initialSig);
     setJobs(initialJobs);
+  }
+
+  useEffect(() => {
     lastSig.current = initialSig;
     for (const job of initialJobs) if (job.status === "pending") trigger(job.id);
     if (initialJobs.some(isActive)) ensurePolling();

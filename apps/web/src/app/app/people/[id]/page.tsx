@@ -60,8 +60,7 @@ export default async function PersonPage({
     listContactSignals(id),
     listRecentExtractionJobs(id),
   ]);
-  const now = Date.now();
-  const extractionJobs = extractionJobRows.map((row) => toExtractionJobView(row, now));
+  const extractionJobs = extractionJobRows.map((row) => toExtractionJobView(row));
   const lastTouch = contact.lastReachedOutAt ?? contact.createdAt;
   const isDue = isReachOutDue(contact.reachOutEveryDays, lastTouch);
   const mergeCandidates =

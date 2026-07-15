@@ -1,4 +1,4 @@
-import { pgTable, real, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, pgTable, real, text, timestamp } from "drizzle-orm/pg-core";
 import { contacts } from "./contacts";
 
 export const notes = pgTable("notes", {
@@ -21,6 +21,10 @@ export const facts = pgTable("facts", {
   type: text("type").notNull(), // role | intent | personal | preference
   text: text("text").notNull(),
   confidence: real("confidence").notNull(),
+  // Web-sourced (enrichment) facts land here as unverified: extracted so the
+  // user sees everything, badged so they can confirm or delete each one —
+  // especially when the search surfaced more than one person by that name.
+  unverified: boolean("unverified").notNull().default(false),
   sourceNoteId: text("source_note_id").references(() => notes.id),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),

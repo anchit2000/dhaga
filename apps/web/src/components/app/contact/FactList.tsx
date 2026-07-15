@@ -25,6 +25,7 @@ export function FactList({
           factId={fact.id}
           text={fact.text}
           type={fact.type}
+          unverified={fact.unverified}
           receipt={
             fact.noteCreatedAt
               ? `from note, ${fact.noteCreatedAt.toLocaleDateString()}`

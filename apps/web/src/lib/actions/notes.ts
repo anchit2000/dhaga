@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "@/lib/auth/guard";
-import { extractAndApplyNote } from "@/lib/ai/note-extraction";
 import { getContact } from "@/lib/repo/contacts";
 import {
   addNote,
@@ -10,7 +9,9 @@ import {
   deleteNote,
   setFollowUpStatus,
   updateFactText,
+  verifyFact,
 } from "@/lib/repo/notes";
+import { createExtractionJob } from "@/lib/repo/extraction-jobs";
 import { upsertEmbedding } from "@/lib/repo/embeddings";
 
 export interface NoteFormState {
@@ -18,11 +19,17 @@ export interface NoteFormState {
   error?: string;
 }
 
+/**
+ * Persist the note and return immediately — the (slow) LLM extraction is a
+ * background job the page polls for. This is what lets the user fire off
+ * several notes in a row without each submit blocking on Haiku, and it's why
+ * the request can no longer time out with the note "lost" until a refresh.
+ */
 export async function addNoteAction(
   _previous: NoteFormState,
   formData: FormData,
 ): Promise<NoteFormState> {
-  const userId = await requireUserId();
+  await requireUserId();
   const contactId = String(formData.get("contactId") ?? "");
   const body = String(formData.get("body") ?? "").trim();
   if (!contactId) return { error: "Missing contact." };
@@ -33,20 +40,9 @@ export async function addNoteAction(
 
   const kind = formData.get("kind") === "voice" ? "voice" : "text";
   const noteId = await addNote(contactId, kind, body);
-  await upsertEmbedding("note", noteId, contactId, body);
-  const outcome = await extractAndApplyNote(
-    userId,
-    contactId,
-    noteId,
-    detail.contact.name,
-    body,
-  );
+  await createExtractionJob({ contactId, kind: "note_extraction", noteId });
   revalidatePath(`/app/people/${contactId}`);
-  return {
-    notice: outcome.applied
-      ? `Note saved — ${outcome.factCount} fact${outcome.factCount === 1 ? "" : "s"} and ${outcome.followUpCount} follow-up${outcome.followUpCount === 1 ? "" : "s"} extracted.`
-      : outcome.notice,
-  };
+  return { notice: "Note saved — extracting facts…" };
 }
 
 export async function deleteNoteAction(formData: FormData): Promise<void> {
@@ -75,6 +71,16 @@ export async function updateFactAction(formData: FormData): Promise<void> {
   if (!factId || !text) return;
   await updateFactText(factId, text);
   await upsertEmbedding("fact", factId, contactId, text);
+  revalidatePath(`/app/people/${contactId}`);
+}
+
+/** Confirm a web-sourced (unverified) fact, clearing its badge. */
+export async function verifyFactAction(formData: FormData): Promise<void> {
+  await requireUserId();
+  const factId = String(formData.get("factId") ?? "");
+  const contactId = String(formData.get("contactId") ?? "");
+  if (!factId) return;
+  await verifyFact(factId);
   revalidatePath(`/app/people/${contactId}`);
 }
 

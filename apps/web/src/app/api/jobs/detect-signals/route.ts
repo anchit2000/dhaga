@@ -1,4 +1,5 @@
 import { runSignalDetection } from "@/lib/jobs/detect-signals";
+import { reapStuckExtractionJobs } from "@/lib/repo/extraction-jobs";
 import type {
   DetectSignalsErrorResponse,
   SignalDetectionSummary,
@@ -19,6 +20,10 @@ export async function GET(request: Request): Promise<Response> {
       { status: 401 },
     );
   }
+  // Backstop for extraction jobs a crashed worker or a function timeout left
+  // mid-flight: mark them errored so the UI offers a retry instead of a pill
+  // that spins forever. Runs on the default connection like the sweep below.
+  await reapStuckExtractionJobs();
   const summary = await runSignalDetection();
   return Response.json(summary satisfies SignalDetectionSummary);
 }

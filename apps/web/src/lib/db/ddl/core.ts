@@ -110,6 +110,26 @@ CREATE TABLE IF NOT EXISTS follow_ups (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+ALTER TABLE facts ADD COLUMN IF NOT EXISTS unverified boolean NOT NULL DEFAULT false;
+
+CREATE TABLE IF NOT EXISTS extraction_jobs (
+  id text PRIMARY KEY,
+  contact_id text NOT NULL REFERENCES contacts(id),
+  note_id text REFERENCES notes(id),
+  kind text NOT NULL,
+  status text NOT NULL DEFAULT 'pending',
+  stage text,
+  error text,
+  fact_count integer NOT NULL DEFAULT 0,
+  follow_up_count integer NOT NULL DEFAULT 0,
+  attempts integer NOT NULL DEFAULT 0,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS extraction_jobs_contact_idx ON extraction_jobs (contact_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS extraction_jobs_active_idx ON extraction_jobs (updated_at) WHERE status IN ('pending', 'running');
+
 ALTER TABLE contacts ADD COLUMN IF NOT EXISTS tags jsonb NOT NULL DEFAULT '[]';
 CREATE INDEX IF NOT EXISTS contacts_tags_gin_idx ON contacts USING GIN (tags);
 ALTER TABLE contacts ADD COLUMN IF NOT EXISTS reach_out_every_days integer;

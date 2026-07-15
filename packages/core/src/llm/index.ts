@@ -25,7 +25,9 @@ export {
 } from "./prompts/contact-parse";
 export {
   NOTE_EXTRACTION_SYSTEM,
+  ENRICHMENT_EXTRACTION_SYSTEM,
   buildNoteExtractionPrompt,
+  buildEnrichmentExtractionPrompt,
 } from "./prompts/note-extraction";
 export {
   SEARCH_ANSWER_SYSTEM,

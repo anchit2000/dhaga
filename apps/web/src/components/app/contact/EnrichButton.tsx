@@ -1,8 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { enrichContactAction } from "@/lib/actions/enrich";
-import type { EnrichResult } from "@/lib/ai/enrich";
+import { enrichContactAction, type EnrichResult } from "@/lib/actions/enrich";
 import { ThreadLoader } from "@/components/brand/ThreadLoader";
 import { ENRICH_MESSAGES } from "@/utils/constants/loader-messages";
 import { SubmitButton } from "../SubmitButton";

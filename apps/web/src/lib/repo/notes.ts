@@ -35,6 +35,37 @@ export async function addNote(
   return id;
 }
 
+export async function getNote(noteId: string): Promise<NoteRow | null> {
+  const db = await getDb();
+  const [row] = await db
+    .select()
+    .from(notes)
+    .where(and(eq(notes.id, noteId), isNull(notes.deletedAt)))
+    .limit(1);
+  return row ?? null;
+}
+
+/**
+ * Drop everything a note previously derived (facts/edges/follow-ups and the
+ * facts' embeddings), leaving the note itself. Makes a re-run of the extraction
+ * worker idempotent: a retried job re-derives from scratch instead of stacking
+ * a second copy of every fact. Hard delete (not tombstone) — these rows are
+ * being regenerated from the same note, so there's no receipt to preserve.
+ */
+export async function clearNoteDerivations(noteId: string): Promise<void> {
+  const db = await getDb();
+  await db.transaction(async (tx) => {
+    const factRows = await tx
+      .select({ id: facts.id })
+      .from(facts)
+      .where(eq(facts.sourceNoteId, noteId));
+    await tx.delete(facts).where(eq(facts.sourceNoteId, noteId));
+    await tx.delete(edges).where(eq(edges.sourceNoteId, noteId));
+    await tx.delete(followUps).where(eq(followUps.sourceNoteId, noteId));
+    for (const row of factRows) await deleteEmbedding("fact", row.id, tx);
+  });
+}
+
 /**
  * Tombstone a note and everything derived from it. Receipts invariant:
  * facts/edges must never outlive their source note (BRD §7.4). A stored
@@ -83,6 +114,12 @@ export async function updateFactText(
 ): Promise<void> {
   const db = await getDb();
   await db.update(facts).set({ text: text.trim() }).where(eq(facts.id, factId));
+}
+
+/** Clear the "unverified" badge once the user confirms a web-sourced fact. */
+export async function verifyFact(factId: string): Promise<void> {
+  const db = await getDb();
+  await db.update(facts).set({ unverified: false }).where(eq(facts.id, factId));
 }
 
 /**

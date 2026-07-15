@@ -4,6 +4,10 @@ import { Pencil, Waypoints } from "lucide-react";
 import { requireUserIdForPage } from "@/lib/auth/guard";
 import { getContact, listMentionMergeCandidates } from "@/lib/repo/contacts";
 import { listFacts, listNotes, listOpenFollowUps } from "@/lib/repo/notes";
+import {
+  listRecentExtractionJobs,
+  toExtractionJobView,
+} from "@/lib/repo/extraction-jobs";
 import { listContactEvents } from "@/lib/repo/events";
 import { listCardImageRefs } from "@/lib/repo/card-images";
 import { isReachOutDue } from "@/lib/repo/reminders";
@@ -19,6 +23,7 @@ import { OnDemandNetwork } from "@/components/app/contact/OnDemandNetwork";
 import { ContactInfoCard } from "@/components/app/contact/ContactInfoCard";
 import { DraftSection } from "@/components/app/contact/DraftSection";
 import { EnrichButton } from "@/components/app/contact/EnrichButton";
+import { ExtractionStatus } from "@/components/app/contact/ExtractionStatus";
 import { FactList } from "@/components/app/contact/FactList";
 import { FollowUpList } from "@/components/app/contact/FollowUpList";
 import { ForgetButton } from "@/components/app/contact/ForgetButton";
@@ -45,6 +50,7 @@ export default async function PersonPage({
     contactEvents,
     cardPhotos,
     contactSignals,
+    extractionJobRows,
   ] = await Promise.all([
     listNotes(id),
     listFacts(id),
@@ -52,7 +58,9 @@ export default async function PersonPage({
     listContactEvents(id),
     listCardImageRefs(id),
     listContactSignals(id),
+    listRecentExtractionJobs(id),
   ]);
+  const extractionJobs = extractionJobRows.map((row) => toExtractionJobView(row));
   const lastTouch = contact.lastReachedOutAt ?? contact.createdAt;
   const isDue = isReachOutDue(contact.reachOutEveryDays, lastTouch);
   const mergeCandidates =
@@ -136,6 +144,7 @@ export default async function PersonPage({
           <FollowUpList contactId={id} followUps={openFollowUps} />
           <section className="space-y-3">
             <h2 className="font-display text-lg">Facts</h2>
+            <ExtractionStatus contactId={id} initialJobs={extractionJobs} />
             <FactList contactId={id} facts={contactFacts} />
             <EnrichButton contactId={id} />
           </section>

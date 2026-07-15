@@ -47,3 +47,25 @@ export interface ProfileFact {
   text: string;
   source: string;
 }
+
+/** Background extraction job, as the status endpoint reports it to the poller. */
+export type ExtractionJobKind =
+  (typeof import("@/utils/constants/extraction-jobs").EXTRACTION_JOB_KINDS)[number];
+export type ExtractionJobStatus =
+  (typeof import("@/utils/constants/extraction-jobs").EXTRACTION_JOB_STATUSES)[number];
+
+export interface ExtractionJobView {
+  id: string;
+  kind: ExtractionJobKind;
+  status: ExtractionJobStatus;
+  stage: string | null;
+  error: string | null;
+  factCount: number;
+  followUpCount: number;
+  /** Running/pending but untouched past the stall threshold — offer a retry. */
+  stalled: boolean;
+}
+
+export interface ExtractionStatusResponse {
+  jobs: ExtractionJobView[];
+}

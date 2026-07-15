@@ -63,8 +63,10 @@ export async function applyExtraction(
   contactId: string,
   noteId: string,
   extraction: NoteExtraction,
+  opts: { unverified?: boolean } = {},
 ): Promise<void> {
   const db = await getDb();
+  const unverified = opts.unverified ?? false;
 
   const factRows: (typeof facts.$inferInsert)[] = extraction.facts.map((fact) => ({
     id: randomUUID(),
@@ -72,6 +74,7 @@ export async function applyExtraction(
     type: fact.type,
     text: fact.text,
     confidence: fact.confidence,
+    unverified,
     sourceNoteId: noteId,
   }));
 
@@ -104,6 +107,7 @@ export async function applyExtraction(
         type: "personal",
         text: relationshipAsFactText(rel),
         confidence: 0.7,
+        unverified,
         sourceNoteId: noteId,
       });
     }

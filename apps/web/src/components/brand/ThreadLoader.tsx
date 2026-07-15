@@ -8,9 +8,17 @@ import { LOADER_MESSAGE_INTERVAL_MS } from "@/utils/constants/loader-messages";
 /** Advances through `messages` on an interval, then holds on the last line. */
 function useCyclingStatus(messages: readonly string[], intervalMs: number): string {
   const [index, setIndex] = useState(0);
+  const [prevMessages, setPrevMessages] = useState(messages);
+
+  // Reset to the first line when the message set swaps. Doing this during
+  // render (not in the effect) is React's documented alternative to calling
+  // setState synchronously inside an effect.
+  if (messages !== prevMessages) {
+    setPrevMessages(messages);
+    setIndex(0);
+  }
 
   useEffect(() => {
-    setIndex(0);
     if (messages.length <= 1) return;
     const timer = setInterval(() => {
       // Hold on the final line instead of looping — a loop reads as "stuck".

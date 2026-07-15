@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useFormStatus } from "react-dom";
 import { Loader2 } from "lucide-react";
 import { markReachedOutAction, setCadenceAction } from "@/lib/actions/reminders";
@@ -32,6 +33,20 @@ export function KeepInTouch({
   lastTouch: string;
   due: boolean;
 }) {
+  // Controlled, not defaultValue: after the save action React 19 auto-resets
+  // the form, and an uncontrolled <select> can snap back to its stale mount
+  // default (showing "No reminder" until a refresh) when the revalidated
+  // re-render hasn't landed. A state-backed value survives the reset. Re-sync
+  // during render (not an effect) whenever the server value changes — after a
+  // save, or when navigating between contacts reuses this component instance.
+  const serverDays = everyDays ? String(everyDays) : "";
+  const [days, setDays] = useState(serverDays);
+  const [seenEveryDays, setSeenEveryDays] = useState(everyDays);
+  if (everyDays !== seenEveryDays) {
+    setSeenEveryDays(everyDays);
+    setDays(serverDays);
+  }
+
   return (
     <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-seam bg-panel p-4">
       <div className="min-w-0 flex-1">
@@ -48,7 +63,8 @@ export function KeepInTouch({
         <input type="hidden" name="contactId" value={contactId} />
         <Select
           name="days"
-          defaultValue={everyDays ? String(everyDays) : ""}
+          value={days}
+          onChange={(event) => setDays(event.target.value)}
           className="h-8 w-36 text-xs"
           aria-label="Reach-out cadence"
         >

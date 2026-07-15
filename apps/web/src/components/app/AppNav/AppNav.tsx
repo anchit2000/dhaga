@@ -48,7 +48,7 @@ export function AppNav({
 
           <div className="ml-auto flex shrink-0 items-center gap-1">
             <div className="pointer-events-none flex items-center justify-center sm:absolute sm:inset-0">
-              <div className="pointer-events-auto w-9 sm:w-full sm:max-w-xl">
+              <div className="pointer-events-auto w-9 sm:w-full sm:max-w-xl" data-tour="search">
                 <SearchPalette initialWeights={initialSearchWeights} />
               </div>
             </div>

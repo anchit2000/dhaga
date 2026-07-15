@@ -5,6 +5,7 @@ import { Select } from "@/components/ui/select";
 export interface EventOption {
   id: string;
   name: string;
+  emoji?: string | null;
 }
 
 /**
@@ -30,6 +31,7 @@ export function EventPicker({
           <option value="">None</option>
           {events.map((event) => (
             <option key={event.id} value={event.id}>
+              {event.emoji ? `${event.emoji} ` : ""}
               {event.name}
             </option>
           ))}

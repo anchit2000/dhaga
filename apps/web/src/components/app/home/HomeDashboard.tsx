@@ -49,7 +49,7 @@ export function HomeDashboard({
 
   return (
     <>
-      <section className="space-y-5">
+      <section className="space-y-5" data-tour="updates">
         <h2 className="font-display text-lg">Updates</h2>
         <TodaySuggestions
           suggestions={suggestions}

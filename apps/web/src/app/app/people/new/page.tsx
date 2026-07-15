@@ -1,6 +1,6 @@
 import { requireUserIdForPage } from "@/lib/auth/guard";
 import { ContactForm } from "@/components/app/ContactForm";
-import { emptyExtractedContact } from "@dhaga/core";
+import { emptyContactProfile } from "@dhaga/core";
 import { matchLinkedInProfileUrl } from "@dhaga/core/src/capture/linkedin-qr";
 
 export const metadata = { title: "Add person — Dhaga" };
@@ -19,8 +19,11 @@ export default async function NewPersonPage({
   const { linkedin } = await searchParams;
   const matchedLinkedIn = linkedin ? matchLinkedInProfileUrl(linkedin) : null;
   const initial = matchedLinkedIn
-    ? { ...emptyExtractedContact(), links: [matchedLinkedIn] }
-    : emptyExtractedContact();
+    ? {
+        ...emptyContactProfile(),
+        links: [{ value: matchedLinkedIn, label: "LinkedIn", note: null }],
+      }
+    : emptyContactProfile();
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">

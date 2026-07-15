@@ -1,8 +1,28 @@
 export {
   extractedContactSchema,
+  contactProfileSchema,
   emptyExtractedContact,
+  emptyContactProfile,
+  profileFromExtracted,
+  primaryPosition,
   type ExtractedContact,
+  type ContactProfile,
 } from "./schemas/contact";
+export {
+  contactMethodSchema,
+  positionSchema,
+  addressSchema,
+  importantDateSchema,
+  customFieldSchema,
+  normalizeContactMethod,
+  normalizeContactMethods,
+  methodValues,
+  type ContactMethod,
+  type Position,
+  type Address,
+  type ImportantDate,
+  type CustomField,
+} from "./schemas/contact-fields";
 export {
   searchQueryPlanSchema,
   type SearchQueryPlan,

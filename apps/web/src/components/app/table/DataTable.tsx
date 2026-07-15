@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,7 @@ export function DataTable<Row>({ rows, columns, rowKey, emptyMessage = "No rows 
   server?: { total: number; page: number; pageSize: number };
 }) {
   const router = useRouter();
+  const [isNavigating, startNavigation] = useTransition();
   const [filters, setFilters] = useState<Record<string, string>>(initialFilters);
   const [page, setPage] = useState(server?.page ?? 1);
   const [pageSize, setPageSize] = useState(server?.pageSize ?? DEFAULT_TABLE_PAGE_SIZE);
@@ -44,7 +45,9 @@ export function DataTable<Row>({ rows, columns, rowKey, emptyMessage = "No rows 
   function navigate(updates: Record<string, string>): void {
     const params = new URLSearchParams(window.location.search);
     Object.entries(updates).forEach(([key, value]) => value ? params.set(key, value) : params.delete(key));
-    router.replace(`?${params.toString()}`, { scroll: false });
+    // Transition keeps the table interactive and lets us show a pending state
+    // while the server re-fetches the page/filter — otherwise the click looks dead.
+    startNavigation(() => router.replace(`?${params.toString()}`, { scroll: false }));
   }
 
   function updateFilter(id: string, value: string): void {
@@ -55,7 +58,11 @@ export function DataTable<Row>({ rows, columns, rowKey, emptyMessage = "No rows 
 
   return (
     <div className="space-y-3">
-      <div className="overflow-hidden rounded-2xl border border-seam bg-panel">
+      <div
+        className="overflow-hidden rounded-2xl border border-seam bg-panel transition-opacity duration-200 data-[busy=true]:opacity-60"
+        data-busy={isNavigating}
+        aria-busy={isNavigating}
+      >
         <Table>
           <TableHeader>
             <TableRow>{columns.map((column) => <TableHead key={column.id}>{column.label}</TableHead>)}</TableRow>

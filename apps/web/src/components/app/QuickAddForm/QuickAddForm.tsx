@@ -7,6 +7,8 @@ import {
   type QuickAddState,
 } from "@/lib/actions/quick-add";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { ThreadLoader } from "@/components/brand/ThreadLoader";
+import { CARD_SCAN_MESSAGES, QUICK_ADD_MESSAGES } from "@/utils/constants/loader-messages";
 import type { EventOption } from "../EventPicker";
 import { downscalePhoto } from "../downscalePhoto";
 import { CaptureForm } from "./CaptureForm";
@@ -34,7 +36,7 @@ export function QuickAddForm({
   const [captureOpen, setCaptureOpen] = useState(!homeDock);
   const [photoToCrop, setPhotoToCrop] = useState<File | null>(null);
   const pasteTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const [state, formAction] = useActionState<QuickAddState, FormData>(
+  const [state, formAction, pending] = useActionState<QuickAddState, FormData>(
     async (previous, formData) => {
       const photo = formData.get("photo");
       if (photo instanceof File && photo.size > 0) {
@@ -68,20 +70,30 @@ export function QuickAddForm({
   }
 
   const captureForm = (
-    <CaptureForm
-      mode={mode}
-      setMode={setMode}
-      formAction={formAction}
-      storeCardPhotos={storeCardPhotos}
-      pasteTextareaRef={pasteTextareaRef}
-      photoToCrop={photoToCrop}
-      setPhotoToCrop={setPhotoToCrop}
-      error={state.error}
-      notice={state.notice}
-      captureOpen={captureOpen}
-      onCaptureToggle={homeDock ? () => setCaptureOpen((open) => !open) : undefined}
-      inDialog={homeDock}
-    />
+    // Relative wrapper so the extraction loader can overlay the form while it
+    // stays mounted — unmounting would drop the user's uncaptured paste/photo.
+    <div className="relative">
+      <CaptureForm
+        mode={mode}
+        setMode={setMode}
+        formAction={formAction}
+        storeCardPhotos={storeCardPhotos}
+        pasteTextareaRef={pasteTextareaRef}
+        photoToCrop={photoToCrop}
+        setPhotoToCrop={setPhotoToCrop}
+        error={state.error}
+        notice={state.notice}
+        captureOpen={captureOpen}
+        onCaptureToggle={homeDock ? () => setCaptureOpen((open) => !open) : undefined}
+        inDialog={homeDock}
+      />
+      {pending ? (
+        <ThreadLoader
+          overlay
+          messages={mode === "photo" ? CARD_SCAN_MESSAGES : QUICK_ADD_MESSAGES}
+        />
+      ) : null}
+    </div>
   );
 
   if (!homeDock) return <div className="pb-28">{captureForm}</div>;

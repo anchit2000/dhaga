@@ -1,4 +1,4 @@
-import { pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
+import { jsonb, pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
 import { contacts } from "./contacts";
 
 /** Encounter events (M2): "Web Summit 2026" groups the people met there. */
@@ -11,6 +11,11 @@ export const events = pgTable("events", {
   /** Coarse geohash-6 of where the event's scans happened (M2, BRD §6.2).
    *  Null for events created manually (web quick-add) with no location. */
   geohash: text("geohash"),
+  /** User-chosen decoration (see @/utils/constants/events). `color` stores a
+   *  palette token (not hex); `emoji` a single grapheme; both null until set. */
+  color: text("color"),
+  emoji: text("emoji"),
+  tags: jsonb("tags").$type<string[]>().notNull(),
 });
 
 export const eventContacts = pgTable(

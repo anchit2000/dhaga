@@ -76,7 +76,7 @@ export async function attachScanToEvent(
     await addContactToEvent(matchedId, contactId, scannedAt);
     return { eventId: matchedId, isNew: false };
   }
-  const eventId = await createEvent(NEW_EVENT_PLACEHOLDER_NAME, geohash);
+  const eventId = await createEvent(NEW_EVENT_PLACEHOLDER_NAME, { geohash });
   await addContactToEvent(eventId, contactId, scannedAt);
   return { eventId, isNew: true };
 }

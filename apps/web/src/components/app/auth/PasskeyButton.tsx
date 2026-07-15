@@ -20,7 +20,8 @@ export function PasskeyButton() {
       setPending(false);
       return;
     }
-    router.push("/app");
+    router.replace("/app");
+    router.refresh();
   }
 
   return (

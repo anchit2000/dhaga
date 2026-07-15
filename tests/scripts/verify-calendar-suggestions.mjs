@@ -9,9 +9,13 @@ import { mkdirSync } from "node:fs";
 import { chromium } from "playwright";
 
 const BASE = process.env.DHAGA_TEST_BASE_URL ?? "http://localhost:3000";
-const EMAIL = "caltest@dhaga.internal";
-const PASSWORD = "CalTest-Dummy-2026!";
+const EMAIL = process.env.DHAGA_TEST_EMAIL ?? "caltest@dhaga.internal";
+const PASSWORD = process.env.DHAGA_TEST_PASSWORD;
 const NAME = "Calendar Tester";
+if (!PASSWORD) {
+  console.error("Set DHAGA_TEST_PASSWORD (the throwaway local test-account password) before running.");
+  process.exit(1);
+}
 const SHOT_DIR = fileURLToPath(new URL("./.output", import.meta.url));
 mkdirSync(SHOT_DIR, { recursive: true });
 

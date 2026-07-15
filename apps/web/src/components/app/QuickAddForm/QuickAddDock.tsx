@@ -141,7 +141,7 @@ export function QuickAddDock({
           height={88}
           borderRadius={28}
           backgroundOpacity={0.35}
-          className={`px-1 ${floating ? "pointer-events-auto" : ""}`}
+          className={`tour-quick-add px-1 ${floating ? "pointer-events-auto" : ""}`}
         >
           <Dock items={items} />
         </GlassSurface>

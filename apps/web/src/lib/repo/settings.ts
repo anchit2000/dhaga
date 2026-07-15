@@ -7,6 +7,7 @@ export const STORE_CARD_PHOTOS_KEY = "store_card_photos";
 export const SIGNAL_DETECTION_BATCH_KEY = "signal_detection_pending_batch";
 export const SEARCH_WEIGHTS_KEY = "search_weights";
 export const STT_ENGINE_KEY = "stt_engine";
+export const ONBOARDING_TOUR_KEY = "onboarding_tour_seen";
 
 export type SttEngine = "browser" | "local" | "realtime";
 
@@ -87,4 +88,13 @@ export async function getSttEngine(): Promise<SttEngine> {
 
 export async function setSttEngine(engine: SttEngine): Promise<void> {
   await setSetting(STT_ENGINE_KEY, engine);
+}
+
+/** Whether the first-run product walkthrough has already run for this user. */
+export async function hasSeenOnboardingTour(): Promise<boolean> {
+  return (await getSetting(ONBOARDING_TOUR_KEY)) === "yes";
+}
+
+export async function setOnboardingTourSeen(): Promise<void> {
+  await setSetting(ONBOARDING_TOUR_KEY, "yes");
 }

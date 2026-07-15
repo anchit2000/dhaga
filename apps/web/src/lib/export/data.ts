@@ -10,6 +10,7 @@ import {
   notes,
   eventContacts,
   events,
+  positions,
   signals,
   type ContactRow,
 } from "@/lib/db/schema";
@@ -34,6 +35,7 @@ export async function exportEverything(): Promise<Record<string, unknown>> {
   const [
     allContacts,
     allCompanies,
+    allPositions,
     allEvents,
     allEventContacts,
     allNotes,
@@ -45,6 +47,7 @@ export async function exportEverything(): Promise<Record<string, unknown>> {
   ] = await Promise.all([
     db.select().from(contacts),
     db.select().from(companies),
+    db.select().from(positions),
     db.select().from(events),
     db.select().from(eventContacts),
     db.select().from(notes).where(isNull(notes.deletedAt)),
@@ -58,6 +61,7 @@ export async function exportEverything(): Promise<Record<string, unknown>> {
     exported_at: new Date().toISOString(),
     contacts: allContacts,
     companies: allCompanies,
+    positions: allPositions,
     events: allEvents,
     event_contacts: allEventContacts,
     notes: allNotes,

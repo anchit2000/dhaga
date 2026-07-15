@@ -3,6 +3,8 @@ import { getDb } from "@/lib/db/request-scope";
 import { companies, contacts } from "@/lib/db/schema";
 import { NAME_FUZZY_MATCH_THRESHOLD, type SearchWeights } from "@/utils/constants/search";
 import { buildTsQuery } from "../tokenize";
+import { methodValues } from "@dhaga/core";
+import type { ContactMethod } from "@dhaga/core";
 import type { KeywordHit } from "./types";
 
 /** OR of `column ILIKE '%word%'` per word — trigram-indexed, so this stays
@@ -60,9 +62,9 @@ function detailSnippet(
   row: {
     location: string | null;
     tags: string[];
-    emails: string[];
-    phones: string[];
-    links: string[];
+    emails: ContactMethod[];
+    phones: ContactMethod[];
+    links: ContactMethod[];
     companyDomain: string | null;
     companySector: string | null;
   },
@@ -71,11 +73,11 @@ function detailSnippet(
   if (location) return `location: ${location}`;
   const tag = firstArrayMatch(words, row.tags);
   if (tag) return `tag: ${tag}`;
-  const email = firstArrayMatch(words, row.emails);
+  const email = firstArrayMatch(words, methodValues(row.emails));
   if (email) return `email: ${email}`;
-  const phone = firstArrayMatch(words, row.phones);
+  const phone = firstArrayMatch(words, methodValues(row.phones));
   if (phone) return `phone: ${phone}`;
-  const link = firstArrayMatch(words, row.links);
+  const link = firstArrayMatch(words, methodValues(row.links));
   if (link) return `link: ${link}`;
   const domain = firstMatch(words, row.companyDomain);
   if (domain) return `company: ${domain}`;

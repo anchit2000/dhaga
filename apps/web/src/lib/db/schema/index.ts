@@ -20,6 +20,7 @@ export {
 export { embeddings, type EmbeddingRow } from "./embeddings";
 export { extractionJobs, type ExtractionJobRow } from "./jobs";
 export { signals, type SignalRow } from "./signals";
+export { calendarConnections, type CalendarConnectionRow } from "./calendar";
 export { aiActions, settings, type AiActionRow } from "./meta";
 export { cardImages, type CardImageRow } from "./card-images";
 export {

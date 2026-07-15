@@ -17,6 +17,7 @@ const TENANT_TABLES = [
   "ai_actions",
   "signals",
   "extraction_jobs",
+  "calendar_connections",
 ] as const;
 
 /**

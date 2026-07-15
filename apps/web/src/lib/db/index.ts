@@ -12,6 +12,7 @@ import { edges, facts, followUps, notes } from "./schema/notes";
 import { embeddings } from "./schema/embeddings";
 import { extractionJobs } from "./schema/jobs";
 import { signals } from "./schema/signals";
+import { calendarConnections } from "./schema/calendar";
 import { aiActions, settings } from "./schema/meta";
 import { cardImages } from "./schema/card-images";
 import {
@@ -36,6 +37,7 @@ const schema = {
   embeddings,
   extractionJobs,
   signals,
+  calendarConnections,
   aiActions,
   settings,
   cardImages,

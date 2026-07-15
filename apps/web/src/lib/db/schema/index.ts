@@ -1,8 +1,10 @@
 export {
   companies,
   contacts,
+  positions,
   type CompanyRow,
   type ContactRow,
+  type PositionRow,
 } from "./contacts";
 export { events, eventContacts, type EventRow } from "./events";
 export {

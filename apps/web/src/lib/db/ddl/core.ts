@@ -118,6 +118,35 @@ ALTER TABLE contacts ADD COLUMN IF NOT EXISTS watched_for_signals boolean NOT NU
 ALTER TABLE contacts ADD COLUMN IF NOT EXISTS signals_scanned_at timestamptz;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS geohash text;
 
+-- Rich, import-friendly contact fields (people carry several of each). emails/
+-- phones/links keep their column but graduate from string[] to
+-- {value,label,note}[] — legacy string rows are coerced on read, so no data
+-- migration. addresses/important_dates/custom_fields are new; custom_fields is
+-- the lossless catch-all for any Google/vCard/device field without a home.
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS nickname text;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS addresses jsonb NOT NULL DEFAULT '[]';
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS important_dates jsonb NOT NULL DEFAULT '[]';
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS custom_fields jsonb NOT NULL DEFAULT '[]';
+
+-- Employment history. Source of truth for jobs; the primary role mirrors into
+-- contacts.title / company_id so existing reads keep working.
+CREATE TABLE IF NOT EXISTS positions (
+  id text PRIMARY KEY,
+  contact_id text NOT NULL REFERENCES contacts(id),
+  company_id text REFERENCES companies(id),
+  title text,
+  department text,
+  is_current boolean NOT NULL DEFAULT false,
+  started_at text,
+  ended_at text,
+  note text,
+  sort_order integer NOT NULL DEFAULT 0,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS positions_contactId_idx ON positions (contact_id);
+CREATE INDEX IF NOT EXISTS positions_companyId_idx ON positions (company_id);
+
 CREATE TABLE IF NOT EXISTS ai_actions (
   id text PRIMARY KEY,
   feature text NOT NULL,

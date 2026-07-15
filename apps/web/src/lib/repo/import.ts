@@ -5,6 +5,7 @@ import { createContact } from "./contacts";
 import { addNote } from "./notes";
 import { emitWebhook } from "@/lib/webhooks";
 import { normalizeForMatch } from "@/lib/text-match";
+import { methodValues } from "@dhaga/core";
 import type { ImportCandidate, ImportFormat } from "@/lib/import";
 
 export interface ImportSummary {
@@ -39,7 +40,8 @@ export async function importContacts(
   const emailSeen = new Set<string>();
   const nameSeen = new Set<string>();
   for (const row of existing) {
-    for (const email of row.emails) emailSeen.add(email.toLowerCase());
+    // row.emails is labeled objects now (and legacy string rows) — normalise.
+    for (const email of methodValues(row.emails)) emailSeen.add(email.toLowerCase());
     nameSeen.add(
       `${normalizeForMatch(row.name)}|${normalizeForMatch(row.companyName ?? "")}`,
     );

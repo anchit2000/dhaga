@@ -6,6 +6,7 @@ import { getContact } from "@/lib/repo/contacts";
 import { listContactEvents } from "@/lib/repo/events";
 import { listFacts, listNotes, type FactWithReceipt } from "@/lib/repo/notes";
 import { CONTACT_SUMMARY_FACT_LIMIT, CONTACT_SUMMARY_NOTE_LIMIT } from "@/utils/constants/app";
+import type { ContactMethod } from "@dhaga/core";
 
 /**
  * Focused snapshot for the Home feed's contact detail Sheet — not the full
@@ -20,9 +21,9 @@ export interface ContactSummary {
   title: string | null;
   companyName: string | null;
   tags: string[];
-  emails: string[];
-  phones: string[];
-  links: string[];
+  emails: ContactMethod[];
+  phones: ContactMethod[];
+  links: ContactMethod[];
   location: string | null;
   notes: NoteRow[];
   facts: FactWithReceipt[];

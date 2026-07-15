@@ -1,6 +1,6 @@
 import { and, count, desc, eq, ilike, ne, or, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
-import { companies, contacts, type ContactRow } from "@/lib/db/schema";
+import { companies, contacts } from "@/lib/db/schema";
 import { TABLE_FILTER_OPTION_LIMIT } from "@/utils/constants/table";
 
 export interface ContactListItem {
@@ -10,11 +10,6 @@ export interface ContactListItem {
   companyName: string | null;
   tags: string[];
   createdAt: Date;
-}
-
-export interface ContactDetail {
-  contact: ContactRow;
-  companyName: string | null;
 }
 
 export interface ContactIdentityCandidate {
@@ -172,15 +167,4 @@ export async function listAllTags(): Promise<string[]> {
   const db = await getDb();
   const rows = await db.selectDistinct({ tag: sql<string>`jsonb_array_elements_text(${contacts.tags})` }).from(contacts);
   return rows.map((row) => row.tag).sort();
-}
-
-export async function getContact(id: string): Promise<ContactDetail | null> {
-  const db = await getDb();
-  const [row] = await db
-    .select({ contact: contacts, companyName: companies.name })
-    .from(contacts)
-    .leftJoin(companies, eq(contacts.companyId, companies.id))
-    .where(eq(contacts.id, id))
-    .limit(1);
-  return row ?? null;
 }

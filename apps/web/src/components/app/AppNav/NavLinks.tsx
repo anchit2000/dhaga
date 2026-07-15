@@ -22,6 +22,7 @@ export function NavLinks() {
           <Link
             key={link.href}
             href={link.href}
+            data-tour={link.href === "/app/graph" ? "graph" : undefined}
             className={cn(
               "flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-sm transition-colors",
               pending ? "pointer-events-none opacity-70" : null,

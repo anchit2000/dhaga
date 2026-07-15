@@ -117,6 +117,10 @@ ALTER TABLE contacts ADD COLUMN IF NOT EXISTS last_reached_out_at timestamptz;
 ALTER TABLE contacts ADD COLUMN IF NOT EXISTS watched_for_signals boolean NOT NULL DEFAULT false;
 ALTER TABLE contacts ADD COLUMN IF NOT EXISTS signals_scanned_at timestamptz;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS geohash text;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS color text;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS emoji text;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS tags jsonb NOT NULL DEFAULT '[]';
+CREATE INDEX IF NOT EXISTS events_tags_gin_idx ON events USING GIN (tags);
 
 CREATE TABLE IF NOT EXISTS ai_actions (
   id text PRIMARY KEY,

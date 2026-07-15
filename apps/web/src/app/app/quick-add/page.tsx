@@ -31,7 +31,7 @@ export default async function QuickAddPage() {
         ) : null}
       </div>
       <QuickAddForm
-        events={events.map(({ id, name }) => ({ id, name }))}
+        events={events.map(({ id, name, emoji }) => ({ id, name, emoji }))}
         defaultEventId={activeEventId(events)}
         storeCardPhotos={storeCardPhotos}
       />

@@ -209,3 +209,23 @@ packages/ee/       Dhaga Cloud only: multi-tenant RLS, billing, admin, early
 - All `/api/*` routes validate auth before processing
 - Rate-limit AI endpoints per user
 - Never expose server secrets to the client bundle
+
+---
+
+## Local / E2E testing (dummy load-test user)
+
+For Playwright / manual E2E, a disposable **load-test user** owns the seeded
+dummy graph in the Supabase DB that `apps/web/.env.vercel` points at. Same
+credentials that `apps/web/scripts/seed-dummy-graph.mjs` defines and prints —
+a throwaway test account, never provisioned in production, not a real secret:
+
+- User id: `dummy-loadtest-user`
+- Email: `loadtest@dhaga.internal`
+- Password: `LoadTest-Dummy-2026!`
+
+Seed/reset the graph with `node --env-file=.env.vercel scripts/seed-dummy-graph.mjs recreate`.
+
+`next dev` auto-loads `.env.local` (local PGlite, no `DATABASE_URL`), **not**
+`.env.vercel` — so to reach this user, run a dev server whose env carries
+`.env.vercel`'s `DATABASE_URL` (Supabase) with `BETTER_AUTH_URL` pointed at your
+local port (e.g. `http://localhost:3010`).

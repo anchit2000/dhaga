@@ -1,10 +1,29 @@
 .git
+.github
+.claude
+.agents
 node_modules
 **/node_modules
 **/.next
 **/.dhaga-data
 .env
 **/.env
-**/.env.local
+**/.env.*
 Dockerfile
 compose.yml
+docs
+rough
+tests
+skills-lock.json
+CLAUDE.md
+CLAUDE_FABLE.md
+**/*.test.ts
+**/*.test.tsx
+**/test-results
+**/playwright-report
+# Workspaces not built into the image — manifests only (npm ci needs the
+# full workspace tree to validate the lockfile).
+apps/mobile/*
+!apps/mobile/package.json
+apps/extension/*
+!apps/extension/package.json

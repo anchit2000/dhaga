@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { DataTable, type DataTableColumn } from "@/components/app/table/DataTable";
 import { EventBadge } from "@/components/app/EventBadge";
+import { formatDate } from "@/utils/format-date";
 
 interface EventRow {
   id: string;
@@ -52,7 +53,7 @@ export function EventsTable({ events, total, page, pageSize, filters, options }:
     {
       id: "started",
       label: "Started",
-      value: (row) => row.startedAt.toLocaleDateString(),
+      value: (row) => formatDate(row.startedAt),
       filter: false,
       className: "font-mono text-xs text-fog",
     },

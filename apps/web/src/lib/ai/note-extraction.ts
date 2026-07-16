@@ -9,6 +9,7 @@ import {
   type NoteExtraction,
 } from "@dhaga/core";
 import { applyExtraction } from "@/lib/repo/graph";
+import { listNodeTypes } from "@/lib/repo/node-types";
 import { AiBudgetError, assertAiBudget, recordAiAction } from "./metering";
 
 /** "note": the user's own words (trusted). "enrichment": public-web findings
@@ -53,12 +54,16 @@ export async function extractAndApplyNote(
   let extraction: NoteExtraction;
   try {
     await assertAiBudget(userId);
+    // The user's node-type registry (names + slugs only, never entity rows)
+    // rides in the volatile user prompt so the cached system prefix stays
+    // byte-stable; an empty registry degrades to the registry-free prompt.
+    const nodeTypes = (await listNodeTypes()).map(({ name, slug }) => ({ name, slug }));
     const result = await getLLMClient().extract({
       schema: noteExtractionSchema,
       system: enrichment ? ENRICHMENT_EXTRACTION_SYSTEM : NOTE_EXTRACTION_SYSTEM,
       prompt: enrichment
-        ? buildEnrichmentExtractionPrompt(contactName, noteBody)
-        : buildNoteExtractionPrompt(contactName, noteBody),
+        ? buildEnrichmentExtractionPrompt(contactName, noteBody, nodeTypes)
+        : buildNoteExtractionPrompt(contactName, noteBody, nodeTypes),
       tier: "extract",
     });
     await recordAiAction("note_extraction", result.model, result.usage);

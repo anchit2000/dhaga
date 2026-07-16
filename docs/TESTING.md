@@ -31,24 +31,28 @@ necessarily in that bucket.
 **Step 1 — create the Supabase project.** Free tier, any region.
 
 **Step 2 — get `DATABASE_URL`.** In Supabase: Project Settings → Database →
-Connection string → pick the **Transaction** pooler mode (port `6543`,
-host like `aws-0-<region>.pooler.supabase.com`), not the direct `5432`
-connection. Reasoning: Vercel serverless functions open many short-lived
-connections, which is exactly what a transaction-mode pooler (Supavisor) is
-for; the app's own pool caps at 5 connections per instance
-(`new Pool({ connectionString, max: 5 })`,
-`apps/web/src/lib/db/index.ts:63`) but Vercel can spin up many instances, so
-a shared pooler in front of Postgres avoids exhausting Supabase's direct
-connection limit. **Unverified (needs a live run):** this app's `pg`/
-Drizzle usage doesn't appear to create named prepared statements (which is
-the usual thing that breaks transaction-mode pooling for other ORMs), but
-nobody has actually pointed a deploy at a live Supabase pooler in this pass
-to confirm there's no edge case.
+Connection string → pick the **Session** pooler mode (port `5432` on the
+pooler host, like `aws-0-<region>.pooler.supabase.com`) — NOT the
+Transaction pooler (port `6543`). An earlier revision of this guide
+recommended 6543 because Vercel serverless functions open many short-lived
+connections and transaction-mode multiplexing handles that best. A live run
+then proved transaction pooling breaks this app: tenant scoping rides on
+session-level `set_config('app.current_user_id', …)`, and transaction mode
+re-assigns the server backend between queries — RLS intermittently returns
+zero rows, and the tenant setting can leak onto backends later handed to
+other clients. The app now refuses to boot on 6543 (fail-loud guard in
+`packages/ee/src/db/bootstrap.ts`). The session pooler still pools (it
+handles Vercel's many instances far better than direct connections), while
+pinning one backend per client so session state is safe; the app frees its
+slots quickly (small per-instance `max`, and tenant-scoped clients are
+discarded after each request). If session-pooler slots ever run out under
+load, raise `pool_size` in Supabase's pooler settings — the durable fix
+(transaction-scoped tenancy) is tracked as a follow-up on PR #11.
 
 **Step 3 — pgvector.** You should *not* need to touch the Supabase SQL
 editor yourself: the app's own idempotent schema DDL runs
-`CREATE EXTENSION IF NOT EXISTS vector;` as the very first statement, every
-time the DB is opened (`apps/web/src/lib/db/ddl/core.ts:8`, executed by
+`CREATE EXTENSION IF NOT EXISTS vector;` every
+time the DB is opened (`apps/web/src/lib/db/ddl/vector.ts`, executed by
 `initHosted()` in `apps/web/src/lib/db/index.ts:62-67` on first request —
 there is no separate migration step). Supabase's own docs say pgvector is
 available on every plan including free, and that the extension can be

@@ -1,4 +1,4 @@
-import { deleteNoteAction } from "@/lib/actions/notes";
+import { deleteEntityNoteAction, deleteNoteAction } from "@/lib/actions/notes";
 import type { NoteRow } from "@/lib/db/schema";
 import { DeleteButton } from "./DeleteButton";
 
@@ -9,13 +9,13 @@ const KIND_LABELS: Record<string, string> = {
   enrichment: "web enrichment",
 };
 
-export function NoteList({
-  contactId,
-  notes,
-}: {
-  contactId: string;
-  notes: NoteRow[];
-}) {
+/** Owned by exactly one of a contact or an entity — mirrors notes.contact_id/entity_id. */
+type NoteListProps = { notes: NoteRow[] } & (
+  | { contactId: string; entityId?: never }
+  | { entityId: string; contactId?: never }
+);
+
+export function NoteList({ contactId, entityId, notes }: NoteListProps) {
   if (notes.length === 0) {
     return <p className="text-sm text-fog">No notes yet.</p>;
   }
@@ -35,10 +35,20 @@ export function NoteList({
               {note.createdAt.toLocaleString()}
             </p>
           </div>
-          <form action={deleteNoteAction}>
+          <form action={contactId ? deleteNoteAction : deleteEntityNoteAction}>
             <input type="hidden" name="noteId" value={note.id} />
-            <input type="hidden" name="contactId" value={contactId} />
-            <DeleteButton label="Delete note (removes its derived facts too)" />
+            {contactId ? (
+              <input type="hidden" name="contactId" value={contactId} />
+            ) : (
+              <input type="hidden" name="entityId" value={entityId} />
+            )}
+            <DeleteButton
+              label={
+                contactId
+                  ? "Delete note (removes its derived facts too)"
+                  : "Delete note"
+              }
+            />
           </form>
         </li>
       ))}

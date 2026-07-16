@@ -85,7 +85,7 @@ export async function forgetContact(id: string): Promise<void> {
       .where(
         or(
           and(eq(edges.srcType, "contact"), eq(edges.srcId, id)),
-          and(eq(edges.dstType, "person"), eq(edges.dstId, id)),
+          and(eq(edges.dstType, "contact"), eq(edges.dstId, id)),
         ),
       );
     await tx.delete(facts).where(eq(facts.contactId, id));

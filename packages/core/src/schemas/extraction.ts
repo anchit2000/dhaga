@@ -37,8 +37,20 @@ export const relationshipSchema = z.object({
     .string()
     .describe('Who the relationship is about; "contact" for the note subject'),
   predicate: predicateSchema,
-  object: z.string().describe("The company or person on the other end"),
-  object_type: z.enum(["company", "person"]),
+  object: z
+    .string()
+    .describe("The company, person, or custom entity on the other end"),
+  // "entity" = one of the user's custom node types (a gym, a school, a club…)
+  // listed in the request; only used when that list names a matching type.
+  object_type: z.enum(["company", "person", "entity"]),
+  // Required-but-nullable (never .optional()) so the Zod-derived JSON schema
+  // stays strict-mode compatible for structured outputs — see schemas/contact.
+  entity_type_hint: z
+    .string()
+    .nullable()
+    .describe(
+      'When object_type is "entity": the slug of the user\'s node type it matches (e.g. "gym"). Otherwise null.',
+    ),
 });
 
 export const followUpSchema = z.object({

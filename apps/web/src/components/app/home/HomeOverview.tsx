@@ -7,6 +7,7 @@ import { EventBadge } from "@/components/app/EventBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { HOME_PREVIEW_LIMIT } from "@/utils/constants/app";
+import { formatDate } from "@/utils/format-date";
 import type { ContactListItem } from "@/lib/repo/contacts";
 import type { EventListItem } from "@/lib/repo/events";
 
@@ -41,7 +42,7 @@ export function HomeOverview({
             <Link key={event.id} href={`/app/events/${event.id}`} className="flex min-h-11 items-center justify-between gap-3 rounded-lg px-2 transition-colors hover:bg-wash/[0.04]">
               <span className="flex min-w-0 items-center gap-2.5">
                 <EventBadge name={event.name} emoji={event.emoji} color={event.color} size="sm" />
-                <span className="min-w-0"><span className="block truncate text-sm text-paper">{event.name}</span><span className="block text-xs text-fog">{event.startedAt.toLocaleDateString()}</span></span>
+                <span className="min-w-0"><span className="block truncate text-sm text-paper">{event.name}</span><span className="block text-xs text-fog">{formatDate(event.startedAt)}</span></span>
               </span>
               <span className="shrink-0 text-xs text-fog">{event.contactCount} {event.contactCount === 1 ? "person" : "people"}</span>
             </Link>

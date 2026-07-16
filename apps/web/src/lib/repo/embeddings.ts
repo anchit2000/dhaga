@@ -119,6 +119,8 @@ export async function backfillEmbeddings(): Promise<number> {
   const vectorStore = getVectorStore();
   let count = 0;
   for (const note of noteRows) {
+    // Entity notes have no contact; embeddings are contact-keyed, so skip.
+    if (!note.contactId) continue;
     if (await vectorStore.has("note", note.id)) continue;
     await upsertEmbedding("note", note.id, note.contactId, note.body);
     count += 1;

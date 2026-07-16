@@ -190,7 +190,7 @@ export async function listContactConnectionsPage(
       .innerJoin(
         contacts,
         or(
-          and(eq(edges.srcId, contactId), eq(edges.dstType, "person"), eq(contacts.id, edges.dstId)),
+          and(eq(edges.srcId, contactId), eq(edges.dstType, "contact"), eq(contacts.id, edges.dstId)),
           and(eq(edges.dstId, contactId), eq(edges.srcType, "contact"), eq(contacts.id, edges.srcId)),
         ),
       )

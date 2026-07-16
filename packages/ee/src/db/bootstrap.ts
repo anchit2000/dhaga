@@ -6,8 +6,41 @@ let applied: Promise<void> | undefined;
 
 /** Idempotent; safe to call on every cold start. Cached per process. */
 export function ensureEeSchema(pool: Pool): Promise<void> {
-  applied ??= pool.query(`${EE_TABLES_DDL}\n${RLS_DDL}`).then(() => assertRoleRespectsRls(pool));
+  applied ??= Promise.resolve()
+    .then(() => assertSessionScopedPooling(process.env.DATABASE_URL))
+    .then(() => pool.query(`${EE_TABLES_DDL}\n${RLS_DDL}`))
+    .then(() => assertRoleRespectsRls(pool));
   return applied;
+}
+
+/**
+ * Tenant scoping rides on session-level `set_config('app.current_user_id', …)`
+ * on a dedicated client (see tenant/scoped-db.ts). Transaction-mode pooling
+ * (Supabase's Supavisor on port 6543) re-assigns the server backend between
+ * queries on that same client, which breaks the scoping in both directions:
+ * queries intermittently run unscoped (RLS returns zero rows), and the
+ * setting can persist on a backend later handed to a different client — a
+ * cross-tenant exposure, not a crash. The session pooler (same host, port
+ * 5432) or a direct connection pins one backend per client and is safe.
+ * Fail loud at boot, like assertRoleRespectsRls below.
+ */
+function assertSessionScopedPooling(connectionString: string | undefined): void {
+  if (!connectionString) return;
+  let url: URL;
+  try {
+    url = new URL(connectionString);
+  } catch {
+    return; // non-URL connection formats can't be checked here
+  }
+  if (url.hostname.endsWith("pooler.supabase.com") && url.port === "6543") {
+    throw new Error(
+      "DATABASE_URL points at Supabase's transaction-mode pooler (port 6543). Tenant scoping " +
+        "uses session-level set_config, which transaction pooling silently breaks — queries " +
+        "intermittently run unscoped (RLS returns no rows) and the tenant setting can leak " +
+        "across pooled backends. Point DATABASE_URL at the session pooler (same host, port " +
+        "5432) or a direct connection instead.",
+    );
+  }
 }
 
 /**

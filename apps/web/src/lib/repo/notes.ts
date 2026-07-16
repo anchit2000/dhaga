@@ -3,6 +3,7 @@ import { and, desc, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import {
   edges,
+  edgeSuggestions,
   facts,
   followUps,
   notes,
@@ -61,6 +62,7 @@ export async function clearNoteDerivations(noteId: string): Promise<void> {
       .where(eq(facts.sourceNoteId, noteId));
     await tx.delete(facts).where(eq(facts.sourceNoteId, noteId));
     await tx.delete(edges).where(eq(edges.sourceNoteId, noteId));
+    await tx.delete(edgeSuggestions).where(eq(edgeSuggestions.sourceNoteId, noteId));
     await tx.delete(followUps).where(eq(followUps.sourceNoteId, noteId));
     for (const row of factRows) await deleteEmbedding("fact", row.id, tx);
   });
@@ -88,6 +90,9 @@ export async function deleteNote(noteId: string): Promise<void> {
     await tx.update(notes).set({ deletedAt: now }).where(eq(notes.id, noteId));
     await tx.update(facts).set({ deletedAt: now }).where(eq(facts.sourceNoteId, noteId));
     await tx.update(edges).set({ deletedAt: now }).where(eq(edges.sourceNoteId, noteId));
+    // Suggestions are pending workflow items, not receipts — a deleted note's
+    // "confirm this relationship" prompts are moot, so drop them outright.
+    await tx.delete(edgeSuggestions).where(eq(edgeSuggestions.sourceNoteId, noteId));
     await deleteCardImagesByNote(noteId, tx);
     await deleteEmbeddingsForNote(noteId, tx);
   });

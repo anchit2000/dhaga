@@ -115,9 +115,9 @@ controls it.
 ## Running with `docker compose up`
 
 The repo root has a [`Dockerfile`](../Dockerfile) and [`compose.yml`](../compose.yml)
-that run the web app plus a Postgres 17 + pgvector container. The app creates
-its own schema (including the `vector` extension) on first request — there is
-no migration step.
+that run the web app plus a Postgres 16 + pgvector container. The app creates
+its own schema (including the `vector` extension) on first connection — there
+is no migration step.
 
 1. Create a `.env` file next to `compose.yml`:
 
@@ -134,6 +134,32 @@ no migration step.
 
 None of the `packages/ee` vars are wired into `compose.yml` — this is the
 plain AGPL self-host path (Level 1 above).
+
+### Custom database deployments
+
+`compose.yml` is a working reference, not a requirement — `DATABASE_URL` can
+point at **any Postgres 15+** (self-hosted, RDS, Neon, Supabase, …). What the
+app needs from the database:
+
+- **`pg_trgm`** — always; it's a contrib extension every Postgres ships, and
+  the app's boot DDL runs `CREATE EXTENSION IF NOT EXISTS` itself.
+- **`pgvector`** — needed by the default semantic search, *optional* if you
+  set `DHAGA_VECTOR_STORE` to a registered external vector store (see
+  [PROVIDERS.md](PROVIDERS.md)); the boot DDL skips the vector schema
+  entirely in that case.
+- **Session-scoped pooling** (hosted mode only) — tenant scoping works via
+  session-level `set_config('app.current_user_id', …)`, which
+  transaction-mode poolers (e.g. Supabase's port 6543) silently break by
+  swapping the server backend between queries: RLS intermittently returns
+  zero rows *and* the tenant setting can leak onto a backend later handed to
+  another user. Use a direct connection or a session-mode pooler; the boot
+  guard in `packages/ee/src/db/bootstrap.ts` fails loud on known offenders.
+- **A role without `BYPASSRLS`** (hosted mode only) — run
+  [`packages/ee/scripts/create-app-role.sql`](../packages/ee/scripts/create-app-role.sql)
+  and connect as `dhaga_app`; see DEPLOYING.md's "The Postgres role
+  DATABASE_URL connects as matters" for why the provider default role is
+  dangerous. Plain single-user self-hosting (hosted mode off) needs none of
+  this — any role that can create tables works.
 
 ### Nightly signal detection (job-change + news watchlist, opt-in)
 

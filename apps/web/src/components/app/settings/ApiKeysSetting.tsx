@@ -10,6 +10,7 @@ import {
 } from "@/lib/actions/api-keys";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { formatDate } from "@/utils/format-date";
 
 export interface ApiKeySummary {
   id: string;
@@ -58,7 +59,7 @@ export function ApiKeysSetting({ keys }: { keys: ApiKeySummary[] }) {
                 <p className="text-paper">{key.name || "Untitled token"}</p>
                 <p className="text-xs text-fog">
                   {key.start ? `${key.start}…` : "········"} · created{" "}
-                  {key.createdAt.toLocaleDateString()}
+                  {formatDate(key.createdAt)}
                 </p>
               </div>
               <form action={deleteApiKeyAction}>

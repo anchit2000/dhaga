@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "@/lib/auth/guard";
 import { getContact } from "@/lib/repo/contacts";
+import { getEntity } from "@/lib/repo/entities";
+import { addEntityNote } from "@/lib/repo/entity-notes";
 import {
   addNote,
   deleteFact,
@@ -43,6 +45,31 @@ export async function addNoteAction(
   await createExtractionJob({ contactId, kind: "note_extraction", noteId });
   revalidatePath(`/app/people/${contactId}`);
   return { notice: "Note saved — extracting facts…" };
+}
+
+/** Entity notes save as-is — no extraction job (plain notes by design). */
+export async function addEntityNoteAction(
+  _previous: NoteFormState,
+  formData: FormData,
+): Promise<NoteFormState> {
+  await requireUserId();
+  const entityId = String(formData.get("entityId") ?? "");
+  const body = String(formData.get("body") ?? "").trim();
+  if (!entityId) return { error: "Missing entity." };
+  if (!body) return { error: "Write something first." };
+  if (!(await getEntity(entityId))) return { error: "Entity not found." };
+  await addEntityNote(entityId, body);
+  revalidatePath(`/app/entities/${entityId}`);
+  return {};
+}
+
+export async function deleteEntityNoteAction(formData: FormData): Promise<void> {
+  await requireUserId();
+  const noteId = String(formData.get("noteId") ?? "");
+  const entityId = String(formData.get("entityId") ?? "");
+  if (!noteId) return;
+  await deleteNote(noteId);
+  revalidatePath(`/app/entities/${entityId}`);
 }
 
 export async function deleteNoteAction(formData: FormData): Promise<void> {

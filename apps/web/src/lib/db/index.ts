@@ -7,13 +7,15 @@ import { Pool } from "pg";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { DDL } from "./ddl";
 import { companies, contacts } from "./schema/contacts";
+import { entities, nodeTypes, relationshipTypes } from "./schema/entities";
 import { eventContacts, events } from "./schema/events";
-import { edges, facts, followUps, notes } from "./schema/notes";
+import { edges, edgeSuggestions, facts, followUps, notes } from "./schema/notes";
 import { embeddings } from "./schema/embeddings";
 import { extractionJobs } from "./schema/jobs";
 import { signals } from "./schema/signals";
 import { calendarConnections } from "./schema/calendar";
 import { aiActions, settings } from "./schema/meta";
+import { graphLayouts } from "./schema/graph-layouts";
 import { cardImages } from "./schema/card-images";
 import {
   authAccount,
@@ -30,9 +32,13 @@ const schema = {
   contacts,
   events,
   eventContacts,
+  nodeTypes,
+  entities,
+  relationshipTypes,
   notes,
   facts,
   edges,
+  edgeSuggestions,
   followUps,
   embeddings,
   extractionJobs,
@@ -40,6 +46,7 @@ const schema = {
   calendarConnections,
   aiActions,
   settings,
+  graphLayouts,
   cardImages,
   user: authUser,
   session: authSession,

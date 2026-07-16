@@ -6,6 +6,7 @@ import { CalendarClock } from "lucide-react";
 import { AddToCalendar } from "./AddToCalendar";
 import { Button } from "@/components/ui/button";
 import { markReachedOutAction } from "@/lib/actions/reminders";
+import { formatWeekdayTime } from "@/utils/format-date";
 import type { DailySuggestion } from "@/lib/repo/daily-suggestions";
 
 export interface MeetingSlot {
@@ -20,11 +21,7 @@ const BUCKET_LABEL: Record<DailySuggestion["bucket"], string> = {
 };
 
 function slotLabel(slot: MeetingSlot): string {
-  return slot.start.toLocaleString(undefined, {
-    weekday: "short",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  return formatWeekdayTime(slot.start);
 }
 
 export function TodaySuggestions({

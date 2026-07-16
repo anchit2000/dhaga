@@ -1,4 +1,4 @@
-import { and, isNull, sql } from "drizzle-orm";
+import { and, isNotNull, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { facts, notes } from "@/lib/db/schema";
 import { SEARCH_HEADLINE_OPTS, type SearchWeights } from "@/utils/constants/search";
@@ -17,13 +17,24 @@ export async function noteHits(words: string[], weights: SearchWeights): Promise
     })
     .from(notes)
     .where(
-      and(isNull(notes.deletedAt), sql`${notes}.search_tsv @@ to_tsquery('english', ${tsq})`),
+      and(
+        // Entity notes carry no contact — contact search can't surface them.
+        isNotNull(notes.contactId),
+        isNull(notes.deletedAt),
+        sql`${notes}.search_tsv @@ to_tsquery('english', ${tsq})`,
+      ),
     );
-  return rows.map((row) => ({
-    contactId: row.contactId,
-    score: row.rank * weights.notes,
-    match: `note: ${stripHeadlineMarkers(row.snippet)}`,
-  }));
+  return rows.flatMap((row) =>
+    row.contactId
+      ? [
+          {
+            contactId: row.contactId,
+            score: row.rank * weights.notes,
+            match: `note: ${stripHeadlineMarkers(row.snippet)}`,
+          },
+        ]
+      : [],
+  );
 }
 
 export async function factHits(words: string[], weights: SearchWeights): Promise<KeywordHit[]> {

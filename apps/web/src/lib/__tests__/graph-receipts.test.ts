@@ -6,7 +6,7 @@ import { createContact, findOrCreateCompany, forgetContact, getContact, listCont
 import { listContactConnections } from "@/lib/repo/connections";
 import { addNote, deleteFact, deleteNote, listFacts, listOpenFollowUps } from "@/lib/repo/notes";
 import { applyExtraction } from "@/lib/repo/graph";
-import { fetchClusterMembers } from "@/lib/repo/graph-data";
+import { fetchFullGraph } from "@/lib/repo/graph-data";
 import type { NoteExtraction } from "@dhaga/core";
 
 /**
@@ -51,8 +51,8 @@ const extraction: NoteExtraction = {
     { type: "role", text: "Runs operations for a freight forwarder", confidence: 0.9 },
   ],
   relationships: [
-    { subject: "contact", predicate: "works_at", object: "Freightline", object_type: "company" },
-    { subject: "contact", predicate: "knows", object: "Mei Tanaka", object_type: "person" },
+    { subject: "contact", predicate: "works_at", object: "Freightline", object_type: "company", entity_type_hint: null },
+    { subject: "contact", predicate: "knows", object: "Mei Tanaka", object_type: "person", entity_type_hint: null },
   ],
   follow_ups: [{ action: "Send route-optimisation deck", due_hint: "next quarter" }],
   tags: ["logistics"],
@@ -99,13 +99,16 @@ describe("graph receipts and cascades", () => {
   it("draws company membership from the authoritative company_id relation", async () => {
     const id = await createContact({ ...contactInput, name: "Visible Member" }, "manual");
     const companyId = await findOrCreateCompany("Freightline");
-    const cluster = await fetchClusterMembers("company", companyId);
+    const graph = await fetchFullGraph();
 
-    expect(cluster.edges).toContainEqual({
-      id: `company-membership:${companyId}:${id}`,
-      source: companyId,
-      target: id,
-      label: "works at",
+    // WHY: membership must come from contacts.company_id, not a text edge —
+    // updating the contact's company must move this edge with it.
+    expect(graph.edges).toContainEqual({
+      id: `works-at:${id}`,
+      source: id,
+      target: companyId,
+      predicate: "works_at",
+      kind: "works_at",
     });
   });
 
@@ -145,13 +148,12 @@ describe("graph receipts and cascades", () => {
     const id = await createContact({ ...contactInput, name: "Third Person" }, "manual");
     const noteId = await addNote(id, "text", "to be forgotten");
     await applyExtraction(id, noteId, extraction);
-    const companyId = await findOrCreateCompany("Freightline");
 
     await forgetContact(id);
     expect(await getContact(id)).toBeNull();
 
-    const cluster = await fetchClusterMembers("company", companyId);
-    expect(cluster.nodes.some((node) => node.id === id)).toBe(false);
-    expect(cluster.edges.some((edge) => edge.source === id || edge.target === id)).toBe(false);
+    const graph = await fetchFullGraph();
+    expect(graph.nodes.some((node) => node.id === id)).toBe(false);
+    expect(graph.edges.some((edge) => edge.source === id || edge.target === id)).toBe(false);
   });
 });

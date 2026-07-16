@@ -15,7 +15,7 @@ function knows(objectName: string): NoteExtraction {
   return {
     facts: [],
     relationships: [
-      { subject: "contact", predicate: "knows", object: objectName, object_type: "person" },
+      { subject: "contact", predicate: "knows", object: objectName, object_type: "person", entity_type_hint: null },
     ],
     follow_ups: [],
     tags: [],

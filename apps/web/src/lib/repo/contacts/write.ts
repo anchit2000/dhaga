@@ -12,7 +12,7 @@ import type { ContactSource } from "@/utils/constants/app";
  * a CSV import processing repeated employer names) must not race the
  * select-then-insert below into creating duplicate company rows. There's no
  * unique constraint on companies.name to fall back on with ON CONFLICT — DDL
- * runs idempotently on every boot (lib/db/ddl/core.ts), and adding one would
+ * runs idempotently on every boot (lib/db/ddl/core/), and adding one would
  * fail on any self-hosted install that already has duplicate names. Instead,
  * take a transaction-scoped Postgres advisory lock keyed on the
  * case-insensitive name: it serializes concurrent calls for the SAME name

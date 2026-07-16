@@ -1,19 +1,15 @@
 // Split per the 150-line rule; import paths unchanged (@/lib/repo/graph-data).
-export { fetchGraphClusters } from "./clusters";
-export { fetchClusterMembers } from "./cluster-members";
+export { fetchFullGraph, fetchGraphVersion } from "./full";
+export { fetchTagLayer, fetchTagSpokes } from "./tags";
+export { searchGraphTargets, type GraphTargetKind } from "./targets";
 export {
-  fetchContactRelationshipGraph,
-  type ContactRelationshipGraph,
-} from "./relationships";
-export { searchGraphTargets } from "./targets";
-export {
-  OTHER_TAG_KEY,
-  UNASSIGNED_KEY,
-  UNKNOWN_LOCATION_KEY,
-  type Cluster,
-  type ClusterDimension,
-  type ClusterMembersResult,
+  type FullGraphEdge,
+  type FullGraphNode,
+  type FullGraphPayload,
+  type GraphLayoutSnapshot,
   type GraphTarget,
-  type GraphViewEdge,
-  type GraphViewNode,
+  type TagLayerEdge,
+  type TagLayerHub,
+  type TagLayerPayload,
+  type TagSpokesPayload,
 } from "./types";

@@ -1,11 +1,12 @@
 import { boolean, jsonb, pgTable, real, text, timestamp } from "drizzle-orm/pg-core";
 import { contacts } from "./contacts";
+import { entities } from "./entities";
 
+/** A note belongs to exactly one of contact/entity (app-enforced). */
 export const notes = pgTable("notes", {
   id: text("id").primaryKey(),
-  contactId: text("contact_id")
-    .notNull()
-    .references(() => contacts.id),
+  contactId: text("contact_id").references(() => contacts.id),
+  entityId: text("entity_id").references(() => entities.id),
   kind: text("kind").notNull(), // "text" | "voice" | "capture_source"
   body: text("body").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -30,10 +31,12 @@ export const facts = pgTable("facts", {
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
 
-/** The graph. Typed edges between contacts/companies, receipt-linked. */
+/** The graph. Typed edges, receipt-linked; manual edges have a NULL receipt.
+ *  Endpoint types: "contact" | "company" | "event" | "entity" (legacy "person"
+ *  rows are normalized to "contact" by the DDL self-heal). */
 export const edges = pgTable("edges", {
   id: text("id").primaryKey(),
-  srcType: text("src_type").notNull(), // "contact" | "company"
+  srcType: text("src_type").notNull(),
   srcId: text("src_id").notNull(),
   predicate: text("predicate").notNull(),
   dstType: text("dst_type").notNull(),
@@ -44,10 +47,11 @@ export const edges = pgTable("edges", {
 });
 
 /**
- * A pending person→person relationship the extractor found but could not link
- * unambiguously (e.g. the note says "Ajay" and two contacts are named Ajay, or
- * the closest match isn't exact). Held for the user to confirm which contact it
- * means — or to create a new one — before an edge is written. Receipt-linked.
+ * A pending relationship the extractor found but could not link unambiguously
+ * (e.g. the note says "Ajay" and two contacts are named Ajay, or it names a
+ * custom entity that doesn't exist yet). Held for the user to confirm which
+ * contact/entity it means — or to create one — before an edge is written.
+ * Receipt-linked.
  */
 export const edgeSuggestions = pgTable("edge_suggestions", {
   id: text("id").primaryKey(),
@@ -56,7 +60,10 @@ export const edgeSuggestions = pgTable("edge_suggestions", {
     .references(() => contacts.id),
   predicate: text("predicate").notNull(),
   objectName: text("object_name").notNull(),
-  objectType: text("object_type").notNull(), // "person" (kept for future kinds)
+  objectType: text("object_type").notNull(), // "person" | "entity"
+  // Entity suggestions only: the extractor's node-type guess (slug) that
+  // preselects the type in the inbox's "create new" path.
+  entityTypeHint: text("entity_type_hint"),
   candidateIds: jsonb("candidate_ids").$type<string[]>().notNull().default([]),
   status: text("status").notNull().default("pending"), // pending | confirmed | dismissed
   sourceNoteId: text("source_note_id").references(() => notes.id),

@@ -135,9 +135,7 @@ migration, not a code change:
 
 Any Linux VPS (Hetzner/DigitalOcean/EC2) or PaaS with a volume
 (Railway / Render / Fly.io). Requirements: Node 20+, a directory that
-survives restarts, HTTPS in front. (Prefer containers? A `compose.yml`
-exists — see [SELF_HOSTING.md](SELF_HOSTING.md), noting it's not yet
-verified.)
+survives restarts, HTTPS in front. (Prefer containers? See Option C below.)
 
 ```bash
 git clone https://github.com/anchit2000/dhaga.git && cd dhaga
@@ -192,6 +190,65 @@ dhaga.example.com {
 - **Leaving** = the JSON/CSV/vCard export endpoints give you everything;
   no lock-in is a feature.
 
+## Option C — Production deployment with Docker
+
+The repo root has a multi-stage [`Dockerfile`](../Dockerfile) (deps → build →
+slim runtime; Next.js standalone output on `node:22-slim`, non-root user,
+built-in healthcheck against `/login`) and a [`compose.yml`](../compose.yml)
+that runs the app plus a Postgres 16 + pgvector database:
+
+```bash
+git clone https://github.com/anchit2000/dhaga.git && cd dhaga
+echo "BETTER_AUTH_SECRET=$(openssl rand -base64 32)" > .env
+docker compose up --build -d
+```
+
+Open http://localhost:3000. On first boot the app applies its own idempotent
+DDL over the `DATABASE_URL` connection (including `CREATE EXTENSION vector` /
+`pg_trgm`) — **there is no migration step**, and the same schema self-heal
+re-runs harmlessly on every upgrade.
+
+- Contact data lives in the `dhaga-db` volume — `docker compose down` keeps
+  it, `down -v` deletes it. The database is also reachable from the host at
+  `localhost:54329` for backups (`pg_dump`).
+- Set `BETTER_AUTH_URL` in `.env` to your public URL and terminate HTTPS in
+  front (same reason as Option B: the session cookie is `Secure`, so login
+  won't stick over plain HTTP on anything but localhost).
+- **Zero-config variant (no Postgres):** run the image *without*
+  `DATABASE_URL` and it uses the embedded database (PGlite), persisted at
+  `/data` inside the container — mount a volume there or the data dies with
+  the container:
+
+  ```bash
+  docker build -t dhaga .
+  docker run -d -p 3000:3000 \
+    -e BETTER_AUTH_SECRET="$(openssl rand -base64 32)" \
+    -v dhaga-data:/data dhaga
+  ```
+
+  `compose.yml` carries this as a commented-out variant too. Backup = the
+  `dhaga-data` volume, exactly like `DHAGA_DATA_DIR` in Option B.
+
+### Hosted mode (Dhaga Cloud) in Docker
+
+The stock `compose.yml` is the plain self-host path — none of the
+`packages/ee` vars are wired in. To run `DHAGA_HOSTED_MODE=true`
+multi-tenant in containers, additionally:
+
+1. Run [`packages/ee/scripts/create-app-role.sql`](../packages/ee/scripts/create-app-role.sql)
+   against the database once, e.g.
+   `docker compose exec -T db psql -U dhaga -d dhaga < packages/ee/scripts/create-app-role.sql`,
+   and point `DATABASE_URL` at the resulting non-`BYPASSRLS` `dhaga_app`
+   role — see "The Postgres role DATABASE_URL connects as matters" above.
+2. Keep pooling **session-scoped**: connect directly (what the compose file
+   does) or via a session-mode pooler, never a transaction-mode pooler such
+   as Supabase's port 6543. Tenant scoping rides on session-level
+   `set_config`, which transaction pooling silently breaks; the boot guard
+   in `packages/ee/src/db/bootstrap.ts` refuses to start on a known
+   transaction pooler.
+3. Add the hosted-mode env vars (`DHAGA_HOSTED_MODE`, `DHAGA_ADMIN_EMAILS`,
+   `STRIPE_*`) to the `app` service's `environment` block yourself.
+
 ## Checklist before going live
 
 - [ ] Random `BETTER_AUTH_SECRET`, correct `BETTER_AUTH_URL`
@@ -203,11 +260,6 @@ dhaga.example.com {
 
 ## What's deliberately not here yet
 
-- **A verified Docker run** — `Dockerfile` + `compose.yml` now exist at the
-  repo root (see "Running with `docker compose up`" in
-  [SELF_HOSTING.md](SELF_HOSTING.md)), but the image hasn't been built and
-  run anywhere yet — treat that path as unverified until checklist §18
-  checks it off. The `npm` path below is the tested one.
 - **Manual click-through verification of the Stripe checkout/webhook flow**
   — the code is typechecked/linted/built/tested, but nobody has run a real
   test-mode purchase against a live Stripe account yet.

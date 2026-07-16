@@ -1,16 +1,26 @@
-# Self-host: `docker compose up --build` — see docs/SELF_HOSTING.md.
+# Self-host: `docker compose up --build` — see docs/SELF_HOSTING.md and
+# docs/DEPLOYING.md ("Production deployment with Docker").
 # Requires a `.env` file next to this one with at least BETTER_AUTH_SECRET.
 # The app creates its own schema (incl. the pgvector extension) on first
-# request, so there is no separate migration step.
+# connection, so there is no separate migration step.
 
 services:
   db:
-    image: pgvector/pgvector:pg17
+    image: pgvector/pgvector:pg16
     restart: unless-stopped
     environment:
       POSTGRES_USER: dhaga
+      # ⚠ INSECURE DEFAULT ("dhaga") — acceptable only while the DB is
+      # reachable solely from this compose network. Set a real
+      # POSTGRES_PASSWORD in .env before exposing port 54329 beyond
+      # localhost or running anything multi-tenant.
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dhaga}
       POSTGRES_DB: dhaga
+    ports:
+      # Non-standard host port so a locally installed Postgres on 5432
+      # doesn't collide. Connect from the host with:
+      #   psql postgres://dhaga:dhaga@localhost:54329/dhaga
+      - "54329:5432"
     volumes:
       - dhaga-db:/var/lib/postgresql/data
     healthcheck:
@@ -19,7 +29,7 @@ services:
       timeout: 3s
       retries: 12
 
-  web:
+  app:
     build: .
     restart: unless-stopped
     ports:
@@ -29,7 +39,9 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgres://dhaga:${POSTGRES_PASSWORD:-dhaga}@db:5432/dhaga
+      # Generate with `openssl rand -base64 32` and put it in .env.
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?put a long random string in .env (openssl rand -base64 32)}
+      # The public URL users reach the app at (scheme + host + port).
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
@@ -42,3 +54,23 @@ services:
 
 volumes:
   dhaga-db:
+
+# --- Zero-config variant (embedded PGlite, no Postgres) ----------------------
+# Single-user path: delete the `db` service above and use this `app` instead.
+# No DATABASE_URL → the app runs its embedded database (PGlite) at /data,
+# persisted in the `dhaga-data` volume. Nothing else to configure.
+#
+#   app:
+#     build: .
+#     restart: unless-stopped
+#     ports:
+#       - "3000:3000"
+#     environment:
+#       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?put a long random string in .env (openssl rand -base64 32)}
+#       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
+#       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+#     volumes:
+#       - dhaga-data:/data
+#
+# volumes:
+#   dhaga-data:

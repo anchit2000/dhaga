@@ -70,9 +70,10 @@ Pre-launch. The full MVP loop is built — card/badge scan, voice + text
 notes, entity extraction, the knowledge graph, natural-language search, AI
 follow-up drafts, and export — plus v1.1+ features (web quick-add, browser
 extension, Telegram capture, events, reminders) and real multi-user
-accounts. Not yet done: mobile app, a verified `docker compose up` (the
-`Dockerfile` and `compose.yml` exist but haven't been run yet), and a live-tested
-Stripe billing flow for Dhaga Cloud. See [checklist.md](docs/checklist.md) for the
+accounts, and a verified `docker compose up` production path (multi-stage
+`Dockerfile` + pgvector `compose.yml`, boot-tested against both Postgres and
+the zero-config embedded PGlite mode). Not yet done: mobile app and a
+live-tested Stripe billing flow for Dhaga Cloud. See [checklist.md](docs/checklist.md) for the
 exact feature-by-feature status, [ROADMAP.md](docs/ROADMAP.md) for what's shipped
 and what's next, and [BRD.md](docs/BRD.md) for the full product requirements.
 

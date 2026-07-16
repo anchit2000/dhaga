@@ -6,8 +6,14 @@ export {
   type PersonResolution,
 } from "./candidates";
 export {
-  listPendingEdgeSuggestions,
+  findEntityCandidates,
+  resolveEntityObject,
+  type EntityCandidate,
+  type EntityResolution,
+} from "./entity-candidates";
+export { listPendingEdgeSuggestions, type EdgeSuggestionView } from "./queue";
+export {
   confirmEdgeSuggestion,
   dismissEdgeSuggestion,
-  type EdgeSuggestionView,
-} from "./queue";
+  type EdgeSuggestionTarget,
+} from "./confirm";

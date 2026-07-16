@@ -46,17 +46,42 @@ export function humanizePredicate(predicate: string): string {
 }
 
 /**
+ * User-defined predicates loaded at runtime (relationship_types rows), keyed
+ * by slug: `forward` reads src->dst ("father of"), `inverse` dst->src.
+ */
+export type RelationshipLabelMap = Record<string, { forward: string; inverse: string }>;
+
+/** Build the runtime label map from relationship_types rows (any source that
+ *  carries slug + both labels), so every consumer keys it identically. */
+export function buildRelationshipLabelMap(
+  rows: readonly { slug: string; forwardLabel: string; inverseLabel: string }[],
+): RelationshipLabelMap {
+  const map: RelationshipLabelMap = {};
+  for (const row of rows) {
+    map[row.slug] = { forward: row.forwardLabel, inverse: row.inverseLabel };
+  }
+  return map;
+}
+
+/**
  * How the OTHER person in an edge relates to the contact being viewed.
  *
  * @param predicate       the stored edge predicate (e.g. "parent_of")
  * @param viewerIsSource  true when the viewed contact is the edge's `src`
+ * @param custom          user-defined predicates; they win over built-ins so a
+ *                        user can relabel a predicate without forking its slug
  * @returns               a short role/relation label for the other person
  *                        (viewerIsSource -> the object side; else the subject side)
  */
 export function relationshipRole(
   predicate: string,
   viewerIsSource: boolean,
+  custom?: RelationshipLabelMap,
 ): string {
+  const labels = custom?.[predicate];
+  // The forward label reads src->dst, so the OTHER person's role from the
+  // source's seat is the inverse side — mirroring object/subject below.
+  if (labels) return viewerIsSource ? labels.inverse : labels.forward;
   const roles = RELATIONSHIP_ROLES[predicate];
   if (roles) return viewerIsSource ? roles.object : roles.subject;
   // Unknown predicate: no reliable inverse, so show the relation as written.

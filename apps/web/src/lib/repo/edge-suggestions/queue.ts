@@ -1,8 +1,7 @@
-import { randomUUID } from "node:crypto";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
-import { contacts, edges, edgeSuggestions } from "@/lib/db/schema";
-import { createMentionedContact, type RelationshipCandidate } from "./candidates";
+import { contacts, edgeSuggestions, entities, nodeTypes } from "@/lib/db/schema";
+import type { RelationshipCandidate } from "./candidates";
 
 export interface EdgeSuggestionView {
   id: string;
@@ -10,8 +9,49 @@ export interface EdgeSuggestionView {
   srcName: string;
   predicate: string;
   objectName: string;
+  /** What the note's object is: a person (contact) or a custom entity. */
+  objectType: "person" | "entity";
+  /** Entity suggestions only: the extractor's node-type guess (slug), if any. */
+  entityTypeHint: string | null;
   createdAt: Date;
+  /** Person rows: matching contacts (title = job title). Entity rows: matching
+   *  entities (title = node type name) — the inbox renders both uniformly. */
   candidates: RelationshipCandidate[];
+}
+
+async function candidateIndex(
+  rows: { objectType: string; candidateIds: string[] }[],
+): Promise<Map<string, RelationshipCandidate>> {
+  const db = await getDb();
+  const idsFor = (type: "person" | "entity"): string[] => [
+    ...new Set(
+      rows
+        .filter((row) => (row.objectType === "entity") === (type === "entity"))
+        .flatMap((row) => row.candidateIds),
+    ),
+  ];
+  const personIds = idsFor("person");
+  const entityIds = idsFor("entity");
+  const contactRows = personIds.length
+    ? await db
+        .select({ id: contacts.id, name: contacts.name, title: contacts.title })
+        .from(contacts)
+        .where(inArray(contacts.id, personIds))
+    : [];
+  const entityRows = entityIds.length
+    ? await db
+        .select({ id: entities.id, name: entities.name, typeName: nodeTypes.name })
+        .from(entities)
+        .innerJoin(nodeTypes, eq(nodeTypes.id, entities.typeId))
+        .where(inArray(entities.id, entityIds))
+    : [];
+  return new Map<string, RelationshipCandidate>([
+    ...contactRows.map((row): [string, RelationshipCandidate] => [row.id, row]),
+    ...entityRows.map((row): [string, RelationshipCandidate] => [
+      row.id,
+      { id: row.id, name: row.name, title: row.typeName },
+    ]),
+  ]);
 }
 
 /** Pending relationship confirmations, newest first, with candidates resolved. */
@@ -24,6 +64,8 @@ export async function listPendingEdgeSuggestions(): Promise<EdgeSuggestionView[]
       srcName: contacts.name,
       predicate: edgeSuggestions.predicate,
       objectName: edgeSuggestions.objectName,
+      objectType: edgeSuggestions.objectType,
+      entityTypeHint: edgeSuggestions.entityTypeHint,
       candidateIds: edgeSuggestions.candidateIds,
       createdAt: edgeSuggestions.createdAt,
     })
@@ -33,69 +75,18 @@ export async function listPendingEdgeSuggestions(): Promise<EdgeSuggestionView[]
     .orderBy(desc(edgeSuggestions.createdAt));
   if (rows.length === 0) return [];
 
-  const candidateIds = [...new Set(rows.flatMap((row) => row.candidateIds))];
-  const candidateRows = candidateIds.length
-    ? await db
-        .select({ id: contacts.id, name: contacts.name, title: contacts.title })
-        .from(contacts)
-        .where(inArray(contacts.id, candidateIds))
-    : [];
-  const byId = new Map(candidateRows.map((row) => [row.id, row]));
-
+  const byId = await candidateIndex(rows);
   return rows.map((row) => ({
     id: row.id,
     srcContactId: row.srcContactId,
     srcName: row.srcName,
     predicate: row.predicate,
     objectName: row.objectName,
+    objectType: row.objectType === "entity" ? "entity" : "person",
+    entityTypeHint: row.entityTypeHint,
     createdAt: row.createdAt,
     candidates: row.candidateIds
       .map((id) => byId.get(id))
       .filter((candidate): candidate is RelationshipCandidate => Boolean(candidate)),
   }));
-}
-
-/**
- * Resolve a pending suggestion by writing the edge — to a chosen existing
- * contact, or to a freshly created one when the user says none of the
- * candidates match. Keeps the note receipt so a note delete still tombstones it.
- */
-export async function confirmEdgeSuggestion(
-  suggestionId: string,
-  target: { contactId: string } | { newContact: true },
-): Promise<void> {
-  const db = await getDb();
-  const [suggestion] = await db
-    .select()
-    .from(edgeSuggestions)
-    .where(and(eq(edgeSuggestions.id, suggestionId), eq(edgeSuggestions.status, "pending")))
-    .limit(1);
-  if (!suggestion) return;
-
-  const dstId =
-    "contactId" in target
-      ? target.contactId
-      : await createMentionedContact(suggestion.objectName);
-
-  await db.insert(edges).values({
-    id: randomUUID(),
-    srcType: "contact",
-    srcId: suggestion.srcContactId,
-    predicate: suggestion.predicate,
-    dstType: "person",
-    dstId,
-    sourceNoteId: suggestion.sourceNoteId,
-  });
-  await db
-    .update(edgeSuggestions)
-    .set({ status: "confirmed", resolvedAt: new Date() })
-    .where(eq(edgeSuggestions.id, suggestionId));
-}
-
-export async function dismissEdgeSuggestion(suggestionId: string): Promise<void> {
-  const db = await getDb();
-  await db
-    .update(edgeSuggestions)
-    .set({ status: "dismissed", resolvedAt: new Date() })
-    .where(and(eq(edgeSuggestions.id, suggestionId), eq(edgeSuggestions.status, "pending")));
 }

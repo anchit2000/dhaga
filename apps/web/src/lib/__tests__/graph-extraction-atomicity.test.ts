@@ -24,7 +24,7 @@ function buildExtraction(): NoteExtraction {
       { type: "personal", text: "Just returned from parental leave", confidence: 0.6 },
     ],
     relationships: [
-      { subject: "contact", predicate: "works_at", object: "Northbridge", object_type: "company" },
+      { subject: "contact", predicate: "works_at", object: "Northbridge", object_type: "company", entity_type_hint: null },
     ],
     follow_ups: [
       { action: "Send partnership deck", due_hint: "this week" },

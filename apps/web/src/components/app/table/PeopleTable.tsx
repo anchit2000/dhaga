@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { DataTable, type DataTableColumn } from "@/components/app/table/DataTable";
+import { formatDate } from "@/utils/format-date";
 
 interface PersonRow { id: string; name: string; title: string | null; companyName: string | null; tags: string[]; createdAt: Date; }
 
@@ -18,7 +19,7 @@ export function PeopleTable({ people, total, page, pageSize, filters, options }:
     { id: "title", label: "Title", value: (row) => row.title ?? "", options: options.titles, render: (row) => row.title || "—", className: "text-fog" },
     { id: "company", label: "Company", value: (row) => row.companyName ?? "", options: options.companies, render: (row) => row.companyName || "—", className: "text-fog" },
     { id: "tags", label: "Tags", value: (row) => row.tags.join(", "), options: options.tags, render: (row) => row.tags.join(", ") || "—", className: "max-w-64 truncate text-fog" },
-    { id: "added", label: "Added", value: (row) => row.createdAt.toLocaleDateString(), filter: false, className: "font-mono text-xs text-fog" },
+    { id: "added", label: "Added", value: (row) => formatDate(row.createdAt), filter: false, className: "font-mono text-xs text-fog" },
   ];
   return <DataTable key={`${page}:${pageSize}:${JSON.stringify(filters)}`} rows={people} columns={columns} rowKey={(person) => person.id} emptyMessage="No people match these filters." initialFilters={filters} server={{ total, page, pageSize }} />;
 }

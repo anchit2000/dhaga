@@ -1,17 +1,25 @@
 #!/usr/bin/env node
 /**
- * Seeds (or removes) exactly one dummy, RLS-scoped account with synthetic
- * contacts/companies/edges, for load-testing /app/graph and /app/people
- * rendering at scale. Every row this script writes carries user_id = the
- * dummy account's id, and every write/delete runs with
+ * Seeds (or removes) exactly one dummy, RLS-scoped account with a realistic
+ * synthetic "life network" — overlapping family/work/friends/services/event
+ * circles with power-law hubs and bridge contacts — for load-testing
+ * /app/graph and /app/people rendering at scale. Every row this script writes
+ * carries user_id = the dummy account's id, and every write/delete runs with
  * app.current_user_id set to that same id — Postgres RLS (packages/ee's
  * tenant_isolation policy) then makes it structurally impossible for this
  * script to read or touch any other tenant's rows, no matter the row count.
  *
  * Usage (from apps/web):
- *   node --env-file=.env.vercel scripts/seed-dummy-graph.mjs create [--contacts=1000]
+ *   node --env-file=.env.vercel scripts/seed-dummy-graph.mjs create [--contacts=1000] [--seed=N] [--with-notes] [--stress]
  *   node --env-file=.env.vercel scripts/seed-dummy-graph.mjs delete
- *   node --env-file=.env.vercel scripts/seed-dummy-graph.mjs recreate [--contacts=1000]
+ *   node --env-file=.env.vercel scripts/seed-dummy-graph.mjs recreate [--contacts=1000] [--seed=N] [--with-notes] [--stress]
+ *
+ * The generator is deterministic: the same --seed (default fixed) reproduces
+ * the exact same network. Generation logic lives in ./seed-lib/.
+ *
+ * --stress layers deliberately pathological worst-case data on top of the
+ * realistic network (tag explosion, mega-events, a mega-employer, super-hub
+ * contacts) for perf testing; omitting it reproduces today's output exactly.
  *
  * Deliberately raw `pg` + `better-auth/crypto`, no drizzle/schema import:
  * a throwaway seed script has no reason to pull in the app's ORM wiring,
@@ -21,51 +29,38 @@
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
 import { hashPassword } from "better-auth/crypto";
+import { generateLifeNetwork } from "./seed-lib/generate.mjs";
+import { insertRows } from "./seed-lib/sql.mjs";
 
 const DUMMY_USER_ID = "dummy-loadtest-user";
 const DUMMY_EMAIL = "loadtest@dhaga.internal";
 const DUMMY_NAME = "Dummy Load Test";
 const DUMMY_PASSWORD = "LoadTest-Dummy-2026!";
-
-const EDGE_PREDICATES = ["knows", "introduced_by", "worked_with"];
-const INDUSTRIES = ["SaaS", "Fintech", "Healthcare", "Manufacturing", "Logistics", "Consumer", "Climate"];
-const CITIES = ["Bengaluru", "Mumbai", "Delhi", "Hyderabad", "Pune", "Chennai", "Singapore", "London"];
-const ROLES = ["Founder & CEO", "VP Sales", "Head of Partnerships", "Engineering Director", "Procurement Lead", "Investor", "Advisor"];
-const FIRST_NAMES = ["Aarav", "Aditi", "Arjun", "Diya", "Ishaan", "Kavya", "Meera", "Neel", "Priya", "Rohan", "Sara", "Vikram"];
-const LAST_NAMES = ["Sharma", "Mehta", "Rao", "Kapoor", "Iyer", "Singh", "Patel", "Menon", "Gupta", "Joshi"];
+const DEFAULT_SEED = 20260716;
 
 function parseArgs(argv) {
   const command = argv[2];
-  const contactsFlag = argv.find((arg) => arg.startsWith("--contacts="));
-  const contacts = contactsFlag ? Number(contactsFlag.split("=")[1]) : 1000;
+  const flagValue = (name, fallback) => {
+    const flag = argv.find((arg) => arg.startsWith(`--${name}=`));
+    return flag ? Number(flag.split("=")[1]) : fallback;
+  };
+  const contacts = flagValue("contacts", 1000);
+  const seed = flagValue("seed", DEFAULT_SEED);
+  const withNotes = argv.includes("--with-notes");
+  const stress = argv.includes("--stress");
   if (!["create", "delete", "recreate"].includes(command)) {
-    console.error("Usage: seed-dummy-graph.mjs <create|delete|recreate> [--contacts=N]");
+    console.error("Usage: seed-dummy-graph.mjs <create|delete|recreate> [--contacts=N] [--seed=N] [--with-notes] [--stress]");
     process.exit(1);
   }
   if (!Number.isInteger(contacts) || contacts < 1) {
     console.error("--contacts must be a positive integer");
     process.exit(1);
   }
-  return { command, contacts };
-}
-
-function chunk(rows, size) {
-  const chunks = [];
-  for (let i = 0; i < rows.length; i += size) chunks.push(rows.slice(i, i + size));
-  return chunks;
-}
-
-/** Builds a `($1,$2,...),($n,...)` multi-row VALUES clause for `rowsOfValues`. */
-function buildValuesClause(rowsOfValues) {
-  const params = [];
-  const tuples = rowsOfValues.map((row) => {
-    const placeholders = row.map((value) => {
-      params.push(value);
-      return `$${params.length}`;
-    });
-    return `(${placeholders.join(",")})`;
-  });
-  return { sql: tuples.join(","), params };
+  if (!Number.isInteger(seed)) {
+    console.error("--seed must be an integer");
+    process.exit(1);
+  }
+  return { command, contacts, seed, withNotes, stress };
 }
 
 async function dummyUserExists(client) {
@@ -73,11 +68,9 @@ async function dummyUserExists(client) {
   return rows.length > 0;
 }
 
-async function createDummy(client, contactCount) {
+async function createDummy(client, { contacts, seed, withNotes, stress }) {
   if (await dummyUserExists(client)) {
-    console.log(
-      `Dummy account already exists (${DUMMY_EMAIL}). Run "recreate" to reset it, or "delete" first.`,
-    );
+    console.log(`Dummy account already exists (${DUMMY_EMAIL}). Run "recreate" to reset it, or "delete" first.`);
     return;
   }
 
@@ -98,71 +91,61 @@ async function createDummy(client, contactCount) {
   // app.current_user_id to match user_id on every row this session writes.
   await client.query("SELECT set_config('app.current_user_id', $1, false)", [DUMMY_USER_ID]);
 
-  const companyCount = Math.max(1, Math.round(contactCount / 12));
-  const companyIds = Array.from({ length: companyCount }, () => randomUUID());
-  const companyRows = companyIds.map((id, i) => {
-    const industry = INDUSTRIES[i % INDUSTRIES.length];
-    const city = CITIES[i % CITIES.length];
-    return [id, `${city} ${industry} ${String(i + 1).padStart(3, "0")}`, `network-${i + 1}.example`, industry, DUMMY_USER_ID];
-  });
-  for (const batch of chunk(companyRows, 500)) {
-    const { sql, params } = buildValuesClause(batch);
-    await client.query(
-      `INSERT INTO companies (id, name, domain, sector, user_id) VALUES ${sql}`,
-      params,
-    );
-  }
-  console.log(`Created ${companyRows.length} dummy companies.`);
+  const net = generateLifeNetwork({ seed, userId: DUMMY_USER_ID, contactCount: contacts, withNotes, stress });
 
-  const contactIds = Array.from({ length: contactCount }, () => randomUUID());
-  const contactRows = contactIds.map((id, i) => {
-    const companyIndex = i % companyIds.length;
-    const role = ROLES[Math.floor(i / companyIds.length) % ROLES.length];
-    const industry = INDUSTRIES[companyIndex % INDUSTRIES.length];
-    return [
-      id,
-      `${FIRST_NAMES[i % FIRST_NAMES.length]} ${LAST_NAMES[Math.floor(i / FIRST_NAMES.length) % LAST_NAMES.length]}`,
-      role,
-      companyIds[companyIndex],
-      CITIES[companyIndex % CITIES.length],
-      JSON.stringify([industry.toLowerCase(), role.toLowerCase().replaceAll(" ", "-")]),
-      "import",
-      DUMMY_USER_ID,
-    ];
-  });
-  for (const batch of chunk(contactRows, 500)) {
-    const { sql, params } = buildValuesClause(batch);
-    await client.query(
-      `INSERT INTO contacts
-         (id, name, title, company_id, emails, phones, links, location, tags, source, watched_for_signals, user_id)
-       SELECT v.id, v.name, v.title, v.company_id, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, v.location, v.tags::jsonb,
-              v.source, false, v.user_id
-       FROM (VALUES ${sql}) AS v(id, name, title, company_id, location, tags, source, user_id)`,
-      params,
-    );
-  }
-  console.log(`Created ${contactRows.length} dummy contacts.`);
+  const counts = {};
+  counts.companies = await insertRows(client, "companies", ["id", "name", "domain", "sector", "user_id"], net.companies);
+  counts.contacts = await insertRows(
+    client,
+    "contacts",
+    ["id", "name", "title", "company_id", "emails", "phones", "location", "tags", "source", "user_id"],
+    net.contacts,
+    ["", "", "", "", "::jsonb", "::jsonb", "", "::jsonb", "", ""],
+  );
+  counts.positions = await insertRows(
+    client,
+    "positions",
+    ["id", "contact_id", "company_id", "title", "is_current", "started_at", "ended_at"],
+    net.positions,
+  );
+  counts.node_types = await insertRows(client, "node_types", ["id", "name", "slug", "color", "user_id"], net.nodeTypes);
+  counts.entities = await insertRows(client, "entities", ["id", "type_id", "name", "description", "user_id"], net.entities);
+  counts.relationship_types = await insertRows(
+    client,
+    "relationship_types",
+    ["id", "slug", "forward_label", "inverse_label", "user_id"],
+    net.relationshipTypes,
+  );
+  counts.events = await insertRows(
+    client,
+    "events",
+    ["id", "name", "started_at", "ended_at", "color", "emoji", "tags", "user_id"],
+    net.events,
+    ["", "", "", "", "", "", "::jsonb", ""],
+  );
+  counts.event_contacts = await insertRows(
+    client,
+    "event_contacts",
+    ["event_id", "contact_id", "scanned_at", "user_id"],
+    net.eventContacts,
+  );
+  counts.edges = await insertRows(
+    client,
+    "edges",
+    ["id", "src_type", "src_id", "predicate", "dst_type", "dst_id", "user_id"],
+    net.edges,
+  );
+  counts.notes = await insertRows(client, "notes", ["id", "contact_id", "kind", "body", "user_id"], net.notes);
+  counts.facts = await insertRows(
+    client,
+    "facts",
+    ["id", "contact_id", "type", "text", "confidence", "source_note_id", "user_id"],
+    net.facts,
+  );
 
-  const edgeRows = [];
-  for (let i = companyCount; i < contactIds.length; i++) {
-    edgeRows.push([randomUUID(), "contact", contactIds[i - companyCount], "worked_with", "contact", contactIds[i], DUMMY_USER_ID]);
-  }
-  for (let i = 0; i < contactIds.length - 1; i += 5) {
-    edgeRows.push([randomUUID(), "contact", contactIds[i], EDGE_PREDICATES[i % EDGE_PREDICATES.length], "contact", contactIds[i + 1], DUMMY_USER_ID]);
-  }
-  for (let i = 0; i < companyIds.length - 1; i++) {
-    const predicates = ["customer_of", "partner_of", "invested_in", "supplies_to"];
-    edgeRows.push([randomUUID(), "company", companyIds[i], predicates[i % predicates.length], "company", companyIds[i + 1], DUMMY_USER_ID]);
-  }
-  for (const batch of chunk(edgeRows, 500)) {
-    const { sql, params } = buildValuesClause(batch);
-    await client.query(
-      `INSERT INTO edges (id, src_type, src_id, predicate, dst_type, dst_id, user_id) VALUES ${sql}`,
-      params,
-    );
-  }
-  console.log(`Created ${edgeRows.length} dummy relationship edges (plus "works at" edges implied by company_id).`);
-
+  console.log(`Circle plan for --contacts=${contacts}:`, net.plan);
+  if (stress) console.log("--stress: pathological worst-case data added on top of the network above.");
+  console.log("Created:", counts);
   console.log("\nDone. Log in with:");
   console.log(`  email:    ${DUMMY_EMAIL}`);
   console.log(`  password: ${DUMMY_PASSWORD}`);
@@ -174,18 +157,29 @@ async function deleteDummy(client) {
     return;
   }
   await client.query("SELECT set_config('app.current_user_id', $1, false)", [DUMMY_USER_ID]);
-  const edges = await client.query("DELETE FROM edges WHERE user_id = $1", [DUMMY_USER_ID]);
-  const contacts = await client.query("DELETE FROM contacts WHERE user_id = $1", [DUMMY_USER_ID]);
-  const companies = await client.query("DELETE FROM companies WHERE user_id = $1", [DUMMY_USER_ID]);
+  // FK order: edges/facts before notes (source_note_id), notes before
+  // entities and contacts, event_contacts before events and contacts,
+  // positions (no user_id column — not a tenant table) via the tenant's
+  // contacts, entities before node_types, contacts before companies.
+  const counts = {};
+  for (const table of ["edges", "facts", "notes", "event_contacts", "events"]) {
+    counts[table] = (await client.query(`DELETE FROM ${table} WHERE user_id = $1`, [DUMMY_USER_ID])).rowCount;
+  }
+  counts.positions = (
+    await client.query("DELETE FROM positions WHERE contact_id IN (SELECT id FROM contacts WHERE user_id = $1)", [
+      DUMMY_USER_ID,
+    ])
+  ).rowCount;
+  for (const table of ["entities", "node_types", "relationship_types", "contacts", "companies"]) {
+    counts[table] = (await client.query(`DELETE FROM ${table} WHERE user_id = $1`, [DUMMY_USER_ID])).rowCount;
+  }
   // Cascades to session/account/passkey/two_factor rows for this user.
   await client.query('DELETE FROM "user" WHERE id = $1', [DUMMY_USER_ID]);
-  console.log(
-    `Deleted dummy account: ${edges.rowCount} edges, ${contacts.rowCount} contacts, ${companies.rowCount} companies.`,
-  );
+  console.log("Deleted dummy account:", counts);
 }
 
 async function main() {
-  const { command, contacts } = parseArgs(process.argv);
+  const { command, contacts, seed, withNotes, stress } = parseArgs(process.argv);
   if (!process.env.DATABASE_URL) {
     console.error("DATABASE_URL is not set — point it at the target Postgres/Supabase instance.");
     process.exit(1);
@@ -196,7 +190,7 @@ async function main() {
   try {
     await client.query("BEGIN");
     if (command === "delete" || command === "recreate") await deleteDummy(client);
-    if (command === "create" || command === "recreate") await createDummy(client, contacts);
+    if (command === "create" || command === "recreate") await createDummy(client, { contacts, seed, withNotes, stress });
     await client.query("COMMIT");
   } catch (error) {
     await client.query("ROLLBACK");

@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { ilike, or } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { contacts } from "@/lib/db/schema";
+import { escapeLike } from "@/utils/escape-like";
 
 export interface RelationshipCandidate {
   id: string;
@@ -28,7 +29,7 @@ export async function findRelationshipCandidates(
   const rows = await db
     .select({ id: contacts.id, name: contacts.name, title: contacts.title })
     .from(contacts)
-    .where(or(ilike(contacts.name, trimmed), ilike(contacts.name, `${firstWord}%`)))
+    .where(or(ilike(contacts.name, escapeLike(trimmed)), ilike(contacts.name, `${escapeLike(firstWord)}%`)))
     .limit(8);
   const lower = trimmed.toLocaleLowerCase();
   return rows.sort((a, b) => {

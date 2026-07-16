@@ -29,7 +29,7 @@ import { FactList } from "@/components/app/contact/FactList";
 import { FollowUpList } from "@/components/app/contact/FollowUpList";
 import { ForgetButton } from "@/components/app/contact/ForgetButton";
 import { NoteList } from "@/components/app/contact/NoteList";
-import { RelationshipList } from "@/components/app/contact/RelationshipList";
+import { RelationshipSection } from "@/components/app/relationships/RelationshipSection";
 import { Timeline } from "@/components/app/contact/Timeline";
 import { MentionedPersonActions } from "@/components/app/contact/MentionedPersonActions";
 
@@ -144,7 +144,19 @@ export default async function PersonPage({
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="space-y-6">
           <BriefSection contactId={id} />
-          <RelationshipList relationships={contactRelationships} />
+          <RelationshipSection
+            sourceId={id}
+            sourceKind="contact"
+            sourceLabel={contact.name}
+            rows={contactRelationships.map((relationship) => ({
+              edgeId: relationship.edgeId,
+              targetId: relationship.contactId,
+              kind: relationship.kind,
+              name: relationship.name,
+              role: relationship.role,
+              mentioned: relationship.mentioned,
+            }))}
+          />
           <OnDemandNetwork contactId={id} />
           <FollowUpList contactId={id} followUps={openFollowUps} />
           <section className="space-y-3">

@@ -25,9 +25,10 @@ export async function fetchGraph(ifNoneMatch: string | null): Promise<FetchedGra
 }
 
 /** A response is only cacheable when it carried a validator to revalidate with. */
-export function toCacheEntry(fetched: FetchedGraph): CachedGraphPayload | null {
+export function toCacheEntry(fetched: FetchedGraph, viewerId: string): CachedGraphPayload | null {
   if (!fetched.etag) return null;
   return {
+    userId: viewerId,
     etag: fetched.etag,
     payload: fetched.payload,
     payloadBytes: fetched.bytes,

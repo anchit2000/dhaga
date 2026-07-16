@@ -8,7 +8,7 @@ export default async function GraphPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
-  await requireUserIdForPage();
+  const viewerId = await requireUserIdForPage();
   const { focus } = await searchParams;
 
   return (
@@ -20,7 +20,7 @@ export default async function GraphPage({
           circle, search to fly anywhere.
         </p>
       </div>
-      <GraphView focusId={focus ?? null} />
+      <GraphView focusId={focus ?? null} viewerId={viewerId} />
     </div>
   );
 }

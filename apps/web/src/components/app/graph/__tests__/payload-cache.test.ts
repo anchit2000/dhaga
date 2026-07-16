@@ -39,6 +39,11 @@ function fakeFactory(): { factory: IDBFactory; data: Map<IDBValidKey, unknown> }
         data.set(key, value);
         return key;
       }),
+    delete: (key: IDBValidKey) =>
+      new FakeRequest(() => {
+        data.delete(key);
+        return undefined;
+      }),
   };
   const db = {
     transaction: () => ({ objectStore: () => store }),
@@ -48,8 +53,12 @@ function fakeFactory(): { factory: IDBFactory; data: Map<IDBValidKey, unknown> }
   return { factory: { open: () => new FakeRequest(() => db) } as unknown as IDBFactory, data };
 }
 
-function entry(): CachedGraphPayload {
+const USER_A = "user-a";
+const USER_B = "user-b";
+
+function entry(userId: string = USER_A): CachedGraphPayload {
   return {
+    userId,
     etag: '"abc123"',
     payload: payload([node("a", "contact"), node("b", "company")], [edge("e1", "a", "b")]),
     payloadBytes: 512,
@@ -58,33 +67,52 @@ function entry(): CachedGraphPayload {
 }
 
 describe("payload cache (IndexedDB stale-while-revalidate store)", () => {
-  it("round-trips a payload with its etag", async () => {
+  it("round-trips a payload with its etag for the same account", async () => {
     const { factory } = fakeFactory();
     expect(await savePayloadCache(entry(), factory)).toBe(true);
-    const loaded = await loadPayloadCache(factory);
+    const loaded = await loadPayloadCache(USER_A, factory);
     expect(loaded?.etag).toBe('"abc123"');
     expect(loaded?.payload.nodes).toHaveLength(2);
     expect(loaded?.payloadBytes).toBe(512);
   });
 
+  it("never serves another account's graph — mismatch misses AND purges the row", async () => {
+    // Sign out → sign in as someone else in the same browser: user B must not
+    // see user A's contacts via instant-paint (live incident, 2026-07-17).
+    const { factory, data } = fakeFactory();
+    await savePayloadCache(entry(USER_A), factory);
+    expect(await loadPayloadCache(USER_B, factory)).toBeNull();
+    await new Promise((resolve) => setTimeout(resolve, 0)); // purge is fire-and-forget
+    expect(data.has(GRAPH_PAYLOAD_IDB_KEY)).toBe(false);
+  });
+
+  it("treats a legacy unstamped row as another account's (miss + purge)", async () => {
+    const { factory, data } = fakeFactory();
+    const { userId: _dropped, ...legacy } = entry();
+    data.set(GRAPH_PAYLOAD_IDB_KEY, legacy);
+    expect(await loadPayloadCache(USER_A, factory)).toBeNull();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(data.has(GRAPH_PAYLOAD_IDB_KEY)).toBe(false);
+  });
+
   it("misses cleanly on an empty store", async () => {
     const { factory } = fakeFactory();
-    expect(await loadPayloadCache(factory)).toBeNull();
+    expect(await loadPayloadCache(USER_A, factory)).toBeNull();
   });
 
   it("treats a corrupted row as a miss, never an error", async () => {
     const { factory, data } = fakeFactory();
     data.set(GRAPH_PAYLOAD_IDB_KEY, { etag: 42, payload: "garbage" });
-    expect(await loadPayloadCache(factory)).toBeNull();
+    expect(await loadPayloadCache(USER_A, factory)).toBeNull();
   });
 
   it("degrades to network behavior when IndexedDB is unavailable (private mode)", async () => {
     // The node test env has no indexedDB global — exactly the unavailable case.
-    expect(await loadPayloadCache()).toBeNull();
+    expect(await loadPayloadCache(USER_A)).toBeNull();
     expect(await savePayloadCache(entry())).toBe(false);
 
     const throwing = { open: (): never => { throw new Error("denied"); } } as unknown as IDBFactory;
-    expect(await loadPayloadCache(throwing)).toBeNull();
+    expect(await loadPayloadCache(USER_A, throwing)).toBeNull();
     expect(await savePayloadCache(entry(), throwing)).toBe(false);
   });
 });

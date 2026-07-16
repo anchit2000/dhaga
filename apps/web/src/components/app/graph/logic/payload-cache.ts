@@ -7,6 +7,14 @@ import type { FullGraphPayload } from "../types";
 
 /** The one IndexedDB row: last payload + its HTTP validator and wire size. */
 export interface CachedGraphPayload {
+  /**
+   * Owner of the cached graph. Contact data must never cross account
+   * boundaries in a shared browser: sign out → sign in as another user and
+   * an unstamped instant-paint would show the previous account's graph
+   * (found live, 2026-07-17). Mismatch (including legacy unstamped rows)
+   * purges the row and falls back to a network fetch.
+   */
+  userId: string;
   etag: string;
   payload: FullGraphPayload;
   /** Serialized size when it came off the network (perf beacon field). */
@@ -64,8 +72,13 @@ async function withStore<T>(
   }
 }
 
-/** Last cached payload, or null (absent, corrupted, or IDB unavailable). */
-export async function loadPayloadCache(factory?: IDBFactory): Promise<CachedGraphPayload | null> {
+/** Last cached payload for THIS user, or null (absent, corrupted, IDB
+ *  unavailable, or owned by a different account — that last case also
+ *  purges the row so the stale graph can never resurface). */
+export async function loadPayloadCache(
+  viewerId: string,
+  factory?: IDBFactory,
+): Promise<CachedGraphPayload | null> {
   const row = await withStore(
     "readonly",
     (store) => store.get(GRAPH_PAYLOAD_IDB_KEY) as IDBRequest<CachedGraphPayload | undefined>,
@@ -75,7 +88,16 @@ export async function loadPayloadCache(factory?: IDBFactory): Promise<CachedGrap
   if (typeof row.etag !== "string" || !Array.isArray(row.payload?.nodes) || !Array.isArray(row.payload?.edges)) {
     return null;
   }
+  if (row.userId !== viewerId) {
+    void clearPayloadCache(factory);
+    return null;
+  }
   return row;
+}
+
+/** Drop the cached payload (account switch, sign-out cleanup). */
+export async function clearPayloadCache(factory?: IDBFactory): Promise<void> {
+  await withStore("readwrite", (store) => store.delete(GRAPH_PAYLOAD_IDB_KEY), factory);
 }
 
 /** Best-effort store; false when IDB is unavailable or the write fails. */

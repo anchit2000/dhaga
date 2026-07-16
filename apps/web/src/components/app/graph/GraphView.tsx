@@ -16,8 +16,15 @@ const GraphCanvas = dynamic(() => import("./canvas/GraphCanvas").then((m) => m.G
 
 /** Renders the graph payload (cached-first boot + layout live in
  *  useGraphData; this component only maps phases to UI). */
-export function GraphView({ focusId }: { focusId: string | null }): React.ReactElement {
-  const { phase, refetch } = useGraphData();
+export function GraphView({
+  focusId,
+  viewerId,
+}: {
+  focusId: string | null;
+  /** Authenticated account id — scopes the client-side payload caches. */
+  viewerId: string;
+}): React.ReactElement {
+  const { phase, refetch } = useGraphData(viewerId);
   const [pathRequest, setPathRequest] = useState<PathRequest | null>(null);
 
   const showPath = useCallback((ids: readonly string[]) => {

@@ -29,7 +29,7 @@ export type GraphPhase =
  * (camera and selection survive; see use-renderer/GraphCanvas). Cache
  * misses and user-triggered refetches go straight to the network.
  */
-export function useGraphData(): { phase: GraphPhase; refetch: () => void } {
+export function useGraphData(viewerId: string): { phase: GraphPhase; refetch: () => void } {
   const [phase, setPhase] = useState<GraphPhase>({ stage: "fetching" });
   const [reloadNonce, setReloadNonce] = useState(0);
 
@@ -65,7 +65,7 @@ export function useGraphData(): { phase: GraphPhase; refetch: () => void } {
       try {
         const fetched = await fetchGraph(cached.etag);
         if (fetched === "unchanged" || disposed) return;
-        const entry = toCacheEntry(fetched);
+        const entry = toCacheEntry(fetched, viewerId);
         if (entry) void savePayloadCache(entry);
         const changed = graphCountsChanged(cached.payload, fetched.payload);
         const settled = await settle(fetched.payload, true);
@@ -77,7 +77,7 @@ export function useGraphData(): { phase: GraphPhase; refetch: () => void } {
 
     const boot = async (): Promise<void> => {
       // After a graph edit (refetch) the IDB copy is known-stale — skip it.
-      const cached = reloadNonce === 0 ? await loadPayloadCache() : null;
+      const cached = reloadNonce === 0 ? await loadPayloadCache(viewerId) : null;
       if (disposed) return;
       if (cached) {
         const fetchMs = performance.now() - startedAt;
@@ -104,7 +104,7 @@ export function useGraphData(): { phase: GraphPhase; refetch: () => void } {
       // ~1s real fetch.)
       const fetchMs = performance.now() - fetchStart;
       if (fetched === "unchanged" || disposed) return; // 304 impossible without a validator
-      const entry = toCacheEntry(fetched);
+      const entry = toCacheEntry(fetched, viewerId);
       if (entry) void savePayloadCache(entry);
       const settled = await settle(fetched.payload, false);
       if (settled) {
@@ -133,7 +133,7 @@ export function useGraphData(): { phase: GraphPhase; refetch: () => void } {
       disposed = true;
       cancelLayout?.();
     };
-  }, [reloadNonce]);
+  }, [reloadNonce, viewerId]);
 
   const refetch = useCallback(() => {
     setPhase({ stage: "fetching" }); // reset happens in the event, not the effect

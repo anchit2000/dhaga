@@ -1,0 +1,185 @@
+# Contributing to Dhaga
+
+Dhaga (धागा — "thread") is an AI-native personal CRM: capture contacts anywhere,
+turn every note into a private knowledge graph, query it in natural language.
+Thanks for wanting to help build it. This guide is the distilled version of how
+this codebase actually gets built — the rules here are enforced by CI habit,
+review, and in some cases by tooling, not just convention.
+
+## Licensing — read before contributing
+
+The repo is open-core:
+
+- Everything except `packages/ee` is **AGPL** — the self-hostable core.
+- `packages/ee` (multi-tenant RLS, billing, admin, early access) is
+  source-available under **PolyForm Shield 1.0.0**, not AGPL.
+
+Self-hosting needs nothing from `packages/ee` — see
+[docs/SELF_HOSTING.md](docs/SELF_HOSTING.md). By contributing to `packages/ee`
+you agree your contribution is licensed under its license, not the AGPL.
+
+## Getting started
+
+```bash
+npm install                       # workspace root — installs every package
+npm run dev --workspace web       # zero-config: embedded PGlite, no DATABASE_URL
+```
+
+That's a fully working single-user instance — schema self-heals on first run
+(there are no migration files, see "Schema changes" below).
+
+For the full multi-tenant stack (Postgres + RLS, what production runs):
+
+```bash
+docker compose up -d db           # pgvector/pg16 on localhost:54329
+# point DATABASE_URL at it (see compose.yml), set DHAGA_HOSTED_MODE=true
+```
+
+Demo data — a realistic 20k-contact "life network" (families, employers,
+events, friend circles, power-law hubs):
+
+```bash
+cd apps/web
+node --env-file=<your env> scripts/seed-dummy-graph.mjs recreate --contacts=20000
+# flags: --seed=N (deterministic), --stress (worst-case shapes), --with-notes
+```
+
+⚠️ **Next.js caveat**: this repo runs a Next version whose APIs may differ from
+what you (or your AI assistant) remember. Read the guides in
+`apps/web/node_modules/next/dist/docs/` before writing app-router code —
+`apps/web/AGENTS.md` exists precisely to make agents do this.
+
+## Branch & PR workflow
+
+- **One concern, one fresh branch off `main`, one PR.** Always
+  `git checkout main && git pull` first. Never push additional commits to a
+  branch whose PR might already be merging — we once lost a privacy fix to
+  that exact race and had to ship a follow-up PR minutes after a merge.
+- PR descriptions state what was **verified**, not just what changed: which
+  tests, whether `tsc`/`next build` ran, and — for anything with a runtime
+  surface — what you actually drove in the app. "Tests pass" with skipped
+  suites, or "done" with silently-skipped steps, is treated as a bug in the
+  PR itself. Surface uncertainty; don't average it away.
+- If two existing patterns contradict, pick one (more recent / better tested),
+  say why in the PR, and flag the loser for cleanup. Don't blend them.
+
+## Code standards
+
+The non-negotiables (a `.claude/settings.json` hook enforces the first two on
+every AI-assisted edit; humans get review):
+
+- **TypeScript strict.** No `any`, no `@ts-ignore`. Explicit prop and return
+  types. Shared types live in `packages/core` or the app's `types/` — never
+  redefined locally.
+- **150-line rule.** Any `.ts`/`.tsx` file over 150 lines becomes a directory
+  with an `index.ts` barrel re-exporting, so import paths never change.
+- **Constants** live in `apps/web/src/utils/constants/` — no inline magic
+  arrays or numbers in components/libs. Enums (rare) in `utils/enums.ts`.
+- **Imports**: all at the top, no wildcards, ordered React/Next → third-party
+  → `@/` internal → types.
+- **No duplicate code.** Before writing a utility, check `packages/core`,
+  `@/utils`, `@/lib/*`, `@/components/ui/*`. Logic used by 2+ places gets
+  extracted immediately; logic used by 2+ apps belongs in `packages/core`.
+- **UI**: shadcn/ui primitives only (no raw `<button>`/`<input>` outside
+  `components/ui`), loading states on every in-flight interactive element,
+  generous whitespace, one accent color (amber). **Mobile-first is mandatory**
+  — every feature works at 375px before desktop polish. Grids always carry a
+  breakpoint (`grid-cols-1 sm:grid-cols-2`), touch targets ≥ 44px, sidebars
+  collapse to a `Sheet`, tables wrap in `overflow-x-auto`.
+- **Provider-agnostic gateways.** LLM and web-search access go through the
+  `LLMClient` / `SearchClient` interfaces in `packages/core` — adding a
+  provider means a new implementation plus a factory case, zero caller
+  changes. Don't import a concrete provider anywhere else.
+
+## Architecture principles
+
+1. **Local-first.** The client works without the cloud; cloud is sync + heavy
+   compute, never a dependency. (This is why the graph caches payloads in
+   IndexedDB and layouts in the DB — returning users paint instantly.)
+2. **Tiered inference.** Free on-device primitive → smallest capable model →
+   Batch API for latency-insensitive jobs. Never call a bigger model where a
+   smaller one passes evals.
+3. **Every AI-derived fact keeps a receipt** — `source_note_id` on facts and
+   edges. Deleting a note tombstones everything derived from it.
+4. **Structured outputs always.** Extraction uses Zod-derived JSON schemas —
+   never parse free-text model output. (Convention: `.nullable()` rather than
+   `.optional()` — strict structured-output mode rejects optional fields.)
+5. **Boring storage.** The knowledge graph is relational tables — no graph DB.
+
+### Schema changes
+
+There are no migration files. Schema = Drizzle definitions
+(`apps/web/src/lib/db/schema/`) **in lockstep with** idempotent self-heal DDL
+(`apps/web/src/lib/db/ddl/` — `CREATE TABLE IF NOT EXISTS`,
+`ALTER ... ADD COLUMN IF NOT EXISTS`) that runs on first DB connection. Rules:
+
+- Statement **order is load-bearing**; append, don't reorder.
+- New tenant-scoped tables must be added to `TENANT_TABLES` in
+  `packages/ee/src/db/rls-ddl.ts` — a deliberate one-line decision, or the
+  table silently ships without row-level security (we've been bitten).
+- Adding `user_id` to an already-populated table needs an ownership backfill
+  (see the `positions` backfill in `rls-ddl.ts` for the pattern), or existing
+  rows become invisible to their own tenants.
+- Data-normalizing UPDATEs inside DDL need the transaction-local
+  `app.bypass_rls` DO-block pattern (see `ddl/kg.ts`), or FORCE RLS silently
+  no-ops them on hosted installs.
+
+## Security & privacy
+
+Privacy is the product's moat — violations are bugs, not style issues.
+
+- `ANTHROPIC_API_KEY` and all LLM code are **server-only**. Clients call our
+  `/api/*`; never a third-party API directly. If you add `"use client"`,
+  audit the file's imports immediately.
+- Never log contact PII, note transcripts, or extraction output. Telemetry is
+  counts and timings only.
+- No silent data collection; enrichment and cloud AI are user-triggered or
+  explicitly opted in.
+- Deletion cascades fully (contact → notes → facts → edges → embeddings), and
+  export must always work.
+- Client-side caches of user data must be **scoped to the signed-in account**
+  and purged on mismatch (the graph's IndexedDB cache is the reference).
+- Hosted mode: `DATABASE_URL` must use a **session-scoped** connection —
+  Supabase's session pooler (port 5432) or direct, never the transaction
+  pooler (6543). Tenant scoping rides on session-level `set_config`;
+  transaction pooling silently breaks it and can leak the setting across
+  backends. Boot guards fail loud on both this and BYPASSRLS roles — if your
+  deploy refuses to start, that's them doing their job.
+
+## Testing & verification
+
+- `npx vitest run` in `apps/web`; on Windows add `--no-file-parallelism` —
+  worker-fork crashes without a named failing test are infra noise, and only
+  a serial run gives a trustworthy signal.
+- Typecheck all three packages: `apps/web`, `packages/core`, `packages/ee`.
+- **Tests encode WHY.** Every non-obvious assertion carries the business
+  reason (grep `WHY:` for examples). A test that can't fail when the business
+  logic changes is wrong.
+- Unit tests are necessary, not sufficient: features with a runtime surface
+  get driven end-to-end before shipping. `tests/scripts/` holds Playwright
+  verification scripts; heavy loops run against the local `docker compose`
+  DB, not Supabase (egress throttling is real and will eat your afternoon).
+- The graph has an explicit perf envelope (20k nodes at interactive frame
+  rates on integrated GPUs) with budget constants and console tripwires —
+  if you touch the payload or reducers, re-verify against the seeded 20k
+  dataset, and remember sigma reducers must return **total** objects.
+
+## AI-call rules
+
+- Extraction/parsing: the small model tier; search reasoning/drafts: the mid
+  tier; nightly jobs: Batch API. Every AI feature is metered per user.
+- System prompts: stable cacheable prefix, volatile content (user data, type
+  registries, `todayLine()`) last — never in the cached prefix.
+- Every prompt that reasons over user notes includes the anti-fabrication
+  line: if it's not in the notes or graph, say so — never invent.
+
+## Where to learn more
+
+- [docs/BRD.md](docs/BRD.md) — product requirements, roadmap, cost model
+- [docs/checklist.md](docs/checklist.md) — feature-by-feature build status
+  (verify claims against code; checkboxes drift)
+- [docs/SELF_HOSTING.md](docs/SELF_HOSTING.md) · [docs/DEPLOYING.md](docs/DEPLOYING.md)
+  · [docs/TESTING.md](docs/TESTING.md)
+- `CLAUDE.md` — the AI-assistant contract for this repo; it's also a fair
+  summary of how maintainers think, and the hooks in `.claude/settings.json`
+  (150-line check, post-edit typecheck) apply to anyone using Claude Code here.

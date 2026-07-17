@@ -77,6 +77,10 @@ live-tested Stripe billing flow for Dhaga Cloud. See [checklist.md](docs/checkli
 exact feature-by-feature status, [ROADMAP.md](docs/ROADMAP.md) for what's shipped
 and what's next, and [BRD.md](docs/BRD.md) for the full product requirements.
 
+Want to help build it? Start with [CONTRIBUTING.md](CONTRIBUTING.md) — setup,
+branch/PR workflow, code standards, and the architecture principles that
+reviews actually enforce.
+
 ## License
 
 [AGPL-3.0](LICENSE) for everything except `packages/ee`, which is

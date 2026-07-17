@@ -6,6 +6,7 @@ import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { DDL } from "./ddl";
+import { ddlAlreadyApplied, ddlFingerprint, recordDdlApplied } from "./ddl-history";
 import { companies, contacts } from "./schema/contacts";
 import { entities, nodeTypes, relationshipTypes } from "./schema/entities";
 import { eventContacts, events } from "./schema/events";
@@ -73,7 +74,13 @@ const store = globalThis as unknown as {
 /** Hosted Postgres (Neon/Supabase/self-hosted) — required on serverless hosts. */
 async function initHosted(connectionString: string): Promise<DhagaDb> {
   store.__dhagaPool ??= new Pool({ connectionString, max: 5 });
-  await store.__dhagaPool.query(DDL);
+  // Re-executing the full idempotent DDL on every cold start costs seconds
+  // against a remote database; skip it when this exact text already ran.
+  const fingerprint = ddlFingerprint(DDL);
+  if (!(await ddlAlreadyApplied(store.__dhagaPool, fingerprint))) {
+    await store.__dhagaPool.query(DDL);
+    await recordDdlApplied(store.__dhagaPool, fingerprint);
+  }
   store.__dhagaDdl = DDL;
   return drizzlePg(store.__dhagaPool, { schema });
 }

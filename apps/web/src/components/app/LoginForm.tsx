@@ -20,6 +20,7 @@ interface LoginFormProps {
 export function LoginForm({ socialProviders }: LoginFormProps) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
+  const [opening, setOpening] = useState(false);
   const [error, setError] = useState<string | undefined>();
   const [needsTwoFactor, setNeedsTwoFactor] = useState(false);
   const [magicLinkMode, setMagicLinkMode] = useState(false);
@@ -62,6 +63,7 @@ export function LoginForm({ socialProviders }: LoginFormProps) {
       setNeedsTwoFactor(true);
       return;
     }
+    setOpening(true);
     router.replace("/app");
     router.refresh();
   }
@@ -121,7 +123,7 @@ export function LoginForm({ socialProviders }: LoginFormProps) {
         <Button type="submit" disabled={pending} className="w-full">
           {pending ? <Loader2 className="size-4 animate-spin" /> : null}
           {pending
-            ? magicLinkMode ? "Sending link…" : "Signing in…"
+            ? magicLinkMode ? "Sending link…" : opening ? "Opening your graph…" : "Signing in…"
             : magicLinkMode ? "Email me a sign-in link" : "Sign in"}
         </Button>
         <button

@@ -3,8 +3,10 @@ import Sigma from "sigma";
 import { EdgeArrowProgram } from "sigma/rendering";
 import {
   GRAPH_EDGE_EVENTS_MAX_EDGES,
+  GRAPH_EDGE_SIZE,
   GRAPH_HIDE_EDGES_ON_MOVE_THRESHOLD,
   GRAPH_LABEL_SIZE_THRESHOLD,
+  GRAPH_ZOOM_SIZE_RATIO_FLOOR,
 } from "@/utils/constants/graph";
 import { buildGraphIndexes, nodeSizeForDegree, type GraphIndexes } from "../logic/indexes";
 import { buildRelationshipLabelMap, buildTypeColorMap, edgeLabel, fadeColor, nodeColor } from "../logic/style";
@@ -52,7 +54,7 @@ export function buildRenderGraph(
       label: edgeLabel(edge, labelMap),
       source: edge.source,
       target: edge.target,
-      size: 1,
+      size: GRAPH_EDGE_SIZE,
       color: theme.seam,
       dimColor: fadeColor(theme.seam, theme.ink, 0.6),
       activeColor: theme.amber,
@@ -92,6 +94,9 @@ export function createRenderer(
     stagePadding: 40,
     minCameraRatio: 0.005,
     maxCameraRatio: 2,
+    minEdgeThickness: 0.4,
+    zoomToSizeRatioFunction: (ratio: number): number =>
+      Math.sqrt(Math.max(ratio, GRAPH_ZOOM_SIZE_RATIO_FLOOR)),
     labelSize: 11,
     labelFont: theme.monoFont,
     labelColor: { color: theme.paper },

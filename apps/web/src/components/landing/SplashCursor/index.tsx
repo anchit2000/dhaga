@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { createFrameLoop } from "./loop";
 import { createPointerController } from "./pointerEvents";
 import { createFluidSimulation } from "./simulation";
 import type { SimConfig } from "./types";
-import { wrap, type RGBColor } from "./utils";
+import type { RGBColor } from "./utils";
 
 export interface SplashCursorProps {
   SIM_RESOLUTION?: number;
@@ -97,45 +98,20 @@ export function SplashCursor({
     const { pointer, bind } = createPointerController(canvasEl, sim);
     const unbind = bind();
 
-    let isActive = true;
-    let animationFrameId = 0;
-    let lastUpdateTime = Date.now();
-    let colorUpdateTimer = 0;
+    const loop = createFrameLoop(sim, pointer, config);
+    loop.start();
 
-    function updateFrame() {
-      if (!isActive) return;
-      const now = Date.now();
-      const dt = Math.min((now - lastUpdateTime) / 1000, 0.016666);
-      lastUpdateTime = now;
-
-      sim!.resizeAndMaybeReinit();
-
-      colorUpdateTimer += dt * config.COLOR_UPDATE_SPEED;
-      if (colorUpdateTimer >= 1) {
-        colorUpdateTimer = wrap(colorUpdateTimer, 0, 1);
-        pointer.color = sim!.generateColor();
-      }
-
-      if (pointer.moved) {
-        pointer.moved = false;
-        sim!.splat(
-          pointer.texcoordX,
-          pointer.texcoordY,
-          pointer.deltaX * config.SPLAT_FORCE,
-          pointer.deltaY * config.SPLAT_FORCE,
-          pointer.color,
-        );
-      }
-
-      sim!.step(dt);
-      sim!.render();
-      animationFrameId = requestAnimationFrame(updateFrame);
-    }
-    updateFrame();
+    // mousedown matters on its own: a click splats without any move event.
+    const wake = () => loop.wake();
+    window.addEventListener("mousemove", wake);
+    window.addEventListener("mousedown", wake);
+    window.addEventListener("touchstart", wake);
 
     return () => {
-      isActive = false;
-      cancelAnimationFrame(animationFrameId);
+      window.removeEventListener("mousemove", wake);
+      window.removeEventListener("mousedown", wake);
+      window.removeEventListener("touchstart", wake);
+      loop.stop();
       unbind();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

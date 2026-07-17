@@ -9,8 +9,7 @@ interface Thread {
   phase: number;
   speed: number;
   width: number;
-  hue: number;
-  alpha: number;
+  grad: CanvasGradient;
 }
 
 export function ThreadCanvas() {
@@ -37,16 +36,23 @@ export function ThreadCanvas() {
       canvas.width = W * dpr;
       canvas.height = H * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      threads = Array.from({ length: 7 }, (_, i) => ({
-        yBase: H * (0.25 + (i / 7) * 0.65),
-        amp: 30 + Math.random() * 80,
-        wavelength: 500 + Math.random() * 500,
-        phase: Math.random() * Math.PI * 2,
-        speed: 0.0018 + Math.random() * 0.002,
-        width: 0.7 + Math.random() * 1.4,
-        hue: 32 + Math.random() * 12,
-        alpha: 0.25 + Math.random() * 0.4,
-      }));
+      threads = Array.from({ length: 7 }, (_, i) => {
+        const hue = 32 + Math.random() * 12;
+        const alpha = 0.25 + Math.random() * 0.4;
+        const grad = ctx.createLinearGradient(0, 0, W, 0);
+        grad.addColorStop(0, "hsla(" + hue + ", 70%, 60%, 0)");
+        grad.addColorStop(0.5, "hsla(" + hue + ", 78%, 62%, " + alpha + ")");
+        grad.addColorStop(1, "hsla(" + hue + ", 70%, 60%, 0)");
+        return {
+          yBase: H * (0.25 + (i / 7) * 0.65),
+          amp: 30 + Math.random() * 80,
+          wavelength: 500 + Math.random() * 500,
+          phase: Math.random() * Math.PI * 2,
+          speed: 0.0018 + Math.random() * 0.002,
+          width: 0.7 + Math.random() * 1.4,
+          grad,
+        };
+      });
     }
 
     function draw() {
@@ -54,14 +60,7 @@ export function ThreadCanvas() {
       ctx.clearRect(0, 0, W, H);
       ctx.globalCompositeOperation = "lighter";
       for (const th of threads) {
-        const grad = ctx.createLinearGradient(0, 0, W, 0);
-        grad.addColorStop(0, "hsla(" + th.hue + ", 70%, 60%, 0)");
-        grad.addColorStop(0.5, "hsla(" + th.hue + ", 78%, 62%, " + th.alpha + ")");
-        grad.addColorStop(1, "hsla(" + th.hue + ", 70%, 60%, 0)");
-        ctx.strokeStyle = grad;
-        ctx.lineWidth = th.width;
-        ctx.shadowColor = "hsla(" + th.hue + ", 85%, 60%, 0.8)";
-        ctx.shadowBlur = 14;
+        ctx.strokeStyle = th.grad;
         ctx.beginPath();
         for (let x = 0; x <= W; x += 8) {
           const y =
@@ -71,6 +70,14 @@ export function ThreadCanvas() {
           if (x === 0) ctx.moveTo(x, y);
           else ctx.lineTo(x, y);
         }
+        // Canvas shadowBlur re-rasterizes a blur around every stroke on every
+        // frame — by far the most expensive operation in this loop; a wide
+        // translucent under-stroke of the same gradient reads as the same glow.
+        ctx.globalAlpha = 0.3;
+        ctx.lineWidth = th.width * 4;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.lineWidth = th.width;
         ctx.stroke();
       }
       ctx.globalCompositeOperation = "source-over";

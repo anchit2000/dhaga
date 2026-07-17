@@ -25,7 +25,10 @@ export function Reveal({
           observer.disconnect();
         }
       },
-      { threshold: 0.15 },
+      // Pre-trigger ~a fifth of a viewport before a section scrolls in:
+      // waiting for 15% visibility let a fast fling outrun the observer and
+      // land on still-invisible sections ("components don't load").
+      { threshold: 0, rootMargin: "0px 0px 20% 0px" },
     );
     observer.observe(el);
     return () => observer.disconnect();

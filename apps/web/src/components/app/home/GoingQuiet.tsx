@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { HomeTile } from "./HomeTile";
 import { Button } from "@/components/ui/button";
 import { markReachedOutAction } from "@/lib/actions/reminders";
 import { QUIET_FEED_LIMIT } from "@/utils/constants/app";
@@ -28,13 +29,19 @@ export function GoingQuiet({
   const overflow = contacts.length - shown.length;
 
   return (
-    <section className="space-y-3">
-      <h2 className="font-display text-lg">Going quiet</h2>
-      <ul className="space-y-1.5">
+    <HomeTile
+      title="Going quiet"
+      meta={
+        <span className="font-mono text-[10px] uppercase tracking-widest text-fog">
+          {contacts.length} fading
+        </span>
+      }
+    >
+      <ul className="divide-y divide-seam">
         {shown.map((person) => (
           <li
             key={person.id}
-            className="flex items-center gap-3 rounded-xl border border-seam bg-panel px-3 py-2.5"
+            className="flex flex-wrap items-center gap-x-3 gap-y-1.5 py-2.5 first:pt-0 last:pb-0"
           >
             <Button
               render={<div />}
@@ -67,7 +74,7 @@ export function GoingQuiet({
         ))}
       </ul>
       {overflow > 0 ? (
-        <p className="text-xs text-fog">
+        <p className="mt-auto pt-1 text-xs text-fog">
           +{overflow} more quietly fading —{" "}
           <Link
             href="/app/people"
@@ -77,6 +84,6 @@ export function GoingQuiet({
           </Link>
         </p>
       ) : null}
-    </section>
+    </HomeTile>
   );
 }

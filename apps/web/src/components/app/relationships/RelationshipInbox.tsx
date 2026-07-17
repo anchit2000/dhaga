@@ -52,7 +52,7 @@ export function RelationshipInbox({
 }) {
   if (suggestions.length === 0) return null;
   return (
-    <section className="space-y-4 rounded-2xl border border-amber/25 bg-panel p-4 sm:p-5">
+    <section className="space-y-4 rounded-2xl border border-amber/25 bg-panel p-4 sm:col-span-2 sm:p-5 xl:col-span-3">
       <div>
         <h2 className="font-display text-lg">Relationships to confirm</h2>
         <p className="text-xs leading-relaxed text-fog">

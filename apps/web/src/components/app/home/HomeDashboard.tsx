@@ -7,6 +7,7 @@ import { HomeActions } from "./HomeActions";
 import { HomeOverview } from "./HomeOverview";
 import { SignalsFeed } from "./SignalsFeed";
 import { TodaySuggestions, type MeetingSlot } from "./TodaySuggestions";
+import type { ReactNode } from "react";
 import type { ContactListItem } from "@/lib/repo/contacts";
 import type { DailySuggestion } from "@/lib/repo/daily-suggestions";
 import type { EventListItem } from "@/lib/repo/events";
@@ -15,10 +16,12 @@ import type { SignalItem } from "@/lib/repo/signals";
 import type { QuietContact } from "@/lib/repo/strength";
 
 /**
- * Home's sections plus the one contact detail Sheet they all share. "Today" (the
- * curated N-people-to-reach-out-to list) is the canonical reach-out surface, so
- * the old unbounded "Reach out" list is retired — HomeActions now only renders
- * open follow-ups, and only when there are any.
+ * Home's bento grid plus the one contact detail Sheet all tiles share.
+ * "Today" (the curated N-people-to-reach-out-to list) is the canonical
+ * reach-out surface and the hero tile. Server-rendered sections that belong
+ * in the grid (relationship inbox, suggested groups) come in as slots so the
+ * grid template lives in one place; alert tiles (signals, going quiet)
+ * render null when empty and the grid backfills their cell.
  */
 export function HomeDashboard({
   people,
@@ -32,6 +35,8 @@ export function HomeDashboard({
   openFollowUps,
   quietContacts,
   newSignals,
+  inbox,
+  groups,
 }: {
   people: ContactListItem[];
   events: EventListItem[];
@@ -44,13 +49,15 @@ export function HomeDashboard({
   openFollowUps: Awaited<ReturnType<typeof listAllOpenFollowUps>>;
   quietContacts: QuietContact[];
   newSignals: SignalItem[];
+  inbox?: ReactNode;
+  groups?: ReactNode;
 }) {
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
 
   return (
     <>
-      <section className="space-y-5" data-tour="updates">
-        <h2 className="font-display text-lg">Updates</h2>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {inbox}
         <TodaySuggestions
           suggestions={suggestions}
           calendarConnected={calendarConnected}
@@ -60,13 +67,12 @@ export function HomeDashboard({
           moreDue={moreDue}
           onSelectContact={setSelectedContactId}
         />
-        {openFollowUps.length > 0 ? (
-          <HomeActions dueReachOuts={[]} openFollowUps={openFollowUps} onSelectContact={setSelectedContactId} />
-        ) : null}
+        <HomeActions openFollowUps={openFollowUps} onSelectContact={setSelectedContactId} />
         <SignalsFeed signals={newSignals} onSelectContact={setSelectedContactId} />
         <GoingQuiet contacts={quietContacts} onSelectContact={setSelectedContactId} />
-      </section>
-      <HomeOverview people={people} events={events} onSelectContact={setSelectedContactId} />
+        <HomeOverview people={people} events={events} onSelectContact={setSelectedContactId} />
+        {groups}
+      </div>
       <ContactDetailSheet
         contactId={selectedContactId}
         onOpenChange={(open) => {

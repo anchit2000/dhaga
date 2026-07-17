@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { eq } from "drizzle-orm";
 import { emptyExtractedContact, relationshipRole } from "@dhaga/core";
 import type { NoteExtraction } from "@dhaga/core";
+import { getDb } from "@/lib/db/request-scope";
+import { contacts } from "@/lib/db/schema";
 import { createContact, findOrCreateCompany } from "@/lib/repo/contacts";
 import { createEvent } from "@/lib/repo/events";
 import { addNote } from "@/lib/repo/notes";
@@ -67,15 +70,21 @@ describe("listContactRelationships reads one stored edge from both ends", () => 
 });
 
 describe("listContactRelationships spans every endpoint kind", () => {
-  it("keeps company and event edges visible but suppresses works_at duplicates", async () => {
+  it("suppresses only the works_at edge that mirrors the employment header", async () => {
     const kiran = await createContact(
       { ...emptyExtractedContact(), name: "Kiran Kindspan" },
       "manual",
     );
     const acme = await findOrCreateCompany("Acme Kindspan Consulting");
+    const sideGig = await findOrCreateCompany("Kindspan Side Gig Labs");
     const summit = await createEvent("Kindspan Summit");
+    // Acme is the header employer (contacts.company_id) — its works_at edge
+    // duplicates what the page header already shows.
+    const db = await getDb();
+    await db.update(contacts).set({ companyId: acme }).where(eq(contacts.id, kiran));
     await createRelationshipEdge({ srcId: kiran, srcKind: "contact", dstId: acme, dstKind: "company", predicate: "consults_for" });
     await createRelationshipEdge({ srcId: kiran, srcKind: "contact", dstId: acme, dstKind: "company", predicate: "works_at" });
+    await createRelationshipEdge({ srcId: kiran, srcKind: "contact", dstId: sideGig, dstKind: "company", predicate: "works_at" });
     await createRelationshipEdge({ srcId: summit, srcKind: "event", dstId: kiran, dstKind: "contact", predicate: "organized_by" });
 
     const rels = await listContactRelationships(kiran);
@@ -90,9 +99,18 @@ describe("listContactRelationships spans every endpoint kind", () => {
       "event",
       "Kindspan Summit",
     ]);
-    // WHY: works_at → company duplicates the employment header sourced from
-    // company_id — the one company edge the list must NOT repeat.
-    expect(rels.some((rel) => rel.kind === "company" && rel.predicate === "works_at")).toBe(false);
-    expect(rels).toHaveLength(2);
+    // WHY (found live): a manual works_at to a company that is NOT the header
+    // employer has no header mirroring it — hiding it made the dialog's own
+    // output invisible and undeletable on the very page that created it.
+    expect(rels.map((rel) => [rel.predicate, rel.name])).toContainEqual([
+      "works_at",
+      "Kindspan Side Gig Labs",
+    ]);
+    // WHY: the header employer's works_at IS the duplicate — the one company
+    // edge the list must not repeat.
+    expect(
+      rels.some((rel) => rel.predicate === "works_at" && rel.name === "Acme Kindspan Consulting"),
+    ).toBe(false);
+    expect(rels).toHaveLength(3);
   });
 });

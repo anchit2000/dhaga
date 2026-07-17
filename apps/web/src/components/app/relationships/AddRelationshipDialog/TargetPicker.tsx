@@ -82,7 +82,12 @@ export function TargetPicker({
                 onClick={() => onSelect(target)}
                 className="flex w-full items-center justify-between gap-2 px-2.5 py-1.5 text-left text-sm text-paper hover:bg-wash/[0.05]"
               >
-                <span className="truncate">{target.label}</span>
+                <span className="min-w-0">
+                  <span className="block truncate">{target.label}</span>
+                  {target.sublabel ? (
+                    <span className="block truncate text-xs text-fog">{target.sublabel}</span>
+                  ) : null}
+                </span>
                 <span className="shrink-0 font-mono text-[9px] uppercase tracking-wider text-fog/70">
                   {RELATIONSHIP_KIND_LABELS[target.kind]}
                 </span>

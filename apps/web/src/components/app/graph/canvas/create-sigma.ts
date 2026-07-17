@@ -9,6 +9,7 @@ import {
 import { buildGraphIndexes, nodeSizeForDegree, type GraphIndexes } from "../logic/indexes";
 import { buildRelationshipLabelMap, buildTypeColorMap, edgeLabel, fadeColor, nodeColor } from "../logic/style";
 import { makeDrawNodeHover } from "./draw-hover";
+import { trackRendererDeath } from "./renderer-lifecycle";
 import {
   makeEdgeReducer,
   makeNodeReducer,
@@ -81,7 +82,7 @@ export function createRenderer(
   theme: GraphTheme,
   renderStateRef: { current: RenderState },
 ): GraphRenderer {
-  return new Sigma<NodeRenderAttributes, EdgeRenderAttributes>(graph, container, {
+  const sigma = new Sigma<NodeRenderAttributes, EdgeRenderAttributes>(graph, container, {
     defaultEdgeType: "arrow",
     edgeProgramClasses: { arrow: EdgeArrowProgram },
     renderEdgeLabels: true,
@@ -102,6 +103,8 @@ export function createRenderer(
     nodeReducer: makeNodeReducer(renderStateRef),
     edgeReducer: makeEdgeReducer(renderStateRef),
   });
+  trackRendererDeath(sigma);
+  return sigma;
 }
 
 /** Sigma label settings that change with the theme, applied to a live renderer. */

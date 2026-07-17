@@ -2,6 +2,9 @@ export interface GraphTarget {
   id: string;
   label: string;
   kind: "contact" | "company" | "entity" | "event";
+  /** Disambiguator for duplicate names: contact title · company, company
+   *  sector, event date, entity type. Null when nothing is known. */
+  sublabel: string | null;
 }
 
 export interface FullGraphNode {

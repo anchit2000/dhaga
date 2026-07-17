@@ -6,6 +6,7 @@ import { collapsedMemberCount, contactsHiddenByCollapse } from "../logic/collaps
 import { computeHiddenNodes } from "../logic/visibility";
 import { fitToNodes } from "./camera";
 import { applyThemeToGraph, applyThemeToRenderer, type GraphRenderer } from "./create-sigma";
+import { isRendererAlive } from "./renderer-lifecycle";
 import { resolveGraphTheme } from "./theme";
 import type { GraphIndexes } from "../logic/indexes";
 import type { RenderState } from "./reducers";
@@ -50,7 +51,9 @@ export function useRenderSync(
   }, [indexes, view.collapsedGroups, hiddenByCollapse]);
 
   useEffect(() => {
-    if (!renderer) return;
+    // The alive check covers the swap commit: these effects can fire with the
+    // just-killed renderer still in state (see trackRendererDeath).
+    if (!renderer || !isRendererAlive(renderer)) return;
     const state = renderStateRef.current;
     state.hiddenNodes = hiddenNodes;
     state.selectedId = view.selectedId;
@@ -68,6 +71,7 @@ export function useRenderSync(
       lastFitRootRef.current = null;
       return;
     }
+    if (!isRendererAlive(renderer)) return;
     if (lastFitRootRef.current === view.isolateRootId) return;
     lastFitRootRef.current = view.isolateRootId;
     const keep = [view.isolateRootId];
@@ -80,7 +84,7 @@ export function useRenderSync(
   // Follow /app's light/dark toggle without rebuilding the graph.
   const { resolvedTheme } = useTheme();
   useEffect(() => {
-    if (!renderer) return;
+    if (!renderer || !isRendererAlive(renderer)) return;
     const theme = resolveGraphTheme(renderer.getContainer());
     applyThemeToGraph(renderer.getGraph(), theme);
     applyThemeToRenderer(renderer, theme);

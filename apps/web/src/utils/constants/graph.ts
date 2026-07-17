@@ -122,6 +122,13 @@ export const GRAPH_LAYOUT_DEFAULT_KEY = "default";
 export const GRAPH_LAYOUT_MAX_BYTES = 8_000_000;
 /** Settled-layout uploads coalesce over this window (fire-and-forget POST). */
 export const GRAPH_LAYOUT_UPLOAD_DEBOUNCE_MS = 2_000;
+/** localStorage key remembering the last layout hash this browser uploaded —
+ *  IDB-cached payloads freeze the pre-upload server state, so without this
+ *  every warm boot re-POSTed an identical layout. */
+export const GRAPH_LAYOUT_UPLOADED_KEY = "dhaga.graph.layout.uploaded.v1";
+/** How long ?focus= waits for a background-revalidation swap to surface a
+ *  node missing from the boot payload before giving up with a toast. */
+export const GRAPH_FOCUS_SWAP_GRACE_MS = 10_000;
 
 /** IndexedDB payload cache (stale-while-revalidate; the multi-MB payload
  *  doesn't fit localStorage's ~5MB total quota alongside the position cache). */

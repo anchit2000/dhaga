@@ -1,8 +1,10 @@
 import { GRAPH_CAMERA_DURATION_MS } from "@/utils/constants/graph";
+import { isRendererAlive } from "./renderer-lifecycle";
 import type { GraphRenderer } from "./create-sigma";
 
 /** Ease the camera to a node, zooming in if currently far out. */
 export function flyToNode(sigma: GraphRenderer, nodeId: string): void {
+  if (!isRendererAlive(sigma)) return; // killed on swap; caller re-fires next render
   const data = sigma.getNodeDisplayData(nodeId);
   if (!data) return;
   const camera = sigma.getCamera();
@@ -18,6 +20,7 @@ export function flyToNode(sigma: GraphRenderer, nodeId: string): void {
  * roughly one unit — ratio ≈ span means "this box fills the viewport".
  */
 export function fitToNodes(sigma: GraphRenderer, nodeIds: Iterable<string>): void {
+  if (!isRendererAlive(sigma)) return; // killed on swap; caller re-fires next render
   let minX = Number.POSITIVE_INFINITY;
   let minY = Number.POSITIVE_INFINITY;
   let maxX = Number.NEGATIVE_INFINITY;
@@ -44,6 +47,7 @@ export function fitToNodes(sigma: GraphRenderer, nodeIds: Iterable<string>): voi
 
 /** Reset to the default full-graph view. */
 export function resetCamera(sigma: GraphRenderer): void {
+  if (!isRendererAlive(sigma)) return;
   void sigma.getCamera().animate(
     { x: 0.5, y: 0.5, ratio: 1, angle: 0 },
     { duration: GRAPH_CAMERA_DURATION_MS },

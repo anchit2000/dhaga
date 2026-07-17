@@ -99,10 +99,15 @@ export function WarmPathPanel({
                     onClick={() => {
                       setSelected(target);
                     }}
-                    className="flex w-full items-center gap-1 px-2.5 py-1.5 text-left text-sm text-paper hover:bg-wash/[0.05]"
+                    className="flex w-full items-baseline gap-1.5 px-2.5 py-1.5 text-left text-sm text-paper hover:bg-wash/[0.05]"
                   >
-                    {target.kind === "company" ? "🏢 " : ""}
-                    {target.label}
+                    <span className="truncate">
+                      {target.kind === "company" ? "🏢 " : ""}
+                      {target.label}
+                    </span>
+                    {target.sublabel ? (
+                      <span className="shrink-0 truncate text-xs text-fog">{target.sublabel}</span>
+                    ) : null}
                   </button>
                 </li>
               ))}

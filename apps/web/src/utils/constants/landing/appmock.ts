@@ -55,4 +55,15 @@ export const MOCK_HOME_PEOPLE = ["Sarah Chen", "Priya Nair", "Rohan Mehta"] as c
 
 export const MOCK_HOME_EVENTS = ["Web Summit 2026", "Bangalore founders"] as const;
 
+export const MOCK_HOME_TODAY = [
+  { personId: "sarah", name: "Sarah Chen", reason: "DUE · met at Web Summit — promised an intro" },
+  { personId: "priya", name: "Priya Nair", reason: "CHECK-IN · back from Singapore today" },
+  { personId: "rohan", name: "Rohan Mehta", reason: "NETWORK · 3 new facts from your voice note" },
+] as const;
+
+export const MOCK_HOME_FOLLOWUPS = [
+  { action: "Send the API onboarding deck to", contact: "Alice Krejčová" },
+  { action: "Intro the Bangalore founders to", contact: "Kavya Singh" },
+] as const;
+
 export const MOCK_CAPTURE_ACTIONS = ["Voice", "Camera", "Upload", "Capture"] as const;

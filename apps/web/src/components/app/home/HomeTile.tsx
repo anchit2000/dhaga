@@ -23,7 +23,9 @@ export function HomeTile({
     <section
       className={cn(
         "flex min-w-0 flex-col gap-4 rounded-2xl border bg-panel p-4 sm:p-5",
-        tone === "amber" ? "border-amber/25" : "border-seam",
+        tone === "amber"
+          ? "border-amber/25 bg-gradient-to-br from-amber/[0.06] via-transparent to-transparent"
+          : "border-seam",
         className,
       )}
       {...props}

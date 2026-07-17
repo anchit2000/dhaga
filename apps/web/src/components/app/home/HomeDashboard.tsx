@@ -16,6 +16,18 @@ import type { SignalItem } from "@/lib/repo/signals";
 import type { QuietContact } from "@/lib/repo/strength";
 
 /**
+ * How many grid tracks "Recent events" spans, keyed by how many alert tiles
+ * (signals, going quiet) rendered. Literal class strings so Tailwind sees
+ * them: with fewer alert tiles the last row has leftover tracks at sm/xl,
+ * and events is always the final 1×1 tile, so it absorbs them.
+ */
+const EVENTS_TILE_SPAN: Record<number, string> = {
+  0: "sm:col-span-2 xl:col-span-3",
+  1: "xl:col-span-2",
+  2: "sm:col-span-2",
+};
+
+/**
  * Home's bento grid plus the one contact detail Sheet all tiles share.
  * "Today" (the curated N-people-to-reach-out-to list) is the canonical
  * reach-out surface and the hero tile. Server-rendered sections that belong
@@ -54,9 +66,15 @@ export function HomeDashboard({
 }) {
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
 
+  // The alert tiles (signals, going quiet) render nothing when empty, which
+  // would leave "Recent events" alone on the last row with dead space beside
+  // it — let it absorb the freed tracks so the grid always closes cleanly.
+  const alertTiles = (newSignals.length > 0 ? 1 : 0) + (quietContacts.length > 0 ? 1 : 0);
+  const eventsTileSpan = EVENTS_TILE_SPAN[alertTiles];
+
   return (
     <>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="dhaga-bento grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-[1fr_1fr_1.4fr]">
         {inbox}
         <TodaySuggestions
           suggestions={suggestions}
@@ -70,7 +88,7 @@ export function HomeDashboard({
         <HomeActions openFollowUps={openFollowUps} onSelectContact={setSelectedContactId} />
         <SignalsFeed signals={newSignals} onSelectContact={setSelectedContactId} />
         <GoingQuiet contacts={quietContacts} onSelectContact={setSelectedContactId} />
-        <HomeOverview people={people} events={events} onSelectContact={setSelectedContactId} />
+        <HomeOverview people={people} events={events} eventsClassName={eventsTileSpan} onSelectContact={setSelectedContactId} />
         {groups}
       </div>
       <ContactDetailSheet

@@ -1,14 +1,29 @@
 import type { Pool } from "pg";
+import { ddlAlreadyApplied, ddlFingerprint, recordDdlApplied } from "./ddl-history";
 import { RLS_DDL } from "./rls-ddl";
 import { EE_TABLES_DDL } from "./tables-ddl";
 
+const EE_DDL = `${EE_TABLES_DDL}\n${RLS_DDL}`;
+
 let applied: Promise<void> | undefined;
 
-/** Idempotent; safe to call on every cold start. Cached per process. */
+/**
+ * Idempotent; safe to call on every cold start. Cached per process. The DDL
+ * round-trip itself is skipped when this exact schema text was already
+ * applied to this database (see ./ddl-history) — assertSessionScopedPooling
+ * and assertRoleRespectsRls are cheap fail-loud safety guards and still run
+ * unconditionally on every cold start regardless of the skip.
+ */
 export function ensureEeSchema(pool: Pool): Promise<void> {
   applied ??= Promise.resolve()
     .then(() => assertSessionScopedPooling(process.env.DATABASE_URL))
-    .then(() => pool.query(`${EE_TABLES_DDL}\n${RLS_DDL}`))
+    .then(async () => {
+      const fingerprint = ddlFingerprint(EE_DDL);
+      if (!(await ddlAlreadyApplied(pool, fingerprint))) {
+        await pool.query(EE_DDL);
+        await recordDdlApplied(pool, fingerprint);
+      }
+    })
     .then(() => assertRoleRespectsRls(pool));
   return applied;
 }

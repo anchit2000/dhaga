@@ -119,7 +119,7 @@ describe("edge reducer keeps sigma's total-object contract", () => {
     ] satisfies Partial<RenderState>[]) {
       const out = makeEdgeReducer(stateWith(overrides))("e", edgeAttrs());
       expectTotal(edgeAttrs(), out);
-      expect(out).toMatchObject({ color: edgeAttrs().activeColor, size: 1.6, forceLabel: true });
+      expect(out).toMatchObject({ color: edgeAttrs().activeColor, size: 1.1, forceLabel: true });
     }
   });
 

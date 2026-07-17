@@ -117,7 +117,7 @@ export function makeEdgeReducer(ref: { current: RenderState }) {
     // Hovered/selected edges always carry their label — the primary way to
     // read a relationship without opening the panel.
     if (touchesSelected || touchesHovered || onPath) {
-      return { ...data, color: data.activeColor, label: data.label, forceLabel: true, zIndex: 1, size: 1.6 };
+      return { ...data, color: data.activeColor, label: data.label, forceLabel: true, zIndex: 1, size: 1.1 };
     }
     if (state.hoveredId || state.highlightedPath) {
       return { ...data, color: data.dimColor, label: null };

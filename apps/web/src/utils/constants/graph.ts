@@ -39,8 +39,10 @@ export const GRAPH_NODE_COLORS: Record<"contact" | "company" | "event" | "tag", 
 export const GRAPH_ENTITY_FALLBACK_COLOR = "#7c9ce8";
 
 /** Node size = sqrt(degree)-scaled, clamped to this range (display units). */
-export const GRAPH_NODE_SIZE_MIN = 3;
-export const GRAPH_NODE_SIZE_MAX = 15;
+export const GRAPH_NODE_SIZE_MIN = 2;
+export const GRAPH_NODE_SIZE_MAX = 9;
+/** Base edge thickness (display units) — main-payload + tag-layer edges. */
+export const GRAPH_EDGE_SIZE = 0.5;
 /** Collapsed company/event group nodes scale up to signal they hold members. */
 export const GRAPH_COLLAPSED_GROUP_SCALE = 1.5;
 
@@ -53,6 +55,9 @@ export const GRAPH_HIDE_EDGES_ON_MOVE_THRESHOLD = 5_000;
 export const GRAPH_EDGE_EVENTS_MAX_EDGES = 10_000;
 /** Sigma skips node labels rendered smaller than this (px). */
 export const GRAPH_LABEL_SIZE_THRESHOLD = 8;
+/** Floor for camera.ratio in zoomToSizeRatioFunction: sigma inflates rendered size
+ *  by 1/sqrt(ratio), so 0.05 caps it at ~4.5× — deep zoom (minCameraRatio 0.005) spreads clusters without ballooning nodes; keep GRAPH_NODE_SIZE_MIN×4.5 (9) ≥ GRAPH_LABEL_SIZE_THRESHOLD (8) so every label eventually appears at deep zoom. */
+export const GRAPH_ZOOM_SIZE_RATIO_FLOOR = 0.05;
 /** Camera ratio below which edge labels render (hovered/selected always render). */
 export const GRAPH_EDGE_LABEL_RATIO_THRESHOLD = 0.2;
 

@@ -1,4 +1,4 @@
-import { GRAPH_NODE_COLORS } from "@/utils/constants/graph";
+import { GRAPH_EDGE_SIZE, GRAPH_NODE_COLORS } from "@/utils/constants/graph";
 import { nodeSizeForDegree } from "./indexes";
 import { hashCode } from "./seeding";
 import { edgeLabel, fadeColor } from "./style";
@@ -103,7 +103,7 @@ export function mergeTagLayer(
       label: edgeLabel(edge, labelMap),
       source: edge.source,
       target: edge.target,
-      size: 1,
+      size: GRAPH_EDGE_SIZE,
       color: theme.seam,
       dimColor: seamDim,
       activeColor: theme.amber,

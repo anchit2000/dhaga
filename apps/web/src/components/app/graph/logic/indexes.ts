@@ -65,6 +65,6 @@ function addMember(map: Map<string, Set<string>>, groupId: string, contactId: st
 
 /** sqrt(degree)-scaled node size, clamped — hubs read bigger without dwarfing the canvas. */
 export function nodeSizeForDegree(deg: number): number {
-  const size = GRAPH_NODE_SIZE_MIN + Math.sqrt(Math.max(deg, 0)) * 1.4;
+  const size = GRAPH_NODE_SIZE_MIN + Math.sqrt(Math.max(deg, 0));
   return Math.min(GRAPH_NODE_SIZE_MAX, size);
 }

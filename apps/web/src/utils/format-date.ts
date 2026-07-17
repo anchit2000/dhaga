@@ -28,3 +28,15 @@ export function formatDate(date: Date): string {
 export function formatWeekdayTime(date: Date): string {
   return WEEKDAY_TIME_FORMAT.format(date);
 }
+
+const WEEKDAY_FORMAT = new Intl.DateTimeFormat("en-GB", { weekday: "long" });
+
+const DAY_MONTH_FORMAT = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "short",
+});
+
+/** "Thursday · 17 Jul" — Home's daily-briefing eyebrow. */
+export function formatDayline(date: Date): string {
+  return `${WEEKDAY_FORMAT.format(date)} · ${DAY_MONTH_FORMAT.format(date)}`;
+}

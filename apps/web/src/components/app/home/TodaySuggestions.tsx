@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CalendarClock } from "lucide-react";
 import { AddToCalendar } from "./AddToCalendar";
 import { HomeTile } from "./HomeTile";
+import { ThreadMark } from "@/components/brand/ThreadMark";
 import { Button } from "@/components/ui/button";
 import { markReachedOutAction } from "@/lib/actions/reminders";
 import { formatWeekdayTime } from "@/utils/format-date";
@@ -61,16 +62,22 @@ export function TodaySuggestions({
       ) : null}
 
       {suggestions.length === 0 ? (
-        <div className="flex flex-1 flex-col justify-center py-8 text-center">
-          <p className="text-sm text-paper">No one to reach out to today.</p>
-          <p className="mt-1 text-xs text-fog">
-            Set a keep-in-touch cadence on a contact and they&apos;ll surface here.
-          </p>
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 py-10 text-center">
+          <ThreadMark size={44} />
+          <div>
+            <p className="text-sm text-paper">No one to reach out to today.</p>
+            <p className="mx-auto mt-1 max-w-64 text-xs leading-relaxed text-fog">
+              Capture people as you meet them, set a keep-in-touch cadence, and they&apos;ll surface here.
+            </p>
+          </div>
+          <Button render={<Link href="/app/quick-add" />} variant="outline" size="sm">
+            Capture someone
+          </Button>
         </div>
       ) : (
         <div className="divide-y divide-seam">
           {suggestions.map((person) => (
-            <div key={person.contactId} className="py-3 first:pt-0 last:pb-0">
+            <div key={person.contactId} className="rounded-lg py-3 transition-colors first:pt-0 last:pb-0 hover:bg-amber/[0.03]">
               <div className="flex items-center gap-3">
                 <Button
                   render={<div />}

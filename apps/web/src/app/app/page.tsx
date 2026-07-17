@@ -24,6 +24,7 @@ import { listPendingEdgeSuggestions } from "@/lib/repo/edge-suggestions";
 import { listNodeTypes } from "@/lib/repo/node-types";
 import { HOME_PREVIEW_LIMIT } from "@/utils/constants/app";
 import { DEFAULT_MEETING_DURATION_MINUTES } from "@/utils/constants/suggestions";
+import { formatDayline } from "@/utils/format-date";
 
 export const metadata = { title: "Home — Dhaga" };
 
@@ -58,10 +59,31 @@ export default async function HomePage() {
   const meetingCountToday = dayLoad({ day: now, busy, utcOffsetMinutes: prefs.utcOffsetMinutes }).meetingCount;
   const shownDue = suggestions.filter((item) => item.bucket !== "graph").length;
 
+  // Daily-briefing headline: Home greets you with your day, built from data
+  // already on this page — never a bare "Home" label.
+  const headline =
+    people.length === 0
+      ? "Thread your first contact"
+      : suggestions.length > 0
+        ? `${suggestions.length} ${suggestions.length === 1 ? "thread" : "threads"} to pull today`
+        : openFollowUps.length > 0
+          ? `${openFollowUps.length} open follow-up${openFollowUps.length === 1 ? "" : "s"} to close`
+          : "All caught up";
+  const statusParts = [
+    suggestions.length > 0 ? `${suggestions.length} due` : null,
+    openFollowUps.length > 0 ? `${openFollowUps.length} follow-up${openFollowUps.length === 1 ? "" : "s"}` : null,
+    newSignals.length > 0 ? `${newSignals.length} signal${newSignals.length === 1 ? "" : "s"}` : null,
+    quietContacts.length > 0 ? `${quietContacts.length} going quiet` : null,
+  ].filter((part): part is string => part !== null);
+
   return <div className="space-y-8 pb-16">
     <OnboardingTour autoStart={!seenTour} />
     <div className="flex flex-wrap items-end justify-between gap-3">
-      <div><p className="font-mono text-[10px] uppercase tracking-widest text-ember">Your network, threaded</p><h1 className="mt-1 font-display text-2xl tracking-tight">Home</h1></div>
+      <div>
+        <p className="font-mono text-[10px] uppercase tracking-widest text-ember">{formatDayline(now)}</p>
+        <h1 className="mt-1 font-display text-2xl tracking-tight">{headline}</h1>
+        {statusParts.length > 0 ? <p className="mt-1.5 font-mono text-[11px] uppercase tracking-wider text-fog">{statusParts.join(" · ")}</p> : null}
+      </div>
       <Button render={<Link href="/app/people/new" />} variant="outline" size="sm">Add manually</Button>
     </div>
 

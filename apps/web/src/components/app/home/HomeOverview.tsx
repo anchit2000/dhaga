@@ -15,17 +15,25 @@ import type { EventListItem } from "@/lib/repo/events";
 export function HomeOverview({
   people,
   events,
+  eventsClassName,
   onSelectContact,
 }: {
   people: ContactListItem[];
   events: EventListItem[];
+  /** Grid-span classes for the events tile — HomeDashboard sizes it to close the last row. */
+  eventsClassName?: string;
   onSelectContact: (id: string) => void;
 }) {
   return (
     <>
       <HomeTile title="Recent people">
         <div className="space-y-1">
-          {people.length === 0 ? <p className="py-4 text-sm text-fog">Your newly captured people will appear here.</p> : people.slice(0, HOME_PREVIEW_LIMIT).map((person) => (
+          {people.length === 0 ? (
+            <div className="py-4">
+              <p className="text-sm text-paper">No one captured yet.</p>
+              <p className="mt-1 text-xs text-fog">Scan a card, paste an intro, or speak a note — people you capture land here.</p>
+            </div>
+          ) : people.slice(0, HOME_PREVIEW_LIMIT).map((person) => (
             <Button key={person.id} render={<div />} variant="ghost" onClick={() => onSelectContact(person.id)} className="flex h-auto min-h-11 w-full items-center justify-between gap-3 rounded-lg px-2 text-left text-sm font-normal normal-case transition-colors hover:bg-wash/[0.04]">
               <span className="min-w-0"><span className="block truncate text-sm text-paper">{person.name}</span><span className="block truncate text-xs text-fog">{person.companyName || person.title || "No details yet"}</span></span>
               <ArrowRight className="size-3.5 shrink-0 text-fog/60" />
@@ -34,9 +42,9 @@ export function HomeOverview({
         </div>
         <Link href="/app/people" className="mt-auto inline-flex min-h-11 items-center text-xs text-ember hover:underline">View all people</Link>
       </HomeTile>
-      <HomeTile title="Recent events">
+      <HomeTile title="Recent events" className={eventsClassName}>
         <div className="space-y-1">
-          <div className="pb-1"><CreateEventForm /></div>
+          <div className="pb-1"><CreateEventForm compact /></div>
           {events.length === 0 ? <p className="py-4 text-sm text-fog">Group people by an event, trip, or community.</p> : events.slice(0, HOME_PREVIEW_LIMIT).map((event) => (
             <Link key={event.id} href={`/app/events/${event.id}`} className="flex min-h-11 items-center justify-between gap-3 rounded-lg px-2 transition-colors hover:bg-wash/[0.04]">
               <span className="flex min-w-0 items-center gap-2.5">

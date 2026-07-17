@@ -1,9 +1,10 @@
-import { Camera, Mic, Search, Upload, UserPlus } from "lucide-react";
+import { Camera, Check, Mic, Search, Upload, UserPlus } from "lucide-react";
 import {
   MOCK_CAPTURE_ACTIONS,
-  MOCK_FEED,
-  MOCK_HOME_PEOPLE,
   MOCK_HOME_EVENTS,
+  MOCK_HOME_FOLLOWUPS,
+  MOCK_HOME_PEOPLE,
+  MOCK_HOME_TODAY,
 } from "@/utils/constants/landing";
 import { Headshot } from "../Headshot";
 
@@ -23,27 +24,68 @@ export function DashboardPreview() {
 
       <div className="space-y-3 p-4 pb-16">
         <div>
-          <p className="font-mono text-[8px] uppercase tracking-widest text-ember">Your network, threaded</p>
-          <p className="font-display text-lg text-paper">Home</p>
+          <p className="font-mono text-[8px] uppercase tracking-widest text-ember">Friday · 17 Jul</p>
+          <p className="font-display text-lg text-paper">3 threads to pull today</p>
         </div>
 
-        <section className="overflow-hidden rounded-lg border border-seam bg-panel">
-          <div className="flex items-center justify-between border-b border-seam px-3 py-2">
-            <span className="text-xs font-medium text-paper">Updates</span>
-            <span className="font-mono text-[8px] uppercase tracking-widest text-ember">Today</span>
-          </div>
-          {MOCK_FEED.slice(0, 3).map((item) => (
-            <div key={item.text} className="flex items-center gap-2 border-b border-seam/60 px-3 py-2 last:border-0">
-              {item.personId ? <Headshot personId={item.personId} className="size-5" /> : <span className="size-5 rounded-full bg-amber/15" />}
-              <span className="min-w-0 flex-1 truncate text-[9px] text-fog">{item.text}</span>
-              <span className="font-mono text-[8px] text-fog/60">{item.time}</span>
+        <div className="grid grid-cols-[1.5fr_1fr] gap-3">
+          <section className="row-span-2 rounded-lg border border-amber/25 bg-panel bg-gradient-to-br from-amber/[0.06] to-transparent p-3">
+            <div className="flex items-baseline justify-between">
+              <span className="text-xs font-medium text-paper">Today</span>
+              <span className="font-mono text-[8px] uppercase tracking-widest text-fog">3 people</span>
             </div>
-          ))}
-        </section>
+            <div className="mt-2 divide-y divide-seam">
+              {MOCK_HOME_TODAY.map((person) => (
+                <div key={person.personId} className="flex items-center gap-2 py-2 first:pt-0 last:pb-0">
+                  <Headshot personId={person.personId} className="size-5" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[9px] text-paper">{person.name}</p>
+                    <p className="truncate text-[8px] text-fog">{person.reason}</p>
+                  </div>
+                  <span className="shrink-0 rounded-full border border-seam px-1.5 py-0.5 text-[7px] text-fog">Reached out</span>
+                </div>
+              ))}
+            </div>
+          </section>
 
-        <div className="grid grid-cols-2 gap-3">
-          <PreviewList title="Recent people" items={MOCK_HOME_PEOPLE} action="View all people" />
-          <PreviewList title="Recent events" items={MOCK_HOME_EVENTS} action="+ Create event" />
+          <section className="rounded-lg border border-seam bg-panel p-3">
+            <div className="flex items-baseline justify-between">
+              <span className="text-xs font-medium text-paper">Follow-ups</span>
+              <span className="font-mono text-[8px] uppercase tracking-widest text-fog">2 open</span>
+            </div>
+            <div className="mt-2 space-y-1.5">
+              {MOCK_HOME_FOLLOWUPS.map((item) => (
+                <div key={item.action} className="flex items-start gap-1.5">
+                  <span className="mt-px flex size-3 shrink-0 items-center justify-center rounded-full border border-seam">
+                    <Check className="size-2 text-fog" />
+                  </span>
+                  <p className="min-w-0 flex-1 text-[8px] leading-snug text-fog">
+                    {item.action} <span className="text-amber">{item.contact}</span>
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-lg border border-seam bg-panel p-3">
+            <p className="text-xs font-medium text-paper">Recent people</p>
+            <div className="mt-2 space-y-1.5">
+              {MOCK_HOME_PEOPLE.map((name) => (
+                <p key={name} className="truncate text-[9px] text-fog">{name}</p>
+              ))}
+            </div>
+            <p className="mt-2 text-[9px] text-ember">View all people</p>
+          </section>
+
+          <section className="col-span-2 rounded-lg border border-seam bg-panel p-3">
+            <p className="text-xs font-medium text-paper">Recent events</p>
+            <div className="mt-2 space-y-1.5">
+              {MOCK_HOME_EVENTS.map((name) => (
+                <p key={name} className="truncate text-[9px] text-fog">{name}</p>
+              ))}
+            </div>
+            <p className="mt-2 text-[9px] text-ember">+ Create event</p>
+          </section>
         </div>
       </div>
 
@@ -64,14 +106,4 @@ function captureIcon(label: (typeof MOCK_CAPTURE_ACTIONS)[number]) {
   if (label === "Voice") return <Mic className="size-3" />;
   if (label === "Camera") return <Camera className="size-3" />;
   return <Upload className="size-3" />;
-}
-
-function PreviewList({ title, items, action }: { title: string; items: readonly string[]; action: string }) {
-  return (
-    <section className="rounded-lg border border-seam bg-panel p-3">
-      <p className="text-xs font-medium text-paper">{title}</p>
-      <div className="mt-2 space-y-1.5">{items.map((item) => <p key={item} className="truncate text-[9px] text-fog">{item}</p>)}</div>
-      <p className="mt-2 text-[9px] text-ember">{action}</p>
-    </section>
-  );
 }

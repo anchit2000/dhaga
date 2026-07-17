@@ -1,3 +1,6 @@
+import { eq } from "drizzle-orm";
+import { getDb } from "@/lib/db/request-scope";
+import { contacts } from "@/lib/db/schema";
 import { listNodeRelationships } from "./node-list";
 import type { RelationshipEndpointKind } from "./mutations";
 
@@ -18,17 +21,26 @@ export interface ContactRelationship {
 /**
  * A contact's explicit relationship edges to every endpoint kind (see
  * ./node-list.ts for the direction-corrected labelling). The one exclusion:
- * company edges with predicate `works_at`, which duplicate the employment
- * header already sourced from company_id/positions — anything else a user or
- * extraction ties to the contact (consults_for → Acme, attended → a summit)
- * must stay visible and deletable here.
+ * the `works_at` edge to the contact's CURRENT employer (contacts.company_id),
+ * which duplicates the employment header. A manual works_at to any OTHER
+ * company has no header mirroring it — hiding those made the dialog's own
+ * output invisible and undeletable (found live) — so everything else a user
+ * or extraction ties to the contact stays visible and deletable here.
  */
 export async function listContactRelationships(
   contactId: string,
 ): Promise<ContactRelationship[]> {
-  const rows = await listNodeRelationships("contact", contactId);
+  const db = await getDb();
+  const [rows, [self]] = await Promise.all([
+    listNodeRelationships("contact", contactId),
+    db.select({ companyId: contacts.companyId }).from(contacts).where(eq(contacts.id, contactId)),
+  ]);
+  const employerId = self?.companyId ?? null;
   return rows
-    .filter((row) => !(row.kind === "company" && row.predicate === "works_at"))
+    .filter(
+      (row) =>
+        !(row.kind === "company" && row.predicate === "works_at" && row.otherId === employerId),
+    )
     .map((row) => ({
       edgeId: row.edgeId,
       contactId: row.otherId,

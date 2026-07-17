@@ -112,7 +112,7 @@ export function AddRelationshipDialog({
             <div className="space-y-1.5">
               <Label className="text-fog">Relationship</Label>
               <PredicateField
-                options={buildPredicateOptions(customTypes ?? [])}
+                options={buildPredicateOptions(customTypes ?? [], sourceKind, target?.kind ?? null)}
                 value={predicate}
                 onSelect={setPredicate}
                 onTypeCreated={(created) =>

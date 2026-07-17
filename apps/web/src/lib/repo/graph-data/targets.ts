@@ -1,7 +1,8 @@
-import { asc, ilike, sql } from "drizzle-orm";
+import { asc, eq, ilike, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
-import { companies, contacts, entities, events } from "@/lib/db/schema";
+import { companies, contacts, entities, events, nodeTypes } from "@/lib/db/schema";
 import { RELATIONSHIP_ENDPOINT_KINDS } from "@/utils/constants/graph";
+import { formatDate } from "@/utils/format-date";
 import type { GraphTarget } from "./types";
 
 const TARGET_LIMIT = 8;
@@ -24,28 +25,53 @@ export async function searchGraphTargets(
   const db = await getDb();
   const like = `%${trimmed}%`;
   const prefix = `${trimmed}%`;
-  const queryFor = (kind: GraphTargetKind): PromiseLike<{ id: string; name: string }[]> => {
+  // Each row carries a sublabel disambiguator — duplicate names made the
+  // picker a guessing game (eight identical "PERSON" rows observed live).
+  const queryFor = (
+    kind: GraphTargetKind,
+  ): PromiseLike<{ id: string; name: string; sublabel: string | null }[]> => {
     switch (kind) {
       case "contact":
-        return db.select({ id: contacts.id, name: contacts.name }).from(contacts)
+        return db
+          .select({
+            id: contacts.id,
+            name: contacts.name,
+            sublabel: sql<string | null>`nullif(concat_ws(' · ', ${contacts.title}, ${companies.name}), '')`,
+          })
+          .from(contacts)
+          .leftJoin(companies, eq(contacts.companyId, companies.id))
           .where(ilike(contacts.name, like))
           .orderBy(sql`(${contacts.name} ILIKE ${prefix}) DESC`, asc(contacts.name))
           .limit(TARGET_LIMIT);
       case "company":
-        return db.select({ id: companies.id, name: companies.name }).from(companies)
+        return db
+          .select({ id: companies.id, name: companies.name, sublabel: companies.sector })
+          .from(companies)
           .where(ilike(companies.name, like))
           .orderBy(sql`(${companies.name} ILIKE ${prefix}) DESC`, asc(companies.name))
           .limit(TARGET_LIMIT);
       case "entity":
-        return db.select({ id: entities.id, name: entities.name }).from(entities)
+        return db
+          .select({ id: entities.id, name: entities.name, sublabel: nodeTypes.name })
+          .from(entities)
+          .leftJoin(nodeTypes, eq(entities.typeId, nodeTypes.id))
           .where(ilike(entities.name, like))
           .orderBy(sql`(${entities.name} ILIKE ${prefix}) DESC`, asc(entities.name))
           .limit(TARGET_LIMIT);
       case "event":
-        return db.select({ id: events.id, name: events.name }).from(events)
+        return db
+          .select({ id: events.id, name: events.name, startedAt: events.startedAt })
+          .from(events)
           .where(ilike(events.name, like))
           .orderBy(sql`(${events.name} ILIKE ${prefix}) DESC`, asc(events.name))
-          .limit(TARGET_LIMIT);
+          .limit(TARGET_LIMIT)
+          .then((rows) =>
+            rows.map(({ id, name, startedAt }) => ({
+              id,
+              name,
+              sublabel: startedAt ? formatDate(startedAt) : null,
+            })),
+          );
     }
   };
 
@@ -62,7 +88,7 @@ export async function searchGraphTargets(
       const row = resultsByKind[k][rank];
       if (!row) continue;
       advanced = true;
-      targets.push({ id: row.id, label: row.name, kind: requested[k] });
+      targets.push({ id: row.id, label: row.name, kind: requested[k], sublabel: row.sublabel });
     }
     if (!advanced) break;
   }

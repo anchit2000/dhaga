@@ -67,7 +67,7 @@ export function SuggestionsPanel({ clusters }: { clusters: NameCluster[] }) {
               {cluster.names.length > 4 ? ` +${cluster.names.length - 4} more` : ""}
             </span>
           </span>
-          <span className="flex shrink-0 gap-1.5">
+          <span className="flex flex-wrap gap-1.5">
             <Button
               variant="outline"
               size="sm"

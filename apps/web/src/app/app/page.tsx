@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { dayLoad, findOpenSlots, hasLLM } from "@dhaga/core";
 import { HomeDashboard } from "@/components/app/home/HomeDashboard";
+import { HomeTile } from "@/components/app/home/HomeTile";
 import { RelationshipInbox } from "@/components/app/relationships/RelationshipInbox";
 import { SuggestionsPanel } from "@/components/app/import/SuggestionsPanel";
 import { OnboardingTour } from "@/components/app/onboarding";
@@ -64,8 +65,6 @@ export default async function HomePage() {
       <Button render={<Link href="/app/people/new" />} variant="outline" size="sm">Add manually</Button>
     </div>
 
-    <RelationshipInbox suggestions={pendingSuggestions} nodeTypes={nodeTypes.map(({ id, name, slug }) => ({ id, name, slug }))} />
-
     <HomeDashboard
       people={people}
       events={events}
@@ -78,14 +77,13 @@ export default async function HomePage() {
       openFollowUps={openFollowUps}
       quietContacts={quietContacts}
       newSignals={newSignals}
+      inbox={<RelationshipInbox suggestions={pendingSuggestions} nodeTypes={nodeTypes.map(({ id, name, slug }) => ({ id, name, slug }))} />}
+      groups={suggestedClusters.length > 0 ? (
+        <HomeTile title="Suggested groups" className="sm:col-span-2 xl:col-span-3">
+          <SuggestionsPanel clusters={suggestedClusters} />
+        </HomeTile>
+      ) : null}
     />
-
-    {suggestedClusters.length > 0 ? (
-      <section className="space-y-3">
-        <h2 className="font-display text-lg">Suggested groups</h2>
-        <SuggestionsPanel clusters={suggestedClusters} />
-      </section>
-    ) : null}
 
     <QuickAddForm events={events.map(({ id, name }) => ({ id, name }))} defaultEventId={activeEventId(events)} storeCardPhotos={storeCardPhotos} homeDock aiUsage={llmEnabled ? `${used} of ${monthlyAiCap()} AI actions used` : undefined} />
   </div>;

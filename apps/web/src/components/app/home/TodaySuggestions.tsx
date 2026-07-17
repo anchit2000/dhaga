@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { CalendarClock } from "lucide-react";
 import { AddToCalendar } from "./AddToCalendar";
+import { HomeTile } from "./HomeTile";
 import { Button } from "@/components/ui/button";
 import { markReachedOutAction } from "@/lib/actions/reminders";
 import { formatWeekdayTime } from "@/utils/format-date";
@@ -20,10 +21,7 @@ const BUCKET_LABEL: Record<DailySuggestion["bucket"], string> = {
   graph: "Network",
 };
 
-function slotLabel(slot: MeetingSlot): string {
-  return formatWeekdayTime(slot.start);
-}
-
+/** Home's hero tile: the curated reach-out list for today. */
 export function TodaySuggestions({
   suggestions,
   calendarConnected,
@@ -44,32 +42,35 @@ export function TodaySuggestions({
   const [schedulingId, setSchedulingId] = useState<string | null>(null);
 
   return (
-    <section className="space-y-3">
-      <div className="flex items-end justify-between gap-3">
-        <h2 className="font-display text-lg">Today</h2>
+    <HomeTile
+      title="Today"
+      tone="amber"
+      data-tour="updates"
+      className="sm:col-span-2 xl:row-span-2"
+      meta={
         <span className="font-mono text-[10px] uppercase tracking-widest text-fog">
           {suggestions.length} {suggestions.length === 1 ? "person" : "people"}
         </span>
-      </div>
-
+      }
+    >
       {overloaded ? (
-        <div className="rounded-xl border border-amber/25 bg-amber/[0.05] px-4 py-3">
+        <div className="rounded-xl bg-amber/[0.06] px-3 py-2.5">
           <p className="text-sm text-paper">You have {meetingCountToday} meetings today.</p>
           <p className="mt-0.5 text-xs text-fog">A lighter day might be better — these can wait for tomorrow.</p>
         </div>
       ) : null}
 
       {suggestions.length === 0 ? (
-        <div className="rounded-xl border border-seam bg-panel px-4 py-3">
+        <div className="flex flex-1 flex-col justify-center py-8 text-center">
           <p className="text-sm text-paper">No one to reach out to today.</p>
-          <p className="mt-0.5 text-xs text-fog">
+          <p className="mt-1 text-xs text-fog">
             Set a keep-in-touch cadence on a contact and they&apos;ll surface here.
           </p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="divide-y divide-seam">
           {suggestions.map((person) => (
-            <div key={person.contactId} className="rounded-xl border border-amber/25 bg-amber/[0.05] px-3 py-2.5">
+            <div key={person.contactId} className="py-3 first:pt-0 last:pb-0">
               <div className="flex items-center gap-3">
                 <Button
                   render={<div />}
@@ -93,7 +94,7 @@ export function TodaySuggestions({
                 </form>
               </div>
               {calendarConnected && slots.length > 0 ? (
-                <div className="mt-2">
+                <div className="mt-1.5">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -106,7 +107,7 @@ export function TodaySuggestions({
                     <div className="mt-2 space-y-2 border-t border-seam pt-2">
                       {slots.map((slot) => (
                         <div key={slot.start.getTime()} className="flex flex-wrap items-center gap-2">
-                          <span className="min-w-24 text-xs text-paper">{slotLabel(slot)}</span>
+                          <span className="min-w-24 text-xs text-paper">{formatWeekdayTime(slot.start)}</span>
                           <AddToCalendar title={`Meet ${person.name}`} start={slot.start} end={slot.end} />
                         </div>
                       ))}
@@ -119,16 +120,20 @@ export function TodaySuggestions({
         </div>
       )}
 
-      {!calendarConnected ? (
-        <Link href="/app/settings" className="block text-xs text-amber hover:underline">
-          Connect a calendar to get meeting-time suggestions →
-        </Link>
+      {!calendarConnected || moreDue > 0 ? (
+        <div className="mt-auto space-y-1.5 pt-1">
+          {!calendarConnected ? (
+            <Link href="/app/settings" className="block text-xs text-amber hover:underline">
+              Connect a calendar to get meeting-time suggestions →
+            </Link>
+          ) : null}
+          {moreDue > 0 ? (
+            <Link href="/app/people" className="block text-xs text-fog hover:text-paper">
+              +{moreDue} more due this week → all people
+            </Link>
+          ) : null}
+        </div>
       ) : null}
-      {moreDue > 0 ? (
-        <Link href="/app/people" className="block text-xs text-fog hover:text-paper">
-          +{moreDue} more due this week → all people
-        </Link>
-      ) : null}
-    </section>
+    </HomeTile>
   );
 }

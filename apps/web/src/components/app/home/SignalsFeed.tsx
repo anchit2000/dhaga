@@ -1,5 +1,6 @@
 "use client";
 
+import { HomeTile } from "./HomeTile";
 import { SignalCard } from "../SignalCard";
 import { SIGNALS_FEED_LIMIT } from "@/utils/constants/app";
 import type { SignalItem } from "@/lib/repo/signals";
@@ -17,14 +18,20 @@ export function SignalsFeed({
   const overflow = signals.length - shown.length;
 
   return (
-    <section className="space-y-3">
-      <h2 className="font-display text-lg">Signals</h2>
+    <HomeTile
+      title="Signals"
+      meta={
+        <span className="font-mono text-[10px] uppercase tracking-widest text-fog">
+          {signals.length} new
+        </span>
+      }
+    >
       <ul className="space-y-1.5">
         {shown.map((signal) => (
           <SignalCard key={signal.id} showContact signal={signal} onContactClick={onSelectContact} />
         ))}
       </ul>
-      {overflow > 0 ? <p className="text-xs text-fog">+{overflow} more signals</p> : null}
-    </section>
+      {overflow > 0 ? <p className="mt-auto pt-1 text-xs text-fog">+{overflow} more signals</p> : null}
+    </HomeTile>
   );
 }

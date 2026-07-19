@@ -6,8 +6,10 @@ import {
   getLLMClient,
   hasLLM,
   noteExtractionSchema,
+  type LLMUsage,
   type NoteExtraction,
 } from "@dhaga/core";
+import { withUserDb } from "@/lib/db/request-scope";
 import { applyExtraction } from "@/lib/repo/graph";
 import { listNodeTypes } from "@/lib/repo/node-types";
 import { AiBudgetError, assertAiBudget, recordAiAction } from "./metering";
@@ -52,12 +54,20 @@ export async function extractAndApplyNote(
   }
   const enrichment = mode === "enrichment";
   let extraction: NoteExtraction;
+  let model: string;
+  let usage: LLMUsage;
   try {
-    await assertAiBudget(userId);
-    // The user's node-type registry (names + slugs only, never entity rows)
-    // rides in the volatile user prompt so the cached system prefix stays
-    // byte-stable; an empty registry degrades to the registry-free prompt.
-    const nodeTypes = (await listNodeTypes()).map(({ name, slug }) => ({ name, slug }));
+    // Prep phase (DB): budget check + node-type registry read run inside a
+    // short scoped-db lifetime, then the connection is released BEFORE the LLM
+    // call — see the extraction worker's connection-lifecycle fix. The user's
+    // node-type registry (names + slugs only, never entity rows) rides in the
+    // volatile user prompt so the cached system prefix stays byte-stable; an
+    // empty registry degrades to the registry-free prompt.
+    const nodeTypes = await withUserDb(userId, async () => {
+      await assertAiBudget(userId);
+      return (await listNodeTypes()).map(({ name, slug }) => ({ name, slug }));
+    });
+    // LLM phase: no DB connection is held across this ~minute-long call.
     const result = await getLLMClient().extract({
       schema: noteExtractionSchema,
       system: enrichment ? ENRICHMENT_EXTRACTION_SYSTEM : NOTE_EXTRACTION_SYSTEM,
@@ -66,8 +76,9 @@ export async function extractAndApplyNote(
         : buildNoteExtractionPrompt(contactName, noteBody, nodeTypes),
       tier: "extract",
     });
-    await recordAiAction("note_extraction", result.model, result.usage);
     extraction = result.data;
+    model = result.model;
+    usage = result.usage;
   } catch (error) {
     const reason =
       error instanceof AiBudgetError ? error.message : "The AI call failed.";
@@ -80,12 +91,25 @@ export async function extractAndApplyNote(
     };
   }
 
-  // Separate try/catch: a failure here means the AI call succeeded and the
-  // graph write is what broke — saying "the AI call failed" would blame the
+  // Apply phase (DB): a fresh short-lived scope records usage and writes the
+  // graph. Separate try/catch: a failure here means the AI call succeeded and
+  // the DB write is what broke — saying "the AI call failed" would blame the
   // wrong layer and mislead anyone debugging it.
   try {
-    await applyExtraction(contactId, noteId, extraction, { unverified: enrichment });
-  } catch {
+    await withUserDb(userId, async () => {
+      await recordAiAction("note_extraction", model, usage);
+      await applyExtraction(contactId, noteId, extraction, { unverified: enrichment });
+    });
+  } catch (error) {
+    // Log server-side so a recurring graph-write failure is diagnosable —
+    // but ONLY the error's own metadata, never the note text, extraction
+    // output, or any contact PII (CLAUDE.md privacy rules).
+    console.error("note-extraction: graph write failed", {
+      name: error instanceof Error ? error.name : undefined,
+      message: error instanceof Error ? error.message : String(error),
+      code: error instanceof Error ? (error as NodeJS.ErrnoException).code : undefined,
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return {
       applied: false,
       failed: true,

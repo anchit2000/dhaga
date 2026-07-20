@@ -12,6 +12,7 @@ export {
   addContactToEvent,
   createEvent,
   mergeEvents,
+  removeContactFromEvent,
   renameEvent,
   updateEventMeta,
 } from "./mutations";

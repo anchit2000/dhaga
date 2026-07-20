@@ -47,6 +47,9 @@ export const GRAPH_EDGE_SIZE = 0.5;
 export const GRAPH_COLLAPSED_GROUP_SCALE = 1.5;
 
 export const GRAPH_CAMERA_DURATION_MS = 450;
+/** Camera-ratio multiplier per zoom-button press: divide to zoom in, multiply
+ *  to zoom out (clamped to the renderer's min/max camera ratio). */
+export const GRAPH_ZOOM_STEP = 1.4;
 /** Above this node count, edges are hidden while the camera moves (GPU relief). */
 export const GRAPH_HIDE_EDGES_ON_MOVE_THRESHOLD = 5_000;
 /** Edge click events (popover) are enabled only under this edge count — sigma's

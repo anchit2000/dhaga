@@ -101,7 +101,7 @@ export default async function HomePage() {
       newSignals={newSignals}
       inbox={<RelationshipInbox suggestions={pendingSuggestions} nodeTypes={nodeTypes.map(({ id, name, slug }) => ({ id, name, slug }))} />}
       groups={suggestedClusters.length > 0 ? (
-        <HomeTile title="Suggested groups" className="sm:col-span-2 xl:col-span-3">
+        <HomeTile title="Suggested groups">
           <SuggestionsPanel clusters={suggestedClusters} />
         </HomeTile>
       ) : null}

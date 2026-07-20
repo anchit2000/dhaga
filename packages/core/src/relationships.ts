@@ -35,6 +35,16 @@ export const RELATIONSHIP_ROLES: Record<string, RelationshipRoles> = {
   manages: { subject: "manager", object: "report" },
   mentor_of: { subject: "mentor", object: "mentee" },
   mentored_by: { subject: "mentee", object: "mentor" },
+  // "Introduced" is directional but reads symmetric without an inverse (both
+  // ends showed "introduced to"). The two slugs are grammatical mirrors of the
+  // same fact — edges store src --predicate--> dst:
+  //   introduced_by: src was introduced BY dst  → src=introducee, dst=introducer
+  //   introduced_to: src introduced [→] dst      → src=introducer, dst=introducee
+  // relationshipRole shows the OTHER endpoint's role (object when viewing src,
+  // subject when viewing dst), so the introducee's page reads "introduced by
+  // <introducer>" and the introducer's reads "introduced <introducee>".
+  introduced_by: { subject: "introduced", object: "introduced by" },
+  introduced_to: { subject: "introduced by", object: "introduced" },
   colleague_of: { subject: "colleague", object: "colleague" },
   worked_with: { subject: "colleague", object: "colleague" },
   works_with: { subject: "colleague", object: "colleague" },

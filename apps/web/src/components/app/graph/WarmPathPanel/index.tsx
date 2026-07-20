@@ -1,16 +1,16 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { Crosshair, MoveRight } from "lucide-react";
 import { findWarmPathsAction, type WarmPathState } from "@/lib/actions/graph";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   GRAPH_TARGET_RESULTS_DISMISS_MS,
-  GRAPH_TARGET_SEARCH_DEBOUNCE_MS,
   WARM_PATH_TARGET_KINDS,
 } from "@/utils/constants/graph";
 import type { GraphTarget } from "@/lib/repo/graph-data";
+import { useTargetSearch } from "../use-target-search";
 import { SubmitButton } from "../../SubmitButton";
 import { PathChip } from "./PathChip";
 
@@ -25,40 +25,12 @@ export function WarmPathPanel({
 }) {
   const [state, formAction] = useActionState<WarmPathState, FormData>(findWarmPathsAction, {});
   const [query, setQuery] = useState("");
-  const [searchResult, setSearchResult] = useState({ query: "", targets: [] as GraphTarget[] });
+  const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<GraphTarget | null>(null);
-  const normalizedQuery = query.trim();
-  const results =
-    !selected && searchResult.query === normalizedQuery ? searchResult.targets : [];
-
-  useEffect(() => {
-    if (selected || !normalizedQuery) return;
-    const controller = new AbortController();
-    const timer = setTimeout(async () => {
-      try {
-        // kinds narrows to what warm paths can reach; the client-side filter
-        // is belt-and-braces for servers that don't support the param yet.
-        const res = await fetch(
-          `/api/graph/targets?q=${encodeURIComponent(normalizedQuery)}&kinds=${WARM_PATH_TARGET_KINDS.join(",")}`,
-          { signal: controller.signal },
-        );
-        if (!res.ok) return;
-        const data: { targets: GraphTarget[] } = await res.json();
-        setSearchResult({
-          query: normalizedQuery,
-          targets: data.targets.filter((target) => WARM_PATH_TARGET_KINDS.includes(target.kind)),
-        });
-      } catch {
-        if (!controller.signal.aborted) {
-          setSearchResult({ query: normalizedQuery, targets: [] });
-        }
-      }
-    }, GRAPH_TARGET_SEARCH_DEBOUNCE_MS);
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
-  }, [normalizedQuery, selected]);
+  const results = useTargetSearch(query, {
+    kinds: WARM_PATH_TARGET_KINDS,
+    enabled: open && !selected,
+  });
 
   return (
     <div className="space-y-3 rounded-2xl border border-seam bg-panel p-4">
@@ -79,12 +51,10 @@ export function WarmPathPanel({
             onChange={(event) => {
               setSelected(null);
               setQuery(event.target.value);
+              setOpen(true);
             }}
             onBlur={() =>
-              setTimeout(
-                () => setSearchResult({ query: "", targets: [] }),
-                GRAPH_TARGET_RESULTS_DISMISS_MS,
-              )
+              setTimeout(() => setOpen(false), GRAPH_TARGET_RESULTS_DISMISS_MS)
             }
             placeholder="Search a person or company…"
             className="h-9 w-56 text-sm"
@@ -98,6 +68,7 @@ export function WarmPathPanel({
                     type="button"
                     onClick={() => {
                       setSelected(target);
+                      setOpen(false);
                     }}
                     className="flex w-full items-baseline gap-1.5 px-2.5 py-1.5 text-left text-sm text-paper hover:bg-wash/[0.05]"
                   >

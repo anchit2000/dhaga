@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useAsyncData } from "@/lib/data";
 import { EXTRACTION_POLL_INTERVAL_MS } from "@/utils/constants/extraction-jobs";
 import type { ExtractionJobView, ExtractionStatusResponse } from "@/types";
 
@@ -19,21 +20,43 @@ function signature(jobs: ExtractionJobView[]): string {
 
 /**
  * Drives background extraction from the page: fires the worker for pending
- * jobs, polls status while any are active, and refreshes the server-rendered
- * page whenever a job advances — so the enrichment note, then the facts, then
- * the follow-ups appear as they land instead of after a manual reload.
+ * jobs, polls status while any are active (giving up after 5 straight
+ * failures), and refreshes the server-rendered page whenever a job advances —
+ * so the enrichment note, then the facts, then the follow-ups appear as they
+ * land instead of after a manual reload.
  */
 export function useExtractionPoller(
   contactId: string,
   initialJobs: ExtractionJobView[],
 ): ExtractionJobView[] {
   const router = useRouter();
-  const [jobs, setJobs] = useState<ExtractionJobView[]>(initialJobs);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const polling = useRef(false);
-  const failures = useRef(0);
-  const lastSig = useRef(signature(initialJobs));
-  const pollRef = useRef<() => void>(() => {});
+  const initialSig = signature(initialJobs);
+
+  // The server's job set is part of the key: a materially different set (a
+  // fresh enqueue or a retry re-render) seeds a new query and restarts
+  // polling, replacing the old hand-rolled signature-sync effect.
+  const { data } = useAsyncData<ExtractionJobView[]>({
+    key: ["extraction-status", contactId, initialSig],
+    fetcher: async (signal) => {
+      const res = await fetch(`/api/contacts/${contactId}/extraction-status`, {
+        cache: "no-store",
+        signal,
+      });
+      if (!res.ok) throw new Error(`extraction status failed (${res.status})`);
+      return ((await res.json()) as ExtractionStatusResponse).jobs;
+    },
+    initialData: initialJobs,
+    staleMs: "forever",
+    refetchIntervalMs: (jobs, consecutiveFailures) => {
+      // A failed poll must not wipe the progress UI or stop the loop: keep
+      // retrying through transient blips, giving up only after several
+      // failures in a row (a genuinely unreachable endpoint).
+      if (consecutiveFailures >= 5) return false;
+      if (consecutiveFailures > 0) return EXTRACTION_POLL_INTERVAL_MS;
+      return (jobs ?? []).some(isActive) ? EXTRACTION_POLL_INTERVAL_MS : false;
+    },
+  });
+  const jobs = data ?? initialJobs;
 
   const trigger = useCallback((jobId: string) => {
     // Fire-and-forget: the worker's atomic claim dedupes double-fires, and
@@ -44,85 +67,21 @@ export function useExtractionPoller(
     }).catch(() => undefined);
   }, []);
 
-  // Schedule the next tick through a ref so the self-rescheduling loop always
-  // calls the latest `poll` without capturing it before it's declared.
-  const scheduleNext = useCallback(() => {
-    timer.current = setTimeout(() => void pollRef.current(), EXTRACTION_POLL_INTERVAL_MS);
-  }, []);
+  // A fresh server-rendered job set is the new refresh baseline (the server
+  // just painted it); only later poll-observed advances should refresh.
+  const lastSig = useRef(initialSig);
+  useEffect(() => {
+    lastSig.current = initialSig;
+  }, [initialSig]);
 
-  const poll = useCallback(async () => {
-    let next: ExtractionJobView[] | null = null;
-    try {
-      const res = await fetch(`/api/contacts/${contactId}/extraction-status`, {
-        cache: "no-store",
-      });
-      if (res.ok) next = ((await res.json()) as ExtractionStatusResponse).jobs;
-    } catch {
-      // transient network blip — handled below
-    }
-
-    // A failed poll must not wipe the progress UI or stop the loop: keep the
-    // last known jobs and retry, giving up only after several failures in a
-    // row (a genuinely unreachable endpoint).
-    if (next === null) {
-      failures.current += 1;
-      if (failures.current < 5) {
-        scheduleNext();
-      } else {
-        polling.current = false;
-      }
-      return;
-    }
-    failures.current = 0;
-
-    setJobs(next);
-    const sig = signature(next);
+  useEffect(() => {
+    for (const job of jobs) if (job.status === "pending") trigger(job.id);
+    const sig = signature(jobs);
     if (sig !== lastSig.current) {
       lastSig.current = sig;
       router.refresh();
     }
-    for (const job of next) if (job.status === "pending") trigger(job.id);
-    if (next.some(isActive)) {
-      scheduleNext();
-    } else {
-      polling.current = false;
-    }
-  }, [contactId, router, trigger, scheduleNext]);
-
-  useEffect(() => {
-    pollRef.current = poll;
-  }, [poll]);
-
-  const ensurePolling = useCallback(() => {
-    if (polling.current) return;
-    polling.current = true;
-    scheduleNext();
-  }, [scheduleNext]);
-
-  // Sync state to the server's job set during render (React's alternative to
-  // calling setState in an effect) whenever it materially changes.
-  const initialSig = signature(initialJobs);
-  const [prevInitialSig, setPrevInitialSig] = useState(initialSig);
-  if (initialSig !== prevInitialSig) {
-    setPrevInitialSig(initialSig);
-    setJobs(initialJobs);
-  }
-
-  useEffect(() => {
-    lastSig.current = initialSig;
-    for (const job of initialJobs) if (job.status === "pending") trigger(job.id);
-    if (initialJobs.some(isActive)) ensurePolling();
-    // Re-run only when the server hands us a materially different job set
-    // (a fresh enqueue or a retry re-render), not on every parent render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialSig]);
-
-  useEffect(
-    () => () => {
-      if (timer.current) clearTimeout(timer.current);
-    },
-    [],
-  );
+  }, [jobs, router, trigger]);
 
   return jobs;
 }

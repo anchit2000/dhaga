@@ -412,12 +412,10 @@ On a contact, add this note:
 - [ ] **Follow-ups** shows the action with the timing hint; the checkmark
       marks it done.
 - [ ] Delete a single fact — only it disappears (its embedding is also
-      cleaned up — `deleteFact` owns this itself, per a same-event fix
-      noted in `docs/notes-2026-07-07.md`).
+      cleaned up — `deleteFact` owns this itself, per a same-event fix).
 - [ ] Delete the note — its remaining derived facts disappear with it
       (receipts invariant: no fact outlives its source), and the note's own
-      embeddings go with it too (`deleteNote` owns this cleanup directly,
-      same source).
+      embeddings go with it too (`deleteNote` owns this cleanup directly, same fix).
 
 ### 7g. Voice notes & pre-meeting brief
 
@@ -466,9 +464,7 @@ On a contact, add this note:
       signals.ts:33` — no key means `skipped: "no_llm"`, not a crash).
 - [ ] A detected signal shows on Home; **Add as note** files it as a
       regular note (facts/receipts as usual). Re-running the sweep doesn't
-      re-surface the same unresolved signal (`hasOpenSignal` guard, per
-      `docs/notes-2026-07-07.md`'s bug-fix note) — **flagged, not fixed** in
-      that same pass: double-clicking "Add as note" has no idempotency
+      re-surface the same unresolved signal (`hasOpenSignal` guard). Note: double-clicking "Add as note" has no idempotency
       guard yet and could create duplicate notes; worth being aware of if
       you click it twice.
 

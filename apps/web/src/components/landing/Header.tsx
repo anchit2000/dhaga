@@ -9,6 +9,7 @@ const NAV_LINKS = [
   { href: "#opensource", label: "Open source" },
   { href: "#pricing", label: "Pricing" },
   { href: "#faq", label: "FAQ" },
+  { href: "/docs", label: "Docs" },
 ];
 
 interface HeaderProps {

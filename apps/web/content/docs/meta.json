@@ -1,0 +1,13 @@
+{
+  "title": "Documentation",
+  "pages": [
+    "index",
+    "self-hosting",
+    "extending",
+    "api",
+    "development",
+    "contributing",
+    "product",
+    "roadmap"
+  ]
+}

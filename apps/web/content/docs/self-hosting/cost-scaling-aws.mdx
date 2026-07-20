@@ -1,0 +1,231 @@
+---
+title: Cost & scaling on AWS
+description: "A service-by-service migration map off Supabase + Vercel, a cost model at 1k / 10k / 100k users, and the scaling architecture — built around the one number that moves the bill: model inference."
+---
+
+Leaving Supabase + Vercel to self-host on AWS at SaaS scale: a service-by-service
+migration map, a cost model at 1k / 10k / 100k users, and the scaling
+architecture — built around the one number that actually moves: model inference.
+
+*AWS-preferred · Postgres + pgvector · Claude Haiku + Sonnet · figures as of
+2026-07-20.*
+
+<Callout title="The headline">
+**Your infrastructure is cheap; your model inference is the business.** At
+every scale below, AWS infra runs **$0.18–$0.41 per user / month** and
+*drops* as you grow. Claude usage scales *linearly* with activity and, if
+proactive AI runs uncapped, becomes **3–8× the infra bill**. Self-hosting is
+mostly a decision about the DB and compute — but the thing to engineer
+hardest is **metering and capping the LLM**.
+</Callout>
+
+## 1. Service map — what replaces what
+
+Two escape routes per layer: the AWS-native managed service (less ops,
+AWS-preferred), and a fully-portable open-source equivalent (zero lock-in,
+cheapest on bare metal). Your app is already built to move — `better-auth` is
+self-hosted, the DB is boring relational Postgres, and the LLM/search gateways
+make providers swappable.
+
+| Layer | Today | AWS-native | Portable / self-host |
+|---|---|---|---|
+| Web app + API | Vercel | ECS Fargate or App Runner (containers); EKS at scale | Docker on Hetzner / Fly / bare metal |
+| Postgres + pgvector | Supabase | Aurora PostgreSQL (Serverless v2) or RDS Postgres — enable `vector` | Postgres + pgvector container; Crunchy |
+| Connection pooling | Supabase pooler | RDS Proxy | PgBouncer sidecar |
+| Cache / hot reads | — | ElastiCache (Redis / Valkey) | Redis / Valkey container |
+| Object storage (card photos, exports) | Supabase Storage | S3 + CloudFront | MinIO |
+| Job queue / nightly | Vercel cron + routes | SQS + EventBridge Scheduler; workers on Fargate | BullMQ (Redis) / river (Go) |
+| Search index | PG FTS (SearchIndex gateway) | Amazon OpenSearch — *drop-in via the gateway* | Elasticsearch / Meilisearch / Typesense |
+| Auth | better-auth (in-app) | Unchanged — it runs inside your app on any host | Unchanged |
+| Transactional email | Resend | Amazon SES | Postal / SMTP relay |
+| Secrets | Vercel env | Secrets Manager / SSM Parameter Store | HashiCorp Vault / SOPS |
+| CDN + TLS + LB | Vercel edge | CloudFront + ALB + ACM | Caddy / nginx + Cloudflare |
+| On-device primitives (OCR, embeddings) | local ONNX | Keep on-device / in-app; GPU only if you centralize them | Keep on-device / in-app |
+| LLM | Anthropic API | Claude Platform on AWS (keeps Batch) · or Bedrock (no Batch) | Anthropic API direct; or Ollama / vLLM (self-host) |
+| Observability | Vercel Analytics | CloudWatch + X-Ray | Grafana + Prometheus + Loki |
+
+<Callout type="warn" title="The one AWS gotcha that matters for you">
+**Bedrock** is AWS-native but does **not** support the Message Batches API,
+the server-side web-search tool, or automatic prompt caching — so your nightly
+Batch enrichment (−50%) and web-search enrichment both break there. **Claude
+Platform on AWS** is Anthropic-operated on AWS infrastructure with AWS IAM +
+Marketplace billing and same-day API parity — it keeps Batch and web search.
+If you want AWS-native billing without losing those, choose Claude Platform on
+AWS over Bedrock. The simplest option of all is calling the first-party
+Anthropic API straight from your ECS/EKS tasks.
+</Callout>
+
+## 2. Cost at three scales
+
+Monthly, order-of-magnitude. MAU = monthly active users; assume ~40% of them
+trigger AI in a given month. AWS figures assume on-demand + modest reserved
+coverage; the Claude figures assume metering is on (see §3). Treat as planning
+brackets — model your real numbers in the AWS Pricing Calculator.
+
+| Scale | All-in / month | Infra / user | AWS infra | Claude (metered) |
+|---|---|---|---|---|
+| 1,000 MAU | ~$0.9–1.9k | ~$0.41 | ~$410 | ~$0.5–1.5k |
+| 10,000 MAU | ~$7–18k | ~$0.25 | ~$2.5k | ~$5–15k |
+| 100,000 MAU | ~$65–170k | ~$0.18 | ~$18k | ~$50–150k |
+
+### AWS infra line items
+
+| Service | 1k MAU | 10k MAU | 100k MAU |
+|---|--:|--:|--:|
+| Compute (Fargate/EKS + workers) | $120 | $550 | $4,500 |
+| Aurora Postgres (writer + replicas) | $180 | $950 | $7,000 |
+| RDS Proxy | $0 | $120 | $600 |
+| ElastiCache | $45 | $300 | $1,400 |
+| S3 + CloudFront + egress | $40 | $300 | $2,600 |
+| OpenSearch (optional) | $0 | $300 | $2,000 |
+| SES · SQS · Secrets · CloudWatch | $25 | $180 | $1,200 |
+| **AWS infra subtotal** | **~$410** | **~$2,700** | **~$19,300** |
+
+<Callout title="Read the trend, not the cents">
+Per-user infra *falls* with scale ($0.41 → $0.18) as fixed services amortize
+and reserved/savings plans kick in. The AI line does the opposite — it tracks
+usage. That divergence is the whole strategy: optimize AI spend, not server
+spend.
+</Callout>
+
+## 3. The cost center: Claude inference
+
+Your architecture already picks the right model per job — Haiku for
+extraction, Sonnet for search/drafts, Batch for nightly. Here's what that
+costs, and where it explodes.
+
+| Tier | Model | Input /MTok | Output /MTok | Levers |
+|---|---|--:|--:|---|
+| Extraction / parsing | `claude-haiku-4-5` | $1.00 | $5.00 | cache the stable system prefix; structured output |
+| Search / drafts | `claude-sonnet-5` | $3.00 ($2 intro*) | $15.00 ($10*) | prompt-cache the graph context; effort tuning |
+| Nightly jobs | either, via Batch | −50% | −50% | enrichment, digests, change-detection |
+
+*\* Sonnet 5 introductory pricing $2/$10 per MTok runs through 2026-08-31;
+model durable planning at $3/$15. Prompt-cache reads bill at ~0.1× input;
+cache writes 1.25× (5-min) / 2× (1-hour).*
+
+### Two spend regimes
+
+<Callout type="success" title="Metered & capped — sustainable">
+A moderately active user costs roughly **~$1–2 / month**: ~$0.20 extraction
+(Haiku, cached) + ~$0.50 search (Sonnet) + ~$0.50 enrichment (Sonnet via
+Batch). Your free-tier cap of **25 cloud AI actions/month** is exactly the
+right instrument — it bounds the worst case per user before it starts.
+</Callout>
+
+<Callout type="error" title="Proactive & uncapped — the blow-up">
+The danger isn't the chat box — it's **proactive AI running nightly across a
+large graph**: watchlist re-checks, enrichment sweeps, digest generation over
+thousands of contacts. Uncapped, that's **$10–50+ / user / month** and it's
+invisible until the invoice. This is the single biggest cost decision in the
+product — **cap by tier, meter every action, and put latency-insensitive work
+on the Batch API**.
+</Callout>
+
+### Cheapest paths to the same quality
+
+- **Prompt caching is free money.** The stable system prefix + the user's
+  graph context are the same across calls — cache them and input drops to
+  ~0.1×. Keep volatile content (today's date, the query) last so the prefix
+  stays byte-stable.
+- **Batch everything that can wait.** Enrichment, change-detection, digests →
+  Message Batches at −50%. (Keep this on the Anthropic API or Claude Platform
+  on AWS — *not* Bedrock.)
+- **Right-size the model per task, then cap effort.** Haiku already handles
+  extraction; don't let a Sonnet call do a Haiku job.
+- **Meter from day one** (you already do) so a runaway tenant is a throttled
+  tenant, not a surprise.
+
+## 4. Scaling architecture
+
+The compute layer auto-scales trivially; the database is the ceiling. The move
+that unlocks real concurrency is the same one your docs already track —
+transaction-mode pooling with per-transaction RLS — plus caching the hot reads
+so most requests never touch Postgres.
+
+The request path:
+
+```
+Users · mobile · extension
+        ↓
+CloudFront + WAF
+        ↓
+Application Load Balancer
+        ↓
+App tier — ECS Fargate / EKS   (Next.js + API, autoscaled)
+        ↓   fans out to
+  ├─ ElastiCache Redis          hot reads · rate limits
+  ├─ RDS Proxy (txn pooling)    → Aurora writer, read replicas
+  ├─ S3                         photos · exports → CDN
+  └─ SQS + EventBridge          → Fargate workers (extraction · enrichment · digests)
+        ↓   Haiku / Sonnet · nightly Batch
+Claude — API · Platform on AWS · Bedrock
+```
+
+### The five levers, in priority order
+
+1. **Transaction pooling + per-transaction RLS.** Session-pinned pooling caps
+   you at ~pool_size concurrent DB requests. Transaction mode (RDS Proxy /
+   PgBouncer) multiplexes thousands of clients onto a few backends — but
+   requires moving RLS scoping to `SET LOCAL` inside each transaction. This is
+   the prerequisite for real scale.
+2. **Cache the hot reads.** Graph payload, home dashboard, contact lists →
+   ElastiCache, keyed per user (already RLS-scoped), invalidated on write. At
+   10k+ MAU this is the biggest lever for keeping DB load flat.
+3. **Read replicas.** Route graph/search reads to Aurora replicas; writes to
+   the primary.
+4. **Short transactions.** Never hold a connection across an LLM or network
+   call — the principle already applied to the extraction worker generalizes
+   everywhere.
+5. **Queue the heavy work.** Extraction, enrichment, embeddings → SQS +
+   Fargate workers, off the request path.
+
+## 5. When to self-host the model
+
+The LLM gateway makes Claude ↔ Ollama/vLLM a drop-in — so this is a pure
+cost/quality/ops trade you can defer until the numbers demand it.
+
+| Option | Economics | When it wins |
+|---|---|---|
+| Claude API / Platform on AWS (default) | Pay-per-token; Batch −50%; caching 0.1×. Zero GPU ops. | Until inference is a large, steady fraction of COGS. Almost always the right start. |
+| Self-host on AWS GPU | g5/p4d/p5 at ~$1–30+/hr committed. Expensive per GPU-hour; you pay for idle. | Rarely — AWS GPU pricing erases most of the savings vs. the API. |
+| Self-host on dedicated / Hetzner GPU | Far cheaper GPU-hours; you own scheduling, batching, uptime. | Very high, steady extraction volume where a small open model matches Haiku on your evals. |
+
+<Callout title="Recommended sequence">
+Stay on Claude with Batch + caching. If inference becomes a large share of
+COGS, self-host the *extraction* tier first (a small open model on GPU, gated
+behind the existing `LLMClient` interface) and keep Sonnet-grade reasoning on
+Claude — you capture most of the volume savings without risking the
+quality-sensitive path. Never call a bigger model where a smaller one passes
+your evals.
+</Callout>
+
+## 6. Migration order
+
+- **Prove portability first** — you can already run the whole stack via
+  `docker compose`; that's your escape hatch and your staging target.
+- **Move the database** to Aurora Postgres (pgvector), fronted by RDS Proxy,
+  and land the transaction-pooler + per-transaction-RLS rework here — it's the
+  load-bearing change for scale.
+- **Containerize the app + workers** onto ECS Fargate behind ALB +
+  CloudFront; wire SQS for nightly jobs.
+- **Add ElastiCache** and cache the hot reads before you need to.
+- **Point the LLM gateway** at Claude Platform on AWS (keeps Batch + web
+  search) or the first-party API — not Bedrock, unless you drop those
+  features.
+- **Flip search** to OpenSearch through the `SearchIndex` gateway only if PG
+  FTS stops keeping up — the seam is already there.
+
+<Callout title="Bottom line">
+Self-hosting on AWS is a well-trodden path and the infra stays cheap — a
+fraction of a dollar per user, falling as you grow. Spend your engineering
+budget where the money actually is: the transaction-pooler rework that unlocks
+concurrency, and the metering/caps/Batch discipline that keeps model inference
+— your real cost center — from running away.
+</Callout>
+
+<Callout type="info" title="Planning brackets, not quotes">
+Cost figures are planning brackets — validate against the AWS Pricing
+Calculator and current Claude pricing for your workload. Prices current as of
+2026-07-20; Sonnet 5 introductory rate expires 2026-08-31.
+</Callout>

@@ -6,9 +6,10 @@ import {
   getLLMClient,
   hasLLM,
   searchQueryPlanSchema,
+  type SearchIndexResult,
   type SearchQueryPlan,
 } from "@dhaga/core";
-import { hybridSearch, type SearchHit } from "@/lib/repo/search";
+import { getSearchIndex } from "@/lib/repo/search-index";
 import { contactIdsForPlan } from "@/lib/repo/search-filters";
 import { AiBudgetError, assertAiBudget, recordAiAction } from "./metering";
 
@@ -17,14 +18,12 @@ export interface AiAnswerResult {
   notice?: string;
 }
 
-function candidateBlocks(hits: SearchHit[]): string {
+function candidateBlocks(hits: SearchIndexResult[]): string {
   return hits
     .slice(0, 10)
     .map((hit) => {
-      const identity = [hit.name, hit.title, hit.companyName]
-        .filter(Boolean)
-        .join(" · ");
-      return [`# ${identity}`, ...hit.matches].join("\n");
+      const identity = [hit.label, hit.sublabel].filter(Boolean).join(" · ");
+      return [`# ${identity}`, ...(hit.matches ?? [])].join("\n");
     })
     .join("\n\n");
 }
@@ -69,10 +68,11 @@ export async function answerSearchQuery(
   const plan = await planQuery(query);
   const restrictTo = plan ? await contactIdsForPlan(plan) : undefined;
   const retrievalQuery = plan?.semantic_query || query;
-  let hits = await hybridSearch(retrievalQuery, restrictTo);
+  const index = getSearchIndex();
+  let hits = await index.search({ text: retrievalQuery, kinds: ["contact"], restrictTo });
   if (hits.length === 0 && restrictTo) {
     // Filters matched nobody — retry unfiltered rather than answering blind.
-    hits = await hybridSearch(retrievalQuery);
+    hits = await index.search({ text: retrievalQuery, kinds: ["contact"] });
   }
   if (hits.length === 0) {
     return {

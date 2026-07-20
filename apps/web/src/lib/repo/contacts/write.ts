@@ -26,6 +26,7 @@ export async function findOrCreateCompany(name: string): Promise<string> {
     await tx.execute(
       sql`select pg_advisory_xact_lock(hashtext(${trimmed.toLowerCase()}))`,
     );
+    // TODO(search-index): route through getSearchIndex() (matchMode: "exact")
     const [existing] = await tx
       .select({ id: companies.id })
       .from(companies)
@@ -105,6 +106,7 @@ export async function createContactProfile(
 ): Promise<string> {
   const db = await getDb();
   const resolved = await resolvePositions(input.positions);
+  // TODO(search-index): route through getSearchIndex() (matchMode: "exact")
   const mentioned = await db
     .select({ id: contacts.id })
     .from(contacts)

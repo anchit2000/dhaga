@@ -28,6 +28,7 @@ export async function listEvents(limit?: number): Promise<EventListItem[]> {
 }
 
 /** Server-paginated events for the /app/events table: name search + tag filter. */
+// TODO(search-index): route through getSearchIndex() (needs paginated list support)
 export async function listEventsPage({ page, pageSize, name, tag }: {
   page: number;
   pageSize: number;

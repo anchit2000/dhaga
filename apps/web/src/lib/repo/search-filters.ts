@@ -8,6 +8,7 @@ import type { SearchQueryPlan } from "@dhaga/core";
  * contact ids they allow. `undefined` = no filters = search everyone.
  * An empty set is meaningful: filters matched nobody.
  */
+// TODO(search-index): route the event/company ILIKE filters through getSearchIndex()
 export async function contactIdsForPlan(
   plan: SearchQueryPlan,
 ): Promise<Set<string> | undefined> {

@@ -1,20 +1,16 @@
+import type { SearchWeights } from "@dhaga/core";
+
 /**
  * Hybrid search scoring weights — heuristic, not scientifically tuned.
  * Each source's score is `ts_rank(...) * weight` (or a flat weight for
  * trigram fragment matches, which have no rank), summed per contact across
  * every source that matched. User-tunable from the Search tab's "Tune
  * ranking" panel; persisted per-instance via lib/repo/settings.ts.
+ *
+ * The type is the shared search-index gateway contract (`@dhaga/core`),
+ * re-exported here so existing `@/utils/constants/search` imports are unchanged.
  */
-export interface SearchWeights {
-  semantic: number;
-  identity: number;
-  trigram: number;
-  facts: number;
-  notes: number;
-  followUps: number;
-  events: number;
-  signals: number;
-}
+export type { SearchWeights };
 
 export const DEFAULT_SEARCH_WEIGHTS: SearchWeights = {
   semantic: 4,

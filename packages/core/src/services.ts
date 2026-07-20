@@ -83,6 +83,18 @@ export {
   type VectorWriteOptions,
 } from "./retrieval";
 export {
+  getSearchIndex,
+  registerSearchIndex,
+  selectSearchIndex,
+  type SearchDocument,
+  type SearchIndex,
+  type SearchIndexResult,
+  type SearchKind,
+  type SearchQuery,
+  type SearchWeights,
+  type SearchWriteOptions,
+} from "./search-index";
+export {
   DemoCalendarProvider,
   GoogleCalendarProvider,
   MicrosoftCalendarProvider,

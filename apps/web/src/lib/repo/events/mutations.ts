@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { eventContacts, events } from "@/lib/db/schema";
 
@@ -46,6 +46,17 @@ export async function addContactToEvent(
     .insert(eventContacts)
     .values({ eventId, contactId, ...(scannedAt ? { scannedAt } : {}) })
     .onConflictDoNothing();
+}
+
+/** Detach a person from an event (idempotent — no-op if they weren't attached). */
+export async function removeContactFromEvent(
+  eventId: string,
+  contactId: string,
+): Promise<void> {
+  const db = await getDb();
+  await db
+    .delete(eventContacts)
+    .where(and(eq(eventContacts.eventId, eventId), eq(eventContacts.contactId, contactId)));
 }
 
 export async function renameEvent(id: string, name: string): Promise<void> {

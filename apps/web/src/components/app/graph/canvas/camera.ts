@@ -45,6 +45,21 @@ export function fitToNodes(sigma: GraphRenderer, nodeIds: Iterable<string>): voi
   );
 }
 
+/**
+ * Zoom the camera by a multiplicative factor around its current centre.
+ * `factor < 1` zooms in (smaller ratio), `factor > 1` zooms out; the result is
+ * clamped to the renderer's own min/max camera ratio so the buttons can never
+ * push past what drag-zoom allows.
+ */
+export function zoomByFactor(sigma: GraphRenderer, factor: number): void {
+  if (!isRendererAlive(sigma)) return; // killed on swap; caller re-fires next render
+  const camera = sigma.getCamera();
+  const min = sigma.getSetting("minCameraRatio") ?? 0;
+  const max = sigma.getSetting("maxCameraRatio") ?? Number.POSITIVE_INFINITY;
+  const ratio = Math.max(min, Math.min(max, camera.ratio * factor));
+  void camera.animate({ ratio }, { duration: GRAPH_CAMERA_DURATION_MS });
+}
+
 /** Reset to the default full-graph view. */
 export function resetCamera(sigma: GraphRenderer): void {
   if (!isRendererAlive(sigma)) return;

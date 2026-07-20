@@ -14,6 +14,7 @@ import { isReachOutDue } from "@/lib/repo/reminders";
 import { listContactSignals } from "@/lib/repo/signals";
 import { listContactRelationships } from "@/lib/repo/relationships";
 import { Button } from "@/components/ui/button";
+import { AddToEventPicker } from "@/components/app/AddToEventPicker";
 import { AddNoteForm } from "@/components/app/contact/AddNoteForm";
 import { CardPhotoStrip } from "@/components/app/contact/CardPhotoStrip";
 import { BriefSection } from "@/components/app/contact/BriefSection";
@@ -111,6 +112,12 @@ export default async function PersonPage({
                 ))}
               </div>
             ) : null}
+            <div className="mt-3 max-w-xs">
+              <AddToEventPicker
+                contactId={id}
+                currentEventIds={contactEvents.map((event) => event.id)}
+              />
+            </div>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">

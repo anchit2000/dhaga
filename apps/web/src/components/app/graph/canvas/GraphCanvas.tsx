@@ -13,6 +13,7 @@ import { useSpokeSelect, useTagLayer } from "./use-tag-layer";
 import { useViewState } from "./use-view-state";
 import { CirclesUnderlay } from "./CirclesUnderlay";
 import { EdgePopover } from "../panels/EdgePopover";
+import { GraphControls } from "../panels/GraphControls";
 import { GraphSearch } from "../panels/GraphSearch";
 import { LayersPanel } from "../panels/LayersPanel";
 import { NodePanel } from "../panels/NodePanel";
@@ -111,6 +112,13 @@ export function GraphCanvas({
         />
         <GraphSearch nodes={tags.nodes} nodeTypes={payload.nodeTypes} onPick={selectNode} />
       </div>
+
+      {renderer ? (
+        <GraphControls
+          renderer={renderer}
+          visibleNodeIds={() => renderer.getGraph().filterNodes((id) => !hiddenNodes.has(id))}
+        />
+      ) : null}
 
       {showReset ? (
         <ResetChip

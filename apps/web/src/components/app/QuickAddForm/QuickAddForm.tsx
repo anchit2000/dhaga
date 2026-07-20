@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import {
   extractQuickAddAction,
   scanCardAction,
@@ -48,20 +48,17 @@ export function QuickAddForm({
     {},
   );
 
-  if (state.contact) {
-    return (
-      <QuickAddResult
-        contact={state.contact}
-        via={state.via}
-        notice={state.notice}
-        sourceText={state.sourceText}
-        imageBase64={state.imageBase64}
-        imageType={state.imageType}
-        events={events}
-        defaultEventId={defaultEventId}
-      />
-    );
-  }
+  // A parsed capture opens the review form in a dialog (not inline at the page
+  // bottom). Track the last contact so a fresh scan re-opens after a dismiss.
+  const [resultOpen, setResultOpen] = useState(false);
+  const lastContactRef = useRef<QuickAddState["contact"]>(undefined);
+  useEffect(() => {
+    if (state.contact && state.contact !== lastContactRef.current) {
+      lastContactRef.current = state.contact;
+      setResultOpen(true);
+      if (homeDock) setCaptureOpen(false);
+    }
+  }, [state.contact, homeDock]);
 
   if (state.matches && state.matches.length > 1 && state.sourceText) {
     return (
@@ -96,7 +93,32 @@ export function QuickAddForm({
     </div>
   );
 
-  if (!homeDock) return <div className="pb-28">{captureForm}</div>;
+  const resultDialog = state.contact ? (
+    <Dialog open={resultOpen} onOpenChange={setResultOpen}>
+      <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto">
+        <DialogTitle>Review scanned contact</DialogTitle>
+        <QuickAddResult
+          contact={state.contact}
+          via={state.via}
+          notice={state.notice}
+          sourceText={state.sourceText}
+          imageBase64={state.imageBase64}
+          imageType={state.imageType}
+          events={events}
+          defaultEventId={defaultEventId}
+        />
+      </DialogContent>
+    </Dialog>
+  ) : null;
+
+  if (!homeDock) {
+    return (
+      <div className="pb-28">
+        {captureForm}
+        {resultDialog}
+      </div>
+    );
+  }
 
   return (
     <div className="pb-28">
@@ -120,6 +142,7 @@ export function QuickAddForm({
           onCaptureToggle={() => setCaptureOpen(true)}
         />
       )}
+      {resultDialog}
     </div>
   );
 }

@@ -32,6 +32,13 @@
             "timeout": 120,
             "statusMessage": "Type-checking...",
             "command": "$j=[Console]::In.ReadToEnd()|ConvertFrom-Json;$fp=$j.tool_input.file_path;if($fp -and $fp -match 'networkpro' -and $fp -match '\\.(ts|tsx)$' -and $fp -notmatch 'node_modules'){$d=Split-Path $fp;while($d -and -not (Test-Path (Join-Path $d 'tsconfig.json'))){$p=Split-Path $d;if($p -eq $d -or -not $p){$d=$null}else{$d=$p}};if($d -and (Test-Path (Join-Path $d 'node_modules/typescript/bin/tsc'))){$r=node (Join-Path $d 'node_modules/typescript/bin/tsc') --noEmit -p (Join-Path $d 'tsconfig.json') 2>&1|Out-String;$f=($r -split \"`n\"|Where-Object{$_ -notmatch 'node_modules'}) -join \"`n\";if($f.Trim()){@{hookSpecificOutput=@{hookEventName='PostToolUse';additionalContext=\"TypeScript errors after edit:`n$f\"}}|ConvertTo-Json -Compress}}}"
+          },
+          {
+            "type": "command",
+            "shell": "powershell",
+            "timeout": 60,
+            "statusMessage": "Linting...",
+            "command": "$j=[Console]::In.ReadToEnd()|ConvertFrom-Json;$fp=$j.tool_input.file_path;if($fp -and $fp -match 'networkpro' -and $fp -match '\\.(ts|tsx)$' -and $fp -notmatch 'node_modules'){$c=Split-Path $fp;while($c -and -not (Test-Path (Join-Path $c 'eslint.config.mjs'))){$p=Split-Path $c;if($p -eq $c -or -not $p){$c=$null}else{$c=$p}};if($c){$b=$c;while($b -and -not (Test-Path (Join-Path $b 'node_modules/eslint/bin/eslint.js'))){$p=Split-Path $b;if($p -eq $b -or -not $p){$b=$null}else{$b=$p}};if($b){Push-Location $c;$r=node (Join-Path $b 'node_modules/eslint/bin/eslint.js') $fp 2>&1|Out-String;$code=$LASTEXITCODE;Pop-Location;if($code -ne 0){@{hookSpecificOutput=@{hookEventName='PostToolUse';additionalContext=\"ESLint errors after edit:`n$r\"}}|ConvertTo-Json -Compress}}}}"
           }
         ]
       }

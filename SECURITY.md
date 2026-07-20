@@ -22,7 +22,7 @@ afterthought.
 ## Reporting a vulnerability
 
 Please report suspected vulnerabilities **privately** — email
-**admin@ekasmi** — rather than opening a public issue, and give us a
+**admin@ekasmi.com** — rather than opening a public issue, and give us a
 reasonable window to fix before any disclosure. We aim to acknowledge within
 3 business days.
 

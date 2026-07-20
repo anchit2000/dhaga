@@ -270,7 +270,8 @@ scraped behind your back," not "automatic."
 | On-device DB | **SQLite (op-sqlite) + sqlite-vec** | Offline-first, vector search on device, trivially exportable (the user's data is literally one file) |
 | Cloud DB | **Postgres + pgvector** | One database for relational graph + vectors; Supabase/Neon for hosted, `docker compose` for self-host |
 | Backend | **TypeScript (Next.js API routes or Fastify)** | Shares types with the app; deploys to Vercel or a single container |
-| Sync | Field-level LWW with per-device vector clocks (or adopt PowerSync/ElectricSQL) | Adopt before building; sync is a rabbit hole |
+| Sync | Field-level LWW with per-device vector clocks, or adopt a sync engine — lead candidate as of 2026-07: **TanStack DB + ElectricSQL** (see §11 Q2, `docs/LIBRARIES.md` §5) | Adopt before building; sync is a rabbit hole |
+| Client data/UI libraries | **TanStack Query / TanStack Table / nuqs behind app-owned gateways** (`docs/LIBRARIES.md`) | Library-first policy; each vendor import is confined to one adapter file, so swapping to another library or back to custom code is a one-file rewrite |
 | Transcription | **whisper.cpp / Apple Speech** | Free, on-device, private |
 | Embeddings | **nomic-embed-text / bge-small** (on-device or self-hosted) | Free at our scale; no per-call vendor cost |
 | LLM | **Claude Haiku 4.5** for extraction/parsing; **Claude Sonnet 5** for search reasoning & drafts; Batch API for nightly jobs | See cost model §9; structured outputs guarantee parseable JSON |
@@ -392,7 +393,7 @@ Per-card pipeline (OCR parse ≈ 800 in / 200 out tokens on Haiku): **≈ $0.002
 ## 11. Open Questions
 
 1. Lifetime-tier pricing: $79 vs $99 vs $129? Needs willingness-to-pay testing against BCR Pro's AUD $99.99 anchor and Clay/Mesh's ~$10/mo.
-2. Sync build-vs-adopt: PowerSync/ElectricSQL licensing fit with AGPL?
+2. Sync build-vs-adopt: PowerSync/ElectricSQL licensing fit with AGPL? Lead candidate as of 2026-07: **TanStack DB 0.6 + ElectricSQL** — SQLite-backed persistence incl. React Native/Expo, incremental Postgres sync, and we already ship Electric's PGlite (`docs/LIBRARIES.md` §5). Before any M8 sync code, run an evaluation covering: sync model vs the planned field-level LWW, offline semantics, RN/Expo maturity, AGPL/licensing fit, and lock-in vs the decided op-sqlite + sqlite-vec store. Ends in a decision doc + sign-off — not silent adoption.
 3. ~~Enrichment data sources: which are ToS-safe?~~ **Resolved 2026-07 — see §6.7.** LinkedIn API is partner-gated and closed to CRMs; X API reads are pay-per-use and uneconomical. Channels: user-triggered web search, LinkedIn Connections CSV import + re-import diff, opt-in news watchlist, extension DOM capture. Remaining sub-question: is this enrichment quality enough vs Popl's claimed 90%?
 4. ~~Browser extension and LinkedIn: confirm legal posture.~~ **Resolved 2026-07 — see §6.7.** User-initiated, single-profile DOM read of a page the user is viewing (folkX/Add to CRM pattern) is the posture; shipped in the extension. No automation, no bulk collection.
 5. Brand/name: "NetworkPro" is a working title; trademark search needed.

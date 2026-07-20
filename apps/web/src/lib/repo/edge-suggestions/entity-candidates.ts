@@ -19,6 +19,7 @@ export type EntityResolution =
  * (case-insensitive) match, or any sharing the first word ("Gold's" for
  * "Gold's Gym"). Mirrors findRelationshipCandidates for people.
  */
+// TODO(search-index): route through getSearchIndex() (matchMode: "exact")
 export async function findEntityCandidates(
   objectName: string,
 ): Promise<EntityCandidate[]> {

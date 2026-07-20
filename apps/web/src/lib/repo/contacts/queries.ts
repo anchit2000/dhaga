@@ -19,6 +19,7 @@ export interface ContactIdentityCandidate {
   companyName: string | null;
 }
 
+// TODO(search-index): route through getSearchIndex() (matchMode: "exact")
 export async function findContactIdentityCandidates(
   rawText: string,
 ): Promise<ContactIdentityCandidate[]> {
@@ -66,6 +67,7 @@ export async function findContactIdentityCandidates(
     : [];
 }
 
+// TODO(search-index): route through getSearchIndex() (matchMode: "exact")
 export async function listMentionMergeCandidates(
   mentionId: string,
   name: string,
@@ -92,6 +94,7 @@ export async function listMentionMergeCandidates(
     .limit(10);
 }
 
+// TODO(search-index): route through getSearchIndex() (needs paginated list support)
 export async function listContacts(
   query?: string,
   tag?: string,
@@ -128,6 +131,7 @@ export async function listContacts(
   return limit ? result.limit(limit) : result;
 }
 
+// TODO(search-index): route through getSearchIndex() (needs paginated list support)
 export async function listContactsPage({ page, pageSize, name, title, company, tag }: {
   page: number;
   pageSize: number;

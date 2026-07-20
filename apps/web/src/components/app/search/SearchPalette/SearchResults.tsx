@@ -39,21 +39,19 @@ export function SearchResults({
       ) : (
         <ul className="space-y-2">
           {state.hits.map((hit) => (
-            <li key={hit.contactId}>
+            <li key={hit.id}>
               <Link
-                href={`/app/people/${hit.contactId}`}
+                href={`/app/people/${hit.id}`}
                 onClick={onNavigate}
                 className="block rounded-xl border border-seam bg-panel p-4 transition-colors hover:bg-wash/[0.03]"
               >
                 <p className="text-sm font-medium text-paper">
-                  {hit.name}
-                  <span className="font-normal text-fog">
-                    {[hit.title, hit.companyName].filter(Boolean).length > 0
-                      ? ` · ${[hit.title, hit.companyName].filter(Boolean).join(" · ")}`
-                      : ""}
-                  </span>
+                  {hit.label}
+                  {hit.sublabel ? (
+                    <span className="font-normal text-fog">{` · ${hit.sublabel}`}</span>
+                  ) : null}
                 </p>
-                {hit.matches.length > 0 ? (
+                {hit.matches && hit.matches.length > 0 ? (
                   <ul className="mt-1.5 space-y-0.5">
                     {hit.matches.map((match) => (
                       <li

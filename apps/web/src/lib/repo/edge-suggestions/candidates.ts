@@ -19,6 +19,7 @@ export type PersonResolution =
  * (case-insensitive) match, or anyone sharing the first name. Used to decide
  * whether a new relationship can be linked automatically or needs confirming.
  */
+// TODO(search-index): route through getSearchIndex() (matchMode: "exact")
 export async function findRelationshipCandidates(
   objectName: string,
 ): Promise<RelationshipCandidate[]> {

@@ -1,7 +1,7 @@
 import { eq, inArray } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { companies, contacts } from "@/lib/db/schema";
-import { semanticSearch } from "../embeddings";
+import { semanticSearch, type SemanticHit } from "../embeddings";
 import { DEFAULT_SEARCH_WEIGHTS, type SearchWeights } from "@/utils/constants/search";
 import { queryWords } from "./tokenize";
 import {
@@ -52,7 +52,29 @@ export async function hybridSearch(
   const db = await getDb();
   const hits: HitAccumulator = new Map();
 
-  const semanticHits = await semanticSearch(query);
+  // Run the semantic and keyword stages CONCURRENTLY. The semantic stage
+  // embeds the query with a local ONNX model (onnxruntime-node is unsupported
+  // on Vercel serverless — see lib/ai/embedder.ts), so it must never gate or
+  // break the keyword FTS results (already GIN-indexed): wrap it so any
+  // failure or absence degrades to keyword-only rather than delaying the whole
+  // search. Previously it ran first and was awaited, so every query paid the
+  // embedder's load time — and its failure — before keyword search even began.
+  const [semanticHits, keywordSources] = await Promise.all([
+    semanticSearch(query).catch((): SemanticHit[] => []),
+    words.length > 0
+      ? Promise.all([
+          contactAndCompanyHits(words, weights),
+          noteHits(words, weights),
+          factHits(words, weights),
+          followUpHits(words, weights),
+          eventHits(words, weights),
+          signalHits(words, weights),
+        ])
+      : Promise.resolve<KeywordHit[][]>([]),
+  ]);
+
+  // Semantic first, then keyword — preserves the prior merged-ranking order
+  // (semantic "related …" receipts appear before keyword snippets, capped at 4).
   for (const hit of semanticHits) {
     if (restrictTo && !restrictTo.has(hit.contactId)) continue;
     const existing = hits.get(hit.contactId) ?? { score: 0, matches: [] };
@@ -61,18 +83,7 @@ export async function hybridSearch(
     if (existing.matches.length < 4) existing.matches.push(`related ${hit.ownerType}: ${snippet}`);
     hits.set(hit.contactId, existing);
   }
-
-  if (words.length > 0) {
-    const sources = await Promise.all([
-      contactAndCompanyHits(words, weights),
-      noteHits(words, weights),
-      factHits(words, weights),
-      followUpHits(words, weights),
-      eventHits(words, weights),
-      signalHits(words, weights),
-    ]);
-    for (const source of sources) applyHits(hits, source, restrictTo);
-  }
+  for (const source of keywordSources) applyHits(hits, source, restrictTo);
 
   // Structured filters are a hard guarantee, not just a ranking hint: a
   // contact who matches the plan's event/company/tags must surface even if

@@ -11,6 +11,7 @@ export interface RelationshipRows {
   suggestionRows: (typeof edgeSuggestions.$inferInsert)[];
 }
 
+// TODO(search-index): route through getSearchIndex() (matchMode: "exact")
 async function resolvePersonId(name: string): Promise<string | null> {
   const db = await getDb();
   const [row] = await db

@@ -85,6 +85,7 @@ function displayPredicate(predicate: string): string {
   return predicate.replaceAll("_", " ");
 }
 
+// TODO(search-index): route through getSearchIndex() (needs paginated list support)
 export async function listContactConnectionsPage(
   contactId: string,
   options: {

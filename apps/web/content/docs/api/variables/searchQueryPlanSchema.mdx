@@ -1,0 +1,17 @@
+---
+title: "searchQueryPlanSchema"
+---
+
+```ts
+const searchQueryPlanSchema: ZodObject<{
+  event: ZodNullable<ZodString>;
+  company: ZodNullable<ZodString>;
+  tags: ZodArray<ZodString>;
+  semantic_query: ZodString;
+}, $strip>;
+```
+
+Defined in: schemas/search-query.ts:7
+
+M6 stage 1 — query understanding: one small structured call turns a
+natural-language question into filters + a semantic residual.

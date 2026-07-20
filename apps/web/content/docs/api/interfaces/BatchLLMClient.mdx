@@ -1,0 +1,97 @@
+---
+title: "BatchLLMClient"
+---
+
+Defined in: llm/types.ts:82
+
+Capability interface for providers that support async batch submission
+(Anthropic's Message Batches API — ~50% cheaper, built for exactly the
+"nightly/latency-insensitive jobs" CLAUDE.md calls out). Kept separate
+from LLMClient (Interface Segregation): a future local-model provider
+(Ollama/BYO-key) may implement extract/complete with no batch endpoint at
+all, so callers that specifically need batching depend on this narrower
+interface instead of forcing it onto every LLMClient implementation.
+
+## Methods
+
+### submitExtractBatch()
+
+```ts
+submitExtractBatch<T>(items): Promise<string>;
+```
+
+Defined in: llm/types.ts:88
+
+Submit many extract-shaped requests as one batch. Returns immediately
+with a batch id — does not wait for completion (a batch can take
+anywhere from minutes up to 24 hours).
+
+#### Type Parameters
+
+##### T
+
+`T`
+
+#### Parameters
+
+##### items
+
+[`BatchExtractItem`](BatchExtractItem)\<`T`\>[]
+
+#### Returns
+
+`Promise`\<`string`\>
+
+***
+
+### isBatchDone()
+
+```ts
+isBatchDone(batchId): Promise<boolean>;
+```
+
+Defined in: llm/types.ts:90
+
+True once every request in the batch has succeeded, errored, expired, or been canceled — only then is getBatchResults safe to call.
+
+#### Parameters
+
+##### batchId
+
+`string`
+
+#### Returns
+
+`Promise`\<`boolean`\>
+
+***
+
+### getBatchResults()
+
+```ts
+getBatchResults<T>(batchId, schema): Promise<BatchExtractResult<T>[]>;
+```
+
+Defined in: llm/types.ts:92
+
+One entry per submitted item, in no particular order — match results to requests via `id`. Only valid once isBatchDone() is true.
+
+#### Type Parameters
+
+##### T
+
+`T`
+
+#### Parameters
+
+##### batchId
+
+`string`
+
+##### schema
+
+`ZodType`\<`T`\>
+
+#### Returns
+
+`Promise`\<[`BatchExtractResult`](BatchExtractResult)\<`T`\>[]\>

@@ -1,0 +1,13 @@
+---
+title: "RELATIONSHIP\\_ROLES"
+---
+
+```ts
+const RELATIONSHIP_ROLES: Record<string, RelationshipRoles>;
+```
+
+Defined in: relationships.ts:24
+
+Known predicates get a correct inverse; anything else falls back to the raw
+predicate for both directions (see `relationshipRole`). Symmetric relations
+(sibling, spouse, colleague) intentionally use the same word both ways.

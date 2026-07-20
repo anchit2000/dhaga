@@ -1,0 +1,23 @@
+---
+title: "positionSchema"
+---
+
+```ts
+const positionSchema: ZodObject<{
+  title: ZodNullable<ZodString>;
+  company: ZodNullable<ZodString>;
+  department: ZodNullable<ZodString>;
+  current: ZodBoolean;
+  startedAt: ZodNullable<ZodString>;
+  endedAt: ZodNullable<ZodString>;
+  note: ZodNullable<ZodString>;
+}, $strip>;
+```
+
+Defined in: schemas/contact-fields.ts:36
+
+One job/role. Positions are the source of truth for employment; the first
+current one (else the first) mirrors into the denormalised
+`contacts.title` / `company_id` columns so existing list/detail/search/graph
+reads keep working unchanged. Dates are verbatim text ("2019", "Jan 2020")
+because imports and notes carry fuzzy dates, not calendar values.

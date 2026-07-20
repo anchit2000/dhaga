@@ -1,0 +1,63 @@
+---
+title: "BatchExtractResult\\<T\\>"
+---
+
+Defined in: llm/types.ts:64
+
+## Type Parameters
+
+### T
+
+`T`
+
+## Properties
+
+### id
+
+```ts
+id: string;
+```
+
+Defined in: llm/types.ts:65
+
+***
+
+### status
+
+```ts
+status: BatchResultStatus;
+```
+
+Defined in: llm/types.ts:66
+
+***
+
+### data?
+
+```ts
+optional data?: T;
+```
+
+Defined in: llm/types.ts:68
+
+Present only when status is "succeeded".
+
+***
+
+### model?
+
+```ts
+optional model?: string;
+```
+
+Defined in: llm/types.ts:69
+
+***
+
+### usage?
+
+```ts
+optional usage?: LLMUsage;
+```
+
+Defined in: llm/types.ts:70

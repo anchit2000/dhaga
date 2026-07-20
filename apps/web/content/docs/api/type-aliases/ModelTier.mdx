@@ -1,0 +1,14 @@
+---
+title: "ModelTier"
+---
+
+```ts
+type ModelTier = "extract" | "reason";
+```
+
+Defined in: llm/types.ts:9
+
+Model tiers, not model names: callers say what kind of work this is,
+the client implementation maps it to a concrete model. Adding a local
+(Ollama) or BYO-key provider means a new LLMClient implementation —
+zero changes to callers (Dependency Inversion).

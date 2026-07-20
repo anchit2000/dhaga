@@ -1,0 +1,191 @@
+---
+title: "AnthropicLLMClient"
+---
+
+Defined in: llm/anthropic-client/index.ts:23
+
+Split per the 150-line rule: request-building and response-parsing live
+in ./sync (extract/complete) and ./batch (the Message Batches API —
+CLAUDE.md's "Nightly/latency-insensitive jobs: Batch API" rule). This
+class just owns the SDK client and satisfies both gateway interfaces so
+callers keep depending on LLMClient / BatchLLMClient, never on this class
+directly (Dependency Inversion).
+
+## Implements
+
+- [`LLMClient`](../interfaces/LLMClient)
+- [`BatchLLMClient`](../interfaces/BatchLLMClient)
+
+## Constructors
+
+### Constructor
+
+```ts
+new AnthropicLLMClient(apiKey): AnthropicLLMClient;
+```
+
+Defined in: llm/anthropic-client/index.ts:26
+
+#### Parameters
+
+##### apiKey
+
+`string`
+
+#### Returns
+
+`AnthropicLLMClient`
+
+## Methods
+
+### extract()
+
+```ts
+extract<T>(options): Promise<LLMResult<T>>;
+```
+
+Defined in: llm/anthropic-client/index.ts:30
+
+Structured extraction — output is guaranteed to match the Zod schema.
+
+#### Type Parameters
+
+##### T
+
+`T`
+
+#### Parameters
+
+##### options
+
+[`ExtractOptions`](../interfaces/ExtractOptions)\<`T`\>
+
+#### Returns
+
+`Promise`\<[`LLMResult`](../interfaces/LLMResult)\<`T`\>\>
+
+#### Implementation of
+
+[`LLMClient`](../interfaces/LLMClient).[`extract`](../interfaces/LLMClient#extract)
+
+***
+
+### complete()
+
+```ts
+complete(options): Promise<LLMResult<string>>;
+```
+
+Defined in: llm/anthropic-client/index.ts:34
+
+Free-text completion (drafts, search answers).
+
+#### Parameters
+
+##### options
+
+[`CompleteOptions`](../interfaces/CompleteOptions)
+
+#### Returns
+
+`Promise`\<[`LLMResult`](../interfaces/LLMResult)\<`string`\>\>
+
+#### Implementation of
+
+[`LLMClient`](../interfaces/LLMClient).[`complete`](../interfaces/LLMClient#complete)
+
+***
+
+### submitExtractBatch()
+
+```ts
+submitExtractBatch<T>(items): Promise<string>;
+```
+
+Defined in: llm/anthropic-client/index.ts:38
+
+Submit many extract-shaped requests as one batch. Returns immediately
+with a batch id — does not wait for completion (a batch can take
+anywhere from minutes up to 24 hours).
+
+#### Type Parameters
+
+##### T
+
+`T`
+
+#### Parameters
+
+##### items
+
+[`BatchExtractItem`](../interfaces/BatchExtractItem)\<`T`\>[]
+
+#### Returns
+
+`Promise`\<`string`\>
+
+#### Implementation of
+
+[`BatchLLMClient`](../interfaces/BatchLLMClient).[`submitExtractBatch`](../interfaces/BatchLLMClient#submitextractbatch)
+
+***
+
+### isBatchDone()
+
+```ts
+isBatchDone(batchId): Promise<boolean>;
+```
+
+Defined in: llm/anthropic-client/index.ts:42
+
+True once every request in the batch has succeeded, errored, expired, or been canceled — only then is getBatchResults safe to call.
+
+#### Parameters
+
+##### batchId
+
+`string`
+
+#### Returns
+
+`Promise`\<`boolean`\>
+
+#### Implementation of
+
+[`BatchLLMClient`](../interfaces/BatchLLMClient).[`isBatchDone`](../interfaces/BatchLLMClient#isbatchdone)
+
+***
+
+### getBatchResults()
+
+```ts
+getBatchResults<T>(batchId, schema): Promise<BatchExtractResult<T>[]>;
+```
+
+Defined in: llm/anthropic-client/index.ts:46
+
+One entry per submitted item, in no particular order — match results to requests via `id`. Only valid once isBatchDone() is true.
+
+#### Type Parameters
+
+##### T
+
+`T`
+
+#### Parameters
+
+##### batchId
+
+`string`
+
+##### schema
+
+`ZodType`\<`T`\>
+
+#### Returns
+
+`Promise`\<[`BatchExtractResult`](../interfaces/BatchExtractResult)\<`T`\>[]\>
+
+#### Implementation of
+
+[`BatchLLMClient`](../interfaces/BatchLLMClient).[`getBatchResults`](../interfaces/BatchLLMClient#getbatchresults)

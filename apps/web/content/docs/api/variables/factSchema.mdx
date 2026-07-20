@@ -1,0 +1,18 @@
+---
+title: "factSchema"
+---
+
+```ts
+const factSchema: ZodObject<{
+  type: ZodEnum<{
+     role: "role";
+     intent: "intent";
+     personal: "personal";
+     preference: "preference";
+  }>;
+  text: ZodString;
+  confidence: ZodNumber;
+}, $strip>;
+```
+
+Defined in: schemas/extraction.ts:29

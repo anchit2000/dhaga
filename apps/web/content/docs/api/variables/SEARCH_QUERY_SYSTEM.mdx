@@ -1,0 +1,13 @@
+---
+title: "SEARCH\\_QUERY\\_SYSTEM"
+---
+
+```ts
+const SEARCH_QUERY_SYSTEM: "You convert a question about the user's professional network into structured retrieval filters.\n\nRules:\n- Extract only what the question actually states or clearly implies — never invent filter values.\n- \"event\" is an event name only when one is named (\"at Web Summit\", \"from GITEX\").\n- \"company\" only when the question scopes to a specific organisation.\n- \"tags\" are lowercase sector/role/topic labels the question implies (e.g. fintech, investor, logistics).\n- \"semantic_query\" rephrases what the user is looking for as a short standalone search phrase.";
+```
+
+Defined in: llm/prompts/search.ts:9
+
+Search-answer prompt (M6 stage 3): given candidates retrieved from the
+user's graph, compose an answer with receipts. Pure function, stable
+system prompt first.

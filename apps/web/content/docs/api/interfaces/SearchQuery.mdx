@@ -1,0 +1,81 @@
+---
+title: "SearchQuery"
+---
+
+Defined in: search-index/types.ts:32
+
+## Properties
+
+### text
+
+```ts
+text: string;
+```
+
+Defined in: search-index/types.ts:34
+
+Raw user text.
+
+***
+
+### kinds?
+
+```ts
+optional kinds?: SearchKind[];
+```
+
+Defined in: search-index/types.ts:36
+
+Restrict to these entity kinds; omitted = the provider's default set.
+
+***
+
+### limit?
+
+```ts
+optional limit?: number;
+```
+
+Defined in: search-index/types.ts:38
+
+Max results; the provider applies its own cap when omitted.
+
+***
+
+### restrictTo?
+
+```ts
+optional restrictTo?: Set<string>;
+```
+
+Defined in: search-index/types.ts:44
+
+Hard candidate allow-list (the query-understanding stage): ids outside are
+dropped, and ids inside must surface even with no textual score of their
+own (structured-filter matches are a guarantee, not a ranking hint).
+
+***
+
+### weights?
+
+```ts
+optional weights?: SearchWeights;
+```
+
+Defined in: search-index/types.ts:46
+
+Ranking-signal weights (see SearchWeights).
+
+***
+
+### matchMode?
+
+```ts
+optional matchMode?: "fuzzy" | "prefix" | "exact";
+```
+
+Defined in: search-index/types.ts:52
+
+"fuzzy" (default): full relevance ranking (keyword + semantic).
+"prefix": typeahead over entity labels (prefix-ranked).
+"exact": exact-token match (e.g. write-time identity resolution).

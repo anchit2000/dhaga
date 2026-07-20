@@ -1,0 +1,31 @@
+---
+title: "extractedContactSchema"
+---
+
+```ts
+const extractedContactSchema: ZodObject<{
+  name: ZodString;
+  title: ZodNullable<ZodString>;
+  company: ZodNullable<ZodString>;
+  emails: ZodArray<ZodString>;
+  phones: ZodArray<ZodString>;
+  links: ZodArray<ZodString>;
+  location: ZodNullable<ZodString>;
+}, $strip>;
+```
+
+Defined in: schemas/contact.ts:26
+
+A contact as extracted from any capture surface (pasted email signature,
+card OCR text, LinkedIn page text). All capture surfaces converge on this
+shape before the user reviews and saves it.
+
+Deliberately kept lean and string-valued: extraction/OCR sees one primary
+role and bare emails/phones, and every capture handler, CSV importer, and
+test constructs this. The richer, editable shape people actually curate is
+[contactProfileSchema](contactProfileSchema) below; `profileFromExtracted` lifts one into
+the other (a single current position, unlabeled methods) at the write
+boundary, so capture output becomes editable without duplicating logic.
+
+Structured-outputs note: every field is required (nullable, not optional)
+so the Zod-derived JSON schema stays strict-mode compatible.

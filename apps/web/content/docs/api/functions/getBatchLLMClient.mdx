@@ -1,0 +1,19 @@
+---
+title: "getBatchLLMClient()"
+---
+
+```ts
+function getBatchLLMClient(): BatchLLMClient;
+```
+
+Defined in: llm/registry.ts:109
+
+Batch-capable factory (Interface Segregation — see BatchLLMClient's doc
+comment in ./types): only for callers that specifically need async batch
+submission, e.g. the nightly signal-detection job. Anthropic is the only
+provider that implements it today; a future Ollama/BYO-key LLMClient
+wouldn't need to.
+
+## Returns
+
+[`BatchLLMClient`](../interfaces/BatchLLMClient)

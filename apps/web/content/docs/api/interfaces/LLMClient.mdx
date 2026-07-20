@@ -1,0 +1,55 @@
+---
+title: "LLMClient"
+---
+
+Defined in: llm/types.ts:46
+
+## Methods
+
+### extract()
+
+```ts
+extract<T>(options): Promise<LLMResult<T>>;
+```
+
+Defined in: llm/types.ts:48
+
+Structured extraction — output is guaranteed to match the Zod schema.
+
+#### Type Parameters
+
+##### T
+
+`T`
+
+#### Parameters
+
+##### options
+
+[`ExtractOptions`](ExtractOptions)\<`T`\>
+
+#### Returns
+
+`Promise`\<[`LLMResult`](LLMResult)\<`T`\>\>
+
+***
+
+### complete()
+
+```ts
+complete(options): Promise<LLMResult<string>>;
+```
+
+Defined in: llm/types.ts:50
+
+Free-text completion (drafts, search answers).
+
+#### Parameters
+
+##### options
+
+[`CompleteOptions`](CompleteOptions)
+
+#### Returns
+
+`Promise`\<[`LLMResult`](LLMResult)\<`string`\>\>

@@ -1,0 +1,14 @@
+---
+title: "SIGNAL\\_KINDS"
+---
+
+```ts
+const SIGNAL_KINDS: readonly ["job_change", "news"];
+```
+
+Defined in: schemas/signal.ts:10
+
+Proactive-intelligence signal (BRD §5.2 v1.2, §6.7): job-change detection
+and the news watchlist share one classification shape — both ask "does
+this web search reveal a notable update about a specific contact?" — so
+one schema and one detection job serve both checklist items.

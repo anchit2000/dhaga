@@ -1,0 +1,15 @@
+---
+title: "customFieldSchema"
+---
+
+```ts
+const customFieldSchema: ZodObject<{
+  label: ZodString;
+  value: ZodString;
+}, $strip>;
+```
+
+Defined in: schemas/contact-fields.ts:71
+
+A catch-all label/value pair — the lossless landing spot for any import
+field (Google/vCard/device) that has no dedicated home above.

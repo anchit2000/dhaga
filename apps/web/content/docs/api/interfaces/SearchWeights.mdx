@@ -1,0 +1,91 @@
+---
+title: "SearchWeights"
+---
+
+Defined in: search-index/types.ts:21
+
+Ranking-signal weights, applied best-effort by the provider. The Postgres
+impl uses every field (`ts_rank(...) * weight`, summed per contact across
+each source that matched); a provider without a given signal ignores that
+field. Defined here so it is the one shared shape across the query surface —
+the defaults + parser live app-side (apps/web/src/utils/constants/search.ts).
+
+## Properties
+
+### semantic
+
+```ts
+semantic: number;
+```
+
+Defined in: search-index/types.ts:22
+
+***
+
+### identity
+
+```ts
+identity: number;
+```
+
+Defined in: search-index/types.ts:23
+
+***
+
+### trigram
+
+```ts
+trigram: number;
+```
+
+Defined in: search-index/types.ts:24
+
+***
+
+### facts
+
+```ts
+facts: number;
+```
+
+Defined in: search-index/types.ts:25
+
+***
+
+### notes
+
+```ts
+notes: number;
+```
+
+Defined in: search-index/types.ts:26
+
+***
+
+### followUps
+
+```ts
+followUps: number;
+```
+
+Defined in: search-index/types.ts:27
+
+***
+
+### events
+
+```ts
+events: number;
+```
+
+Defined in: search-index/types.ts:28
+
+***
+
+### signals
+
+```ts
+signals: number;
+```
+
+Defined in: search-index/types.ts:29

@@ -1,0 +1,79 @@
+---
+title: "EmbeddingProvider"
+---
+
+Defined in: retrieval/types.ts:1
+
+## Properties
+
+### id
+
+```ts
+id: string;
+```
+
+Defined in: retrieval/types.ts:2
+
+***
+
+### dimensions
+
+```ts
+dimensions: number;
+```
+
+Defined in: retrieval/types.ts:3
+
+## Methods
+
+### isConfigured()
+
+```ts
+isConfigured(): boolean;
+```
+
+Defined in: retrieval/types.ts:4
+
+#### Returns
+
+`boolean`
+
+***
+
+### embedDocuments()
+
+```ts
+embedDocuments(texts): Promise<number[][] | null>;
+```
+
+Defined in: retrieval/types.ts:5
+
+#### Parameters
+
+##### texts
+
+`string`[]
+
+#### Returns
+
+`Promise`\<`number`[][] \| `null`\>
+
+***
+
+### embedQuery()
+
+```ts
+embedQuery(text): Promise<number[] | null>;
+```
+
+Defined in: retrieval/types.ts:6
+
+#### Parameters
+
+##### text
+
+`string`
+
+#### Returns
+
+`Promise`\<`number`[] \| `null`\>

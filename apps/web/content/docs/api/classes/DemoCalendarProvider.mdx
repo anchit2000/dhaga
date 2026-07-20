@@ -1,0 +1,191 @@
+---
+title: "DemoCalendarProvider"
+---
+
+Defined in: calendar/demo-provider.ts:17
+
+A synthetic calendar with no external dependency. It lets the whole feature —
+connect flow, free/busy read, slot-finding, overload banner, digest, and the
+Playwright suite — run end to end before any real Google/Microsoft OAuth app
+exists ("use dummy for now"). Enabled by default; set DHAGA_CALENDAR_DEMO=false
+to hide it once real providers are configured.
+
+Its OAuth is a loopback: getAuthUrl points straight back at our callback with
+a demo code, so "Connect" completes without leaving the app. Busy blocks are
+DETERMINISTIC functions of the date (no Math.random) so tests are stable and
+some days read as overloaded while others stay open.
+
+## Implements
+
+- [`CalendarProvider`](../interfaces/CalendarProvider)
+
+## Constructors
+
+### Constructor
+
+```ts
+new DemoCalendarProvider(): DemoCalendarProvider;
+```
+
+#### Returns
+
+`DemoCalendarProvider`
+
+## Properties
+
+### id
+
+```ts
+readonly id: "demo" = "demo";
+```
+
+Defined in: calendar/demo-provider.ts:18
+
+Stable id persisted on every connection row (e.g. "google", "microsoft").
+
+#### Implementation of
+
+[`CalendarProvider`](../interfaces/CalendarProvider).[`id`](../interfaces/CalendarProvider#id)
+
+***
+
+### label
+
+```ts
+readonly label: "Demo Calendar" = "Demo Calendar";
+```
+
+Defined in: calendar/demo-provider.ts:19
+
+Human label for the connect button ("Google Calendar").
+
+#### Implementation of
+
+[`CalendarProvider`](../interfaces/CalendarProvider).[`label`](../interfaces/CalendarProvider#label)
+
+## Methods
+
+### isConfigured()
+
+```ts
+isConfigured(): boolean;
+```
+
+Defined in: calendar/demo-provider.ts:21
+
+True when this provider's app credentials are present in the environment.
+
+#### Returns
+
+`boolean`
+
+#### Implementation of
+
+[`CalendarProvider`](../interfaces/CalendarProvider).[`isConfigured`](../interfaces/CalendarProvider#isconfigured)
+
+***
+
+### getAuthUrl()
+
+```ts
+getAuthUrl(params): string;
+```
+
+Defined in: calendar/demo-provider.ts:25
+
+Build the provider's consent URL. `state` is an opaque, caller-signed
+CSRF/return token; `redirectUri` is our callback route for this provider.
+
+#### Parameters
+
+##### params
+
+###### state
+
+`string`
+
+###### redirectUri
+
+`string`
+
+#### Returns
+
+`string`
+
+#### Implementation of
+
+[`CalendarProvider`](../interfaces/CalendarProvider).[`getAuthUrl`](../interfaces/CalendarProvider#getauthurl)
+
+***
+
+### exchangeCode()
+
+```ts
+exchangeCode(): Promise<CalendarTokens>;
+```
+
+Defined in: calendar/demo-provider.ts:32
+
+Exchange an authorization code for tokens (called from the callback route).
+
+#### Returns
+
+`Promise`\<[`CalendarTokens`](../interfaces/CalendarTokens)\>
+
+#### Implementation of
+
+[`CalendarProvider`](../interfaces/CalendarProvider).[`exchangeCode`](../interfaces/CalendarProvider#exchangecode)
+
+***
+
+### refresh()
+
+```ts
+refresh(): Promise<CalendarTokens | null>;
+```
+
+Defined in: calendar/demo-provider.ts:42
+
+Refresh an expired access token. Returns null when refresh is impossible
+(no refresh token / revoked) — the caller then marks the connection as
+needing reconnect rather than crashing the whole free/busy read.
+
+#### Returns
+
+`Promise`\<[`CalendarTokens`](../interfaces/CalendarTokens) \| `null`\>
+
+#### Implementation of
+
+[`CalendarProvider`](../interfaces/CalendarProvider).[`refresh`](../interfaces/CalendarProvider#refresh)
+
+***
+
+### listBusy()
+
+```ts
+listBusy(__namedParameters): Promise<BusyInterval[]>;
+```
+
+Defined in: calendar/demo-provider.ts:52
+
+Read busy intervals within `range` for the connected account.
+
+#### Parameters
+
+##### \_\_namedParameters
+
+###### accessToken
+
+`string`
+
+###### range
+
+[`TimeRange`](../interfaces/TimeRange)
+
+#### Returns
+
+`Promise`\<[`BusyInterval`](../interfaces/BusyInterval)[]\>
+
+#### Implementation of
+
+[`CalendarProvider`](../interfaces/CalendarProvider).[`listBusy`](../interfaces/CalendarProvider#listbusy)

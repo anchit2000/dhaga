@@ -1,0 +1,19 @@
+---
+title: "relationshipSchema"
+---
+
+```ts
+const relationshipSchema: ZodObject<{
+  subject: ZodString;
+  predicate: ZodString;
+  object: ZodString;
+  object_type: ZodEnum<{
+     company: "company";
+     person: "person";
+     entity: "entity";
+  }>;
+  entity_type_hint: ZodNullable<ZodString>;
+}, $strip>;
+```
+
+Defined in: schemas/extraction.ts:35

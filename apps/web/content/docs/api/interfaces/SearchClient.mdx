@@ -1,0 +1,34 @@
+---
+title: "SearchClient"
+---
+
+Defined in: search/types.ts:17
+
+Provider-agnostic web search — the counterpart to LLMClient (see ../llm).
+Self-hosters and contributors add a provider by implementing this
+interface and registering it in getSearchClient() (../search/index.ts);
+callers never see which provider ran (Dependency Inversion).
+
+## Methods
+
+### search()
+
+```ts
+search(query, options?): Promise<SearchResult[]>;
+```
+
+Defined in: search/types.ts:18
+
+#### Parameters
+
+##### query
+
+`string`
+
+##### options?
+
+[`SearchOptions`](SearchOptions)
+
+#### Returns
+
+`Promise`\<[`SearchResult`](SearchResult)[]\>

@@ -1,0 +1,109 @@
+---
+title: "profileFromExtracted()"
+---
+
+```ts
+function profileFromExtracted(extracted): object;
+```
+
+Defined in: schemas/contact.ts:89
+
+Lift a capture-time ExtractedContact into the editable profile: its single
+title/company becomes one current position, and bare method strings become
+unlabeled ContactMethods the user can label later.
+
+## Parameters
+
+### extracted
+
+#### name
+
+`string` = `...`
+
+#### title
+
+`string` \| `null` = `...`
+
+#### company
+
+`string` \| `null` = `...`
+
+#### emails
+
+`string`[] = `...`
+
+#### phones
+
+`string`[] = `...`
+
+#### links
+
+`string`[] = `...`
+
+#### location
+
+`string` \| `null` = `...`
+
+## Returns
+
+`object`
+
+### name
+
+```ts
+name: string;
+```
+
+### nickname
+
+```ts
+nickname: string | null;
+```
+
+### positions
+
+```ts
+positions: object[];
+```
+
+### emails
+
+```ts
+emails: object[];
+```
+
+### phones
+
+```ts
+phones: object[];
+```
+
+### links
+
+```ts
+links: object[];
+```
+
+### addresses
+
+```ts
+addresses: object[];
+```
+
+### importantDates
+
+```ts
+importantDates: object[];
+```
+
+### customFields
+
+```ts
+customFields: object[];
+```
+
+### location
+
+```ts
+location: string | null;
+```

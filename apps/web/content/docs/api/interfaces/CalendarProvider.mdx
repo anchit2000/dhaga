@@ -1,0 +1,159 @@
+---
+title: "CalendarProvider"
+---
+
+Defined in: calendar/types.ts:44
+
+One calendar integration. Every method is provider-specific; nothing here
+assumes OAuth beyond the shape of the flow (getAuthUrl → exchangeCode →
+refresh), so a username/app-password CalDAV provider can implement it too
+by treating exchangeCode as "validate credentials".
+
+## Properties
+
+### id
+
+```ts
+id: string;
+```
+
+Defined in: calendar/types.ts:46
+
+Stable id persisted on every connection row (e.g. "google", "microsoft").
+
+***
+
+### label
+
+```ts
+label: string;
+```
+
+Defined in: calendar/types.ts:48
+
+Human label for the connect button ("Google Calendar").
+
+## Methods
+
+### isConfigured()
+
+```ts
+isConfigured(): boolean;
+```
+
+Defined in: calendar/types.ts:50
+
+True when this provider's app credentials are present in the environment.
+
+#### Returns
+
+`boolean`
+
+***
+
+### getAuthUrl()
+
+```ts
+getAuthUrl(params): string;
+```
+
+Defined in: calendar/types.ts:55
+
+Build the provider's consent URL. `state` is an opaque, caller-signed
+CSRF/return token; `redirectUri` is our callback route for this provider.
+
+#### Parameters
+
+##### params
+
+###### state
+
+`string`
+
+###### redirectUri
+
+`string`
+
+#### Returns
+
+`string`
+
+***
+
+### exchangeCode()
+
+```ts
+exchangeCode(params): Promise<CalendarTokens>;
+```
+
+Defined in: calendar/types.ts:57
+
+Exchange an authorization code for tokens (called from the callback route).
+
+#### Parameters
+
+##### params
+
+###### code
+
+`string`
+
+###### redirectUri
+
+`string`
+
+#### Returns
+
+`Promise`\<[`CalendarTokens`](CalendarTokens)\>
+
+***
+
+### refresh()
+
+```ts
+refresh(refreshToken): Promise<CalendarTokens | null>;
+```
+
+Defined in: calendar/types.ts:63
+
+Refresh an expired access token. Returns null when refresh is impossible
+(no refresh token / revoked) — the caller then marks the connection as
+needing reconnect rather than crashing the whole free/busy read.
+
+#### Parameters
+
+##### refreshToken
+
+`string`
+
+#### Returns
+
+`Promise`\<[`CalendarTokens`](CalendarTokens) \| `null`\>
+
+***
+
+### listBusy()
+
+```ts
+listBusy(params): Promise<BusyInterval[]>;
+```
+
+Defined in: calendar/types.ts:65
+
+Read busy intervals within `range` for the connected account.
+
+#### Parameters
+
+##### params
+
+###### accessToken
+
+`string`
+
+###### range
+
+[`TimeRange`](TimeRange)
+
+#### Returns
+
+`Promise`\<[`BusyInterval`](BusyInterval)[]\>

@@ -1,0 +1,38 @@
+---
+title: "RelationshipRoles"
+---
+
+Defined in: relationships.ts:12
+
+Direction-aware, human-readable labels for relationship edges.
+
+An edge is stored ONCE and directed: `src --predicate--> dst`, read as
+"src is the \{subject\} of dst" / "dst is the \{object\} of src". When a
+contact's relationships are rendered we show the OTHER person and how they
+relate to the contact being viewed, so a single stored edge reads correctly
+from both ends without persisting an inverse row (parent_of on one side is
+shown as its inverse — child — on the other).
+
+## Properties
+
+### subject
+
+```ts
+subject: string;
+```
+
+Defined in: relationships.ts:14
+
+What the source contact is to the destination (parent_of -> "parent").
+
+***
+
+### object
+
+```ts
+object: string;
+```
+
+Defined in: relationships.ts:16
+
+What the destination is to the source (parent_of -> "child").

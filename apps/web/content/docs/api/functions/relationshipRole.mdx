@@ -1,0 +1,42 @@
+---
+title: "relationshipRole()"
+---
+
+```ts
+function relationshipRole(
+   predicate, 
+   viewerIsSource, 
+   custom?): string;
+```
+
+Defined in: relationships.ts:86
+
+How the OTHER person in an edge relates to the contact being viewed.
+
+## Parameters
+
+### predicate
+
+`string`
+
+the stored edge predicate (e.g. "parent_of")
+
+### viewerIsSource
+
+`boolean`
+
+true when the viewed contact is the edge's `src`
+
+### custom?
+
+[`RelationshipLabelMap`](../type-aliases/RelationshipLabelMap)
+
+user-defined predicates; they win over built-ins so a
+                       user can relabel a predicate without forking its slug
+
+## Returns
+
+`string`
+
+a short role/relation label for the other person
+                       (viewerIsSource -> the object side; else the subject side)

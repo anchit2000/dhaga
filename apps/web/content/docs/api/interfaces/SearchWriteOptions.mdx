@@ -1,0 +1,19 @@
+---
+title: "SearchWriteOptions"
+---
+
+Defined in: search-index/types.ts:77
+
+## Properties
+
+### transaction?
+
+```ts
+optional transaction?: unknown;
+```
+
+Defined in: search-index/types.ts:83
+
+Provider-specific transaction/session handle supplied by an owning
+repository, so an index write can join the caller's atomic cascade
+(mirrors VectorWriteOptions.transaction in ../retrieval).

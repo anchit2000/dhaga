@@ -1,0 +1,69 @@
+---
+title: "SearchIndexResult"
+---
+
+Defined in: search-index/types.ts:55
+
+## Properties
+
+### id
+
+```ts
+id: string;
+```
+
+Defined in: search-index/types.ts:56
+
+***
+
+### kind
+
+```ts
+kind: SearchKind;
+```
+
+Defined in: search-index/types.ts:57
+
+***
+
+### label
+
+```ts
+label: string;
+```
+
+Defined in: search-index/types.ts:58
+
+***
+
+### sublabel?
+
+```ts
+optional sublabel?: string | null;
+```
+
+Defined in: search-index/types.ts:60
+
+Disambiguating secondary line (title · company, event date, …).
+
+***
+
+### score
+
+```ts
+score: number;
+```
+
+Defined in: search-index/types.ts:61
+
+***
+
+### matches?
+
+```ts
+optional matches?: string[];
+```
+
+Defined in: search-index/types.ts:63
+
+Labeled snippets explaining why this matched (the receipts).

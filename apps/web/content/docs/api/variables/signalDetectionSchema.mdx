@@ -1,0 +1,18 @@
+---
+title: "signalDetectionSchema"
+---
+
+```ts
+const signalDetectionSchema: ZodObject<{
+  hasSignal: ZodBoolean;
+  kind: ZodNullable<ZodEnum<{
+     job_change: "job_change";
+     news: "news";
+  }>>;
+  headline: ZodString;
+  detail: ZodString;
+  sourceUrl: ZodNullable<ZodString>;
+}, $strip>;
+```
+
+Defined in: schemas/signal.ts:12

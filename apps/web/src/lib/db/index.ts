@@ -5,6 +5,12 @@ import { drizzle as drizzlePglite } from "drizzle-orm/pglite";
 import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
+import {
+  DB_POOL_CONNECTION_TIMEOUT_MS,
+  DB_POOL_IDLE_TIMEOUT_MS,
+  DB_POOL_MAX_CORE_DEFAULT,
+  poolMaxFromEnv,
+} from "@/utils/constants/db";
 import { DDL } from "./ddl";
 import { ddlAlreadyApplied, ddlFingerprint, recordDdlApplied } from "./ddl-history";
 import { companies, contacts } from "./schema/contacts";
@@ -73,7 +79,18 @@ const store = globalThis as unknown as {
 
 /** Hosted Postgres (Neon/Supabase/self-hosted) — required on serverless hosts. */
 async function initHosted(connectionString: string): Promise<DhagaDb> {
-  store.__dhagaPool ??= new Pool({ connectionString, max: 5 });
+  // Supabase's session pooler shares a fixed pool_size of 15 backends across
+  // ALL warm Vercel instances. This core pool plus the EE tenant pool
+  // (packages/ee/src/db/pool.ts, default 3) is the per-instance draw, so keep
+  // core + tenant small enough that several instances fit under 15 — default
+  // 2 + 3 = 5/instance. connectionTimeoutMillis makes a saturated pool fail
+  // fast instead of hanging. See @/utils/constants/db for the full math.
+  store.__dhagaPool ??= new Pool({
+    connectionString,
+    max: poolMaxFromEnv(process.env.DB_POOL_MAX_CORE, DB_POOL_MAX_CORE_DEFAULT),
+    connectionTimeoutMillis: DB_POOL_CONNECTION_TIMEOUT_MS,
+    idleTimeoutMillis: DB_POOL_IDLE_TIMEOUT_MS,
+  });
   // Re-executing the full idempotent DDL on every cold start costs seconds
   // against a remote database; skip it when this exact text already ran.
   const fingerprint = ddlFingerprint(DDL);

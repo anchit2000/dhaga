@@ -16,9 +16,12 @@ const explicitDb = new AsyncLocalStorage<DhagaDb>();
  * needs to know which case it's in — see the open-core boundary note in
  * lib/hosted/gate.ts.
  */
-export const getDb = cache(async (): Promise<DhagaDb> => {
-  const scopedDb = explicitDb.getStore();
-  if (scopedDb) return scopedDb;
+/**
+ * The default per-request resolution, memoized so one request pins (and
+ * `after()`-releases) a single scoped connection. Only reached when no
+ * explicit tenant scope is active — see getDb below.
+ */
+const getRequestScopedDb = cache(async (): Promise<DhagaDb> => {
   // getCurrentUser() calls next/headers(), which throws outside a real
   // request (the vitest suite calls repo functions directly, with no HTTP
   // request in play) — treat that the same as "no session" and fall back.
@@ -32,6 +35,18 @@ export const getDb = cache(async (): Promise<DhagaDb> => {
   }
   return getGlobalDb();
 });
+
+export async function getDb(): Promise<DhagaDb> {
+  // The explicit-scope check is deliberately OUTSIDE cache(): a single request
+  // may open and release several short-lived withUserDb scopes in sequence
+  // (the extraction worker does exactly this to keep the DB off the LLM path),
+  // and each getDb() call must resolve to the scope active *now*, not the first
+  // one a memoized result happened to capture. Only the default (no explicit
+  // scope) path is memoized, via getRequestScopedDb.
+  const scopedDb = explicitDb.getStore();
+  if (scopedDb) return scopedDb;
+  return getRequestScopedDb();
+}
 
 /** Runs cacheable work with an explicit tenant instead of reading request APIs. */
 export async function withUserDb<T>(userId: string, work: () => Promise<T>): Promise<T> {

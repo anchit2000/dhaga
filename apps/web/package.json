@@ -4,10 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "fumadocs-mdx && next build",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
+    "postinstall": "fumadocs-mdx",
+    "docs:api": "typedoc && node scripts/docs-api-postprocess.mjs",
     "seed:dummy-graph": "node scripts/seed-dummy-graph.mjs"
   },
   "dependencies": {
@@ -28,6 +30,9 @@
     "clsx": "^2.1.1",
     "driver.js": "^1.7.0",
     "drizzle-orm": "^0.45.2",
+    "fumadocs-core": "^16.11.5",
+    "fumadocs-mdx": "^15.2.0",
+    "fumadocs-ui": "^16.11.5",
     "graphology": "^0.26.0",
     "graphology-layout-forceatlas2": "^0.10.1",
     "gsap": "^3.15.0",
@@ -55,6 +60,8 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
     "tailwindcss": "^4",
+    "typedoc": "^0.28.20",
+    "typedoc-plugin-markdown": "^4.12.0",
     "typescript": "^5",
     "vitest": "^4.1.9"
   }

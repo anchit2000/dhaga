@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // fumadocs-mdx generated bundle — not hand-authored, regenerated on build.
+    ".source/**",
   ]),
 ]);
 

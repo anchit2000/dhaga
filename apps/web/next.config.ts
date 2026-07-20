@@ -1,6 +1,12 @@
 import path from "node:path";
 
+import { createMDX } from "fumadocs-mdx/next";
+
 import type { NextConfig } from "next";
+
+// Fumadocs MDX wrapper — compiles `content/docs/**` and regenerates `.source`
+// on build. Merged with (not replacing) the config below.
+const withMDX = createMDX();
 
 const nextConfig: NextConfig = {
   // Docker image builds only (the root Dockerfile sets DHAGA_STANDALONE=1):
@@ -29,4 +35,4 @@ const nextConfig: NextConfig = {
   ],
 };
 
-export default nextConfig;
+export default withMDX(nextConfig);

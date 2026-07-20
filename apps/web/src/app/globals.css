@@ -2,6 +2,14 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* Fumadocs UI (the /docs site). `neutral` supplies the --color-fd-* token set
+   and `preset` its component styles; both are re-skinned to the Dhaga brand by
+   the --color-fd-* → --brand-* mapping in :root / .dark below. @source lets
+   Tailwind scan Fumadocs' compiled classes (it lives outside src/). */
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
+@source "../../../../node_modules/fumadocs-ui/dist/**/*.js";
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -106,6 +114,28 @@
   --border: var(--brand-seam);
   --input: var(--brand-seam);
   --ring: var(--brand-amber);
+
+  /* Fumadocs (/docs) tokens → Dhaga brand. Amber is the one accent; seam is
+     the one border. Because these point at --brand-*, dark mode falls out of
+     the .dark brand values automatically (mirrored in .dark below to beat the
+     imported neutral defaults on specificity). */
+  --color-fd-background: var(--brand-ink);
+  --color-fd-foreground: var(--brand-paper);
+  --color-fd-muted: var(--brand-panel-2);
+  --color-fd-muted-foreground: var(--brand-fog);
+  --color-fd-popover: var(--brand-panel);
+  --color-fd-popover-foreground: var(--brand-paper);
+  --color-fd-card: var(--brand-panel);
+  --color-fd-card-foreground: var(--brand-paper);
+  --color-fd-border: var(--brand-seam);
+  --color-fd-primary: var(--brand-amber);
+  --color-fd-primary-foreground: var(--brand-on-accent);
+  --color-fd-secondary: var(--brand-panel-2);
+  --color-fd-secondary-foreground: var(--brand-paper);
+  --color-fd-accent: var(--brand-panel-2);
+  --color-fd-accent-foreground: var(--brand-paper);
+  --color-fd-ring: var(--brand-amber);
+
   --radius: 0.5rem;
   --font-sans: var(--font-geist-pixel), ui-sans-serif, system-ui, sans-serif;
   --font-geist-mono: var(--font-plex-mono), Consolas, monospace;
@@ -126,6 +156,26 @@
   --brand-on-accent: #0d0b09;
   --brand-wash: #f3ede2;
   --destructive: oklch(0.704 0.191 22.216);
+
+  /* Fumadocs tokens for dark — same brand mapping, resolved against the .dark
+     --brand-* values above; placed after the imported neutral .dark defaults
+     so it wins on equal specificity. */
+  --color-fd-background: var(--brand-ink);
+  --color-fd-foreground: var(--brand-paper);
+  --color-fd-muted: var(--brand-panel-2);
+  --color-fd-muted-foreground: var(--brand-fog);
+  --color-fd-popover: var(--brand-panel);
+  --color-fd-popover-foreground: var(--brand-paper);
+  --color-fd-card: var(--brand-panel);
+  --color-fd-card-foreground: var(--brand-paper);
+  --color-fd-border: var(--brand-seam);
+  --color-fd-primary: var(--brand-amber);
+  --color-fd-primary-foreground: var(--brand-on-accent);
+  --color-fd-secondary: var(--brand-panel-2);
+  --color-fd-secondary-foreground: var(--brand-paper);
+  --color-fd-accent: var(--brand-panel-2);
+  --color-fd-accent-foreground: var(--brand-paper);
+  --color-fd-ring: var(--brand-amber);
 }
 
 ::selection {

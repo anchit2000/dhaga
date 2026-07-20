@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import {
   extractQuickAddAction,
   scanCardAction,
@@ -49,16 +49,15 @@ export function QuickAddForm({
   );
 
   // A parsed capture opens the review form in a dialog (not inline at the page
-  // bottom). Track the last contact so a fresh scan re-opens after a dismiss.
-  const [resultOpen, setResultOpen] = useState(false);
-  const lastContactRef = useRef<QuickAddState["contact"]>(undefined);
-  useEffect(() => {
-    if (state.contact && state.contact !== lastContactRef.current) {
-      lastContactRef.current = state.contact;
-      setResultOpen(true);
-      if (homeDock) setCaptureOpen(false);
-    }
-  }, [state.contact, homeDock]);
+  // bottom). Derive open-ness from the action result rather than setState-in-an-
+  // effect: the review shows whenever there's a contact the user hasn't
+  // dismissed; dismissing marks it so a later scan (a new object) re-opens.
+  const [dismissedContact, setDismissedContact] = useState<QuickAddState["contact"]>(undefined);
+  const resultOpen = Boolean(state.contact) && state.contact !== dismissedContact;
+  const dismissResult = (): void => {
+    setDismissedContact(state.contact);
+    if (homeDock) setCaptureOpen(false);
+  };
 
   if (state.matches && state.matches.length > 1 && state.sourceText) {
     return (
@@ -94,7 +93,7 @@ export function QuickAddForm({
   );
 
   const resultDialog = state.contact ? (
-    <Dialog open={resultOpen} onOpenChange={setResultOpen}>
+    <Dialog open={resultOpen} onOpenChange={(open) => { if (!open) dismissResult(); }}>
       <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto">
         <DialogTitle>Review scanned contact</DialogTitle>
         <QuickAddResult
@@ -122,7 +121,7 @@ export function QuickAddForm({
 
   return (
     <div className="pb-28">
-      {captureOpen ? (
+      {captureOpen && !resultOpen ? (
         <Dialog open={captureOpen} onOpenChange={setCaptureOpen}>
           <DialogContent className="max-w-lg">
             <DialogTitle>Capture someone</DialogTitle>

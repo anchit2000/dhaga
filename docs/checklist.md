@@ -46,6 +46,8 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Home dashboard: due reach-outs + open follow-ups across the graph
 - [ ] Fix render-blocking font/animation on first load (BRD §7.6) — Geist Pixel self-hosted via `next/font/local` (was a `display=block` Google Fonts `<link>`, invisible text until it loaded); landing WebGL cursor + GSAP scroll thread deferred via `next/dynamic({ ssr: false })` so they no longer block first paint — 2026-07-12, build verification + push still pending
 - [ ] Cache authenticated `/app/*` navigation so switching pages doesn't re-run the full Postgres query set on every click (BRD §7.6) — per-user scoped, invalidated on mutation, not a raw TTL
+- [ ] Library-first data gateways (docs/LIBRARIES.md): TanStack Query behind `@/lib/data`, TanStack Table + nuqs inside `DataTable` (adds client-mode sorting) — PRs #24/#25 (2026-07-20); lint/typecheck/vitest green, manual browser pass + merge pending
+- [ ] Virtualize with TanStack Virtual when any client list/table renders ~1k+ rows (docs/LIBRARIES.md §6) — no current surface qualifies; do not add speculatively
 
 ## 3. Data layer (BRD §7.4 — boring storage)
 
@@ -79,6 +81,8 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] User-triggered enrichment: web search → cited enrichment note → receipted facts
 - [x] LinkedIn Connections CSV import — user's own LinkedIn data export → bulk contacts, ToS-safe (BRD §6.7) (v1.1); `lib/import/linkedin.ts`, wired into `/app/import`, LinkedIn header format covered by `csv-import.test.ts`/`import-repo.test.ts`
 - [x] Waitlist signups get a confirmation email (Resend)
+- [ ] Adopt react-hook-form + Zod resolvers the next time a form grows real validation/field-array complexity (docs/LIBRARIES.md §4) — don't rewrite working server-action forms for it
+- [ ] Swap the hand-rolled PhotoCropper to react-easy-crop the next time the cropper needs a feature (rotation, aspect presets — docs/LIBRARIES.md §7); works fine today, no urgency
 
 ## 5. Events / auto-grouping (M2)
 
@@ -112,6 +116,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Embeddings + pgvector similarity (bge-small via transformers.js — local, $0)
 - [x] "Ask AI" answer over retrieved candidates with receipts (Sonnet, explicit click)
 - [x] Acceptance: seeded test set — correct contact in top 3 (vitest, keyword path; semantic covered by the standalone E2E check)
+- [ ] Rebuild SearchPalette's keyboard/list layer on cmdk if the palette next grows modes or item types (docs/LIBRARIES.md §8) — current custom modes (search vs metered Ask, dictation, weight tuner) don't map 1:1, so no forced swap
 
 ## 9. AI follow-up drafts (M7)
 
@@ -145,8 +150,9 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [ ] M1 card scan: edit-before-save, ≥90% accuracy on clean cards, <5s
 - [ ] M2 auto event grouping (time + geohash clustering, name-once prompt)
 - [ ] M3 voice notes: whisper.cpp / Apple Speech on-device transcription — built via `expo-speech-recognition` (§6 has details); typecheck/lint pass, needs a real device build to confirm native linking on SDK 57, not pushed
+- [ ] M1 data-layer parity: reuse the `@/lib/data` gateway contract with a TanStack Query adapter in Expo; FlashList v2 for all long lists (docs/LIBRARIES.md §§1, 6; mobile/web parity rule)
 - [ ] M8 local-first SQLite (op-sqlite) + sqlite-vec; full offline
-- [ ] Sync engine (field-level LWW or PowerSync/ElectricSQL — decide per BRD §11)
+- [ ] Sync engine — decide per BRD §11 Q2: field-level LWW vs PowerSync vs **TanStack DB + ElectricSQL** (lead candidate, docs/LIBRARIES.md §5); evaluation → decision doc → sign-off before any sync code lands
 - [ ] E2E-encrypted backup/sync
 - [ ] EAS builds: .aab (Play) + .ipa (App Store); store listings
 

@@ -1,5 +1,6 @@
 import { requireUserIdForPage } from "@/lib/auth/guard";
 import { getCachedAppNavigation } from "@/lib/cache/app-navigation";
+import { DataProvider } from "@/lib/data";
 import { getSttEngine } from "@/lib/repo/settings";
 import { AppNav } from "@/components/app/AppNav";
 import { NavigationFeedback } from "@/components/app/NavigationFeedback";
@@ -20,15 +21,17 @@ export default async function AppLayout({
   ]);
 
   return (
-    <SttEngineProvider engine={sttEngine}>
-      <NavigationFeedback>
-        <div className="min-h-dvh bg-ink text-paper">
-          <AppNav isAdmin={isAdmin} initialSearchWeights={searchWeights} />
-          <main className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-8 sm:py-8">
-            {children}
-          </main>
-        </div>
-      </NavigationFeedback>
-    </SttEngineProvider>
+    <DataProvider>
+      <SttEngineProvider engine={sttEngine}>
+        <NavigationFeedback>
+          <div className="min-h-dvh bg-ink text-paper">
+            <AppNav isAdmin={isAdmin} initialSearchWeights={searchWeights} />
+            <main className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-8 sm:py-8">
+              {children}
+            </main>
+          </div>
+        </NavigationFeedback>
+      </SttEngineProvider>
+    </DataProvider>
   );
 }

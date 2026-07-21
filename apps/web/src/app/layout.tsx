@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ThemeProvider } from "next-themes";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -72,7 +73,7 @@ export default function RootLayout({
         className="min-h-full flex flex-col bg-ink text-paper"
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          {children}
+          <NuqsAdapter>{children}</NuqsAdapter>
           <Toaster position="bottom-right" />
         </ThemeProvider>
         <Analytics />

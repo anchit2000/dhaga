@@ -1,17 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import { useTargetSearch } from "@/components/app/graph/use-target-search";
 import {
   GRAPH_TARGET_RESULTS_DISMISS_MS,
-  GRAPH_TARGET_SEARCH_DEBOUNCE_MS,
   RELATIONSHIP_KIND_LABELS,
 } from "@/utils/constants/graph";
 import type { GraphTarget } from "@/lib/repo/graph-data";
 
 /**
  * Debounced typeahead over /api/graph/targets (contacts, companies, entities,
- * events) — same fetch pattern as WarmPathPanel's target search. The fixed
+ * events) — same shared hook as WarmPathPanel's target search. The fixed
  * source node is excluded so a node can't relate to itself.
  */
 export function TargetPicker({
@@ -24,36 +24,9 @@ export function TargetPicker({
   onSelect: (target: GraphTarget | null) => void;
 }) {
   const [query, setQuery] = useState("");
-  const [searchResult, setSearchResult] = useState({ query: "", targets: [] as GraphTarget[] });
-  const normalizedQuery = query.trim();
-  const results =
-    !value && searchResult.query === normalizedQuery
-      ? searchResult.targets.filter((target) => target.id !== sourceId)
-      : [];
-
-  useEffect(() => {
-    if (value || !normalizedQuery) return;
-    const controller = new AbortController();
-    const timer = setTimeout(async () => {
-      try {
-        const res = await fetch(
-          `/api/graph/targets?q=${encodeURIComponent(normalizedQuery)}`,
-          { signal: controller.signal },
-        );
-        if (!res.ok) return;
-        const data: { targets: GraphTarget[] } = await res.json();
-        setSearchResult({ query: normalizedQuery, targets: data.targets });
-      } catch {
-        if (!controller.signal.aborted) {
-          setSearchResult({ query: normalizedQuery, targets: [] });
-        }
-      }
-    }, GRAPH_TARGET_SEARCH_DEBOUNCE_MS);
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
-  }, [normalizedQuery, value]);
+  const [open, setOpen] = useState(false);
+  const targets = useTargetSearch(query, { enabled: open && !value });
+  const results = targets.filter((target) => target.id !== sourceId);
 
   return (
     <div className="relative">
@@ -62,12 +35,10 @@ export function TargetPicker({
         onChange={(event) => {
           onSelect(null);
           setQuery(event.target.value);
+          setOpen(true);
         }}
         onBlur={() =>
-          setTimeout(
-            () => setSearchResult({ query: "", targets: [] }),
-            GRAPH_TARGET_RESULTS_DISMISS_MS,
-          )
+          setTimeout(() => setOpen(false), GRAPH_TARGET_RESULTS_DISMISS_MS)
         }
         placeholder="Search people, companies, events, entities…"
         aria-label="Relationship target"
@@ -79,7 +50,10 @@ export function TargetPicker({
             <li key={`${target.kind}:${target.id}`}>
               <button
                 type="button"
-                onClick={() => onSelect(target)}
+                onClick={() => {
+                  onSelect(target);
+                  setOpen(false);
+                }}
                 className="flex w-full items-center justify-between gap-2 px-2.5 py-1.5 text-left text-sm text-paper hover:bg-wash/[0.05]"
               >
                 <span className="min-w-0">

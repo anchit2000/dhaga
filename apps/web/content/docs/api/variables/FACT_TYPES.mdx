@@ -1,0 +1,13 @@
+---
+title: "FACT\\_TYPES"
+---
+
+```ts
+const FACT_TYPES: readonly ["role", "intent", "personal", "preference"];
+```
+
+Defined in: schemas/extraction.ts:9
+
+Note → knowledge-graph extraction schema (BRD §6.3).
+One structured LLM call per note; every derived row keeps the originating
+note id as its receipt (`source_note_id` in storage).

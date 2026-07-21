@@ -1,0 +1,46 @@
+---
+title: Extending Dhaga
+description: Every external capability Dhaga uses — the LLM, web search, and vector retrieval — sits behind a provider-agnostic gateway in @dhaga/core. Add your own by implementing an interface and registering it.
+---
+
+Dhaga never imports a vendor SDK from application code. Every external
+capability — the LLM, web search, embeddings, and the vector store — is reached
+through a small **gateway interface** exported from `@dhaga/core`. Callers
+depend on the interface, a factory picks the concrete implementation from an
+environment variable, and adding a provider means one new implementation plus
+one registration — zero changes to callers (Dependency Inversion / Open-Closed).
+
+Every gateway follows the same three-part shape:
+
+1. **A contract** — the `LLMClient` / `SearchClient` / `VectorStore` interface.
+2. **A registration** — a small provider object (`id`, `isConfigured()`,
+   `createClient()`) you hand to a `register*` function.
+3. **A selection** — an env var (`LLM_PROVIDER`, `SEARCH_PROVIDER`,
+   `DHAGA_VECTOR_STORE`, …) or a `select*` call that names which registered
+   provider is active.
+
+Register your providers from `apps/web/src/dhaga.providers.ts`, the bootstrap
+Next.js runs once before the server accepts requests — so provider SDKs stay
+optional dependencies, only loaded when you actually wire them in.
+
+<Cards>
+  <Card
+    title="Add an LLM provider"
+    href="/docs/extending/llm-provider"
+    description="Implement LLMClient (extract + complete) and register an LLMProvider. Ollama, a BYO-key gateway, or any OpenAI-compatible server."
+  />
+  <Card
+    title="Add a search provider"
+    href="/docs/extending/search-provider"
+    description="Implement SearchClient and register a SearchProvider — Brave, SerpAPI, or a self-hosted SearXNG."
+  />
+  <Card
+    title="Add a vector store / retrieval provider"
+    href="/docs/extending/vector-store"
+    description="Swap embeddings and the vector store independently — any external engine, behind matching dimensions."
+  />
+</Cards>
+
+For the operator-facing summary of these same seams (env vars, defaults,
+distributing a provider as an npm package), see
+[Providers](/docs/self-hosting/providers).

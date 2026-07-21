@@ -1,0 +1,84 @@
+---
+title: Add a search provider
+description: Implement the SearchClient interface and register a SearchProvider so Dhaga's enrichment and news-watchlist features run against your web search backend — Brave, SerpAPI, or a self-hosted SearXNG.
+---
+
+Web search powers enrichment and the opt-in news/job-change watchlist. It sits
+behind the `SearchClient` gateway in `packages/core/src/search/types.ts`, which
+mirrors the LLM gateway exactly. Firecrawl is the default; adding Brave,
+SerpAPI, or a self-hosted SearXNG is one implementation plus a registration.
+
+## The contract
+
+The search contract is deliberately tiny — normalize whatever your backend
+returns into `{ title, url, snippet }`:
+
+```ts
+// packages/core/src/search/types.ts
+export interface SearchResult {
+  title: string;
+  url: string;
+  snippet: string;
+}
+
+export interface SearchOptions {
+  limit?: number;
+}
+
+export interface SearchClient {
+  search(query: string, options?: SearchOptions): Promise<SearchResult[]>;
+}
+
+export interface SearchProvider {
+  id: string;
+  isConfigured(): boolean;
+  createClient(): SearchClient;
+}
+```
+
+## Implement and register
+
+```ts
+import { registerSearchProvider, selectSearchProvider } from "@dhaga/core";
+import type { SearchProvider } from "@dhaga/core";
+
+export const searxng: SearchProvider = {
+  id: "searxng",
+  isConfigured: () => Boolean(process.env.SEARXNG_URL),
+  createClient: () => ({
+    async search(query, options) {
+      const res = await fetch(
+        `${process.env.SEARXNG_URL}/search?format=json&q=${encodeURIComponent(query)}`,
+      );
+      const body: { results: { title: string; url: string; content: string }[] } =
+        await res.json();
+      return body.results
+        .slice(0, options?.limit ?? 5)
+        .map((r) => ({ title: r.title, url: r.url, snippet: r.content }));
+    },
+  }),
+};
+
+// in apps/web/src/dhaga.providers.ts
+registerSearchProvider(searxng);
+selectSearchProvider("searxng"); // or leave it to SEARCH_PROVIDER=searxng
+```
+
+## Selection and graceful degradation
+
+`getSearchClient()` resolves the active provider from `selectSearchProvider(...)`,
+then `SEARCH_PROVIDER`, then the `firecrawl` default
+(`packages/core/src/search/index.ts`). Features that use search first call
+`hasSearch()` — which returns your provider's `isConfigured()` — and degrade
+quietly when no provider is configured, so an unconfigured search backend
+never crashes a request; it just turns the feature off.
+
+<Callout title="Return an empty array, not an error, for no results">
+`search()` should resolve to `[]` when a query has no hits. Reserve thrown
+errors for genuine failures (auth, network) — callers treat an empty result as
+"nothing found" and an exception as "the provider is broken".
+</Callout>
+
+Adding Brave or SerpAPI is the same shape — a different `createClient()` body
+and a different `isConfigured()` env check. See
+[Providers](/docs/self-hosting/providers) for packaging and distribution.

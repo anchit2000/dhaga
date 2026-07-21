@@ -1,0 +1,16 @@
+---
+title: "getLLMClient()"
+---
+
+```ts
+function getLLMClient(): LLMClient;
+```
+
+Defined in: llm/registry.ts:98
+
+Factory — the only place a concrete provider is chosen. BYO-key and
+local-model (Ollama) providers plug in here later without touching callers.
+
+## Returns
+
+[`LLMClient`](../interfaces/LLMClient)

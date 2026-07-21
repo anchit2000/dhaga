@@ -1,0 +1,18 @@
+---
+title: "contactMethodSchema"
+---
+
+```ts
+const contactMethodSchema: ZodObject<{
+  value: ZodString;
+  label: ZodNullable<ZodString>;
+  note: ZodNullable<ZodString>;
+}, $strip>;
+```
+
+Defined in: schemas/contact-fields.ts:19
+
+A single email address, phone number, or link, with an optional human label
+("Work", "Home", "Mobile", "LinkedIn") and free-form note. Legacy rows and
+older captures stored these as bare strings — [normalizeContactMethods](../functions/normalizeContactMethods)
+coerces those, so nothing has to be migrated in the database.

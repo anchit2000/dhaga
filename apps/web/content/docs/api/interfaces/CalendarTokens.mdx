@@ -1,0 +1,63 @@
+---
+title: "CalendarTokens"
+---
+
+Defined in: calendar/types.ts:27
+
+Token set returned by a provider after an authorization-code exchange or refresh.
+
+## Properties
+
+### accessToken
+
+```ts
+accessToken: string;
+```
+
+Defined in: calendar/types.ts:28
+
+***
+
+### refreshToken
+
+```ts
+refreshToken: string | null;
+```
+
+Defined in: calendar/types.ts:30
+
+Absent when the provider issues one-shot tokens; then the user re-connects.
+
+***
+
+### expiresAt
+
+```ts
+expiresAt: Date | null;
+```
+
+Defined in: calendar/types.ts:32
+
+Absolute expiry of accessToken; null when the provider omits one.
+
+***
+
+### scope
+
+```ts
+scope: string | null;
+```
+
+Defined in: calendar/types.ts:33
+
+***
+
+### accountEmail
+
+```ts
+accountEmail: string | null;
+```
+
+Defined in: calendar/types.ts:35
+
+The connected account's address, when the provider surfaces it (for the UI).

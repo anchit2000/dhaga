@@ -1,0 +1,31 @@
+---
+title: "dayLoad()"
+---
+
+```ts
+function dayLoad(params): DayLoad;
+```
+
+Defined in: calendar/availability.ts:102
+
+Meetings intersecting the local day of `day`, and total (de-duplicated) busy minutes.
+
+## Parameters
+
+### params
+
+#### day
+
+`Date`
+
+#### busy
+
+[`BusyInterval`](../interfaces/BusyInterval)[]
+
+#### utcOffsetMinutes?
+
+`number`
+
+## Returns
+
+[`DayLoad`](../interfaces/DayLoad)

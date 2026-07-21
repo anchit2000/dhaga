@@ -1,0 +1,19 @@
+---
+title: "addressSchema"
+---
+
+```ts
+const addressSchema: ZodObject<{
+  label: ZodNullable<ZodString>;
+  street: ZodNullable<ZodString>;
+  city: ZodNullable<ZodString>;
+  region: ZodNullable<ZodString>;
+  postalCode: ZodNullable<ZodString>;
+  country: ZodNullable<ZodString>;
+  note: ZodNullable<ZodString>;
+}, $strip>;
+```
+
+Defined in: schemas/contact-fields.ts:48
+
+A postal address. Structured parts + a free note; every part is optional.

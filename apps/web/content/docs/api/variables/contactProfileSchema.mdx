@@ -1,0 +1,62 @@
+---
+title: "contactProfileSchema"
+---
+
+```ts
+const contactProfileSchema: ZodObject<{
+  name: ZodString;
+  nickname: ZodNullable<ZodString>;
+  positions: ZodArray<ZodObject<{
+     title: ZodNullable<ZodString>;
+     company: ZodNullable<ZodString>;
+     department: ZodNullable<ZodString>;
+     current: ZodBoolean;
+     startedAt: ZodNullable<ZodString>;
+     endedAt: ZodNullable<ZodString>;
+     note: ZodNullable<ZodString>;
+  }, $strip>>;
+  emails: ZodArray<ZodObject<{
+     value: ZodString;
+     label: ZodNullable<ZodString>;
+     note: ZodNullable<ZodString>;
+  }, $strip>>;
+  phones: ZodArray<ZodObject<{
+     value: ZodString;
+     label: ZodNullable<ZodString>;
+     note: ZodNullable<ZodString>;
+  }, $strip>>;
+  links: ZodArray<ZodObject<{
+     value: ZodString;
+     label: ZodNullable<ZodString>;
+     note: ZodNullable<ZodString>;
+  }, $strip>>;
+  addresses: ZodArray<ZodObject<{
+     label: ZodNullable<ZodString>;
+     street: ZodNullable<ZodString>;
+     city: ZodNullable<ZodString>;
+     region: ZodNullable<ZodString>;
+     postalCode: ZodNullable<ZodString>;
+     country: ZodNullable<ZodString>;
+     note: ZodNullable<ZodString>;
+  }, $strip>>;
+  importantDates: ZodArray<ZodObject<{
+     label: ZodString;
+     value: ZodString;
+     note: ZodNullable<ZodString>;
+  }, $strip>>;
+  customFields: ZodArray<ZodObject<{
+     label: ZodString;
+     value: ZodString;
+  }, $strip>>;
+  location: ZodNullable<ZodString>;
+}, $strip>;
+```
+
+Defined in: schemas/contact.ts:48
+
+The full editable + importable contact. People hold several jobs over time,
+carry work/home/mobile numbers, and (from a Google/vCard/device import) a
+long tail of fields — so employment is a list of [positionSchema](positionSchema),
+emails/phones/links are labeled [contactMethodSchema](contactMethodSchema), and
+`customFields` is a lossless catch-all so an import never silently drops
+data. This is what the manual add/edit form reads and writes.

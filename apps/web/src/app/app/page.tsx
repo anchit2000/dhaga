@@ -84,7 +84,10 @@ export default async function HomePage() {
         <h1 className="mt-1 font-display text-2xl tracking-tight">{headline}</h1>
         {statusParts.length > 0 ? <p className="mt-1.5 font-mono text-[11px] uppercase tracking-wider text-fog">{statusParts.join(" · ")}</p> : null}
       </div>
-      <Button render={<Link href="/app/people/new" />} variant="outline" size="sm">Add manually</Button>
+      <div className="flex items-center gap-2">
+        <Button render={<Link href="/docs" />} variant="ghost" size="sm">Docs</Button>
+        <Button render={<Link href="/app/people/new" />} variant="outline" size="sm">Add manually</Button>
+      </div>
     </div>
 
     <HomeDashboard

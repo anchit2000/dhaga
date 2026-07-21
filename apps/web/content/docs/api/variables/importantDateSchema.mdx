@@ -1,0 +1,15 @@
+---
+title: "importantDateSchema"
+---
+
+```ts
+const importantDateSchema: ZodObject<{
+  label: ZodString;
+  value: ZodString;
+  note: ZodNullable<ZodString>;
+}, $strip>;
+```
+
+Defined in: schemas/contact-fields.ts:60
+
+A birthday, anniversary, or other date worth remembering.

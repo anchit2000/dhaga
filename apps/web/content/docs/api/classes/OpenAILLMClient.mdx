@@ -1,0 +1,87 @@
+---
+title: "OpenAILLMClient"
+---
+
+Defined in: llm/openai-client.ts:18
+
+## Implements
+
+- [`LLMClient`](../interfaces/LLMClient)
+
+## Constructors
+
+### Constructor
+
+```ts
+new OpenAILLMClient(options): OpenAILLMClient;
+```
+
+Defined in: llm/openai-client.ts:23
+
+#### Parameters
+
+##### options
+
+[`OpenAILLMClientOptions`](../interfaces/OpenAILLMClientOptions)
+
+#### Returns
+
+`OpenAILLMClient`
+
+## Methods
+
+### extract()
+
+```ts
+extract<T>(options): Promise<LLMResult<T>>;
+```
+
+Defined in: llm/openai-client.ts:29
+
+Structured extraction — output is guaranteed to match the Zod schema.
+
+#### Type Parameters
+
+##### T
+
+`T`
+
+#### Parameters
+
+##### options
+
+[`ExtractOptions`](../interfaces/ExtractOptions)\<`T`\>
+
+#### Returns
+
+`Promise`\<[`LLMResult`](../interfaces/LLMResult)\<`T`\>\>
+
+#### Implementation of
+
+[`LLMClient`](../interfaces/LLMClient).[`extract`](../interfaces/LLMClient#extract)
+
+***
+
+### complete()
+
+```ts
+complete(options): Promise<LLMResult<string>>;
+```
+
+Defined in: llm/openai-client.ts:63
+
+Free-text completion (drafts, search answers).
+
+#### Parameters
+
+##### options
+
+[`CompleteOptions`](../interfaces/CompleteOptions)
+
+#### Returns
+
+`Promise`\<[`LLMResult`](../interfaces/LLMResult)\<`string`\>\>
+
+#### Implementation of
+
+[`LLMClient`](../interfaces/LLMClient).[`complete`](../interfaces/LLMClient#complete)

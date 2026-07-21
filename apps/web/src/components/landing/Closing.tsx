@@ -44,6 +44,7 @@ export function Footer() {
             <FooterLink href="#product" label="Product" />
             <FooterLink href="#pricing" label="Pricing" />
             <FooterLink href="#faq" label="FAQ" />
+            <FooterLink href="/docs" label="Docs" />
           </div>
           <div className="space-y-2.5">
             <p className="font-mono text-[10px] uppercase tracking-widest text-fog/60">

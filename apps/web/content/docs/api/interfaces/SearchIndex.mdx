@@ -1,0 +1,156 @@
+---
+title: "SearchIndex"
+---
+
+Defined in: search-index/types.ts:86
+
+## Properties
+
+### id
+
+```ts
+id: string;
+```
+
+Defined in: search-index/types.ts:87
+
+## Methods
+
+### search()
+
+```ts
+search(query): Promise<SearchIndexResult[]>;
+```
+
+Defined in: search-index/types.ts:89
+
+Read: relevance/typeahead search over the index.
+
+#### Parameters
+
+##### query
+
+[`SearchQuery`](SearchQuery)
+
+#### Returns
+
+`Promise`\<[`SearchIndexResult`](SearchIndexResult)[]\>
+
+***
+
+### indexDocument()
+
+```ts
+indexDocument(document, options?): Promise<void>;
+```
+
+Defined in: search-index/types.ts:95
+
+Write: (re)index one document. A no-op for engines whose keyword index is
+maintained by the store itself (e.g. Postgres GENERATED columns), where
+only the semantic side needs an explicit write.
+
+#### Parameters
+
+##### document
+
+[`SearchDocument`](SearchDocument)
+
+##### options?
+
+[`SearchWriteOptions`](SearchWriteOptions)
+
+#### Returns
+
+`Promise`\<`void`\>
+
+***
+
+### removeDocument()
+
+```ts
+removeDocument(
+   kind, 
+   id, 
+options?): Promise<void>;
+```
+
+Defined in: search-index/types.ts:97
+
+Write: remove one document from the index.
+
+#### Parameters
+
+##### kind
+
+[`SearchKind`](../type-aliases/SearchKind)
+
+##### id
+
+`string`
+
+##### options?
+
+[`SearchWriteOptions`](SearchWriteOptions)
+
+#### Returns
+
+`Promise`\<`void`\>
+
+***
+
+### removeByContact()
+
+```ts
+removeByContact(contactId, options?): Promise<void>;
+```
+
+Defined in: search-index/types.ts:99
+
+Write: remove every document owned by a contact (deletion cascade).
+
+#### Parameters
+
+##### contactId
+
+`string`
+
+##### options?
+
+[`SearchWriteOptions`](SearchWriteOptions)
+
+#### Returns
+
+`Promise`\<`void`\>
+
+***
+
+### reindex()
+
+```ts
+reindex(): Promise<void>;
+```
+
+Defined in: search-index/types.ts:101
+
+Backfill any documents missing from the index. Idempotent.
+
+#### Returns
+
+`Promise`\<`void`\>
+
+***
+
+### countUnindexed()
+
+```ts
+countUnindexed(): Promise<number>;
+```
+
+Defined in: search-index/types.ts:103
+
+How many indexable rows are not yet in the index (backfill affordance).
+
+#### Returns
+
+`Promise`\<`number`\>

@@ -1,0 +1,23 @@
+---
+title: "normalizeContactMethods()"
+---
+
+```ts
+function normalizeContactMethods(raw): object[];
+```
+
+Defined in: schemas/contact-fields.ts:96
+
+Normalise a raw jsonb column (string[] from legacy rows, or object[] from
+new writes) into ContactMethod[], dropping entries with no value. Every read
+path funnels through this so the rest of the app only ever sees objects.
+
+## Parameters
+
+### raw
+
+`unknown`
+
+## Returns
+
+`object`[]

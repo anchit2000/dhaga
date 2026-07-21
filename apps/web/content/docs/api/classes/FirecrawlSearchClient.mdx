@@ -1,0 +1,62 @@
+---
+title: "FirecrawlSearchClient"
+---
+
+Defined in: search/firecrawl-client.ts:21
+
+Default SearchClient (see ./types.ts): Firecrawl's hosted search API —
+billed per search rather than per model call, cheaper than an LLM
+provider's own web-search tool at watchlist scale (BRD §6.7, §8.2 cost
+defense). Swappable: this is just one implementation of SearchClient.
+
+## Implements
+
+- [`SearchClient`](../interfaces/SearchClient)
+
+## Constructors
+
+### Constructor
+
+```ts
+new FirecrawlSearchClient(apiKey): FirecrawlSearchClient;
+```
+
+Defined in: search/firecrawl-client.ts:22
+
+#### Parameters
+
+##### apiKey
+
+`string`
+
+#### Returns
+
+`FirecrawlSearchClient`
+
+## Methods
+
+### search()
+
+```ts
+search(query, options?): Promise<SearchResult[]>;
+```
+
+Defined in: search/firecrawl-client.ts:24
+
+#### Parameters
+
+##### query
+
+`string`
+
+##### options?
+
+[`SearchOptions`](../interfaces/SearchOptions) = `{}`
+
+#### Returns
+
+`Promise`\<[`SearchResult`](../interfaces/SearchResult)[]\>
+
+#### Implementation of
+
+[`SearchClient`](../interfaces/SearchClient).[`search`](../interfaces/SearchClient#search)

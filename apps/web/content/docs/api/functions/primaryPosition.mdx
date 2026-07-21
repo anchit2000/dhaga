@@ -1,0 +1,42 @@
+---
+title: "primaryPosition()"
+---
+
+```ts
+function primaryPosition(positions): 
+  | {
+  title: string | null;
+  company: string | null;
+  department: string | null;
+  current: boolean;
+  startedAt: string | null;
+  endedAt: string | null;
+  note: string | null;
+}
+  | null;
+```
+
+Defined in: schemas/contact.ts:124
+
+The primary role — first current, else the first listed — whose title and
+company mirror into the denormalised `contacts.title` / `company_id` columns
+that existing list/detail/search/graph reads still depend on.
+
+## Parameters
+
+### positions
+
+`object`[]
+
+## Returns
+
+  \| \{
+  `title`: `string` \| `null`;
+  `company`: `string` \| `null`;
+  `department`: `string` \| `null`;
+  `current`: `boolean`;
+  `startedAt`: `string` \| `null`;
+  `endedAt`: `string` \| `null`;
+  `note`: `string` \| `null`;
+\}
+  \| `null`

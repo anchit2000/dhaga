@@ -1,0 +1,15 @@
+---
+title: "RelationshipLabelMap"
+---
+
+```ts
+type RelationshipLabelMap = Record<string, {
+  forward: string;
+  inverse: string;
+}>;
+```
+
+Defined in: relationships.ts:62
+
+User-defined predicates loaded at runtime (relationship_types rows), keyed
+by slug: `forward` reads src->dst ("father of"), `inverse` dst->src.

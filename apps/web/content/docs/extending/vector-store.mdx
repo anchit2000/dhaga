@@ -1,0 +1,124 @@
+---
+title: Add a vector store / retrieval provider
+description: Swap Dhaga's embedding model and vector store independently through the retrieval gateway — any external engine, as long as declared dimensions match.
+---
+
+Semantic search has two independent seams: the **embedding provider** that
+turns text into vectors, and the **vector store** that persists and searches
+them. They are separate plugins so you can swap either without touching the
+other — as long as their declared dimensions agree. Both live in
+`packages/core/src/retrieval/types.ts`. The built-ins are `local-huggingface`
+(384-dim, on-device, `$0`) and `pgvector`.
+
+## The two contracts
+
+```ts
+// packages/core/src/retrieval/types.ts
+export interface EmbeddingProvider {
+  id: string;
+  dimensions: number;
+  isConfigured(): boolean;
+  embedDocuments(texts: string[]): Promise<number[][] | null>;
+  embedQuery(text: string): Promise<number[] | null>;
+}
+
+export interface VectorRecord {
+  ownerType: string;
+  ownerId: string;
+  contactId: string;
+  content: string;
+  vector: number[];
+}
+
+export interface VectorStore {
+  id: string;
+  dimensions: number;
+  upsert(records: VectorRecord[], options?: VectorWriteOptions): Promise<void>;
+  search(vector: number[], options?: VectorSearchOptions): Promise<VectorHit[]>;
+  has(ownerType: string, ownerId: string): Promise<boolean>;
+  delete(ownerType: string, ownerId: string, options?: VectorWriteOptions): Promise<void>;
+  deleteMany(records: Array<Pick<VectorRecord, "ownerType" | "ownerId">>, options?: VectorWriteOptions): Promise<void>;
+  deleteByContact(contactId: string, options?: VectorWriteOptions): Promise<void>;
+}
+```
+
+An `embed*` method may return `null` to signal "embeddings are unavailable
+right now" (e.g. the model isn't loaded) — callers treat that as a clean
+degrade to keyword search, not an error. A `VectorHit` is
+`{ contactId, content, ownerType, similarity }`; `VectorSearchOptions` accepts
+`limit` and `minimumSimilarity`.
+
+## Dimensions must match
+
+An embedding provider and a vector store are only compatible if they agree on
+`dimensions`. Dhaga checks this before indexing or searching and reports both
+ids and dimensions on mismatch — use the exported helper if you compose them
+yourself:
+
+```ts
+import { assertCompatibleVectorDimensions, DEFAULT_EMBEDDING_DIMENSIONS } from "@dhaga/core";
+
+// throws a descriptive error if the two disagree
+assertCompatibleVectorDimensions(embeddingProvider, vectorStore);
+// DEFAULT_EMBEDDING_DIMENSIONS === 384 (the local-huggingface default)
+```
+
+## Register and select
+
+```ts
+import { registerEmbeddingProvider, registerVectorStore } from "@dhaga/core";
+
+registerEmbeddingProvider({
+  id: "my-embeddings",
+  dimensions: 768,
+  isConfigured: () => Boolean(process.env.MY_EMBEDDINGS_URL),
+  embedDocuments: async (texts) => embedBatch(texts),
+  embedQuery: async (text) => embedOne(text),
+});
+
+registerVectorStore({
+  id: "my-vectors",
+  dimensions: 768,
+  upsert: async (records, options) => { /* idempotent by (ownerType, ownerId) */ },
+  search: async (vector, options) => { /* return VectorHit[] */ return []; },
+  has: async (ownerType, ownerId) => false,
+  delete: async (ownerType, ownerId, options) => {},
+  deleteMany: async (records, options) => {},
+  deleteByContact: async (contactId, options) => {},
+});
+```
+
+Select them in code with `selectEmbeddingProvider` / `selectVectorStore`, or
+with environment variables:
+
+```dotenv
+DHAGA_EMBEDDING_PROVIDER=my-embeddings
+DHAGA_VECTOR_STORE=my-vectors
+```
+
+`getEmbeddingProvider()` defaults to `local-huggingface` and
+`getVectorStore()` to `pgvector` (`packages/core/src/retrieval/index.ts`).
+Registration validates that `dimensions` is a positive integer and that `id`
+is non-empty.
+
+## Idempotency and the transaction handle
+
+Owner pairs (`ownerType`, `ownerId`) are stable keys, so **`upsert` and
+`delete` must be idempotent** — re-running a sync must not duplicate or
+corrupt rows.
+
+`VectorWriteOptions.transaction` is an optional store-specific handle supplied
+by an owning repository. The built-in pgvector store uses it to keep
+relational tombstones and vector deletion atomic within one Postgres
+transaction. An external service can't join a Postgres transaction — ignore
+the handle and make deletion idempotent and retry-safe instead.
+
+<Callout title="Setting DHAGA_VECTOR_STORE to an external store skips pgvector setup">
+When you point `DHAGA_VECTOR_STORE` at an external engine, Dhaga skips the
+pgvector extension and table DDL entirely — so the relational database no
+longer needs the `vector` extension at all. Vector data can be moved to an
+external engine fully independently of the primary Postgres.
+</Callout>
+
+See [Providers](/docs/self-hosting/providers) for the provider checklist and
+packaging guidance.

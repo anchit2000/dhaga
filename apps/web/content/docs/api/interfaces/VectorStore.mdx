@@ -1,0 +1,176 @@
+---
+title: "VectorStore"
+---
+
+Defined in: retrieval/types.ts:34
+
+## Properties
+
+### id
+
+```ts
+id: string;
+```
+
+Defined in: retrieval/types.ts:35
+
+***
+
+### dimensions
+
+```ts
+dimensions: number;
+```
+
+Defined in: retrieval/types.ts:36
+
+## Methods
+
+### upsert()
+
+```ts
+upsert(records, options?): Promise<void>;
+```
+
+Defined in: retrieval/types.ts:37
+
+#### Parameters
+
+##### records
+
+[`VectorRecord`](VectorRecord)[]
+
+##### options?
+
+[`VectorWriteOptions`](VectorWriteOptions)
+
+#### Returns
+
+`Promise`\<`void`\>
+
+***
+
+### search()
+
+```ts
+search(vector, options?): Promise<VectorHit[]>;
+```
+
+Defined in: retrieval/types.ts:38
+
+#### Parameters
+
+##### vector
+
+`number`[]
+
+##### options?
+
+[`VectorSearchOptions`](VectorSearchOptions)
+
+#### Returns
+
+`Promise`\<[`VectorHit`](VectorHit)[]\>
+
+***
+
+### has()
+
+```ts
+has(ownerType, ownerId): Promise<boolean>;
+```
+
+Defined in: retrieval/types.ts:39
+
+#### Parameters
+
+##### ownerType
+
+`string`
+
+##### ownerId
+
+`string`
+
+#### Returns
+
+`Promise`\<`boolean`\>
+
+***
+
+### delete()
+
+```ts
+delete(
+   ownerType, 
+   ownerId, 
+options?): Promise<void>;
+```
+
+Defined in: retrieval/types.ts:40
+
+#### Parameters
+
+##### ownerType
+
+`string`
+
+##### ownerId
+
+`string`
+
+##### options?
+
+[`VectorWriteOptions`](VectorWriteOptions)
+
+#### Returns
+
+`Promise`\<`void`\>
+
+***
+
+### deleteMany()
+
+```ts
+deleteMany(records, options?): Promise<void>;
+```
+
+Defined in: retrieval/types.ts:41
+
+#### Parameters
+
+##### records
+
+`Pick`\<[`VectorRecord`](VectorRecord), `"ownerType"` \| `"ownerId"`\>[]
+
+##### options?
+
+[`VectorWriteOptions`](VectorWriteOptions)
+
+#### Returns
+
+`Promise`\<`void`\>
+
+***
+
+### deleteByContact()
+
+```ts
+deleteByContact(contactId, options?): Promise<void>;
+```
+
+Defined in: retrieval/types.ts:42
+
+#### Parameters
+
+##### contactId
+
+`string`
+
+##### options?
+
+[`VectorWriteOptions`](VectorWriteOptions)
+
+#### Returns
+
+`Promise`\<`void`\>

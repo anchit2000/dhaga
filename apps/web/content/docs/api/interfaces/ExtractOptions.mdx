@@ -1,0 +1,73 @@
+---
+title: "ExtractOptions\\<T\\>"
+---
+
+Defined in: llm/types.ts:27
+
+## Type Parameters
+
+### T
+
+`T`
+
+## Properties
+
+### schema
+
+```ts
+schema: ZodType<T>;
+```
+
+Defined in: llm/types.ts:28
+
+***
+
+### system
+
+```ts
+system: string;
+```
+
+Defined in: llm/types.ts:29
+
+***
+
+### prompt
+
+```ts
+prompt: string;
+```
+
+Defined in: llm/types.ts:30
+
+***
+
+### tier
+
+```ts
+tier: ModelTier;
+```
+
+Defined in: llm/types.ts:31
+
+***
+
+### maxTokens?
+
+```ts
+optional maxTokens?: number;
+```
+
+Defined in: llm/types.ts:32
+
+***
+
+### images?
+
+```ts
+optional images?: LLMImage[];
+```
+
+Defined in: llm/types.ts:34
+
+Optional images placed before the prompt text (card/badge photos).

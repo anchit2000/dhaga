@@ -1,0 +1,53 @@
+---
+title: "findOpenSlots()"
+---
+
+```ts
+function findOpenSlots(params): OpenSlot[];
+```
+
+Defined in: calendar/availability.ts:66
+
+Open slots of `durationMinutes` within working hours on each local day of
+`range`, skipping any that collide with `busy` or start before `now`.
+Chronological, capped at `maxSlots`.
+
+## Parameters
+
+### params
+
+#### range
+
+[`TimeRange`](../interfaces/TimeRange)
+
+#### busy
+
+[`BusyInterval`](../interfaces/BusyInterval)[]
+
+#### durationMinutes
+
+`number`
+
+#### workingHours
+
+[`WorkingHours`](../interfaces/WorkingHours)
+
+#### slotStepMinutes?
+
+`number`
+
+#### maxSlots?
+
+`number`
+
+#### utcOffsetMinutes?
+
+`number`
+
+#### now?
+
+`Date`
+
+## Returns
+
+[`OpenSlot`](../interfaces/OpenSlot)[]

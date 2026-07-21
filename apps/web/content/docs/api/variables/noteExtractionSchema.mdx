@@ -1,0 +1,36 @@
+---
+title: "noteExtractionSchema"
+---
+
+```ts
+const noteExtractionSchema: ZodObject<{
+  facts: ZodArray<ZodObject<{
+     type: ZodEnum<{
+        role: "role";
+        intent: "intent";
+        personal: "personal";
+        preference: "preference";
+     }>;
+     text: ZodString;
+     confidence: ZodNumber;
+  }, $strip>>;
+  relationships: ZodArray<ZodObject<{
+     subject: ZodString;
+     predicate: ZodString;
+     object: ZodString;
+     object_type: ZodEnum<{
+        company: "company";
+        person: "person";
+        entity: "entity";
+     }>;
+     entity_type_hint: ZodNullable<ZodString>;
+  }, $strip>>;
+  follow_ups: ZodArray<ZodObject<{
+     action: ZodString;
+     due_hint: ZodNullable<ZodString>;
+  }, $strip>>;
+  tags: ZodArray<ZodString>;
+}, $strip>;
+```
+
+Defined in: schemas/extraction.ts:64

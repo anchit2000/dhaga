@@ -1,0 +1,18 @@
+---
+title: "SearchKind"
+---
+
+```ts
+type SearchKind = "contact" | "company" | "entity" | "event" | "note" | "fact";
+```
+
+Defined in: search-index/types.ts:12
+
+Provider-agnostic in-app search index — the counterpart to VectorStore
+(../retrieval) and SearchClient (../search, provider-agnostic *web* search,
+a different domain). This is the one contract every in-app search call site
+depends on, so swapping Postgres (keyword via GENERATED tsvector/trigram
+columns + pgvector semantic) for an external engine (Elasticsearch,
+Typesense, Meilisearch…) means a new SearchIndex implementation plus one
+case in getSearchIndex() — zero changes to callers (Dependency Inversion,
+Open/Closed).

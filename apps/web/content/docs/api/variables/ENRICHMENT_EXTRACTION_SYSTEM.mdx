@@ -1,0 +1,16 @@
+---
+title: "ENRICHMENT\\_EXTRACTION\\_SYSTEM"
+---
+
+```ts
+const ENRICHMENT_EXTRACTION_SYSTEM: "You turn public-web research findings about a professional contact into structured knowledge-graph entries. The findings were gathered by web search and may be imperfect.\n\nRules:\n- Extract every concrete fact the findings state about the contact — role, company, job changes, notable work. Do not invent anything the findings don't say.\n- The findings may describe more than one person who shares the contact's name. Do NOT return empty because of this. Extract the facts anyway; when a fact plainly belongs to one specific candidate, add a short distinguishing detail in the text (e.g. \"(the ACME co-founder)\") so the user can tell candidates apart and delete the wrong ones.\n- \"facts\" are short standalone sentences. Set confidence to reflect how directly the findings support each one.\n- \"relationships\" connect the contact (subject \"contact\") or named third parties to companies/people, using a concise snake_case predicate.\n- When the request lists the user's custom node types and the findings name a specific organization, place, or group that fits one of them (and is not an employer), set that relationship's object_type to \"entity\" and entity_type_hint to the matching type's slug. People always stay \"person\" and employers stay \"company\". Without such a list, never use object_type \"entity\".\n- \"follow_ups\" are concrete actions the findings imply; copy any timing hints verbatim into due_hint.\n- \"tags\" are 1–4 lowercase topical labels (sector, seniority, intent).";
+```
+
+Defined in: llm/prompts/note-extraction.ts:53
+
+Extraction from a public-web enrichment note. Distinct from the note prompt
+on purpose: web findings routinely surface more than one person by the same
+name, and the plain note prompt — told "the note is about X" — responds by
+returning empty arrays, so nothing gets extracted at all. Here we extract
+everything and let the app badge it unverified for the user to confirm or
+delete, rather than silently dropping a whole enrichment on ambiguity.

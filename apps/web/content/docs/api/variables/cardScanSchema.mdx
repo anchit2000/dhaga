@@ -1,0 +1,22 @@
+---
+title: "cardScanSchema"
+---
+
+```ts
+const cardScanSchema: ZodObject<{
+  raw_text: ZodString;
+  name: ZodString;
+  title: ZodNullable<ZodString>;
+  company: ZodNullable<ZodString>;
+  emails: ZodArray<ZodString>;
+  phones: ZodArray<ZodString>;
+  links: ZodArray<ZodString>;
+  location: ZodNullable<ZodString>;
+}, $strip>;
+```
+
+Defined in: schemas/card-scan.ts:9
+
+Card/badge photo → contact (M1's server-side vision path, BRD §6.1).
+raw_text is the model's transcription of everything legible on the card —
+it becomes the capture receipt note, exactly like pasted text does.

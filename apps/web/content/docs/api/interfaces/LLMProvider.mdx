@@ -1,0 +1,71 @@
+---
+title: "LLMProvider"
+---
+
+Defined in: llm/types.ts:107
+
+A complete LLM plugin registration. Keeping configuration discovery and
+client construction beside the capability declaration lets callers ask
+what a provider can do without checking a provider name.
+
+## Properties
+
+### id
+
+```ts
+id: string;
+```
+
+Defined in: llm/types.ts:108
+
+***
+
+### capabilities
+
+```ts
+capabilities: LLMProviderCapabilities;
+```
+
+Defined in: llm/types.ts:109
+
+## Methods
+
+### isConfigured()
+
+```ts
+isConfigured(): boolean;
+```
+
+Defined in: llm/types.ts:110
+
+#### Returns
+
+`boolean`
+
+***
+
+### createClient()
+
+```ts
+createClient(): LLMClient;
+```
+
+Defined in: llm/types.ts:111
+
+#### Returns
+
+[`LLMClient`](LLMClient)
+
+***
+
+### createBatchClient()?
+
+```ts
+optional createBatchClient(): BatchLLMClient;
+```
+
+Defined in: llm/types.ts:112
+
+#### Returns
+
+[`BatchLLMClient`](BatchLLMClient)

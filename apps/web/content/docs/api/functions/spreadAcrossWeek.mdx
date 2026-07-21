@@ -1,0 +1,51 @@
+---
+title: "spreadAcrossWeek()"
+---
+
+```ts
+function spreadAcrossWeek<T>(params): object;
+```
+
+Defined in: calendar/spread.ts:32
+
+## Type Parameters
+
+### T
+
+`T`
+
+## Parameters
+
+### params
+
+#### items
+
+[`SpreadItem`](../interfaces/SpreadItem)\<`T`\>[]
+
+#### weekStart
+
+`Date`
+
+#### perDay
+
+`number`
+
+#### dayCapacities?
+
+`number`[]
+
+## Returns
+
+`object`
+
+### days
+
+```ts
+days: DayBucket<T>[];
+```
+
+### overflow
+
+```ts
+overflow: T[];
+```

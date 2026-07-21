@@ -1,0 +1,149 @@
+---
+title: Add an LLM provider
+description: Implement the LLMClient interface and register an LLMProvider so Dhaga routes extraction and reasoning to your model — Ollama, a BYO-key gateway, or any OpenAI-compatible server.
+---
+
+Dhaga speaks to models through one interface, `LLMClient`, defined in
+`packages/core/src/llm/types.ts`. Callers ask for a *kind* of work (a
+`ModelTier`) — never a model name — and the client maps it to a concrete
+model. Anthropic and OpenAI are built in; adding Ollama, a self-hosted
+gateway, or a BYO-key path is a new `LLMClient` plus a registration.
+
+## The contract
+
+```ts
+// packages/core/src/llm/types.ts
+export type ModelTier = "extract" | "reason";
+
+export interface LLMResult<T> {
+  data: T;
+  model: string;
+  usage: { inputTokens: number; outputTokens: number };
+}
+
+export interface LLMClient {
+  /** Structured extraction — output is guaranteed to match the Zod schema. */
+  extract<T>(options: ExtractOptions<T>): Promise<LLMResult<T>>;
+  /** Free-text completion (drafts, search answers). */
+  complete(options: CompleteOptions): Promise<LLMResult<string>>;
+}
+```
+
+`ExtractOptions<T>` carries a Zod `schema`, a `system` prompt, the `prompt`,
+the `tier`, an optional `maxTokens`, and optional `images` (card/badge photos,
+for vision-capable providers). `CompleteOptions` is the same minus the schema,
+plus an optional `webSearch` flag. The two tiers map to whatever models you
+choose — conventionally a small, cheap model for `extract` (a
+classification-shaped task) and a stronger one for `reason` (search answers,
+drafts).
+
+<Callout title="Structured output is a hard requirement of extract()">
+`extract()` must return data that already satisfies the caller's Zod schema —
+parse and validate the model's output before you return it, never hand back
+free text. This is what lets every caller trust the result without re-parsing.
+</Callout>
+
+## A minimal implementation
+
+```ts
+import type { LLMClient, LLMProvider } from "@dhaga/core";
+
+const client: LLMClient = {
+  async extract(options) {
+    const raw = await callYourModel({
+      system: options.system,
+      prompt: options.prompt,
+      // route the tier to a concrete model
+      model: options.tier === "extract" ? "small-model" : "big-model",
+      maxTokens: options.maxTokens,
+    });
+    // Validate against the caller's schema before returning.
+    const data = options.schema.parse(raw);
+    return { data, model: "small-model", usage: { inputTokens: 0, outputTokens: 0 } };
+  },
+  async complete(options) {
+    const text = await callYourModel({
+      system: options.system,
+      prompt: options.prompt,
+      model: options.tier === "extract" ? "small-model" : "big-model",
+      maxTokens: options.maxTokens,
+    });
+    return { data: text, model: "big-model", usage: { inputTokens: 0, outputTokens: 0 } };
+  },
+};
+```
+
+Return normalized `usage` even when your vendor omits token counts (zeros are
+fine) — the metering layer reads it uniformly.
+
+## Register and select
+
+A provider is a small object describing what the implementation can do and how
+to construct it:
+
+```ts
+import { registerLLMProvider, selectLLMProvider } from "@dhaga/core";
+
+export const myLLM: LLMProvider = {
+  id: "my-llm",
+  capabilities: {
+    structuredOutput: true,
+    vision: false,
+    webSearch: false,
+    batch: false,
+  },
+  isConfigured: () => Boolean(process.env.MY_LLM_API_KEY),
+  createClient: () => client,
+};
+
+// in apps/web/src/dhaga.providers.ts
+registerLLMProvider(myLLM);
+selectLLMProvider(myLLM.id); // or leave it to LLM_PROVIDER=my-llm
+```
+
+The factory `getLLMClient()` resolves the active provider from
+`selectLLMProvider(...)`, then the `LLM_PROVIDER` env var, then the
+`anthropic` default (`packages/core/src/llm/registry.ts`). Callers only ever
+touch `getLLMClient()` — they never see which provider ran.
+
+## Capabilities and batching
+
+`capabilities` is a declaration, not a suggestion — declare only what you
+actually support:
+
+- `structuredOutput` — `extract()` returns schema-valid data.
+- `vision` — you handle `ExtractOptions.images`.
+- `webSearch` — you honor `CompleteOptions.webSearch`.
+- `batch` — you also implement the separate `BatchLLMClient` interface
+  (`submitExtractBatch` / `isBatchDone` / `getBatchResults`) for
+  latency-insensitive nightly jobs.
+
+If you declare `batch: true` you **must** also expose `createBatchClient()` —
+the registry throws at startup otherwise:
+
+```ts
+registerLLMProvider({
+  id: "my-llm",
+  capabilities: { structuredOutput: true, vision: false, webSearch: false, batch: true },
+  isConfigured: () => Boolean(process.env.MY_LLM_API_KEY),
+  createClient: () => client,
+  createBatchClient: () => batchClient, // implements BatchLLMClient
+});
+```
+
+Batch support is kept in a *separate* interface deliberately (Interface
+Segregation): a local Ollama provider can implement `extract`/`complete` with
+no batch endpoint at all, and callers that need batching depend on the
+narrower `BatchLLMClient` via `getBatchLLMClient()` instead of forcing it onto
+every provider.
+
+## OpenAI-compatible servers need no plugin
+
+The built-in `openai` provider already accepts `OPENAI_BASE_URL`, so many
+local or OpenAI-compatible servers (including some Ollama setups) work by
+pointing that variable at them — no code required. Write a new `LLMClient`
+only when your API shape differs. Compatible servers must support the
+structured-output behavior `extract()` relies on, not just chat completions.
+
+See [Providers](/docs/self-hosting/providers) for distributing a provider as
+an independent npm package.

@@ -1,0 +1,4 @@
+{
+  "title": "Extending Dhaga",
+  "pages": ["index", "llm-provider", "search-provider", "vector-store"]
+}

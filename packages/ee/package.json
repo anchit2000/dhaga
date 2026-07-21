@@ -14,7 +14,8 @@
     "./billing": "./src/billing/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.2",
@@ -24,6 +25,7 @@
   "devDependencies": {
     "@types/node": "^20",
     "@types/pg": "^8.20.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.9"
   }
 }

@@ -73,6 +73,11 @@ CREATE TABLE IF NOT EXISTS notes (
   deleted_at timestamptz
 );
 
+-- The person page lists a contact's live notes newest-first; without this the
+-- lookup seq-scans every note in the tenant. Partial (deleted_at IS NULL) keeps
+-- it small and the created_at DESC tail serves the ORDER BY.
+CREATE INDEX IF NOT EXISTS notes_contactId_idx ON notes (contact_id, created_at DESC) WHERE deleted_at IS NULL;
+
 CREATE TABLE IF NOT EXISTS facts (
   id text PRIMARY KEY,
   contact_id text NOT NULL REFERENCES contacts(id),
@@ -83,6 +88,10 @@ CREATE TABLE IF NOT EXISTS facts (
   created_at timestamptz NOT NULL DEFAULT now(),
   deleted_at timestamptz
 );
+
+-- Same access pattern as notes: the person page's Facts section filters by
+-- contact and hides tombstoned rows, ordered newest-first.
+CREATE INDEX IF NOT EXISTS facts_contactId_idx ON facts (contact_id, created_at DESC) WHERE deleted_at IS NULL;
 
 CREATE TABLE IF NOT EXISTS edges (
   id text PRIMARY KEY,

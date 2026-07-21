@@ -10,11 +10,14 @@ import type { DhagaDb } from "@/lib/db";
  */
 export interface ScopedConnection {
   db: DhagaDb;
-  /** Must be called once the request is done with `db` (releases the
-   *  underlying Postgres connection). EE owns Postgres connection mechanics
-   *  and stays framework-agnostic; the Next.js-specific "when" (after()) is
-   *  the caller's job — see db/request-scope.ts. */
-  release(): void;
+  /** Must be called once the request is done with `db` (resets session state
+   *  and returns the underlying Postgres connection to the pool). Awaitable:
+   *  the reset must finish before the connection can be safely reused, so
+   *  await it wherever the caller might otherwise suspend first. EE owns
+   *  Postgres connection mechanics and stays framework-agnostic; the
+   *  Next.js-specific "when" (after()) is the caller's job — see
+   *  db/request-scope.ts. */
+  release(): void | Promise<void>;
 }
 
 export interface TenantGate {

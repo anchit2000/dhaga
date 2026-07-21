@@ -17,6 +17,6 @@ export async function aiActionsThisMonthFor(userId: string): Promise<number> {
       .where(and(eq(eeAiActions.userId, userId), gte(eeAiActions.createdAt, monthStart)));
     return row?.n ?? 0;
   } finally {
-    release();
+    await release();
   }
 }

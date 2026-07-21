@@ -10,11 +10,26 @@ export function isActive(job: ExtractionJobView): boolean {
   return job.status === "pending" || job.status === "running";
 }
 
-/** Changes exactly when something worth re-rendering the page for happened:
- *  a status/stage transition, or new fact/follow-up counts. */
+/** Changes whenever anything the client-side status UI shows moves — a
+ *  status/stage transition or new fact/follow-up counts. Seeds the query key
+ *  and re-sync against a fresh server render, NOT the full page refresh. */
 function signature(jobs: ExtractionJobView[]): string {
   return jobs
     .map((j) => `${j.id}:${j.status}:${j.stage ?? ""}:${j.factCount}:${j.followUpCount}`)
+    .join("|");
+}
+
+/**
+ * The subset of job state the *server-rendered* page actually reflects: result
+ * counts (FactList/FollowUpList/Timeline) and terminal status. Stage/running
+ * transitions change only the client-side ExtractionStatus UI, so a full
+ * `router.refresh()` — which re-runs the whole ~9-query person page — on every
+ * stage tick is wasted server work that piled up DB load. Refresh only when new
+ * facts/follow-ups have landed or a job finished.
+ */
+function refreshSignature(jobs: ExtractionJobView[]): string {
+  return jobs
+    .map((j) => `${j.id}:${isActive(j) ? "active" : j.status}:${j.factCount}:${j.followUpCount}`)
     .join("|");
 }
 
@@ -31,6 +46,7 @@ export function useExtractionPoller(
 ): ExtractionJobView[] {
   const router = useRouter();
   const initialSig = signature(initialJobs);
+  const initialRefreshSig = refreshSignature(initialJobs);
 
   // The server's job set is part of the key: a materially different set (a
   // fresh enqueue or a retry re-render) seeds a new query and restarts
@@ -69,16 +85,19 @@ export function useExtractionPoller(
 
   // A fresh server-rendered job set is the new refresh baseline (the server
   // just painted it); only later poll-observed advances should refresh.
-  const lastSig = useRef(initialSig);
+  const lastRefreshSig = useRef(initialRefreshSig);
   useEffect(() => {
-    lastSig.current = initialSig;
-  }, [initialSig]);
+    lastRefreshSig.current = initialRefreshSig;
+  }, [initialRefreshSig]);
 
   useEffect(() => {
     for (const job of jobs) if (job.status === "pending") trigger(job.id);
-    const sig = signature(jobs);
-    if (sig !== lastSig.current) {
-      lastSig.current = sig;
+    // Refresh on result/terminal changes only — not every stage tick (see
+    // refreshSignature): the poller keeps the status UI live without re-running
+    // the whole person page each 2s.
+    const sig = refreshSignature(jobs);
+    if (sig !== lastRefreshSig.current) {
+      lastRefreshSig.current = sig;
       router.refresh();
     }
   }, [jobs, router, trigger]);

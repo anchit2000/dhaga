@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { PoolClient } from "pg";
-import { getPool } from "./pool";
+import { getPool, releaseScoped } from "./pool";
 import { ensureEeSchema } from "./bootstrap";
 
 /**
@@ -20,6 +20,6 @@ export async function openAdminConnection() {
   }
   return {
     db: drizzle(client),
-    release: () => client.release(true),
+    release: () => releaseScoped(client),
   };
 }

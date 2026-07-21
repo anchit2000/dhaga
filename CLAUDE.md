@@ -132,6 +132,9 @@ packages/ee/       Dhaga Cloud only: multi-tenant RLS, billing, admin, early
 - Check `packages/core`, `@/utils/constants`, `@/lib/*`, and `@/components/ui/*` before writing new utilities
 - If the same logic appears in 2+ places, extract it immediately — shared logic belongs in `packages/core` if more than one app needs it
 
+### Library-First
+- Before hand-rolling interactive behavior (tables, forms, client data fetching, virtualization, cropping), check `docs/LIBRARIES.md` — if an adopted library covers it, use the library; for new needs, evaluate an established library before writing custom code
+
 ---
 
 ## SOLID Principles (enforced on every file)

@@ -16,18 +16,55 @@ export function perUserTag(key: string, userId: string): string {
   return `${key}:${userId}`;
 }
 
+/**
+ * Runs `read` through Next's data cache. When that cache isn't available —
+ * i.e. called outside a Next request (a unit test, a script, a background job),
+ * where `unstable_cache` throws an "incrementalCache missing" invariant — it
+ * degrades to a direct scoped read: correctness is preserved, only the caching
+ * is skipped (fail-open on a perf optimization). The read must be
+ * JSON-serializable — unstable_cache serializes results, so a Date field would
+ * come back as a string on a cache hit.
+ */
+async function cached<T>(
+  keyParts: string[],
+  tag: string,
+  userId: string,
+  read: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await unstable_cache(() => withUserDb(userId, read), keyParts, { tags: [tag] })();
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("incrementalCache missing")) {
+      return withUserDb(userId, read);
+    }
+    throw error;
+  }
+}
+
 export function cachePerUser<T>(
   key: string,
   userId: string,
   read: () => Promise<T>,
 ): Promise<T> {
-  // The read must be JSON-serializable — unstable_cache serializes results, so
-  // a Date field would come back as a string on a cache hit.
-  return unstable_cache(
-    () => withUserDb(userId, read),
-    [key, userId],
-    { tags: [perUserTag(key, userId)] },
-  )();
+  return cached([key, userId], perUserTag(key, userId), userId, read);
+}
+
+/**
+ * Version-keyed variant for hot reads too broad to invalidate by hand (the
+ * whole graph, dashboard feeds). `version` is a cheap per-user hash of the
+ * underlying data (e.g. `fetchGraphVersion()`); folding it into the cache key
+ * means a write that changes the data changes the key, so the next read is
+ * automatically a miss — no explicit invalidation, and a stale payload is
+ * impossible. Pair it with a version query that is far cheaper than the read
+ * it guards, or the caching earns nothing.
+ */
+export function cachePerUserVersioned<T>(
+  key: string,
+  userId: string,
+  version: string,
+  read: () => Promise<T>,
+): Promise<T> {
+  return cached([key, userId, version], perUserTag(key, userId), userId, read);
 }
 
 /**

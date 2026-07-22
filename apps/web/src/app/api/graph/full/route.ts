@@ -1,5 +1,6 @@
 import { requireUserIdFromRequest } from "@/lib/auth/guard";
-import { fetchFullGraph, fetchGraphVersion } from "@/lib/repo/graph-data";
+import { getCachedFullGraph } from "@/lib/cache/graph";
+import { fetchGraphVersion } from "@/lib/repo/graph-data";
 
 /** The whole graph in one payload (full-load architecture): every node kind,
  *  explicit edges, synthesized works_at/attended edges, and the user's saved
@@ -14,17 +15,22 @@ import { fetchFullGraph, fetchGraphVersion } from "@/lib/repo/graph-data";
  *  double-buffering the payload in the browser's HTTP cache would waste
  *  the user's disk and mask our revalidation. */
 export async function GET(request: Request): Promise<Response> {
+  let userId: string;
   try {
-    await requireUserIdFromRequest(request);
+    userId = await requireUserIdFromRequest(request);
   } catch {
     return Response.json({ error: "Not signed in to Dhaga." }, { status: 401 });
   }
-  const etag = `"${await fetchGraphVersion()}"`;
+  const version = await fetchGraphVersion();
+  const etag = `"${version}"`;
   const ifNoneMatch = request.headers.get("if-none-match");
   if (ifNoneMatch && ifNoneMatch.split(",").some((candidate) => candidate.trim() === etag)) {
     return new Response(null, { status: 304, headers: { ETag: etag } });
   }
-  const payload = await fetchFullGraph();
+  // Version-keyed server cache: the multi-table assembly runs once per graph
+  // version across all of this user's clients/instances; unchanged versions
+  // are served without touching Postgres (only the cheap version query above).
+  const payload = await getCachedFullGraph(userId, version);
   return Response.json(payload, {
     headers: { ETag: etag, "Cache-Control": "private, no-store" },
   });

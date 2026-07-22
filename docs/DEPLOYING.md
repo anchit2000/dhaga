@@ -101,6 +101,19 @@ everywhere):
    fresh setup, though — check via the script's own verification query
    *before* traffic hits it, not after.
 
+**Pooled connections are made safe by scrubbing, not by isolation.** In hosted
+mode each request borrows a connection from a shared pool, applies its
+tenant/role scope for the duration, and on release scrubs it with `RESET ALL`
+before returning it to the pool (`packages/ee/src/db/pool.ts`). Reuse avoids a
+fresh TCP+TLS+auth handshake per request — real latency when the database is a
+region away — but a session setting left on a reused connection would be a
+cross-tenant leak, so a `RESET ALL` that fails **destroys** the connection
+rather than returning it dirty. This is the connection-level complement to the
+session-pooler requirement (transaction pooling would defeat both). Separately,
+the hot contact-page reads (`notes`, `facts`, `follow_ups`, `card_images`,
+`signals` by `contact_id`) carry partial `(contact_id, created_at DESC)` indexes
+so they stay index scans as the graph grows.
+
 ### Migrating off Supabase (or any hosted Postgres) later
 
 Low-risk by design: the app never uses Supabase-specific APIs (no

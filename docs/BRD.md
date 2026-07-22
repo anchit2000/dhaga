@@ -304,7 +304,7 @@ The graph is `edges`; the audit trail is `source_note_id` on facts/edges. Deleti
 ### 7.6 Web performance (non-functional requirements)
 
 - Fonts and any decorative/non-critical animation ship self-hosted (`next/font/local`/`next/font/google`) and stay off the critical render path (e.g. lazy client-only components via `next/dynamic({ ssr: false })`) — first paint never blocks on an external font or animation download.
-- Authenticated `/app/*` navigation (nav switches, contact/event detail) must not re-run the full set of Postgres queries on every click. Add a caching layer (e.g. `unstable_cache`/`revalidateTag`, or React `cache()`) scoped per-user and invalidated on mutation — never a raw TTL alone, since these routes are RLS-scoped per-tenant data and a stale/leaked cache entry is a privacy bug, not just a UX one.
+- Authenticated `/app/*` navigation (nav switches, contact/event detail) must not re-run the full set of Postgres queries on every click. Add a caching layer (e.g. `unstable_cache`/`revalidateTag`, or React `cache()`) scoped per-user and invalidated on mutation — never a raw TTL alone, since these routes are RLS-scoped per-tenant data and a stale/leaked cache entry is a privacy bug, not just a UX one. **Implemented so far:** the `cachePerUser` helper (`apps/web/src/lib/cache/`) caches the app shell + stable per-user config; the hot volatile reads (home feed, `/api/graph/full`, contact/event lists), plus read replicas and rate-limiting, are the open read-scale levers — tracked honestly in [SCALING.md](SCALING.md).
 
 ---
 

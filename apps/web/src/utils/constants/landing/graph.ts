@@ -65,7 +65,7 @@ export const GRAPH_SCENES: GraphScene[] = [
   {
     id: "capture",
     chip: "Scan anything",
-    caption: "Card, badge, QR, or a LinkedIn page — a contact in five seconds, OCR on-device.",
+    caption: "Card, badge, QR, or a LinkedIn page — a contact in five seconds, read by AI.",
     litNodes: ["you", "nisha"],
     litEdges: ["you-nisha"],
     dimOthers: true,
@@ -92,7 +92,7 @@ export const GRAPH_SCENES: GraphScene[] = [
   {
     id: "graph",
     chip: "A living graph",
-    caption: "People, companies, events, promises — one private graph, on your device.",
+    caption: "People, companies, events, promises — one private graph, yours alone.",
     litNodes: ["you", "priya", "mei", "sarah", "rohan", "alice", "dan", "kavya"],
     litEdges: ["you-priya", "priya-mei", "you-sarah", "you-rohan", "you-alice", "sarah-dan", "sarah-kavya", "alice-kavya"],
     dimOthers: false,

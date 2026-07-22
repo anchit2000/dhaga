@@ -54,7 +54,7 @@ export function Hero() {
           className={`mt-4 text-sm text-fog ${RISE}`}
           style={{ animationDelay: "0.52s" }}
         >
-          Free to start · Your data stays on your phone · AGPL-3.0
+          Free to start · Self-hostable & private · AGPL-3.0
         </p>
         <p
           className={`mt-6 text-sm text-fog/70 ${RISE}`}

@@ -4,7 +4,7 @@ export const HOW_IT_WORKS: HowItWorksStep[] = [
   {
     step: "STEP 1",
     title: "Capture in five seconds",
-    body: "Card, badge, QR, a LinkedIn page, a pasted email — or just talk. Voice transcription runs on your phone, free; photos get a fast AI read. Contacts scanned at the same event group themselves automatically.",
+    body: "Card, badge, QR, a LinkedIn page, a pasted email — or just talk. Voice transcription runs on-device, free; photos get a fast AI read. Contacts scanned at the same event group themselves automatically.",
   },
   {
     step: "STEP 2",
@@ -57,8 +57,8 @@ export const COMPARISON_ROWS: ComparisonRow[] = [
     enterprise: "✓",
   },
   {
-    feature: "Core capture & graph work offline",
-    dhaga: "✓ local-first",
+    feature: "Self-host it — your data, your server",
+    dhaga: "✓ local-first core",
     cardApps: "✗",
     personalCrms: "✗",
     enterprise: "✗",

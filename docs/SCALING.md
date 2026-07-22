@@ -16,7 +16,7 @@ read routing safe: an entry can only ever hold one tenant's data.
 
 | # | Lever | Status | Where |
 |---|---|---|---|
-| 1 | Per-user cache of hot reads | 🟡 **partial** — shell/config only | `apps/web/src/lib/cache/*` |
+| 1 | Per-user cache of hot reads | 🟡 **partial** — shell/config + the graph payload | `apps/web/src/lib/cache/*` |
 | 2 | Short transactions (no connection held across network I/O) | 🟢 **followed** on the known hot paths | `repo/graph/apply-extraction.ts`, PR #28 |
 | 3 | Read replicas (reads → replica, writes → primary) | 🔴 **not built** | — |
 | 4 | Heavy/async work off the request path | 🟢 **largely done** | `repo/extraction-jobs.ts`, `lib/jobs/*` |
@@ -33,39 +33,62 @@ cache entry can only ever hold that user's data — a missed invalidation is at
 worst same-user staleness, never a cross-tenant leak. There is **no TTL**;
 entries live until a write busts the tag via `revalidateTag(tag, { expire: 0 })`.
 
+Two invalidation strategies, one helper module:
+
+- **Tag-invalidated** (`cachePerUser`) — for stable config with a small, known
+  write surface. A write busts the tag via `revalidateTag(tag, { expire: 0 })`.
+- **Version-keyed** (`cachePerUserVersioned`) — for hot reads too broad to
+  invalidate by hand. A cheap per-user version hash of the underlying data is
+  folded into the cache key, so a write that changes the data changes the key:
+  the next read is automatically a miss, **no explicit invalidation, and a stale
+  payload is impossible.** The version query must be far cheaper than the read it
+  guards, or the caching earns nothing.
+
 What is cached today:
 
-- **App shell / `getCachedAppConfig`** — `isAdmin`, `searchWeights`,
+- **App shell / `getCachedAppConfig`** (tag) — `isAdmin`, `searchWeights`,
   `sttEngine`, `storeCardPhotos`. The `/app` layout is `force-dynamic` (runs on
   every navigation), and this makes the shell cost **zero** Postgres round-trips
   per nav.
-- **Node-type ontology / `getCachedNodeTypes`** — read on home + the entities
-  pages; changes only through the node-type mutations.
+- **Node-type ontology / `getCachedNodeTypes`** (tag) — read on home + the
+  entities pages; changes only through the node-type mutations.
+- **`/api/graph/full` / `getCachedFullGraph`** (version-keyed) — the single
+  heaviest read (multi-table assembly of every node/edge). `fetchGraphVersion()`
+  is one cheap aggregate round-trip; when it's unchanged the assembly is served
+  from cache instead of re-querying Postgres. This composes with the route's
+  existing ETag/`304` (which already spares the *client* a re-download): the
+  version query still runs per request, but the heavy assembly now runs once per
+  graph version across all of a user's clients/instances, not per request.
 
-**Not yet cached — the hot volatile reads (the biggest remaining read-scale
-lever):**
+**Not yet cached — the remaining hot reads:**
 
-- Home dashboard feed (due reach-outs, open follow-ups, signals, quiet
-  contacts, suggestions) — ~15 queries per visit, all live.
-- `/api/graph/full` — hits Postgres every request. It already avoids re-sending
-  the multi-MB payload via an ETag/`If-None-Match` → `304` against a cheap
-  aggregate version query, with the client caching the body in IndexedDB — but
-  the DB is still touched (the version query, plus the full fetch on a miss).
-- Contact and event list pages.
+- Home dashboard feed (due reach-outs, quiet contacts, daily suggestions).
+  Trickier than it looks: several of these reads are **time-derived** (what's
+  "due" or "going quiet" changes at a date boundary with no write), so a pure
+  data-version key would serve stale results across a day. Cache the data-only
+  parts, or fold a coarse time bucket into the key.
+- Contact and event list pages — data-only, so version-keyable, but the rows
+  carry `createdAt: Date` (project to a JSON-safe shape first — unstable_cache
+  serializes, so a Date returns as a string on a hit) and are parameterized by
+  page/filter (fold into the key).
 
-These were deliberately left live in PR #32: caching per-tenant *feed* data means
-a missed invalidation becomes a stale-data bug, and the invalidation surface is
-wide. Doing them well is its own change (see roadmap).
+**Redis / pluggability (self-hosting).** Every cached read funnels through the
+single `lib/cache/per-user.ts` helper, and entries + tag invalidation live in
+Next's incremental/data cache — which is swappable via a `cacheHandler` in
+`next.config.ts` (Next 16 exposes `cacheHandler`/`cacheHandlers`). So Redis is a
+**drop-in, no app-code change**:
 
-**Store backend & Redis:** entries and tag invalidation live in Next's
-incremental/data cache, which is swappable via a `cacheHandler` in
-`next.config.ts` (Next 16 exposes `cacheHandler`/`cacheHandlers`). Pointing it at
-a **Vercel KV / Upstash Redis** handler moves every entry to Redis with **zero
-app-code change** — this is also what makes the cache shared across serverless
-instances/regions instead of per-instance in-memory. Separately, every cached
-read funnels through the single `lib/cache/per-user.ts` helper, so bypassing
-Next's cache for a raw client would be a one-file rewrite (same
-dependency-inversion shape as the `LLMClient`/`SearchClient` gateways).
+- **On Vercel**, `unstable_cache` is already backed by Vercel's durable Data
+  Cache (shared across instances/regions) — nothing extra needed.
+- **Self-hosting**, the default cache is per-instance (filesystem/memory). A
+  single-node instance is fine as-is; a multi-instance deployment sets a
+  Redis-backed `cacheHandler` (e.g. `@neshca/cache-handler` or the Next 16
+  equivalent) so all instances share one cache and tag invalidation fans out.
+  This is the intended path once Redis is available — no change to any
+  `lib/cache/*` module or call site.
+- If we ever want to bypass Next's cache entirely for a raw Redis client, only
+  `lib/cache/per-user.ts` changes (same dependency-inversion shape as the
+  `LLMClient`/`SearchClient` gateways).
 
 ## 2. Short transactions — 🟢 followed on known hot paths
 
@@ -86,12 +109,28 @@ Not yet done: a formal audit of all ~14 `db.transaction(...)` sites confirming
 none await network I/O mid-transaction. No known offender, but not verified
 exhaustively.
 
-## 3. Read replicas — 🔴 not built
+## 3. Read replicas — 🔴 not built (future scope)
 
 There is a single `DATABASE_URL` (PGlite embedded, or one Postgres via
-node-postgres). No primary/replica split, no read routing. Supabase offers read
-replicas; routing the heavy reads (graph, search, lists) to a replica and writes
-to the primary would scale reads horizontally. This is unbuilt.
+node-postgres). No primary/replica split, no read routing. Once per-user
+caching (lever 1) stops paying off, routing reads to a replica scales them
+horizontally. Sketch for when we build it:
+
+- **Config-gated, opt-in.** A new `DATABASE_URL_REPLICA` (unset by default, so
+  self-host and single-node stay exactly as today). Set it → reads route to the
+  replica pool, writes/transactions to the primary.
+- **Split at one seam.** `getDb()` / `request-scope.ts` is the only place that
+  resolves a connection; the read/write split lives there (e.g. a
+  `getReadDb()` for list/graph/search reads), not smeared across `repo/*`.
+- **RLS still applies.** The replica must connect as the same `NOBYPASSRLS`
+  `dhaga_app` role (see [DEPLOYING.md](DEPLOYING.md)) — a replica connecting as a
+  `BYPASSRLS` role would leak across tenants exactly as the primary would.
+- **Replication lag is the sharp edge.** Read-after-write (create a contact →
+  immediately list) can miss on a lagging replica. Route just-written-then-read
+  paths to the primary, or read them through the lever-1 cache (which the write
+  already refreshed). Decide per read; don't blanket-route.
+
+Until then, lever 1 (caching) is the cheaper win and is where effort goes first.
 
 ## 4. Heavy/async work off the request path — 🟢 largely done
 
@@ -116,12 +155,12 @@ to the primary would scale reads horizontally. This is unbuilt.
 
 ## Roadmap (open levers, in rough priority for read scale)
 
-1. **Cache the hot volatile reads per user** (home feed, `/api/graph/full`,
-   contact/event lists) with precise write-invalidation — the single biggest
-   read-scale lever. Extend the `lib/cache/per-user.ts` pattern; wire a
-   Redis/KV `cacheHandler` so the cache is shared across instances.
-2. **Read replicas** — route graph/search/list reads to a replica, writes to
-   primary.
+1. **Cache the remaining hot reads per user** — contact/event lists
+   (version-keyed, JSON-safe projection) and the data-only parts of the home
+   feed. The graph payload is already done via `cachePerUserVersioned`; extend
+   the same pattern. Wire a Redis `cacheHandler` for shared multi-instance
+   self-hosting (§1).
+2. **Read replicas** — the config-gated read/write split sketched in §3.
 3. **General rate-limiting** on data/AI routes (per-user + per-IP), to protect
    the DB and cost from runaway load.
 4. **Audit transaction sites** for any mid-transaction network I/O.

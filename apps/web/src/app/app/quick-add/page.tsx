@@ -1,7 +1,7 @@
 import { requireUserIdForPage } from "@/lib/auth/guard";
+import { getCachedAppConfig } from "@/lib/cache/app-navigation";
 import { aiActionsUsedThisMonth, monthlyAiCap } from "@/lib/ai/metering";
 import { listEvents } from "@/lib/repo/events";
-import { shouldStoreCardPhotos } from "@/lib/repo/settings";
 import { activeEventId } from "@/lib/active-event";
 import { QuickAddForm } from "@/components/app/QuickAddForm";
 import { hasLLM } from "@dhaga/core";
@@ -9,12 +9,13 @@ import { hasLLM } from "@dhaga/core";
 export const metadata = { title: "Quick add — Dhaga" };
 
 export default async function QuickAddPage() {
-  await requireUserIdForPage();
-  const [events, used, storeCardPhotos] = await Promise.all([
+  const userId = await requireUserIdForPage();
+  const [events, used, appConfig] = await Promise.all([
     listEvents(),
     hasLLM() ? aiActionsUsedThisMonth() : Promise.resolve(0),
-    shouldStoreCardPhotos(),
+    getCachedAppConfig(userId),
   ]);
+  const storeCardPhotos = appConfig.storeCardPhotos;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">

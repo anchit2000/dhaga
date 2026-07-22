@@ -10,18 +10,19 @@ import { Button } from "@/components/ui/button";
 import { activeEventId } from "@/lib/active-event";
 import { aiActionsUsedThisMonth, monthlyAiCap } from "@/lib/ai/metering";
 import { requireUserIdForPage } from "@/lib/auth/guard";
+import { getCachedAppConfig } from "@/lib/cache/app-navigation";
+import { getCachedNodeTypes } from "@/lib/cache/node-types";
 import { getFreeBusy, hasCalendarConnection } from "@/lib/repo/calendar";
 import { listContacts } from "@/lib/repo/contacts";
 import { buildDailySuggestions } from "@/lib/repo/daily-suggestions";
 import { listAllOpenFollowUps, listDueReachOuts } from "@/lib/repo/reminders";
 import { listEvents } from "@/lib/repo/events";
-import { hasSeenOnboardingTour, shouldStoreCardPhotos } from "@/lib/repo/settings";
+import { hasSeenOnboardingTour } from "@/lib/repo/settings";
 import { getSchedulePrefs } from "@/lib/repo/suggestion-settings";
 import { listNewSignals } from "@/lib/repo/signals";
 import { listQuietContacts } from "@/lib/repo/strength";
 import { getSuggestedClusters } from "@/lib/repo/suggestions";
 import { listPendingEdgeSuggestions } from "@/lib/repo/edge-suggestions";
-import { listNodeTypes } from "@/lib/repo/node-types";
 import { HOME_PREVIEW_LIMIT } from "@/utils/constants/app";
 import { DEFAULT_MEETING_DURATION_MINUTES } from "@/utils/constants/suggestions";
 import { formatDayline } from "@/utils/format-date";
@@ -31,15 +32,16 @@ export const metadata = { title: "Home — Dhaga" };
 const WEEK_MS = 7 * 86_400_000;
 
 export default async function HomePage() {
-  await requireUserIdForPage();
+  const userId = await requireUserIdForPage();
   const llmEnabled = hasLLM();
-  const [people, events, dueReachOuts, openFollowUps, quietContacts, newSignals, used, storeCardPhotos, suggestedClusters, calendarConnected, prefs, seenTour, pendingSuggestions, nodeTypes] =
+  const [people, events, dueReachOuts, openFollowUps, quietContacts, newSignals, used, appConfig, suggestedClusters, calendarConnected, prefs, seenTour, pendingSuggestions, nodeTypes] =
     await Promise.all([
       listContacts(undefined, undefined, HOME_PREVIEW_LIMIT), listEvents(HOME_PREVIEW_LIMIT), listDueReachOuts(), listAllOpenFollowUps(),
       listQuietContacts(), listNewSignals(), llmEnabled ? aiActionsUsedThisMonth() : Promise.resolve(0),
-      shouldStoreCardPhotos(), getSuggestedClusters(), hasCalendarConnection(), getSchedulePrefs(), hasSeenOnboardingTour(),
-      listPendingEdgeSuggestions(), listNodeTypes(),
+      getCachedAppConfig(userId), getSuggestedClusters(), hasCalendarConnection(), getSchedulePrefs(), hasSeenOnboardingTour(),
+      listPendingEdgeSuggestions(), getCachedNodeTypes(userId),
     ]);
+  const storeCardPhotos = appConfig.storeCardPhotos;
 
   const now = new Date();
   const weekAhead = new Date(now.getTime() + WEEK_MS);

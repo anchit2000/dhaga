@@ -1,12 +1,12 @@
 import { requireUserIdForPage } from "@/lib/auth/guard";
-import { listNodeTypes } from "@/lib/repo/node-types";
+import { getCachedNodeTypes } from "@/lib/cache/node-types";
 import { EntityForm } from "@/components/app/entities/EntityForm";
 
 export const metadata = { title: "New entity — Dhaga" };
 
 export default async function NewEntityPage() {
-  await requireUserIdForPage();
-  const types = await listNodeTypes();
+  const userId = await requireUserIdForPage();
+  const types = await getCachedNodeTypes(userId);
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">

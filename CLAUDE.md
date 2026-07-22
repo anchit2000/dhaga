@@ -61,6 +61,14 @@ If you genuinely think a convention is harmful, surface it. Don't fork silently.
 "Tests pass" is wrong if any were skipped.
 Default to surfacing uncertainty, not hiding it.
 
+## Rule 13 — Docs track code
+Every code change updates the documentation it affects, in the same change/PR.
+Whatever the change touches: the checklist item, the relevant BRD/architecture
+section, `docs/SCALING.md`, `SELF_HOSTING.md`, README, or a code comment.
+A merged change that leaves docs describing the old behavior is incomplete —
+stale docs are a bug. Match existing doc conventions; be honest about what's
+built vs pending (Rule 12).
+
 ---
 
 ## Project: Dhaga (धागा — "thread"; formerly working title NetworkPro)

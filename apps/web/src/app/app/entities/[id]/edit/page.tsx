@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { requireUserIdForPage } from "@/lib/auth/guard";
+import { getCachedNodeTypes } from "@/lib/cache/node-types";
 import { getEntity } from "@/lib/repo/entities";
-import { listNodeTypes } from "@/lib/repo/node-types";
 import { EntityForm } from "@/components/app/entities/EntityForm";
 
 export const metadata = { title: "Edit entity — Dhaga" };
@@ -11,9 +11,9 @@ export default async function EditEntityPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireUserIdForPage();
+  const userId = await requireUserIdForPage();
   const { id } = await params;
-  const [entity, types] = await Promise.all([getEntity(id), listNodeTypes()]);
+  const [entity, types] = await Promise.all([getEntity(id), getCachedNodeTypes(userId)]);
   if (!entity) notFound();
 
   return (

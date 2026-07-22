@@ -4,8 +4,8 @@ import { EntityCard } from "@/components/app/entities/EntityCard";
 import { NodeTypeManager } from "@/components/app/entities/NodeTypeManager";
 import { Button } from "@/components/ui/button";
 import { requireUserIdForPage } from "@/lib/auth/guard";
+import { getCachedNodeTypes } from "@/lib/cache/node-types";
 import { listEntities } from "@/lib/repo/entities";
-import { listNodeTypes } from "@/lib/repo/node-types";
 import { cn } from "@/lib/utils";
 
 export const metadata = { title: "Entities — Dhaga" };
@@ -15,9 +15,9 @@ export default async function EntitiesPage({
 }: {
   searchParams: Promise<{ type?: string }>;
 }) {
-  await requireUserIdForPage();
+  const userId = await requireUserIdForPage();
   const { type } = await searchParams;
-  const [entityRows, types] = await Promise.all([listEntities(), listNodeTypes()]);
+  const [entityRows, types] = await Promise.all([listEntities(), getCachedNodeTypes(userId)]);
   const counts = new Map<string, number>();
   for (const entity of entityRows) {
     counts.set(entity.typeId, (counts.get(entity.typeId) ?? 0) + 1);

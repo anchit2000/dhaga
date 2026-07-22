@@ -1,25 +1,40 @@
-import { unstable_cache, revalidateTag } from "next/cache";
-import { withUserDb } from "@/lib/db/request-scope";
+import { cachePerUser, invalidatePerUser, perUserTag } from "./per-user";
 import { getAdminGate } from "@/lib/hosted/gate";
-import { getSearchWeights } from "@/lib/repo/settings";
+import { getSearchWeights, getSttEngine, shouldStoreCardPhotos } from "@/lib/repo/settings";
 import { APP_NAVIGATION_CACHE_KEY } from "@/utils/constants/cache";
+import type { SttEngine } from "@/lib/repo/settings";
 import type { SearchWeights } from "@/utils/constants/search";
 
-export function appNavigationTag(userId: string): string {
-  return `${APP_NAVIGATION_CACHE_KEY}:${userId}`;
+/**
+ * Stable per-user config read on the app shell and heavy landing pages. The
+ * layout renders on every /app navigation (it is force-dynamic), so keeping
+ * this cached means switching pages costs zero Postgres round-trips for the
+ * shell — the query set only re-runs when a settings mutation busts the tag.
+ * Volatile feed data (due reach-outs, signals, …) is deliberately left live.
+ */
+export interface AppConfig {
+  isAdmin: boolean;
+  searchWeights: SearchWeights;
+  sttEngine: SttEngine;
+  storeCardPhotos: boolean;
 }
 
-export async function getCachedAppNavigation(userId: string): Promise<[boolean, SearchWeights]> {
-  return unstable_cache(
-    async () => withUserDb(userId, async () => Promise.all([
+export function appNavigationTag(userId: string): string {
+  return perUserTag(APP_NAVIGATION_CACHE_KEY, userId);
+}
+
+export function getCachedAppConfig(userId: string): Promise<AppConfig> {
+  return cachePerUser(APP_NAVIGATION_CACHE_KEY, userId, async () => {
+    const [isAdmin, searchWeights, sttEngine, storeCardPhotos] = await Promise.all([
       (await getAdminGate()).isAdmin(userId),
       getSearchWeights(),
-    ])),
-    [APP_NAVIGATION_CACHE_KEY, userId],
-    { tags: [appNavigationTag(userId)] },
-  )();
+      getSttEngine(),
+      shouldStoreCardPhotos(),
+    ]);
+    return { isAdmin, searchWeights, sttEngine, storeCardPhotos };
+  });
 }
 
 export function invalidateAppNavigation(userId: string): void {
-  revalidateTag(appNavigationTag(userId), { expire: 0 });
+  invalidatePerUser(APP_NAVIGATION_CACHE_KEY, userId);
 }

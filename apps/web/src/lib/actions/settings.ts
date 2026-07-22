@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "@/lib/auth/guard";
+import { invalidateAppNavigation } from "@/lib/cache/app-navigation";
 import {
   setOnboardingTourSeen,
   setStoreCardPhotos,
@@ -13,8 +14,9 @@ import { deleteAllCardImages } from "@/lib/repo/card-images";
 export async function setStoreCardPhotosAction(
   formData: FormData,
 ): Promise<void> {
-  await requireUserId();
+  const userId = await requireUserId();
   await setStoreCardPhotos(String(formData.get("enabled")) === "true");
+  invalidateAppNavigation(userId);
   revalidatePath("/app/settings");
 }
 
@@ -26,10 +28,11 @@ export async function purgeCardPhotosAction(): Promise<void> {
 }
 
 export async function setSttEngineAction(formData: FormData): Promise<void> {
-  await requireUserId();
+  const userId = await requireUserId();
   const raw = formData.get("engine");
   const engine: SttEngine = raw === "local" || raw === "realtime" ? raw : "browser";
   await setSttEngine(engine);
+  invalidateAppNavigation(userId);
   revalidatePath("/app/settings");
 }
 

@@ -1,7 +1,6 @@
 import { requireUserIdForPage } from "@/lib/auth/guard";
-import { getCachedAppNavigation } from "@/lib/cache/app-navigation";
+import { getCachedAppConfig } from "@/lib/cache/app-navigation";
 import { DataProvider } from "@/lib/data";
-import { getSttEngine } from "@/lib/repo/settings";
 import { AppNav } from "@/components/app/AppNav";
 import { NavigationFeedback } from "@/components/app/NavigationFeedback";
 import { SttEngineProvider } from "@/components/app/contact/SttEngineContext";
@@ -15,10 +14,7 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const userId = await requireUserIdForPage();
-  const [[isAdmin, searchWeights], sttEngine] = await Promise.all([
-    getCachedAppNavigation(userId),
-    getSttEngine(),
-  ]);
+  const { isAdmin, searchWeights, sttEngine } = await getCachedAppConfig(userId);
 
   return (
     <DataProvider>

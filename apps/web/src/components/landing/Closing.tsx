@@ -8,12 +8,13 @@ export function FinalCta() {
       <div className="mx-auto max-w-6xl px-6 py-24">
         <SectionHeading
           eyebrow="Early access"
-          heading="The next conference is coming. Arrive with a memory."
+          heading="Remember everyone worth remembering."
           headingClassName="max-w-2xl"
           intro={
             <>
-              Request access to the beta. The first 500 approved signups lock
-              the $79 founding annual price — after that it&apos;s $99/yr, and
+              The next conference is coming — arrive with a memory. Request
+              access to the beta: the first 500 approved signups lock the $79
+              founding annual price — after that it&apos;s $99/yr, and
               that&apos;s a promise we keep in public.
             </>
           }

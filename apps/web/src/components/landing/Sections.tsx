@@ -9,10 +9,14 @@ export function StatsBand() {
   return (
     <section className="border-y border-seam bg-panel-2/40">
       <div className="mx-auto max-w-6xl px-6 py-16">
-        <p className="text-center text-xs italic text-fog/70">
+        <h2 className="mx-auto max-w-2xl text-balance text-center font-display text-3xl font-medium sm:text-4xl">
+          You met 47 people at your last conference.{" "}
+          <span className="text-ember">You&apos;ll remember 3.</span>
+        </h2>
+        <p className="mt-4 text-center text-xs italic text-fog/70">
           A familiar story, not a stat we collected — picture your last conference.
         </p>
-        <div className="mt-8 grid gap-10 sm:grid-cols-3">
+        <div className="mt-10 grid gap-10 sm:grid-cols-3">
           {STATS.map((stat, i) => (
             <Reveal key={stat.num} delay={i * 120}>
               <p

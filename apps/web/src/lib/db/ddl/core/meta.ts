@@ -40,6 +40,11 @@ CREATE TABLE IF NOT EXISTS card_images (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- The person page's card-photo strip fetches by contact. Especially worth
+-- indexing here: rows carry inline base64 image data, so a seq scan drags the
+-- whole blob column through memory.
+CREATE INDEX IF NOT EXISTS card_images_contactId_idx ON card_images (contact_id, created_at DESC);
+
 CREATE TABLE IF NOT EXISTS signals (
   id text PRIMARY KEY,
   contact_id text NOT NULL REFERENCES contacts(id),
@@ -50,4 +55,7 @@ CREATE TABLE IF NOT EXISTS signals (
   status text NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+
+-- The person page's signal list fetches a contact's signals newest-first.
+CREATE INDEX IF NOT EXISTS signals_contactId_idx ON signals (contact_id, created_at DESC);
 `;

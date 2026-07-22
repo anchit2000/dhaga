@@ -55,6 +55,6 @@ export async function withUserDb<T>(userId: string, work: () => Promise<T>): Pro
   try {
     return await explicitDb.run(scoped.db, work);
   } finally {
-    scoped.release();
+    await scoped.release();
   }
 }

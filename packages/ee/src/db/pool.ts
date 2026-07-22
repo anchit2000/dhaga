@@ -1,4 +1,5 @@
 import { Pool } from "pg";
+import type { PoolClient } from "pg";
 
 /**
  * EE connects to the exact same Postgres database as core (same tables) —
@@ -43,4 +44,34 @@ export function getPool(): Pool {
     idleTimeoutMillis: POOL_IDLE_TIMEOUT_MS,
   });
   return pool;
+}
+
+/**
+ * Return a tenant/admin-scoped client to the pool CLEAN so it can be reused
+ * rather than destroyed. With a pool this small (default 3), destroying every
+ * connection on release means a fresh TCP+TLS+auth handshake to the database on
+ * essentially every request — costly on its own, and doubly so when the
+ * database is a region away. Reuse removes that churn.
+ *
+ * The catch is safety: the session-level `app.*` GUCs set for tenant scoping
+ * (`app.current_user_id`, see tenant/scoped-db.ts) and admin bypass
+ * (`app.bypass_rls`, see admin-db.ts) MUST NOT survive into the next checkout —
+ * a stale setting on a reused connection is a cross-tenant data leak, not a
+ * crash. `RESET ALL` clears every customized session setting regardless of
+ * which path set it, so a backend previously used by openAdminConnection can
+ * never leak `app.bypass_rls` into a tenant checkout (or vice versa). This is
+ * sound only under session-mode pooling — one backend pinned per client for the
+ * life of the checkout — which bootstrap.ts already enforces (port 5432, never
+ * 6543). The client is not handed back to the pool until the reset resolves; if
+ * the reset fails, the connection is destroyed rather than reused dirty. Await
+ * it where the reset must complete before the function may suspend (see
+ * request-scope.ts / admin/usage.ts).
+ */
+export async function releaseScoped(client: PoolClient): Promise<void> {
+  try {
+    await client.query("RESET ALL");
+    client.release();
+  } catch {
+    client.release(true);
+  }
 }

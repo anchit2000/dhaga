@@ -14,6 +14,10 @@ CREATE TABLE IF NOT EXISTS follow_ups (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- The person page lists only a contact's OPEN follow-ups, newest-first. Partial
+-- on status keeps the index to the handful of live rows per contact.
+CREATE INDEX IF NOT EXISTS follow_ups_contactId_idx ON follow_ups (contact_id, created_at DESC) WHERE status = 'open';
+
 ALTER TABLE facts ADD COLUMN IF NOT EXISTS unverified boolean NOT NULL DEFAULT false;
 
 CREATE TABLE IF NOT EXISTS extraction_jobs (

@@ -3,6 +3,7 @@ import { count, gte } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { aiActions } from "@/lib/db/schema";
 import { getBillingGate } from "@/lib/hosted/gate";
+import { enforceRateLimit, RateLimitError } from "@/lib/ratelimit";
 import { FREE_TIER_AI_ACTIONS_PER_MONTH } from "@/utils/constants/app";
 import type { LLMUsage } from "@dhaga/core";
 
@@ -27,16 +28,33 @@ export async function aiActionsUsedThisMonth(): Promise<number> {
 }
 
 export class AiBudgetError extends Error {
-  constructor(cap: number) {
-    super(`Monthly AI action cap reached (${cap}).`);
+  constructor(message: string) {
+    super(message);
     this.name = "AiBudgetError";
   }
 }
 
+/**
+ * Gate every AI call: a per-user burst limit (cheap, in-memory) first, then the
+ * monthly cap. The burst guard is surfaced as `AiBudgetError` so every existing
+ * call site's `instanceof AiBudgetError` catch shows its message unchanged —
+ * it blocks rapid-fire abuse (SCALING.md lever 5) before we touch the DB, and
+ * is distinct from the monthly billing cap below.
+ */
 export async function assertAiBudget(userId: string): Promise<void> {
+  try {
+    await enforceRateLimit(userId, "ai");
+  } catch (error) {
+    if (error instanceof RateLimitError) {
+      throw new AiBudgetError("You're doing that a lot — wait a few seconds and try again.");
+    }
+    throw error;
+  }
   if (await (await getBillingGate()).hasUnlimitedAi(userId)) return;
   const cap = monthlyAiCap();
-  if ((await aiActionsUsedThisMonth()) >= cap) throw new AiBudgetError(cap);
+  if ((await aiActionsUsedThisMonth()) >= cap) {
+    throw new AiBudgetError(`Monthly AI action cap reached (${cap}).`);
+  }
 }
 
 export async function recordAiAction(

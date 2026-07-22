@@ -102,6 +102,64 @@ navigation. Ours has custom modes (search vs. metered Ask, dictation, weight
 tuner) that don't map 1:1 — evaluate when SearchPalette next grows; medium
 value.
 
+### 9. Rate limiting — `rate-limiter-flexible` (pluggable store)
+
+Lever 5 in [SCALING.md](SCALING.md): better-auth only rate-limits its own
+`/api/auth/*` routes (plus per-key limits via the `apiKey` plugin) — there is no
+general per-user/IP limiter on data or AI routes. **`rate-limiter-flexible`** is
+the pick *because* it's pluggable: one API over Memory, Postgres, Redis,
+Memcached, Mongo, and Cluster backends, so the store swaps by config with zero
+call-site change — the same dependency-inversion shape as our `LLMClient` /
+`SearchClient` / cache gateways. Wrap it in an app-owned `RateLimiter` interface
++ `getRateLimiter()` factory keyed off a `RATE_LIMIT_BACKEND` env, apply it at
+the route/action boundary through one `enforceRateLimit(key, bucket)` helper (not
+scattered), and take identity from better-auth (`requireUserIdFromRequest` /
+`getCurrentUser`) with the limiting logic ours.
+
+- **Memory** now — zero infra, works without Redis. Caveat: per-instance on
+  serverless, so limits are approximate (a user hitting N Vercel lambdas gets N×
+  the limit). Fine for single-node self-host and a first pass.
+- **Postgres** (`RateLimiterPostgres`) — distributed limiting on the DB we
+  already have, before Redis exists. Costs DB writes, so use it only where
+  accuracy matters (AI endpoints, `/api/capture`), not everywhere.
+- **Redis** (`RateLimiterRedis`) — the drop-in once Redis lands; same code. This
+  pairs with the cache's Redis story (SCALING.md §1): one Redis, two uses.
+
+**Status (built):** the gateway ships with the **Memory** backend —
+`lib/ratelimit/` (`RateLimiter` interface + `MemoryRateLimiter` +
+`getRateLimiter()` factory + `enforceRateLimit`), limits in
+`utils/constants/ratelimit.ts`. Wired into `/api/capture` (429 + `Retry-After`)
+and every AI call via `assertAiBudget` (burst guard surfaced as the existing
+`AiBudgetError`, so no call site changed). Postgres/Redis remain future factory
+cases behind `RATE_LIMIT_BACKEND`.
+
+Not the alternatives: **TanStack Pacer** is the natural thing to reach for
+(we're TanStack-first), but it is **client-side only** by its own docs
+("currently only a front-end library"; in-memory per instance, no shared/
+persistent store). It rate-limits how often a *function* runs in the browser —
+so it cannot protect a server route (a client-side limit is trivially bypassed
+and doesn't exist across instances). It *is* a good fit for **client-side**
+frequency control — e.g. replacing the hand-rolled
+`lib/data/use-debounced-value.ts`, or throttling the graph/search inputs — a
+separate, complementary concern adopted in §10. **`@upstash/ratelimit`** is the
+Vercel-ecosystem default (great
+sliding-window + analytics) but is coupled to Upstash Redis — no no-Redis mode,
+so it fails the "works today" bar. **`@vercel/firewall`** (`checkRateLimit`) is
+a clean platform-level *edge* layer, but Vercel-specific, not
+self-host-portable — worth adding on Vercel *in addition to*, never instead of,
+the portable app-level limiter. **`express-rate-limit`** is Express middleware,
+awkward in Next route handlers / server actions.
+
+### 10. TanStack Pacer (client-side debounce/throttle) — adopted
+
+The *client* half of frequency control, complementing §9's server limiting.
+`lib/data/use-debounced-value.ts` is now a thin adapter over Pacer's
+`useDebouncedValue` (`@tanstack/react-pacer`) — the vendor API stays in that one
+file, so the one caller (graph target search) is untouched and a revert is a
+one-file change. Pacer also covers throttle / rate-limit / queue for future UI
+needs (e.g. throttling the graph search input); add those behind the same
+`@/lib/data` adapters rather than importing Pacer directly in components.
+
 ---
 
 ## Keep hand-rolled (deliberate)
@@ -126,3 +184,4 @@ value.
 - [FlashList](https://docs.expo.dev/versions/latest/sdk/flash-list/)
 - [react-easy-crop](https://www.npmjs.com/package/react-easy-crop)
 - [shadcn Command / cmdk](https://ui.shadcn.com/docs/components/radix/command)
+- [rate-limiter-flexible](https://github.com/animir/node-rate-limiter-flexible) · [@upstash/ratelimit](https://github.com/upstash/ratelimit-js) · [@vercel/firewall rate limiting](https://vercel.com/docs/vercel-firewall/vercel-waf/rate-limiting) · [TanStack Pacer (client-side)](https://tanstack.com/pacer/latest/docs/guides/rate-limiting)

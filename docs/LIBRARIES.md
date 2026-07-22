@@ -125,13 +125,22 @@ scattered), and take identity from better-auth (`requireUserIdFromRequest` /
 - **Redis** (`RateLimiterRedis`) — the drop-in once Redis lands; same code. This
   pairs with the cache's Redis story (SCALING.md §1): one Redis, two uses.
 
-Not the alternatives: **`@upstash/ratelimit`** is the Vercel-ecosystem default
-(great sliding-window + analytics) but is coupled to Upstash Redis — no
-no-Redis mode, so it fails the "works today" bar. **`@vercel/firewall`**
-(`checkRateLimit`) is a clean platform-level *edge* layer, but Vercel-specific,
-not self-host-portable — worth adding on Vercel *in addition to*, never instead
-of, the portable app-level limiter. **`express-rate-limit`** is Express
-middleware, awkward in Next route handlers / server actions.
+Not the alternatives: **TanStack Pacer** is the natural thing to reach for
+(we're TanStack-first), but it is **client-side only** by its own docs
+("currently only a front-end library"; in-memory per instance, no shared/
+persistent store). It rate-limits how often a *function* runs in the browser —
+so it cannot protect a server route (a client-side limit is trivially bypassed
+and doesn't exist across instances). It *is* a good fit for **client-side**
+frequency control — e.g. replacing the hand-rolled
+`lib/data/use-debounced-value.ts`, or throttling the graph/search inputs — which
+is a separate, complementary concern worth its own adoption note, just not this
+one. **`@upstash/ratelimit`** is the Vercel-ecosystem default (great
+sliding-window + analytics) but is coupled to Upstash Redis — no no-Redis mode,
+so it fails the "works today" bar. **`@vercel/firewall`** (`checkRateLimit`) is
+a clean platform-level *edge* layer, but Vercel-specific, not
+self-host-portable — worth adding on Vercel *in addition to*, never instead of,
+the portable app-level limiter. **`express-rate-limit`** is Express middleware,
+awkward in Next route handlers / server actions.
 
 ---
 
@@ -157,4 +166,4 @@ middleware, awkward in Next route handlers / server actions.
 - [FlashList](https://docs.expo.dev/versions/latest/sdk/flash-list/)
 - [react-easy-crop](https://www.npmjs.com/package/react-easy-crop)
 - [shadcn Command / cmdk](https://ui.shadcn.com/docs/components/radix/command)
-- [rate-limiter-flexible](https://github.com/animir/node-rate-limiter-flexible) · [@upstash/ratelimit](https://github.com/upstash/ratelimit-js) · [@vercel/firewall rate limiting](https://vercel.com/docs/vercel-firewall/vercel-waf/rate-limiting)
+- [rate-limiter-flexible](https://github.com/animir/node-rate-limiter-flexible) · [@upstash/ratelimit](https://github.com/upstash/ratelimit-js) · [@vercel/firewall rate limiting](https://vercel.com/docs/vercel-firewall/vercel-waf/rate-limiting) · [TanStack Pacer (client-side)](https://tanstack.com/pacer/latest/docs/guides/rate-limiting)

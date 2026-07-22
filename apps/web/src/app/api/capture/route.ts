@@ -1,4 +1,5 @@
 import { requireUserIdFromRequest } from "@/lib/auth/guard";
+import { enforceRateLimit, RateLimitError } from "@/lib/ratelimit";
 import { handleAttachCapture, handleImageCapture, handleTextCapture } from "./handlers";
 import { parseCaptureRequest } from "./parse-request";
 
@@ -15,6 +16,18 @@ export async function POST(request: Request): Promise<Response> {
     userId = await requireUserIdFromRequest(request);
   } catch {
     return Response.json({ error: "Not signed in to Dhaga." }, { status: 401 });
+  }
+
+  try {
+    await enforceRateLimit(userId, "capture");
+  } catch (error) {
+    if (error instanceof RateLimitError) {
+      return Response.json(
+        { error: "Too many captures — slow down and try again shortly." },
+        { status: 429, headers: { "Retry-After": String(Math.ceil(error.retryAfterMs / 1000)) } },
+      );
+    }
+    throw error;
   }
 
   let parsed;

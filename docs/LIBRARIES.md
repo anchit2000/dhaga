@@ -125,6 +125,14 @@ scattered), and take identity from better-auth (`requireUserIdFromRequest` /
 - **Redis** (`RateLimiterRedis`) — the drop-in once Redis lands; same code. This
   pairs with the cache's Redis story (SCALING.md §1): one Redis, two uses.
 
+**Status (built):** the gateway ships with the **Memory** backend —
+`lib/ratelimit/` (`RateLimiter` interface + `MemoryRateLimiter` +
+`getRateLimiter()` factory + `enforceRateLimit`), limits in
+`utils/constants/ratelimit.ts`. Wired into `/api/capture` (429 + `Retry-After`)
+and every AI call via `assertAiBudget` (burst guard surfaced as the existing
+`AiBudgetError`, so no call site changed). Postgres/Redis remain future factory
+cases behind `RATE_LIMIT_BACKEND`.
+
 Not the alternatives: **TanStack Pacer** is the natural thing to reach for
 (we're TanStack-first), but it is **client-side only** by its own docs
 ("currently only a front-end library"; in-memory per instance, no shared/
@@ -132,15 +140,25 @@ persistent store). It rate-limits how often a *function* runs in the browser —
 so it cannot protect a server route (a client-side limit is trivially bypassed
 and doesn't exist across instances). It *is* a good fit for **client-side**
 frequency control — e.g. replacing the hand-rolled
-`lib/data/use-debounced-value.ts`, or throttling the graph/search inputs — which
-is a separate, complementary concern worth its own adoption note, just not this
-one. **`@upstash/ratelimit`** is the Vercel-ecosystem default (great
+`lib/data/use-debounced-value.ts`, or throttling the graph/search inputs — a
+separate, complementary concern adopted in §10. **`@upstash/ratelimit`** is the
+Vercel-ecosystem default (great
 sliding-window + analytics) but is coupled to Upstash Redis — no no-Redis mode,
 so it fails the "works today" bar. **`@vercel/firewall`** (`checkRateLimit`) is
 a clean platform-level *edge* layer, but Vercel-specific, not
 self-host-portable — worth adding on Vercel *in addition to*, never instead of,
 the portable app-level limiter. **`express-rate-limit`** is Express middleware,
 awkward in Next route handlers / server actions.
+
+### 10. TanStack Pacer (client-side debounce/throttle) — adopted
+
+The *client* half of frequency control, complementing §9's server limiting.
+`lib/data/use-debounced-value.ts` is now a thin adapter over Pacer's
+`useDebouncedValue` (`@tanstack/react-pacer`) — the vendor API stays in that one
+file, so the one caller (graph target search) is untouched and a revert is a
+one-file change. Pacer also covers throttle / rate-limit / queue for future UI
+needs (e.g. throttling the graph search input); add those behind the same
+`@/lib/data` adapters rather than importing Pacer directly in components.
 
 ---
 

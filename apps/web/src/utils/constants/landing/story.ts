@@ -41,7 +41,7 @@ export const STORY_STEPS: StoryStep[] = [
     id: "graph",
     kicker: "The graph",
     title: "It all connects.",
-    body: "People, companies, events, promises — one private graph that lives on your device. Drag the people. The threads follow.",
+    body: "People, companies, events, promises — one private graph that's yours alone. Drag the people. The threads follow.",
   },
   {
     id: "search",

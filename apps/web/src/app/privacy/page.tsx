@@ -39,7 +39,7 @@ export default function PrivacyPage() {
         Privacy
       </h1>
       <p className="mt-2 text-sm text-fog">
-        The short version: local-first, user-triggered, receipts for
+        The short version: self-hostable, user-triggered, receipts for
         everything, export anytime. The long version is the code —{" "}
         <a
           href="https://github.com/anchit2000/dhaga"

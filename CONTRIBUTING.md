@@ -159,6 +159,12 @@ Privacy is the product's moat — violations are bugs, not style issues.
   get driven end-to-end before shipping. `tests/scripts/` holds Playwright
   verification scripts; heavy loops run against the local `docker compose`
   DB, not Supabase (egress throttling is real and will eat your afternoon).
+- Quick visual review: with a dev server up (`npm run dev`),
+  `npm run screenshot -- <route>` (in `apps/web`) captures a 2× viewport and a
+  full-page PNG of a running page into `.screenshots/` (gitignored) via
+  Playwright/Chromium — reduced-motion + dark theme so the landing animations
+  settle to their final state. Run `npm run screenshot:install` once to fetch
+  Chromium; set `BASE_URL=http://localhost:3010` to target a non-default port.
 - The graph has an explicit perf envelope (20k nodes at interactive frame
   rates on integrated GPUs) with budget constants and console tripwires —
   if you touch the payload or reducers, re-verify against the seeded 20k

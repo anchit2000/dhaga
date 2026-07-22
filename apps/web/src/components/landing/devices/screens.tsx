@@ -59,7 +59,7 @@ export function VoiceScreen() {
   );
 }
 
-/** Phone screen: the Pulse tab — proactive alerts. */
+/** Phone screen: the Home tab — proactive alerts. */
 export function AlertsScreen() {
   return (
     <div className="flex h-full flex-col bg-gradient-to-b from-panel to-ink">
@@ -69,7 +69,7 @@ export function AlertsScreen() {
         {[
           { personId: "sarah", title: "Job change", body: "Sarah Chen announced she left Stripe — draft a congrats note?", time: "now" },
           { personId: "priya", title: "Reconnect", body: "Your note: Priya Nair is back from Singapore this week.", time: "2m" },
-          { personId: "alice", title: "Going quiet", body: "No contact with Alice in 3 months — she's marked key.", time: "1h" },
+          { personId: "alice", title: "Going quiet", body: "No contact with Alice in 8 months — a strong tie cooling off.", time: "1h" },
         ].map((alert, i) => (
           <div
             key={alert.title}

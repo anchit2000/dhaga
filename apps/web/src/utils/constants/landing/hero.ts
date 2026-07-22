@@ -8,9 +8,10 @@ export const ASK_QUERIES = [
 export const GITHUB_URL = "https://github.com/anchit2000/dhaga";
 
 export const HERO = {
-  eyebrow: "Open source · Private by design",
-  headline: "Every thread, remembered.",
-  sub: "Dhaga (धागा) — thread. Scan a card, leave a voice note, and every person you meet becomes part of a private knowledge graph you can search in plain language. With receipts.",
+  eyebrow: "AI personal CRM · Open source · Private",
+  sub: "Every handshake, badge, and “we should talk” becomes a memory you can search. Dhaga remembers who they are, where you met, and what you promised — every fact with a receipt back to your own notes.",
+  tagline: "Every thread, remembered.",
+  taglineNote: "Dhaga (धागा), Hindi for “thread.”",
   primaryCta: "Request access",
   secondaryCta: "Read the code",
 } as const;

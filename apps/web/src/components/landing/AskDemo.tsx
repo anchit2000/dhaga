@@ -10,8 +10,8 @@ export function AskDemo() {
       <div className="mx-auto max-w-6xl px-6 py-24">
         <SectionHeading
           eyebrow="Answers with receipts"
-          heading="Your notes, finally queryable."
-          intro="Not a feed. Not a guess scraped from the web. Answers built from what you actually observed — cited back to your own notes."
+          heading="“Who did I meet in logistics with an AI budget?”"
+          intro="You’ve had that thought — and no way to answer it. Dhaga answers in plain language from what you actually observed: not a feed, not a guess scraped from the web, but your own notes, cited."
         />
         <QueryTyper />
         <div className="mt-6 grid gap-5 lg:grid-cols-2">

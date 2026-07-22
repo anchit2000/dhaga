@@ -24,7 +24,8 @@ export function Hero() {
           className={`mx-auto mt-6 max-w-4xl text-balance font-display text-5xl leading-[1.04] font-medium sm:text-7xl ${RISE}`}
           style={{ animationDelay: "0.12s" }}
         >
-          Every <em className="text-ember italic">thread</em>, remembered.
+          The best contact you made this year — what was their{" "}
+          <em className="text-ember italic">name</em> again?
         </h1>
         <p
           className={`mx-auto mt-6 max-w-2xl text-pretty text-lg text-fog ${RISE}`}
@@ -54,6 +55,13 @@ export function Hero() {
           style={{ animationDelay: "0.52s" }}
         >
           Free to start · Your data stays on your phone · AGPL-3.0
+        </p>
+        <p
+          className={`mt-6 text-sm text-fog/70 ${RISE}`}
+          style={{ animationDelay: "0.62s" }}
+        >
+          <span className="text-paper/80">{HERO.tagline}</span>{" "}
+          {HERO.taglineNote}
         </p>
         <div className="relative mt-16 pb-12">
           <div className="pointer-events-none absolute -inset-x-20 -top-24 h-64 bg-[radial-gradient(ellipse_50%_100%_at_50%_100%,rgba(226,164,76,0.13),transparent_70%)]" />

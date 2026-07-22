@@ -32,7 +32,7 @@ export const metadata: Metadata = {
         ? `https://${process.env.VERCEL_URL}`
         : "http://localhost:3000"),
   ),
-  title: "Dhaga — Every thread, remembered",
+  title: "Dhaga — the AI personal CRM that remembers everyone you meet",
   description:
     "Dhaga turns every card scan, badge, and voice note into a private knowledge graph you can search in plain language. Open source. Your data stays yours.",
   keywords: [
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     "open source CRM",
   ],
   openGraph: {
-    title: "Dhaga — Every thread, remembered",
+    title: "Dhaga — the AI personal CRM that remembers everyone you meet",
     description:
       "Capture contacts anywhere. Ask your network questions. Get answers with receipts. Open source and private by design.",
     type: "website",

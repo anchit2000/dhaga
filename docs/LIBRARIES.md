@@ -102,6 +102,37 @@ navigation. Ours has custom modes (search vs. metered Ask, dictation, weight
 tuner) that don't map 1:1 — evaluate when SearchPalette next grows; medium
 value.
 
+### 9. Rate limiting — `rate-limiter-flexible` (pluggable store)
+
+Lever 5 in [SCALING.md](SCALING.md): better-auth only rate-limits its own
+`/api/auth/*` routes (plus per-key limits via the `apiKey` plugin) — there is no
+general per-user/IP limiter on data or AI routes. **`rate-limiter-flexible`** is
+the pick *because* it's pluggable: one API over Memory, Postgres, Redis,
+Memcached, Mongo, and Cluster backends, so the store swaps by config with zero
+call-site change — the same dependency-inversion shape as our `LLMClient` /
+`SearchClient` / cache gateways. Wrap it in an app-owned `RateLimiter` interface
++ `getRateLimiter()` factory keyed off a `RATE_LIMIT_BACKEND` env, apply it at
+the route/action boundary through one `enforceRateLimit(key, bucket)` helper (not
+scattered), and take identity from better-auth (`requireUserIdFromRequest` /
+`getCurrentUser`) with the limiting logic ours.
+
+- **Memory** now — zero infra, works without Redis. Caveat: per-instance on
+  serverless, so limits are approximate (a user hitting N Vercel lambdas gets N×
+  the limit). Fine for single-node self-host and a first pass.
+- **Postgres** (`RateLimiterPostgres`) — distributed limiting on the DB we
+  already have, before Redis exists. Costs DB writes, so use it only where
+  accuracy matters (AI endpoints, `/api/capture`), not everywhere.
+- **Redis** (`RateLimiterRedis`) — the drop-in once Redis lands; same code. This
+  pairs with the cache's Redis story (SCALING.md §1): one Redis, two uses.
+
+Not the alternatives: **`@upstash/ratelimit`** is the Vercel-ecosystem default
+(great sliding-window + analytics) but is coupled to Upstash Redis — no
+no-Redis mode, so it fails the "works today" bar. **`@vercel/firewall`**
+(`checkRateLimit`) is a clean platform-level *edge* layer, but Vercel-specific,
+not self-host-portable — worth adding on Vercel *in addition to*, never instead
+of, the portable app-level limiter. **`express-rate-limit`** is Express
+middleware, awkward in Next route handlers / server actions.
+
 ---
 
 ## Keep hand-rolled (deliberate)
@@ -126,3 +157,4 @@ value.
 - [FlashList](https://docs.expo.dev/versions/latest/sdk/flash-list/)
 - [react-easy-crop](https://www.npmjs.com/package/react-easy-crop)
 - [shadcn Command / cmdk](https://ui.shadcn.com/docs/components/radix/command)
+- [rate-limiter-flexible](https://github.com/animir/node-rate-limiter-flexible) · [@upstash/ratelimit](https://github.com/upstash/ratelimit-js) · [@vercel/firewall rate limiting](https://vercel.com/docs/vercel-firewall/vercel-waf/rate-limiting)

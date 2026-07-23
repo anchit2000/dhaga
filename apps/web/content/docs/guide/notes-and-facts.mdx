@@ -1,0 +1,47 @@
+---
+title: Notes & facts
+description: Add notes to a person by typing or voice; Dhaga extracts structured facts automatically, keeps a receipt on each, and cascades deletions.
+---
+
+Everything you know about a person lives on their profile at
+**`/app/people/[id]`** — their jobs, contact methods, location, relationships,
+and, below that, their **notes and facts**.
+
+![The top of a person's profile showing their jobs, email, location, and relationships](/docs/guide/person-detail.png)
+
+## Add a note
+
+In the **Notes** box on a person's page, either type what you remember or tap
+the mic and just talk — voice notes are transcribed for you. The box hints as
+much: *"Type — or tap the mic and just talk. Facts get extracted
+automatically."*
+
+![A person's profile showing the Facts section with two extracted facts, the Enrich from public web button, and the Notes box with Add note and Voice note buttons](/docs/guide/person-facts-enrich.png)
+
+## Facts get extracted automatically
+
+When you save a note, Dhaga extracts structured **facts** from it — for example
+a personal detail or an intent ("wants an intro to a designer"). Each fact is
+tagged by kind (**PERSONAL**, **INTENT**, and so on).
+
+Every fact carries a **receipt**: the source note it came from, shown as
+*"FROM NOTE, 23/7/2026"*. This is a core principle — no AI-derived fact exists
+without a traceable source you can open and verify.
+
+<Callout title="This is the user's data about third parties">
+Facts are extracted from *your* notes about the people you meet. Nothing is
+collected silently — a fact only appears because you wrote the note it came
+from.
+</Callout>
+
+## Editing, deleting, and the cascade
+
+- **Edit or delete a fact** directly if the extraction got something wrong or
+  the detail no longer applies.
+- **Delete the source note** and every fact derived from it is tombstoned along
+  with it — the receipt guarantees Dhaga knows exactly which facts to remove.
+- **Delete the person** and the cascade runs all the way down: notes, facts,
+  graph edges, and embeddings all go with them.
+
+Want to add outside context to a person? See
+[Enrich from the web](/docs/guide/enrich-from-web).

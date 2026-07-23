@@ -1,0 +1,36 @@
+---
+title: Search & Ask Dhaga
+description: The ⌘K command palette has two tabs — Search to filter by name, fact, or note, and Ask Dhaga to get a reasoned, receipted answer over your own graph.
+---
+
+Press **⌘K** (Ctrl+K on Windows/Linux) anywhere in the app to open the command
+palette. It has two tabs for the two ways you'll look things up.
+
+## Search
+
+The **Search** tab filters your graph by **name, fact, or note**. Type a query
+and it matches across all three, with tunable weights so you can lean the
+ranking toward names or toward note content.
+
+![The ⌘K command palette on the Search tab with a query typed and matching people listed](/docs/guide/search-palette.png)
+
+## Ask Dhaga
+
+The **Ask Dhaga** tab takes a **natural-language question** and answers it by
+reasoning over your own graph — *"get a reasoned answer with receipts."*
+
+![The ⌘K palette on the Ask Dhaga tab, prompting for a natural-language question answered with receipts](/docs/guide/ask-dhaga.png)
+
+Two things make the answers trustworthy:
+
+- **Receipts.** Every answer points back to the notes and people it drew on, so
+  you can verify it rather than take it on faith.
+- **No fabrication.** If the answer isn't in your notes or graph, Dhaga says so
+  — it will not invent a plausible-sounding answer.
+
+<Callout title="Ask Dhaga uses the LLM">
+Answering questions runs through Claude. On a self-hosted instance this needs
+`ANTHROPIC_API_KEY` (or your own LLM provider — see
+[Add an LLM provider](/docs/extending/llm-provider)); Search itself works
+without it.
+</Callout>

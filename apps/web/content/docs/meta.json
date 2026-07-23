@@ -2,6 +2,7 @@
   "title": "Documentation",
   "pages": [
     "index",
+    "guide",
     "self-hosting",
     "extending",
     "api",

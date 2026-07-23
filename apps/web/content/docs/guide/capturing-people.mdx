@@ -1,0 +1,55 @@
+---
+title: Capturing people
+description: Add a person to your graph from pasted text, a card photo, voice, your webcam, or a file — with a review step that confirms the fields before saving.
+---
+
+Capture happens in two places: the **capture dock** at the bottom of every
+screen, and the dedicated **`/app/quick-add`** page. Both run the same
+extraction, keep the original input as a **receipt**, and meter AI usage per
+account (the free tier allows 25 cloud AI actions per month).
+
+## Quick-add modes
+
+Open `/app/quick-add`. It defaults to **paste text** — drop in an email
+signature, the text off a business card, or a LinkedIn intro, and Dhaga pulls
+out the name, title, company, and contact methods.
+
+![Dhaga quick-add in paste-text mode, ready to accept an email signature or card text](/docs/guide/quick-add-paste.png)
+
+Switch modes for however you captured the person:
+
+- **Card photo** — take or upload a photo of a business card. Dhaga runs OCR and
+  also reads a LinkedIn QR code if one is on the card.
+- **Voice** — tap the mic and describe who you met; the dictation is
+  transcribed and extracted.
+- **Camera** — grab a shot straight from your webcam.
+- **Upload** — attach an image or file you already have.
+
+![Dhaga quick-add in card-photo mode with a camera area, a Scan card button, and the Voice / Camera / Upload capture dock](/docs/guide/quick-add-capture.png)
+
+<Callout title="AI extraction needs a key">
+The card scan, voice, and text extraction run through Claude. On a self-hosted
+instance without `ANTHROPIC_API_KEY`, capture falls back to simpler heuristic
+parsing. See [Self-hosting](/docs/self-hosting) for the env var.
+</Callout>
+
+## Review, disambiguate, and save
+
+Extraction never saves silently. A **review dialog** shows the fields it pulled
+so you can correct them before the person lands in your graph:
+
+1. Check the name, title, company, emails, phones, and links.
+2. If the details look like someone you already have, Dhaga flags the match so
+   you can merge into the existing contact instead of creating a duplicate.
+3. Optionally **attach the person to an event** right from the review dialog —
+   handy when you're clearing a stack of cards from one conference. See
+   [Groups & events](/docs/guide/groups-and-events).
+4. Save.
+
+## Adding someone manually
+
+When there's nothing to scan, go to **`/app/people/new`** and enter the person
+by hand. You can add multiple jobs, several labelled emails and phones, and
+links, then save.
+
+![Dhaga manual add-person form with fields for name, jobs, emails, phones, and links](/docs/guide/add-person.png)

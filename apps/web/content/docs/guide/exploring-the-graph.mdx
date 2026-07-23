@@ -1,0 +1,39 @@
+---
+title: Exploring the graph
+description: Your whole network on one canvas — find warm-path intros, open a node's edges in a side panel, toggle layers, and zoom or reset the view.
+---
+
+**`/app/graph`** renders your entire network on a single canvas. Every person
+and connection you've captured is one node in a graph you can pan, zoom, and
+interrogate.
+
+![The Dhaga graph canvas showing the full network settled into a layout, with the warm-path panel in the top-left corner](/docs/guide/graph-overview.png)
+
+## Find a warm path
+
+The **Warm path** finder answers "how do I get introduced to this person?"
+Enter a target and Dhaga renders the **intro chains** that connect you to them
+through people you both know — for example *You → Bhavna Costa → Aarav Bose*.
+
+![The warm-path panel listing three intro chains from you to a target person through mutual connections](/docs/guide/graph-warm-path.png)
+
+## Inspect a node
+
+Click any node to open its **side panel**. It shows that person's edges — split
+into **incoming** and **outgoing** — and lets you:
+
+- **Add a relationship** to another person.
+- **Open** their full profile page.
+- **Isolate their circle** to focus on just their immediate connections.
+
+![The graph with a node selected, its side panel showing incoming and outgoing edge counts, and the focused node's circle isolated](/docs/guide/graph-node-panel.png)
+
+## Layers and controls
+
+- The **Layers** panel toggles which node types and circles are drawn, so you
+  can declutter a dense graph.
+- **Zoom**, **fit**, and **reset** controls frame the view — fit to see
+  everything, reset to return to the default layout.
+
+Non-person nodes like gyms or projects show up here too — see
+[Custom entities](/docs/guide/entities).

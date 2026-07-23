@@ -3,6 +3,9 @@
   "private": true,
   "description": "Dhaga — every thread, remembered. Open-source AI-native personal CRM.",
   "license": "AGPL-3.0-only",
+  "engines": {
+    "node": "22.x"
+  },
   "workspaces": [
     "apps/*",
     "packages/*"

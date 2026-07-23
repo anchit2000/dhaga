@@ -4,17 +4,20 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2, Upload } from "lucide-react";
+import { primaryPosition } from "@dhaga/core";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { parseContactsCsv } from "@/lib/import";
+import { isVcard, parseContactsCsv, parseContactsVcard } from "@/lib/import";
 import { importCsvBatchAction } from "@/lib/actions/import";
 import { ReviewTable } from "./ReviewTable";
+import { ImportInstructions } from "./ImportInstructions";
 import type { ImportCandidate, ImportFormat } from "@/lib/import";
 
 const BATCH_SIZE = 50;
 const FORMAT_LABELS: Record<ImportFormat, string> = {
   google: "Google Contacts",
   linkedin: "LinkedIn Connections",
+  vcard: "vCard (Apple / Android / iCloud)",
 };
 
 export function ImportPanel() {
@@ -28,7 +31,11 @@ export function ImportPanel() {
 
   async function handleFile(file: File | undefined): Promise<void> {
     if (!file) return;
-    const result = parseContactsCsv(await file.text());
+    const text = await file.text();
+    const result =
+      file.name.toLowerCase().endsWith(".vcf") || isVcard(text)
+        ? parseContactsVcard(text)
+        : parseContactsCsv(text);
     if (!result.ok) {
       toast.error(result.error);
       return;
@@ -81,22 +88,23 @@ export function ImportPanel() {
       <div className="rounded-2xl border border-dashed border-seam bg-panel p-8 text-center">
         <Upload className="mx-auto size-6 text-ember" />
         <p className="mt-3 text-sm text-paper">
-          Google Contacts or LinkedIn Connections CSV
+          Apple, Android, or iCloud contacts (.vcf) — or a Google / LinkedIn CSV
         </p>
         <p className="mx-auto mt-1 max-w-md text-xs text-fog">
           Parsed in your browser — only the rows you select are uploaded. Every
           imported field keeps a receipt note.
         </p>
         <Button className="mt-4" size="sm" onClick={() => fileRef.current?.click()}>
-          Choose CSV file
+          Choose file
         </Button>
         <input
           ref={fileRef}
           type="file"
-          accept=".csv,text/csv"
+          accept=".csv,.vcf,text/csv,text/vcard,text/x-vcard"
           className="hidden"
           onChange={(event) => void handleFile(event.target.files?.[0])}
         />
+        <ImportInstructions />
       </div>
     );
   }
@@ -115,7 +123,7 @@ export function ImportPanel() {
           <Button variant="outline" size="sm" onClick={() => setSelected(new Set())}>
             None
           </Button>
-          <Button variant="outline" size="sm" onClick={() => selectWhere((c) => !!c.contact.company)}>
+          <Button variant="outline" size="sm" onClick={() => selectWhere((c) => !!primaryPosition(c.contact.positions)?.company)}>
             With company
           </Button>
           <Button variant="outline" size="sm" onClick={() => selectWhere((c) => c.contact.emails.length > 0)}>

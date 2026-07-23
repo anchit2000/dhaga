@@ -83,6 +83,8 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Company auto-link: extracted company name → find-or-create `companies` row
 - [x] User-triggered enrichment: web search → cited enrichment note → receipted facts
 - [x] LinkedIn Connections CSV import — user's own LinkedIn data export → bulk contacts, ToS-safe (BRD §6.7) (v1.1); `lib/import/linkedin.ts`, wired into `/app/import`, LinkedIn header format covered by `csv-import.test.ts`/`import-repo.test.ts`
+- [x] Google Contacts CSV import — user's own Google export (both header generations, `:::` multi-values) → bulk contacts (v1.1); `lib/import/google.ts`, wired into `/app/import`, covered by `csv-import.test.ts`/`import-repo.test.ts`
+- [x] vCard (.vcf) import — user's own device export → bulk contacts, covers Apple/iCloud, Android, and Google Contacts device exports (vCard 2.1/3.0/4.0) (v1.1); `lib/import/vcard/` (tokenize/map/labels, dependency-free, parsed 100% client-side), wired into `/app/import` via `parseContactsVcard`, phone-dedup makes re-import safe for email-less device cards; covered by `vcard-import.test.ts` (incl. the QUOTED-PRINTABLE accented-name regression guard) + `import-repo.test.ts`
 - [x] Waitlist signups get a confirmation email (Resend)
 - [ ] Adopt react-hook-form + Zod resolvers the next time a form grows real validation/field-array complexity (docs/LIBRARIES.md §4) — don't rewrite working server-action forms for it
 - [ ] Swap the hand-rolled PhotoCropper to react-easy-crop the next time the cropper needs a feature (rotation, aspect presets — docs/LIBRARIES.md §7); works fine today, no urgency

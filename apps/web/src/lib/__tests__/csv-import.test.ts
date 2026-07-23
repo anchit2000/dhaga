@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { methodValues, primaryPosition } from "@dhaga/core";
 import { parseContactsCsv } from "@/lib/import";
 
 /**
@@ -19,9 +20,9 @@ describe("contacts CSV parsing", () => {
     expect(result.candidates).toHaveLength(1);
     const { contact, receipt } = result.candidates[0];
     expect(contact.name).toBe("Sarah Chen");
-    expect(contact.company).toBe("Stripe");
-    expect(contact.title).toBe("Payments Lead");
-    expect(contact.emails).toEqual([
+    expect(primaryPosition(contact.positions)?.company).toBe("Stripe");
+    expect(primaryPosition(contact.positions)?.title).toBe("Payments Lead");
+    expect(methodValues(contact.emails)).toEqual([
       "sarah@stripe.example",
       "s.chen@gmail.example",
       "sc@x.example",
@@ -56,7 +57,9 @@ describe("contacts CSV parsing", () => {
     if (!result.ok) throw new Error(result.error);
     expect(result.format).toBe("google");
     expect(result.candidates[0].contact.name).toBe("Rohan Mehta");
-    expect(result.candidates[0].contact.company).toBe("Freightline");
+    expect(primaryPosition(result.candidates[0].contact.positions)?.company).toBe(
+      "Freightline",
+    );
   });
 
   it("finds the LinkedIn header behind the Notes: preamble and keeps quoted commas", () => {
@@ -72,8 +75,8 @@ describe("contacts CSV parsing", () => {
     expect(result.format).toBe("linkedin");
     const { contact, receipt } = result.candidates[0];
     expect(contact.name).toBe("Priya Jain, PhD");
-    expect(contact.company).toBe("Acme, Inc.");
-    expect(contact.links).toEqual(["https://www.linkedin.com/in/priya"]);
+    expect(primaryPosition(contact.positions)?.company).toBe("Acme, Inc.");
+    expect(methodValues(contact.links)).toEqual(["https://www.linkedin.com/in/priya"]);
     expect(receipt).toContain("connected 12 Mar 2024");
   });
 

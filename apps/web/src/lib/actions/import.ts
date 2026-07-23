@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { extractedContactSchema } from "@dhaga/core";
+import { contactProfileSchema } from "@dhaga/core";
 import { requireUserId } from "@/lib/auth/guard";
 import { importContacts, type ImportSummary } from "@/lib/repo/import";
 import {
@@ -13,11 +13,11 @@ import {
 
 /** Client sends batches (≤100) so big files dodge the action body limit. */
 const batchSchema = z.object({
-  format: z.enum(["google", "linkedin"]),
+  format: z.enum(["google", "linkedin", "vcard"]),
   candidates: z
     .array(
       z.object({
-        contact: extractedContactSchema,
+        contact: contactProfileSchema,
         receipt: z.string().max(2_000),
       }),
     )

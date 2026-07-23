@@ -1,9 +1,11 @@
 import { parseCsv } from "./parse-csv";
 import { googleRowsToCandidates, isGoogleHeader } from "./google";
 import { findLinkedInHeaderRow, linkedInRowsToCandidates } from "./linkedin";
+import { vcardToCandidates } from "./vcard";
 import type { ImportParseResult } from "./types";
 
 export { parseCsv } from "./parse-csv";
+export { isVcard, vcardToCandidates } from "./vcard";
 export type { ImportCandidate, ImportFormat, ImportParseResult } from "./types";
 
 /**
@@ -35,4 +37,16 @@ export function parseContactsCsv(text: string): ImportParseResult {
     error:
       "Unrecognized CSV. Expected a Google Contacts export or a LinkedIn Connections export.",
   };
+}
+
+/**
+ * Parse a vCard (.vcf) export into review-ready candidates. Like the CSV
+ * path, this runs in the browser — the raw file never leaves the device.
+ */
+export function parseContactsVcard(text: string): ImportParseResult {
+  const candidates = vcardToCandidates(text);
+  if (candidates.length === 0) {
+    return { ok: false, error: "No contacts found in that .vcf file." };
+  }
+  return { ok: true, format: "vcard", candidates };
 }

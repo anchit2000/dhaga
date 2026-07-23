@@ -166,6 +166,7 @@ needs (e.g. throttling the graph search input); add those behind the same
 
 | Surface | Why it stays |
 |---|---|
+| CSV + vCard import parsers (`lib/import/`) | Deliberately hand-rolled and dependency-free so the raw file is parsed 100% client-side (local-privacy) — no `.vcf`/CSV npm parser is added even if one looks tidier. |
 | Graph stack (`sigma`, `graphology`, layout workers) | Already library-based; the custom perf work is product moat. |
 | `use-graph-data` SWR/ETag/IDB boot | Coupled to layout + perf beacons; revisit only with §5. |
 | Landing decor (`Particles`, `GlassSurface`, `DecryptedText`, …) | Visual identity, no state logic worth outsourcing. |

@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError } from "better-auth/api";
 import { getDb } from "@/lib/db";
+import { authUser } from "@/lib/db/schema";
 import { getSignupGate } from "@/lib/hosted/gate";
 import { notifyAccessRequested } from "@/lib/access/notify";
 import { sendPasswordResetEmail, sendVerifyEmail, sendWelcomeEmail } from "./emails";
@@ -24,9 +25,33 @@ import type { User } from "better-auth";
  * vitest with no HTTP request in play at all — after() would throw there.
  * A plain try/catch works in every one of those cases.
  */
+/**
+ * Single-user guard for the AGPL core (non-EE) path. Multi-tenant isolation
+ * (per-user RLS scoping) lives exclusively in packages/ee; the core `getDb()`
+ * hands every request one unscoped connection over one shared graph (see
+ * lib/db/request-scope.ts). That is safe for exactly one account, but nothing
+ * otherwise stops a second signup from landing in — and reading — the first
+ * user's data. So when hosted mode is off (`DHAGA_HOSTED_MODE` !== "true",
+ * the same signal lib/hosted/gate.ts uses to decide whether packages/ee is
+ * loaded) we reject creating a second account. Multi-user requires hosted
+ * mode / packages/ee — see docs/SELF_HOSTING.md.
+ */
+async function assertSingleUserOnCore(): Promise<void> {
+  if (process.env.DHAGA_HOSTED_MODE === "true") return;
+  const db = await getDb();
+  const [existing] = await db.select({ id: authUser.id }).from(authUser).limit(1);
+  if (existing) {
+    throw new APIError("FORBIDDEN", {
+      message:
+        "This Dhaga instance is single-user: the open-source core has no per-user data isolation, so it allows only one account. Multi-user support requires hosted mode (packages/ee) — see docs/SELF_HOSTING.md.",
+    });
+  }
+}
+
 export async function beforeUserCreate(
   user: User & Record<string, unknown>,
 ): Promise<{ data: User & Record<string, unknown> } | void> {
+  await assertSingleUserOnCore();
   const gate = await getSignupGate();
   const { allowed, reason } = await gate.checkEmail(user.email);
   if (!allowed) {

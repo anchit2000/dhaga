@@ -3,6 +3,7 @@ import { getDb } from "@/lib/db/request-scope";
 import {
   contacts,
   edges,
+  edgeSuggestions,
   facts,
   followUps,
   notes,
@@ -56,8 +57,8 @@ export async function mergeMentionedContact(
 
 /**
  * "Forget this person" — hard delete, full cascade (BRD §7.5 / GDPR):
- * contact → notes → facts → edges → follow-ups → positions → signals → event
- * links.
+ * contact → notes → facts → edges → edge suggestions → follow-ups →
+ * positions → signals → event links.
  *
  * Wrapped in one transaction: every statement here is a pure DB delete (no
  * outbound network calls, so no connection-pool-exhaustion risk from holding
@@ -78,6 +79,7 @@ export async function forgetContact(id: string): Promise<void> {
     if (noteIds.length > 0) {
       await tx.delete(edges).where(inArray(edges.sourceNoteId, noteIds));
       await tx.delete(facts).where(inArray(facts.sourceNoteId, noteIds));
+      await tx.delete(edgeSuggestions).where(inArray(edgeSuggestions.sourceNoteId, noteIds));
       await tx.delete(followUps).where(inArray(followUps.sourceNoteId, noteIds));
     }
     await tx
@@ -90,6 +92,12 @@ export async function forgetContact(id: string): Promise<void> {
       );
     await tx.delete(facts).where(eq(facts.contactId, id));
     await tx.delete(followUps).where(eq(followUps.contactId, id));
+    // Pending relationship suggestions naming this contact as their source —
+    // src_contact_id is a NOT NULL RESTRICT FK to contacts.id, so any that
+    // survive (e.g. suggestions raised from another contact's note) would
+    // abort the final contacts delete. Those keyed to this contact's own
+    // notes were already dropped above by source note.
+    await tx.delete(edgeSuggestions).where(eq(edgeSuggestions.srcContactId, id));
     // Employment history — a real FK to contacts.id with no onDelete cascade.
     await tx.delete(positions).where(eq(positions.contactId, id));
     // Watchlist hits (BRD §6.7) — a real FK to contacts.id with no

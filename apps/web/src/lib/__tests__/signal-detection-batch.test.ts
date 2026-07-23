@@ -1,4 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
+import { eq } from "drizzle-orm";
+import { getDb } from "@/lib/db";
+import { contacts } from "@/lib/db/schema";
 import { createContact } from "@/lib/repo/contacts";
 import { hasOpenSignal, toggleWatch } from "@/lib/repo/signals";
 import { getPendingSignalBatchId, setPendingSignalBatchId } from "@/lib/repo/settings";
@@ -27,10 +30,12 @@ let isDone = true;
 let pendingResults: BatchExtractResult<SignalDetection>[] = [];
 let statusError = false;
 let resultsError = false;
+let submitError = false;
 let searchCalls = 0;
 
 const fakeBatchClient: BatchLLMClient = {
   submitExtractBatch: async (items) => {
+    if (submitError) throw new Error("simulated batch submit outage");
     submittedItems = items;
     return "msgbatch_test_1";
   },
@@ -146,5 +151,33 @@ describe("nightly signal detection — Batch API two-phase job", () => {
     pendingResults = [jobChangeResult(contactId)];
     await runSignalDetection();
     expect(await hasOpenSignal(contactId, "job_change")).toBe(true);
+  });
+
+  it("does not stamp signalsScannedAt when the batch submit fails — the contact stays due and is retried", async () => {
+    await setPendingSignalBatchId(null); // isolate phase 2: no prior batch to apply
+    const contactId = await createContact(person("Batch Submit Failure Contact"), "manual");
+    await toggleWatch("test-user", contactId, true);
+
+    // Submit throws mid-sweep. The contract under test is a DB side effect,
+    // not the return value: phase 2 must NOT have stamped signalsScannedAt,
+    // because stamping before a confirmed submit skips the contact for
+    // ~RESCAN_AFTER_DAYS with nothing ever classified (the bug this guards).
+    submitError = true;
+    await expect(runSignalDetection()).rejects.toThrow();
+
+    const db = await getDb();
+    const [row] = await db
+      .select({ scannedAt: contacts.signalsScannedAt })
+      .from(contacts)
+      .where(eq(contacts.id, contactId));
+    expect(row.scannedAt).toBeNull();
+
+    // Proof it's genuinely still due: the next successful run re-submits it.
+    submitError = false;
+    submittedItems = null;
+    await runSignalDetection();
+    expect(submittedItems?.some((item) => item.id === contactId)).toBe(true);
+
+    await setPendingSignalBatchId(null); // leave the shared batch pointer clean
   });
 });

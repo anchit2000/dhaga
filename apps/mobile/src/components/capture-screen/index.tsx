@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { CameraCaptureView } from "@/components/camera-capture-view";
 import { CropReviewView } from "@/components/crop-review";
@@ -31,6 +31,8 @@ export default function CaptureScreen() {
     outcome,
     pendingPhoto,
     setPendingPhoto,
+    pendingCapture,
+    retryPending,
     eventToName,
     confirmEventName,
     dismissEventPrompt,
@@ -114,6 +116,11 @@ export default function CaptureScreen() {
           )}
           <View style={styles.overlay}>
             {outcome ? <ResultBanner outcome={outcome} /> : null}
+            {pendingCapture && !busy ? (
+              <Pressable style={styles.retry} onPress={() => void retryPending()}>
+                <Text style={styles.retryLabel}>Retry unsent capture</Text>
+              </Pressable>
+            ) : null}
             <BottomDock actions={dockActions} />
           </View>
         </>
@@ -125,4 +132,13 @@ export default function CaptureScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: COLORS.ink },
   overlay: { position: "absolute", bottom: 0, left: 0, right: 0, padding: 20, gap: 16 },
+  retry: {
+    borderColor: COLORS.amber,
+    borderWidth: 1,
+    borderRadius: 999,
+    minHeight: 48,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  retryLabel: { color: COLORS.amber, fontSize: 15, fontWeight: "600" },
 });

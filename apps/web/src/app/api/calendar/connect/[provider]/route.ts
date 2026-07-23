@@ -13,8 +13,9 @@ export async function GET(
   { params }: { params: Promise<{ provider: string }> },
 ): Promise<Response> {
   const base = oauthBaseUrl(request);
+  let userId: string;
   try {
-    await requireUserIdFromRequest(request);
+    userId = await requireUserIdFromRequest(request);
   } catch {
     return Response.redirect(new URL("/login", base), 302);
   }
@@ -29,6 +30,6 @@ export async function GET(
     return Response.redirect(new URL("/app/settings?calendar=not_configured", base), 302);
   }
   const redirectUri = new URL(`/api/calendar/callback/${providerId}`, base).toString();
-  const authUrl = provider.getAuthUrl({ state: signState(providerId), redirectUri });
+  const authUrl = provider.getAuthUrl({ state: signState(providerId, userId), redirectUri });
   return Response.redirect(authUrl, 302);
 }

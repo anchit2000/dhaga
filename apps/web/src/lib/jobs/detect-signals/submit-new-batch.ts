@@ -53,11 +53,6 @@ export async function submitNewBatch(
   const items: BatchExtractItem<SignalDetection>[] = [];
 
   for (const contact of due) {
-    await db
-      .update(contacts)
-      .set({ signalsScannedAt: new Date() })
-      .where(eq(contacts.id, contact.id));
-
     try {
       const results = await search.search(
         [contact.name, contact.companyName].filter(Boolean).join(" "),
@@ -75,14 +70,26 @@ export async function submitNewBatch(
       });
     } catch {
       // One contact's search failing must never abort the rest of the
-      // sweep (best-effort, like outbound webhooks) — it's already marked
-      // scanned above and will be picked up on the next ~6-day cycle.
+      // sweep (best-effort, like outbound webhooks) — it's still marked
+      // scanned below and will be picked up on the next ~6-day cycle.
     }
   }
 
   if (items.length > 0) {
+    // Submit and persist the batch id FIRST. If either throws, the stamp
+    // loop below never runs, so these contacts stay due and are retried on
+    // the next cron run — stamping before submit (as this used to) skipped
+    // them for ~RESCAN_AFTER_DAYS with nothing ever classified.
     const batchId = await batchClient.submitExtractBatch(items);
     await setPendingSignalBatchId(batchId);
+  }
+
+  // Mark every due contact scanned only after the batch is safely in flight.
+  for (const contact of due) {
+    await db
+      .update(contacts)
+      .set({ signalsScannedAt: new Date() })
+      .where(eq(contacts.id, contact.id));
   }
 
   return { scanned: due.length, created: createdSoFar, skipped: null };

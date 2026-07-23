@@ -11,8 +11,9 @@ let sourceUrl = "";
 let attachMode = false;
 let selectedContact: ContactHit | null = null;
 
-function setStatus(html: string, isError = false): void {
-  status.innerHTML = html;
+function setStatus(content: string | Array<string | Node>, isError = false): void {
+  const parts = typeof content === "string" ? [content] : content;
+  status.replaceChildren(...parts);
   status.className = isError ? "error" : "";
 }
 
@@ -69,18 +70,31 @@ async function save(): Promise<void> {
       id?: string; name?: string; via?: string; notice?: string | null; error?: string;
     };
     if (!response.ok) {
-      const hint =
-        response.status === 401
-          ? ` <a href="${base}/login" target="_blank">Sign in to Dhaga</a> and retry.`
-          : "";
-      setStatus(`${body.error ?? "Capture failed."}${hint}`, true);
+      const parts: Array<string | Node> = [body.error ?? "Capture failed."];
+      if (response.status === 401) {
+        const signIn = document.createElement("a");
+        signIn.href = `${base}/login`;
+        signIn.target = "_blank";
+        signIn.textContent = "Sign in to Dhaga";
+        parts.push(" ", signIn, " and retry.");
+      }
+      setStatus(parts, true);
       return;
     }
-    setStatus(
-      `${attachMode ? "Attached to" : "Saved"} <a href="${base}/app/people/${body.id}" target="_blank">${body.name}</a>` +
-        `${body.via === "heuristic" ? " (parsed offline — review the fields)" : ""}.` +
-        `${body.notice ? `<br>${body.notice}` : ""}`,
-    );
+    const contactLink = document.createElement("a");
+    contactLink.href = `${base}/app/people/${body.id}`;
+    contactLink.target = "_blank";
+    contactLink.textContent = body.name ?? "";
+    const parts: Array<string | Node> = [
+      attachMode ? "Attached to" : "Saved",
+      " ",
+      contactLink,
+      `${body.via === "heuristic" ? " (parsed offline — review the fields)" : ""}.`,
+    ];
+    if (body.notice) {
+      parts.push(document.createElement("br"), body.notice);
+    }
+    setStatus(parts);
     rawInput.value = "";
   } catch {
     const granted = await chrome.permissions.contains({

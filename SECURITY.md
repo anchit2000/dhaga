@@ -28,6 +28,11 @@ reasonable window to fix before any disclosure. We aim to acknowledge within
 
 ## Advisories
 
+- **2026-07 — calendar OAuth state binding.** The calendar OAuth `state` is now
+  bound to the initiating session's user id, and the callback rejects a state
+  whose user doesn't match the current session — closing an OAuth-CSRF /
+  connection-injection gap where an attacker's signed state and code could be
+  replayed to save their calendar tokens under a victim's account.
 - **2026-07 — signals table RLS coverage.** A proactive internal audit found
   that the `signals` table (used by the opt-in job-change / news watchlist) had
   not yet been added to hosted-mode row-level-security coverage. It was

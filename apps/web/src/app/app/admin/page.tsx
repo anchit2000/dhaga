@@ -2,8 +2,10 @@
 import Link from "next/link";
 import { dashboardCounts } from "@dhaga/ee/admin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { requireAdminForPage } from "@/lib/hosted/gate";
 
 export default async function AdminDashboardPage() {
+  await requireAdminForPage();
   const counts = await dashboardCounts();
 
   return (

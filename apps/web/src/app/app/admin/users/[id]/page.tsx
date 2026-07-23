@@ -2,6 +2,7 @@
 import { notFound } from "next/navigation";
 import { getUser, getSubscription, aiActionsThisMonthFor } from "@dhaga/ee/admin";
 import { setUserAdminAction } from "@/lib/actions/admin/users";
+import { requireAdminForPage } from "@/lib/hosted/gate";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FREE_TIER_AI_ACTIONS_PER_MONTH } from "@/utils/constants/app";
@@ -11,6 +12,7 @@ export default async function AdminUserDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await requireAdminForPage();
   const { id } = await params;
   const user = await getUser(id);
   if (!user) notFound();

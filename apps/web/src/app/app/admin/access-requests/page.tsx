@@ -2,9 +2,11 @@
 import { listAccessRequestsPage } from "@dhaga/ee/access-requests";
 import type { AccessRequestStatus } from "@dhaga/ee/access-requests";
 import { RequestsTable } from "@/components/app/table/AdminTables";
+import { requireAdminForPage } from "@/lib/hosted/gate";
 import { ACCESS_REQUEST_STATUS_OPTIONS, DEFAULT_TABLE_PAGE_SIZE, TABLE_PAGE_SIZES } from "@/utils/constants/table";
 
 export default async function AccessRequestsPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
+  await requireAdminForPage();
   const params = await searchParams;
   const requested = Number(params.pageSize);
   const pageSize = TABLE_PAGE_SIZES.includes(requested as (typeof TABLE_PAGE_SIZES)[number]) ? requested : DEFAULT_TABLE_PAGE_SIZE;

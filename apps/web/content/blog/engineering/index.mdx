@@ -1,0 +1,43 @@
+---
+title: Engineering
+description: "Deep dives on the hardest problems we solved building Dhaga — rendering a 21k-node graph in the browser, keeping an AI product's unit economics alive, isolating tenants on serverless Postgres. Executive summary up top, full engineering detail below."
+---
+
+Most of building a personal CRM is unremarkable CRUD. A few problems were not.
+This is where we write those up — every post opens with a short, plain-language
+summary of the problem and why it mattered, then drops into the real
+engineering: the numbers we measured, the approaches we rejected, and links to
+the exact code that shipped.
+
+<Cards>
+  <Card
+    title="Rendering a 21,000-node graph in the browser"
+    href="/blog/engineering/rendering-21k-node-graph"
+    description="63,000 edges, 60fps pans, and a laptop with integrated graphics — without a graph database, a server-side render farm, or a spinner that never ends."
+  />
+  <Card
+    title="The bill is the model, not the servers"
+    href="/blog/engineering/metering-the-model"
+    description="In an AI product, infrastructure is a rounding error and inference is the P&L. How we found the real cost driver, and the guardrails that keep a heavy user from costing us $7,200 a month."
+  />
+  <Card
+    title="Isolating tenants on serverless Postgres"
+    href="/blog/engineering/tenant-isolation-serverless-postgres"
+    description="Row-level security is easy to turn on and easy to get catastrophically wrong. How a connection pooler almost leaked one customer's data into another's, and the boot guard that makes it impossible."
+  />
+  <Card
+    title="The feature flag that didn't fire"
+    href="/blog/engineering/the-feature-flag-that-didnt-fire"
+    description="Our documented escape hatch for a native dependency didn't work — the app crashed on deploy anyway. A short war story about how `import` runs before your code does."
+  />
+  <Card
+    title="A schema that heals itself on cold start"
+    href="/blog/engineering/self-healing-schema"
+    description="No migration tool, no migration files, and a 15-second sign-in. How a single hash turned a full schema replay into a no-op."
+  />
+  <Card
+    title="How we build Dhaga with Claude Code"
+    href="/blog/engineering/building-with-claude-code"
+    description="A checked-in rulebook, hooks that gate every edit, and a persistent memory that survives across sessions. Our AI-assisted engineering workflow, in practice."
+  />
+</Cards>

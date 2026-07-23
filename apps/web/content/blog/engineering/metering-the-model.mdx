@@ -1,0 +1,181 @@
+---
+title: "The bill is the model, not the servers"
+description: "In an AI product, infrastructure is a rounding error and inference is the P&L. How we found the real cost driver in Dhaga, and the guardrails that keep a heavy user from costing us $7,200 a month."
+---
+
+<Callout title="The short version">
+Everyone building an AI product worries about their server bill. It's the wrong
+thing to worry about. When we modelled Dhaga's real cost to serve, the
+infrastructure came out to **$0.18–$0.41 per user per month** — and it *drops*
+as we grow. The model inference did not. Left uncapped, the AI features could
+cost **3–8× the entire infrastructure bill**, and one pathological "enrich my
+whole address book" action could run to **$7,200 in a month** for a single user.
+
+The engineering lesson: in an AI product, your unit economics live and die by
+**which model runs, how often, and whether a user can trigger unbounded work.**
+This is how we found that out, and the guardrails we built into the code so the
+worst case can't happen.
+</Callout>
+
+![The Dhaga app — every AI-powered action is metered per user from day one, so cost tracks real usage.](/blog/app-home.png)
+
+*The rest of this post is the deep dive: the cost trace we ran through the actual
+call sites, the tiered-inference architecture, and the specific caps in the
+code. Links point at the real files.*
+
+---
+
+## Why the intuition is wrong
+
+Traditional SaaS cost scales with infrastructure: more users, more database,
+more compute, bigger bill — and you fight it with caching, cheaper instances,
+and read replicas. That reflex is actively misleading for an AI product, because
+the cost curve has a completely different shape.
+
+We wrote the whole analysis up in
+[Cost & scaling on AWS](/docs/self-hosting/cost-scaling-aws). The headline number:
+across 1k / 10k / 100k users, infrastructure runs **$0.18–$0.41 per user/month
+and falls** with scale (fixed costs amortise, caches warm). Claude usage, by
+contrast, scales **linearly with activity** and, if proactive AI runs uncapped,
+**dwarfs the infra bill**.
+
+So the thing to engineer hardest isn't the database. It's **metering and capping
+the model**.
+
+## Finding the real cost driver
+
+The first cut of our cost model used napkin numbers per action. That's not good
+enough to price a product on, so we did something more honest: we traced **every
+actual LLM call site in the codebase** and re-derived the cost of each user
+action from the real model, the real token shape, and the real cadence. The
+prompt builders live in
+[`packages/core/src/llm/prompts/`](https://github.com/anchit2000/dhaga/tree/main/packages/core/src/llm/prompts)
+and the call sites in
+[`apps/web/src/lib/ai/`](https://github.com/anchit2000/dhaga/tree/main/apps/web/src/lib/ai).
+
+The per-action costs that fell out (standard Anthropic rates — Haiku 4.5 at
+\$1/\$5 per MTok, Sonnet 5 at \$3/\$15, Batch −50%):
+
+| Action | Model | ~Cost |
+|---|---|---|
+| Card / badge scan | Haiku + vision | ~\$0.002 |
+| Note extraction | Haiku | ~\$0.002 |
+| Natural-language search (plan + answer) | Haiku **+** Sonnet | ~\$0.006 |
+| Follow-up draft | Sonnet | ~\$0.004 |
+| Pre-meeting brief | Sonnet | ~\$0.006 |
+| **Enrichment** (web search) | Sonnet + native web-search tool | **~\$0.02–0.04** |
+| **Watchlist rescan** | Haiku Batch + search | **~\$0.006–0.011** |
+
+Notice which rows are an order of magnitude bigger. The cheap, high-frequency
+stuff (scans, extraction) is *not* the problem. The expensive rows are the ones
+that (a) call the big model, (b) hit an external web-search API, and (c) can run
+**per contact, on a schedule, without a human in the loop**. That last property
+is the dangerous one.
+
+### The key insight: search cost is flat, monitoring cost is not
+
+A subtle finding that shaped the whole design: **per-search cost is roughly flat
+regardless of how big your contact book is.** Vector search returns the top ~20
+matches whether you have 200 contacts or 30,000. So a giant address book doesn't
+inflate search — it inflates **storage and the *scope* of proactive
+monitoring.**
+
+That means the cost to serve the *same* user spans two orders of magnitude
+depending purely on one product decision — how much of their book we proactively
+watch and how often:
+
+- ~\$8/month if we watch ≤50 contacts, weekly.
+- ~\$105/month at 10% of a big book, weekly.
+- **~\$7,200/month** — plus a ~\$900 one-time spike — if we nightly-scan the
+  whole book and run "enrich everything" on import.
+
+Same user. The difference is entirely guardrails.
+
+## Tiered inference: never call a big model where a small one passes
+
+The first structural defence against cost is architectural: a strict hierarchy
+of *cheapest capable tier first*, encoded in the
+[LLM gateway](https://github.com/anchit2000/dhaga/tree/main/packages/core/src/llm)
+so callers depend on an interface, not a provider.
+
+1. **Free on-device primitives** where they exist (OCR, transcription,
+   embeddings) — \$0 to us.
+2. **The smallest capable model.** Extraction and parsing go to **Haiku** with a
+   Zod-derived structured-output schema — never free-text parsing, never Sonnet.
+   Search reasoning and drafts, which actually need the headroom, go to
+   **Sonnet**.
+3. **Batch API for anything latency-insensitive** (nightly enrichment, change
+   detection, digests) — half price.
+4. **Prompt-cache everything cacheable** — stable system-prompt prefix, volatile
+   content last, so the cache actually hits.
+
+The rule, stated in our engineering guidelines: *never call a bigger model where
+a smaller one passes evals.* Tiering isn't a nice-to-have; it's the difference
+between the \$0.002 row and the \$0.006 row on every single action.
+
+## The guardrails that make the disaster impossible
+
+Architecture lowers the average cost. **Caps** bound the worst case — and the
+worst case is what kills you. Three guardrails, all in code:
+
+**1. The watchlist is hard-capped, per plan.** The catastrophic \$7,200 scenario
+requires monitoring an unbounded number of contacts. It can't happen, because
+the watchlist size is a constant:
+[`FREE_TIER_WATCHLIST_CAP = 0` and `PRO_TIER_WATCHLIST_CAP = 25`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/utils/constants/app.ts#L84-L85),
+enforced in
+[`watchlistCap()`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/lib/repo/signals.ts#L15).
+Free users get *no* proactive monitoring at all; Pro users get 25 watched
+contacts, full stop.
+
+**2. Rescans are weekly-per-contact, not a nightly full sweep.** The nightly cron
+only re-scans a contact whose
+[`RESCAN_AFTER_DAYS = 6`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/lib/jobs/detect-signals/submit-new-batch.ts#L17)
+window is up. So even the watched set isn't re-billed every night — it's
+effectively weekly, and it runs on the half-price Batch API.
+
+**3. Import never auto-enriches.** Importing a LinkedIn CSV of 20,000 contacts is
+free — it's a parse, not an LLM call. We deliberately do **not** fire enrichment
+on import, because "enrich all on import" is precisely the \$900 one-time spike.
+Enrichment is always a user-triggered, per-contact action.
+
+Together these mean the brute-force cost blowup **cannot be reached from the
+product surface** — not "we'd notice and fix it," but structurally unavailable.
+
+## What's actually left unmetered — and being honest about it
+
+Good guardrails are worthless if you lie to yourself about the gaps. Ours: the
+monthly AI-action budget itself. The metering lives in
+[`assertAiBudget`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/lib/ai/metering.ts),
+which enforces a free-tier cap of 25 cloud AI actions/month — but
+`hasUnlimitedAi()` skips that cap entirely for paid tiers. So day-to-day paid
+usage is genuinely uncapped. That's a deliberate product choice, but it's a real
+exposure, and we
+
+- reworded the marketing that used to call it flatly "unlimited" to say what's
+  actually uncapped (day-to-day actions) versus the one thing that's hard-capped
+  regardless of plan (the watchlist), and
+- offer **bring-your-own-key**, which moves the entire inference bill to the user
+  at \$0 to us — the cleanest possible answer to a heavy user.
+
+We also flagged, rather than buried, an economic wrinkle: the "Annual" and "Pro"
+tiers are currently entitlement-identical in
+[`plans.ts`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/utils/constants/plans.ts),
+which means the pricing structure can reward the costliest users for picking the
+cheapest tier. That's a product decision to make deliberately when billing scope
+reopens — not something to discover in a monthly Anthropic invoice.
+
+## The takeaways
+
+1. **Model your cost from the call sites, not from intuition.** Tracing every
+   real LLM call turned a hand-wave into a table — and the table showed the
+   danger rows were the automated, per-entity, big-model ones.
+2. **In an AI product, infra is a rounding error.** Optimising your database to
+   save cents while the model bill runs 3–8× higher is fixing the wrong thing.
+3. **Tier ruthlessly.** Cheapest capable tier first — on-device, then the small
+   model, then Batch, then cache. It's the single biggest lever on average cost.
+4. **Cap the worst case in code, not in a runbook.** The dangerous scenarios all
+   share a shape: unbounded, automated, per-entity work. A constant
+   (`PRO_TIER_WATCHLIST_CAP = 25`) and a cadence (`RESCAN_AFTER_DAYS = 6`) make
+   the disaster structurally unreachable.
+5. **Be honest about what's still uncapped** — and give users BYO-key so the
+   heaviest ones can carry their own cost.

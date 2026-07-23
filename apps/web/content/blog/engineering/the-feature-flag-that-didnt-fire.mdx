@@ -1,0 +1,143 @@
+---
+title: The feature flag that didn't fire
+description: "Our documented escape hatch for a native dependency didn't work — the app crashed on deploy anyway. A short war story about how `import` runs before your code does, and why a feature flag can't gate a static import."
+---
+
+<Callout title="The short version">
+We ship on-device embeddings using a machine-learning runtime with a native
+(`.node`) binary. On our serverless host that binary isn't available, so we
+added an environment flag — `DHAGA_EMBEDDINGS=off` — and documented it as the
+fix. It didn't work. A whole page crashed on deploy with `libonnxruntime.so.1:
+cannot open shared object file`, *even with the flag set to off.*
+
+The cause is a one-liner most engineers have written a hundred times: a
+**top-level `import`**. Static imports run when a module loads — before any of
+your feature-flag code gets a chance to run. So the flag skipped *calling* the
+library but never stopped it from *loading*. The fix is to import the heavy
+dependency **dynamically**, inside the code path the flag already guards. This is
+the whole story, because the lesson is worth more than the bug.
+</Callout>
+
+*The rest of this post is the deep dive: the exact crash chain, why a barrel file
+made it worse, and the rule we now apply to every native dependency. Links point
+at the real code.*
+
+---
+
+## The feature: optional on-device embeddings
+
+Dhaga can generate vector embeddings **on-device** (free, private) using a
+transformer runtime. That runtime's backend depends on a native `onnxruntime`
+binary. On some serverless targets that `.so`/`.node` file isn't present, so we
+built an escape hatch: set `DHAGA_EMBEDDINGS=off` and the app should run fine
+without embeddings. Our deploy docs recommended exactly that.
+
+The embedder lives in
+[`apps/web/src/lib/ai/embedder.ts`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/lib/ai/embedder.ts).
+The flag check —
+[`embeddingsEnabled()`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/lib/ai/embedder.ts#L26) —
+returns false when `DHAGA_EMBEDDINGS === "off"`, and `embed()` bails out early
+when it's off. In theory, off means the native library is never touched.
+
+## The crash: off, and still dead
+
+On the serverless deploy, with the flag **off**, the `/app/people` page crashed:
+
+```
+Error: libonnxruntime.so.1: cannot open shared object file:
+No such file or directory
+```
+
+The documented mitigation didn't mitigate. And the page that crashed —
+`/app/people` — is a *read-only* page that has nothing to do with generating
+embeddings. Two mysteries: why does an off flag still load the native library,
+and why does a read page pull in the embedding runtime at all?
+
+## Why: `import` runs before your code does
+
+Here's the one that's easy to know and easy to forget. A **static, top-level
+import** executes at *module-load* time — the instant anything imports that
+module — not when you call a function inside it. The original embedder had, at
+the top of the file:
+
+```ts
+import { pipeline } from "@huggingface/transformers";
+```
+
+That package, when *it* loads, does its own static
+`import … from "onnxruntime-node"`, which tries to `dlopen` the native
+`libonnxruntime.so.1`. All of that happens as a side effect of the module being
+imported — **before** `embeddingsEnabled()` is ever evaluated. So the flag was
+doing exactly what it said: it skipped *calling* `pipeline()`. It never had a
+chance to stop the library from *loading*, because loading already happened when
+the `import` line ran.
+
+A feature flag can gate a function call. It cannot gate a static import — the
+import already ran to put the function in scope.
+
+## Why a read-only page: the barrel file
+
+The second mystery is about how the crash reached `/app/people`, a pure-read
+page. The answer is a **barrel file** — an `index.ts` that re-exports its
+siblings —
+[`apps/web/src/lib/repo/contacts/index.ts`](https://github.com/anchit2000/dhaga/tree/main/apps/web/src/lib/repo/contacts).
+It re-exports both `queries.ts` (read-only, all the people page needs) *and*
+`mutations.ts`. `mutations.ts` imports a delete helper that imports
+`repo/embeddings.ts`, which imports `embedder.ts`, which — at the top — loaded
+`onnxruntime-node`.
+
+So importing *anything* from the contacts barrel loaded the entire delete →
+embeddings → native-runtime chain, even for a page that only wanted a read query.
+Barrel files are convenient, but they make every consumer pay for the heaviest
+sibling in the barrel.
+
+## The fix: make the import dynamic and gated
+
+The fix is small and precise: don't import the heavy dependency until you're
+actually inside the flag-guarded path.
+
+1. Change the top-level value import to an
+   [`import type`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/lib/ai/embedder.ts) —
+   which is erased entirely at compile time, so it loads nothing at runtime.
+2. Move the real import to a **dynamic** `import("@huggingface/transformers")`
+   inside
+   [`getExtractor()`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/lib/ai/embedder.ts#L34),
+   the function that only runs when embeddings are enabled — and wrap it so a
+   missing native binary degrades gracefully instead of crashing.
+
+Now, with `DHAGA_EMBEDDINGS=off`, `getExtractor()` is never called, the dynamic
+import never runs, and `onnxruntime-node` is never loaded. The flag finally does
+what the docs always claimed it did. Read pages don't touch it, the deploy is
+green, and self-hosters without the native binary get a clean degrade rather than
+a crash.
+
+## The rule we apply now
+
+This generalized into a standing rule, worth stating plainly:
+
+> **Any dependency with a native (`.so`/`.node`) binary — or anything listed in
+> `serverExternalPackages` — must be imported *dynamically*, inside the code path
+> that a feature flag already guards. Never as a static top-level import.**
+
+And a corollary about barrel files:
+
+> A heavy or native import in one sibling of a barrel (`index.ts`) loads for
+> *every* consumer of that barrel, including the ones that only needed a
+> lightweight sibling. When a barrel mixes read and write modules, a read-only
+> caller can still drag in a write-only native dependency.
+
+## The takeaways
+
+1. **A feature flag can't gate a static import.** Imports have side effects at
+   load time, before your first line of logic. If the thing you're gating loads
+   at import, the flag is decorative.
+2. **`import type` is free; value imports are not.** When you only need a type,
+   say so — it's erased and costs nothing at runtime.
+3. **Gate heavy/native deps behind a dynamic `import()`** inside the already-
+   guarded path, and handle the "binary missing" case gracefully.
+4. **Audit your barrel files.** Re-exporting mutations and queries from one
+   `index.ts` means every reader pays for the writers' dependencies. Split them,
+   or import the specific module directly.
+5. **Test the escape hatch on the target.** "Set the flag to off" is only a real
+   mitigation if you've verified it on the environment that lacks the binary —
+   not just locally, where the binary happens to exist.

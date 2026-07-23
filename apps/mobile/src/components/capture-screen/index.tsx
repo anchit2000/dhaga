@@ -31,8 +31,8 @@ export default function CaptureScreen() {
     outcome,
     pendingPhoto,
     setPendingPhoto,
-    pendingCapture,
-    retryPending,
+    pendingCount,
+    drainPending,
     eventToName,
     confirmEventName,
     dismissEventPrompt,
@@ -116,9 +116,11 @@ export default function CaptureScreen() {
           )}
           <View style={styles.overlay}>
             {outcome ? <ResultBanner outcome={outcome} /> : null}
-            {pendingCapture && !busy ? (
-              <Pressable style={styles.retry} onPress={() => void retryPending()}>
-                <Text style={styles.retryLabel}>Retry unsent capture</Text>
+            {pendingCount > 0 && !busy ? (
+              <Pressable style={styles.retry} onPress={() => void drainPending()}>
+                <Text style={styles.retryLabel}>
+                  Retry {pendingCount} unsent capture{pendingCount === 1 ? "" : "s"}
+                </Text>
               </Pressable>
             ) : null}
             <BottomDock actions={dockActions} />

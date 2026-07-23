@@ -3,22 +3,22 @@ import { router, useFocusEffect } from "expo-router";
 
 import { CaptureError, captureContact } from "@/lib/api";
 import { getScanLocation } from "@/lib/geolocation";
-import { clearPendingCapture, loadPendingCapture, savePendingCapture } from "@/lib/pending-capture";
+import { dequeuePendingCapture, enqueuePendingCapture, loadPendingQueue } from "@/lib/pending-capture";
 import { isConfigured, loadSettings } from "@/lib/settings";
 
 import { useEventNamePrompt } from "./use-event-name";
 import { usePhotoCapture } from "./use-photo-capture";
 
 import type { CaptureRequest } from "@dhaga/core/src/api/capture";
-import type { MobileSettings, ScanOutcome, ScanPath, ScanPayload } from "@/types";
+import type { MobileSettings, ScanOutcome, ScanPath } from "@/types";
 
 export type CaptureMode = "camera" | "text";
 
 /**
  * All state and side effects behind the capture screen — settings, the
  * camera/text/crop mode switch, submission to /api/capture (with a persisted
- * retry buffer for failed sends), and the one-time event-name prompt. Photo
- * acquisition lives in usePhotoCapture; this hook owns submission so the
+ * FIFO retry queue for failed sends), and the one-time event-name prompt.
+ * Photo acquisition lives in usePhotoCapture; this hook owns submission so the
  * screen component stays render-only.
  */
 export function useCaptureFlow() {
@@ -28,9 +28,9 @@ export function useCaptureFlow() {
   const [voiceHint, setVoiceHint] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [outcome, setOutcome] = useState<ScanOutcome | null>(null);
-  // A capture whose POST failed, restored from disk so it survives app restarts
-  // and stays retryable (see @/lib/pending-capture). Null when nothing is queued.
-  const [pendingCapture, setPendingCapture] = useState<ScanPayload | null>(null);
+  // How many captures whose POST failed are queued for retry (see
+  // @/lib/pending-capture); restored from disk so they survive app restarts.
+  const [pendingCount, setPendingCount] = useState(0);
   const { eventToName, setEventToName, confirmEventName, dismissEventPrompt } =
     useEventNamePrompt(settings);
   const photo = usePhotoCapture({ busy, setBusy, setOutcome, finish });
@@ -41,38 +41,43 @@ export function useCaptureFlow() {
         if (isConfigured(loaded)) setSettings(loaded);
         else router.replace("/setup");
       });
-      void loadPendingCapture().then(setPendingCapture);
+      void loadPendingQueue().then((queue) => setPendingCount(queue.length));
     }, []),
   );
 
-  /** New capture: resolve the (permission-gated) scan location, then POST. */
+  /** New capture: resolve the (permission-gated) scan location, POST, and
+   * append the body to the retry queue if the send fails. */
   async function finish(request: CaptureRequest, path: ScanPath): Promise<void> {
     if (!settings) return;
     setBusy(true);
     const location = await getScanLocation();
-    await runCapture(settings, { ...request, ...location }, path, false);
+    const body: CaptureRequest = { ...request, ...location };
+    const ok = await runCapture(settings, body, path);
+    if (!ok) setPendingCount((await enqueuePendingCapture({ request: body, path })).length);
     setBusy(false);
   }
 
-  /** Re-POST the buffered capture that previously failed (e.g. while offline). */
-  async function retryPending(): Promise<void> {
-    if (!settings || busy || !pendingCapture) return;
+  /** Drain the queue in FIFO order: resend each entry, remove it on success,
+   * and stop at the first failure (still offline) so order and the rest hold. */
+  async function drainPending(): Promise<void> {
+    if (!settings || busy) return;
+    const queue = await loadPendingQueue();
+    if (queue.length === 0) return setPendingCount(0);
     setBusy(true);
-    await runCapture(settings, pendingCapture.request, pendingCapture.path, true);
+    for (const entry of queue) {
+      if (!(await runCapture(settings, entry.request, entry.path))) break;
+      setPendingCount((await dequeuePendingCapture(entry.id)).length);
+    }
     setBusy(false);
   }
 
-  /**
-   * POST an already-built body. On failure the body is persisted so it can be
-   * retried instead of forcing a re-scan. `isRetry` only clears the buffer on
-   * success: a new capture succeeding must NOT drop a still-unsent earlier one.
-   */
+  /** POST an already-built body; sets the result banner and returns whether it
+   * succeeded. Queue bookkeeping is the caller's (finish enqueues, drain dequeues). */
   async function runCapture(
     activeSettings: MobileSettings,
     body: CaptureRequest,
     path: ScanPath,
-    isRetry: boolean,
-  ): Promise<void> {
+  ): Promise<boolean> {
     setOutcome(null);
     const startedAt = Date.now();
     try {
@@ -90,17 +95,12 @@ export function useCaptureFlow() {
       if (event?.isNew) setEventToName(event.id);
       setText("");
       setVoiceHint(null);
-      if (isRetry) {
-        clearPendingCapture();
-        setPendingCapture(null);
-      }
+      return true;
     } catch (error) {
       const message =
         error instanceof CaptureError || error instanceof Error ? error.message : "Something went wrong. Try again.";
       setOutcome({ kind: "error", message });
-      const pending: ScanPayload = { request: body, path };
-      savePendingCapture(pending);
-      setPendingCapture(pending);
+      return false;
     }
   }
 
@@ -123,8 +123,8 @@ export function useCaptureFlow() {
     outcome,
     pendingPhoto: photo.pendingPhoto,
     setPendingPhoto: photo.setPendingPhoto,
-    pendingCapture,
-    retryPending,
+    pendingCount,
+    drainPending,
     eventToName,
     confirmEventName,
     dismissEventPrompt,

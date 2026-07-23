@@ -21,6 +21,12 @@ export interface ScanPayload {
   path: ScanPath;
 }
 
+/** A ScanPayload queued after a failed send, with an id for FIFO dequeue. */
+export interface PendingCapture extends ScanPayload {
+  /** Assigned at enqueue; identifies the entry when it's removed on success. */
+  id: string;
+}
+
 /** Outcome of one shutter press, rendered on the capture screen. */
 export type ScanOutcome =
   | {

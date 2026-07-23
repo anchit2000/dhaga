@@ -1,43 +1,63 @@
 import { File, Paths } from "expo-file-system";
 
-import type { ScanPayload } from "@/types";
+import type { PendingCapture, ScanPayload } from "@/types";
 
 /**
- * A single failed capture, persisted so an offline/failed POST /api/capture
- * isn't lost when the screen forgets it (the photo is nulled and the built
- * body lived only in function scope). Local-first requirement, CLAUDE.md
- * architecture principle #1: the capture survives even if the server is
- * unreachable. Stored to the document directory (safe from OS eviction) as
- * the already-built request body — OCR `raw` text or the resized photo's
- * `imageBase64` — so a retry re-sends exactly what failed.
+ * FIFO queue of failed captures, persisted so an offline/failed POST
+ * /api/capture is never lost (the photo is nulled and the built body lived
+ * only in function scope). Local-first requirement, CLAUDE.md architecture
+ * principle #1: captures survive even if the server is unreachable. Stored to
+ * the document directory (safe from OS eviction) as the already-built request
+ * bodies — OCR `raw` text or the resized photo's `imageBase64` — so each retry
+ * re-sends exactly what failed.
  *
- * One buffer only (no queue): a second failure replaces the first. Enough for
- * the "capture, notice it didn't send, retry" flow without conflict handling.
+ * The whole ordered array is written atomically on every change; appends never
+ * overwrite an existing entry, so a second (third, …) failure is preserved and
+ * retried in order.
  */
-const bufferFile = new File(Paths.document, "pending-capture.json");
+const queueFile = new File(Paths.document, "pending-capture.json");
 
-export async function loadPendingCapture(): Promise<ScanPayload | null> {
+export async function loadPendingQueue(): Promise<PendingCapture[]> {
   try {
-    if (!bufferFile.exists) return null;
-    return JSON.parse(await bufferFile.text()) as ScanPayload;
+    if (!queueFile.exists) return [];
+    const parsed: unknown = JSON.parse(await queueFile.text());
+    return Array.isArray(parsed) ? (parsed as PendingCapture[]) : [];
   } catch {
-    // Missing/corrupt buffer — treat as nothing pending.
-    return null;
+    // Missing/corrupt queue — treat as nothing pending.
+    return [];
   }
 }
 
-export function savePendingCapture(pending: ScanPayload): void {
-  try {
-    bufferFile.write(JSON.stringify(pending));
-  } catch {
-    // Best-effort: a failed persist just means this capture can't be retried.
-  }
+/** Append a failed capture to the tail; returns the updated queue. */
+export async function enqueuePendingCapture(payload: ScanPayload): Promise<PendingCapture[]> {
+  const next = [...(await loadPendingQueue()), { ...payload, id: makeId() }];
+  writeQueue(next);
+  return next;
 }
 
-export function clearPendingCapture(): void {
+/** Remove the entry with this id (on successful resend); returns the updated queue. */
+export async function dequeuePendingCapture(id: string): Promise<PendingCapture[]> {
+  const next = (await loadPendingQueue()).filter((entry) => entry.id !== id);
+  writeQueue(next);
+  return next;
+}
+
+export async function countPendingCaptures(): Promise<number> {
+  return (await loadPendingQueue()).length;
+}
+
+function makeId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function writeQueue(queue: PendingCapture[]): void {
   try {
-    if (bufferFile.exists) bufferFile.delete();
+    if (queue.length === 0) {
+      if (queueFile.exists) queueFile.delete();
+      return;
+    }
+    queueFile.write(JSON.stringify(queue));
   } catch {
-    // Nothing to clear, or already gone.
+    // Best-effort: a failed persist just means these captures can't be retried.
   }
 }

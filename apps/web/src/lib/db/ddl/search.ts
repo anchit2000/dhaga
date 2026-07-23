@@ -50,4 +50,13 @@ ALTER TABLE signals ADD COLUMN IF NOT EXISTS search_tsv tsvector GENERATED ALWAY
   setweight(to_tsvector('english', coalesce(detail, '')), 'B')
 ) STORED;
 CREATE INDEX IF NOT EXISTS signals_search_tsv_idx ON signals USING GIN (search_tsv);
+
+-- Node-label typeahead (searchGraphTargets, GET /api/graph/targets): the picker
+-- matches names with ILIKE '%term%'. A leading wildcard the tsvector GIN above
+-- can't serve, so back each searched name column with a trigram GIN index to
+-- keep the lazy-loaded combobox off a sequential scan as the graph grows.
+CREATE INDEX IF NOT EXISTS contacts_name_trgm_idx ON contacts USING GIN (name gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS companies_name_trgm_idx ON companies USING GIN (name gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS entities_name_trgm_idx ON entities USING GIN (name gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS events_name_trgm_idx ON events USING GIN (name gin_trgm_ops);
 `;

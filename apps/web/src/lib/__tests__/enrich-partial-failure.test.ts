@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createContact } from "@/lib/repo/contacts";
 import { listFacts, listNotes } from "@/lib/repo/notes";
 import { createExtractionJob, getExtractionJob } from "@/lib/repo/extraction-jobs";
@@ -49,6 +49,17 @@ async function seedContact(name: string): Promise<string> {
     "manual",
   );
 }
+
+// Enrichment is a metered AI action. This suite tests note durability and
+// fact-verification, not the free-tier gate — cloud AI is now paid (free
+// cap = 0), so grant budget via DHAGA_AI_MONTHLY_CAP (the self-host/paid path)
+// or assertAiBudget throws before the enrichment job saves anything.
+beforeEach(() => {
+  vi.stubEnv("DHAGA_AI_MONTHLY_CAP", "1000");
+});
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 describe("background enrichment job", () => {
   it("extracts web findings as unverified facts and completes", async () => {

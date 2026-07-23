@@ -3,14 +3,18 @@
 import { useMemo, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { AttachTargetSearch } from "@/components/app/AttachTargetSearch";
-import { attachContactToEventAction } from "@/lib/actions/event-membership";
+import { EntityCombobox } from "@/components/app/EntityCombobox";
+import {
+  attachContactToEventAction,
+  createEventAndAttachAction,
+} from "@/lib/actions/event-membership";
 import type { GraphTarget } from "@/lib/repo/graph-data";
 
 /**
- * Contact-page control: search existing events and add this person to one —
- * the "same person at multiple events" path. Current events already show as
- * chips above; the picker excludes them and the page re-renders on attach.
+ * Contact-page control: a compact "Add to group" button that opens a searchable
+ * dropdown of existing groups (with a "Create group" affordance), instead of a
+ * bare text box. Current groups already show as chips above; the picker
+ * excludes them and the page re-renders on attach.
  */
 export function AddToEventPicker({
   contactId,
@@ -35,12 +39,28 @@ export function AddToEventPicker({
     });
   }
 
+  function createGroup(name: string): void {
+    startTransition(async () => {
+      const result = await createEventAndAttachAction(name, contactId);
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success(`Added to ${name}.`);
+      router.refresh();
+    });
+  }
+
   return (
-    <AttachTargetSearch
-      kind="event"
+    <EntityCombobox
+      kinds={["event"]}
       excludeIds={excludeIds}
-      onPick={attach}
-      placeholder="Add to an event — search…"
+      onSelect={attach}
+      onCreate={createGroup}
+      createLabel="Create group"
+      placeholder="Search groups…"
+      triggerLabel="Add to group"
+      clearOnSelect
       disabled={pending}
     />
   );

@@ -2,6 +2,7 @@
 
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { EntityCombobox } from "@/components/app/EntityCombobox";
 import { RepeatableList } from "./RepeatableList";
 import type { ContactMethod, Position } from "@dhaga/core";
 
@@ -90,10 +91,13 @@ export function PositionSection({
                 placeholder="Title"
                 onChange={(event) => update({ title: event.target.value })}
               />
-              <Input
-                value={item.company ?? ""}
+              <EntityCombobox
+                kinds={["company"]}
+                inputValue={item.company ?? ""}
+                onInputValueChange={(value) => update({ company: value })}
+                onSelect={(target) => update({ company: target.label })}
                 placeholder="Company"
-                onChange={(event) => update({ company: event.target.value })}
+                inputClassName="h-8"
               />
               <Input
                 value={item.department ?? ""}

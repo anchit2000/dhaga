@@ -345,7 +345,7 @@ LLMs are the main marginal cost. Verified current pricing (Anthropic, mid-2026):
 
 ### 8.3 Unit economics (order-of-magnitude)
 
-Per-card pipeline (OCR parse ≈ 800 in / 200 out tokens on Haiku): **≈ $0.002**. Voice-note extraction (≈ 1,500 in / 300 out): **≈ $0.003**. NL search with cached system prompt: **≈ $0.005** on Sonnet. A *heavy* user — 100 cards + 100 notes + 200 searches + nightly digests per month — costs **≈ $1.50–2.50/month** in inference. At a $8–10/month Pro price (or $99 lifetime ≈ amortized $2.75/mo over 3 years), gross margin stays >70% even before caching/batch savings. The free tier caps cloud AI actions (e.g. 25/month) and runs everything else on-device — free users cost ~$0.
+Per-card pipeline (OCR parse ≈ 800 in / 200 out tokens on Haiku): **≈ $0.002**. Voice-note extraction (≈ 1,500 in / 300 out): **≈ $0.003**. NL search with cached system prompt: **≈ $0.005** on Sonnet. A *heavy* user — 100 cards + 100 notes + 200 searches + nightly digests per month — costs **≈ $1.50–2.50/month** in inference. At a $8–10/month Pro price (or $99 lifetime ≈ amortized $2.75/mo over 3 years), gross margin stays >70% even before caching/batch savings. The free tier gets no cloud AI at all — cloud AI is a paid feature (Pro and up) — and runs everything else on-device, so free users cost ~$0. Self-hosters re-enable AI on the free tier via `DHAGA_AI_MONTHLY_CAP`.
 
 ### 8.4 Revenue streams
 

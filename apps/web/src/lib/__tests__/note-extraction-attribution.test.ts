@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createContact } from "@/lib/repo/contacts";
 import { addNote } from "@/lib/repo/notes";
 import { extractAndApplyNote } from "@/lib/ai/note-extraction";
@@ -33,6 +33,16 @@ vi.mock("@dhaga/core", async (importOriginal) => {
     },
   };
   return { ...actual, hasLLM: () => true, getLLMClient: () => client };
+});
+
+// This test is about failure attribution (graph write vs. AI call), not the
+// free-tier gate. Cloud AI is now paid (free cap = 0), so grant budget via
+// DHAGA_AI_MONTHLY_CAP or assertAiBudget throws before extraction runs.
+beforeEach(() => {
+  vi.stubEnv("DHAGA_AI_MONTHLY_CAP", "1000");
+});
+afterEach(() => {
+  vi.unstubAllEnvs();
 });
 
 describe("note extraction attributes graph-write failures correctly", () => {

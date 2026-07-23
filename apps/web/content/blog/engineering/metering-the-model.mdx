@@ -149,7 +149,8 @@ product surface** — not "we'd notice and fix it," but structurally unavailable
 Good guardrails are worthless if you lie to yourself about the gaps. Ours: the
 monthly AI-action budget itself. The metering lives in
 [`assertAiBudget`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/lib/ai/metering.ts),
-which enforces a free-tier cap of 25 cloud AI actions/month — but
+which enforces a free-tier cap of 0 cloud AI actions/month — cloud AI is a
+paid feature, so the free tier does no cloud AI at all — while
 `hasUnlimitedAi()` skips that cap entirely for paid tiers. So day-to-day paid
 usage is genuinely uncapped. That's a deliberate product choice, but it's a real
 exposure, and we

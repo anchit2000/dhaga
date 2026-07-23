@@ -7,12 +7,37 @@ import { enforceRateLimit, RateLimitError } from "@/lib/ratelimit";
 import { FREE_TIER_AI_ACTIONS_PER_MONTH } from "@/utils/constants/app";
 import type { LLMUsage } from "@dhaga/core";
 
-/** Self-hosters raise the cap via DHAGA_AI_MONTHLY_CAP; hosted free tier = 25. */
+/**
+ * Self-hosters raise the cap via DHAGA_AI_MONTHLY_CAP; hosted free tier = 0
+ * (cloud AI is a paid feature). A self-hoster who wants AI on the free tier
+ * sets this env var to a positive number.
+ */
 export function monthlyAiCap(): number {
   const fromEnv = Number(process.env.DHAGA_AI_MONTHLY_CAP);
   return Number.isFinite(fromEnv) && fromEnv > 0
     ? fromEnv
     : FREE_TIER_AI_ACTIONS_PER_MONTH;
+}
+
+/**
+ * The AI-usage line shown in-app. Free tier has no cloud AI (cap 0), so a raw
+ * "0 of 0 used" would read as broken — surface that AI is a paid feature
+ * instead. Unlimited (paid) users see their running count; self-hosters who
+ * raised the cap via DHAGA_AI_MONTHLY_CAP see "used of cap". Returns null when
+ * there is nothing meaningful to show. Server-safe (no DB or client imports).
+ */
+export function aiUsageLabel({
+  used,
+  cap,
+  unlimited,
+}: {
+  used: number;
+  cap: number;
+  unlimited: boolean;
+}): string | null {
+  if (unlimited) return `${used} AI actions used`;
+  if (cap <= 0) return "Cloud AI is a paid feature — upgrade to enable AI actions";
+  return `${used} of ${cap} AI actions used`;
 }
 
 export async function aiActionsUsedThisMonth(): Promise<number> {

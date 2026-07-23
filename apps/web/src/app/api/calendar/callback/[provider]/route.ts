@@ -13,8 +13,9 @@ export async function GET(
   { params }: { params: Promise<{ provider: string }> },
 ): Promise<Response> {
   const base = oauthBaseUrl(request);
+  let userId: string;
   try {
-    await requireUserIdFromRequest(request);
+    userId = await requireUserIdFromRequest(request);
   } catch {
     return Response.redirect(new URL("/login", base), 302);
   }
@@ -25,7 +26,7 @@ export async function GET(
   if (url.searchParams.get("error") || !code || !state) {
     return Response.redirect(new URL("/app/settings?calendar=error", base), 302);
   }
-  if (!verifyState(state, providerId)) {
+  if (!verifyState(state, providerId, userId)) {
     return Response.redirect(new URL("/app/settings?calendar=bad_state", base), 302);
   }
   try {

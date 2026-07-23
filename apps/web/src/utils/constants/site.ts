@@ -4,7 +4,7 @@ import type { MetadataRoute } from "next";
 // across metadata, sitemap, robots, JSON-LD, and share links. Overridable per
 // environment via NEXT_PUBLIC_SITE_URL; falls back to the production deployment.
 export const SITE_URL: string =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://dhaga-web.vercel.app";
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.dhaga.app";
 
 export const SITE_NAME = "Dhaga";
 

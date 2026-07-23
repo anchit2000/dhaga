@@ -4,8 +4,8 @@ Everything below is ready to paste into the [developer dashboard](https://chrome
 The upload artifact is `dhaga-extension-v1.0.0.zip` (rebuild any time with
 `npm run package --workspace @dhaga/extension`).
 
-The app is live at `https://dhaga-web.vercel.app` (privacy policy:
-[/privacy](https://dhaga-web.vercel.app/privacy) — verified 200, 2026-07-04).
+The app is live at `https://www.dhaga.app` (privacy policy:
+[/privacy](https://www.dhaga.app/privacy) — verified 200, 2026-07-04).
 
 **Remaining before you can submit:**
 
@@ -93,7 +93,7 @@ browser. Point the extension at your instance in its options.
 - I do not use or transfer user data for purposes that are unrelated to my item's single purpose
 - I do not use or transfer user data to determine creditworthiness or for lending purposes
 
-**Privacy policy URL:** `https://dhaga-web.vercel.app/privacy`
+**Privacy policy URL:** `https://www.dhaga.app/privacy`
 
 ## Review notes (private, for the reviewer)
 
@@ -103,7 +103,7 @@ This extension is a companion to Dhaga, an open-source personal CRM
 user's own Dhaga instance.
 
 Test setup:
-1. Instance: https://dhaga-web.vercel.app  — sign in with:
+1. Instance: https://www.dhaga.app  — sign in with:
    email: <test-account-email>  password: <test-account-password>
 2. In the extension options, set the instance URL to the above and allow
    access when prompted.

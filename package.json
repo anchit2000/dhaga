@@ -8,7 +8,15 @@
     "packages/*"
   ],
   "overrides": {
-    "postcss": "^8.5.16"
+    "postcss": "^8.5.16",
+    "sharp": "^0.35.0",
+    "adm-zip": "^0.6.0",
+    "@hono/node-server": "^2.0.5",
+    "protobufjs": "^7.6.5",
+    "uuid": "^11.1.1",
+    "minimatch@3": {
+      "brace-expansion": "^1.1.16"
+    }
   },
   "repository": {
     "type": "git",

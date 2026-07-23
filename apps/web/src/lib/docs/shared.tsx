@@ -19,3 +19,20 @@ export const docsBaseOptions: BaseLayoutProps = {
     transparentMode: "none",
   },
 };
+
+// Same brand mark, pointed at the engineering blog surface.
+export const blogBaseOptions: BaseLayoutProps = {
+  githubUrl: GITHUB_URL,
+  nav: {
+    title: (
+      <span className="font-display text-lg tracking-tight">
+        dhaga<span className="text-amber">.</span>
+        <span className="ml-2 font-mono text-[11px] uppercase tracking-widest text-fog">
+          blog
+        </span>
+      </span>
+    ),
+    url: "/blog",
+    transparentMode: "none",
+  },
+};

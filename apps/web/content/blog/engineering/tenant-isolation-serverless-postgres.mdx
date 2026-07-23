@@ -1,0 +1,187 @@
+---
+title: Isolating tenants on serverless Postgres
+description: "Row-level security is easy to turn on and easy to get catastrophically wrong. How a connection pooler almost leaked one customer's data into another's in Dhaga Cloud, and the boot guard that makes it impossible."
+---
+
+<Callout title="The short version">
+Dhaga Cloud is multi-tenant: many customers' relationship graphs live in one
+Postgres database, kept apart by Postgres **row-level security (RLS)**. RLS is
+the right tool — but the way we scope each request (a per-connection session
+setting that says "you are user X") collides violently with how serverless
+connection *poolers* work. In transaction-pooling mode, that setting can leak
+onto the **wrong** connection, and one tenant can render another tenant's data.
+
+We caught it in end-to-end testing, not production. The fix is two parts: a
+**fail-loud boot guard** that refuses to start in the unsafe pooler mode, and a
+**connection-reuse discipline** that scrubs every session variable (`RESET ALL`)
+before a connection goes back in the pool. This post is the whole trap and the
+whole fix.
+</Callout>
+
+*The rest of this post is the deep dive. It's a good read for anyone running RLS
+behind a connection pooler on serverless — the failure mode is subtle and the
+blast radius is "cross-tenant data exposure." Links point at the real code.*
+
+---
+
+## The setup: RLS, and how a request says who it is
+
+The multi-tenant machinery lives in
+[`packages/ee/src/db/`](https://github.com/anchit2000/dhaga/tree/main/packages/ee/src/db) —
+the source-available Cloud package. Self-hosting a single-tenant Dhaga needs none
+of it.
+
+Every tenant-scoped table carries a `user_id`, and an RLS policy says *you can
+only see rows where `user_id` matches the current request's user.* The
+[policy DDL](https://github.com/anchit2000/dhaga/blob/main/packages/ee/src/db/rls-ddl.ts)
+expresses "the current request's user" as a Postgres session setting:
+
+```sql
+-- a row is visible if you're the admin, or it's yours
+USING (
+  current_setting('app.bypass_rls', true) = 'true'
+  OR user_id = current_setting('app.current_user_id', true)
+)
+```
+
+So before running a tenant's queries, we set that variable on the connection —
+[`set_config('app.current_user_id', <the user>, …)`](https://github.com/anchit2000/dhaga/blob/main/packages/ee/src/db/bootstrap.ts#L32) —
+and Postgres does the rest. Admin/webhook code paths set
+[`app.bypass_rls`](https://github.com/anchit2000/dhaga/blob/main/packages/ee/src/db/admin-db.ts#L16)
+instead. Clean, database-enforced isolation: even a bug in application code can't
+return another tenant's rows, because the *database* filters them.
+
+That's the theory. Now the trap.
+
+## The trap: session state and transaction pooling don't mix
+
+Serverless functions can't hold long-lived Postgres connections — there can be
+thousands of concurrent function invocations and Postgres tops out at a few
+hundred connections. So you put a **pooler** in front. Supabase (our managed
+Postgres) offers two modes, and the difference is the whole story:
+
+| Pooler mode | Port | How it hands out backends |
+|---|---|---|
+| **Session** | 5432 | One backend per client connection, for the life of that connection |
+| **Transaction** | 6543 | A backend is borrowed **per transaction** and can change between queries |
+
+Our isolation depends on a **session-level** setting — `app.current_user_id`
+persists on a connection across queries. Transaction pooling breaks that
+assumption in two distinct, both-bad ways:
+
+1. **Silent under-fetch.** You `set_config` on one backend, then your next query
+   runs on a *different* backend that never got the setting. `current_setting(…,
+   true)` returns empty, the RLS policy matches nothing, and the tenant sees an
+   empty graph. Annoying, but fail-safe.
+2. **Cross-tenant leak.** The genuinely dangerous one. A backend that still
+   carries tenant A's `app.current_user_id` gets handed to a request for tenant
+   B. Now tenant B's queries run *as tenant A* — B renders A's data. That's not a
+   bug, that's an incident.
+
+We proved case (1)/(2) live in an end-to-end test on 2026-07-16: intermittent
+zero-row renders, and the session setting bleeding across pooled backends. The
+scariest part is how *quiet* it is — most requests are fine, because most of the
+time the backend you get happens to be yours.
+
+## Fix part one: refuse to boot in the unsafe mode
+
+The first defence is to make the unsafe configuration **impossible to run**, not
+merely discouraged. If Dhaga Cloud is pointed at the transaction pooler, it
+should not start — loudly — rather than start and occasionally leak.
+
+That's a
+[fail-loud boot guard in `bootstrap.ts`](https://github.com/anchit2000/dhaga/blob/main/packages/ee/src/db/bootstrap.ts):
+tenant scoping *uses session-level `set_config`, which transaction pooling
+silently breaks*, so the guard checks the connection mode at startup and throws
+if it's wrong. The `DATABASE_URL` must point at the session pooler (port 5432).
+This is a direct application of our "fail loud" principle: a misconfiguration
+that could expose data must crash the deploy, not degrade silently in
+production.
+
+## Fix part two: scrub every connection before reuse
+
+The boot guard makes session mode mandatory. But session mode surfaces a
+*second* problem, and this is where it gets subtle.
+
+Under session pooling we run **small, per-role connection pools** — a tenant pool
+(default max 3, via
+[`DB_POOL_MAX_TENANT`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/utils/constants/db.ts))
+and a core pool (default max 2), so a single serverless instance holds at most 5
+of Supabase's shared connection slots. One instance hoarding all the slots is its
+own outage, so those maxes are deliberately low and **must not be raised
+blindly.**
+
+Small pools mean connections get **reused** across requests. And a reused
+connection still carries the `app.current_user_id` (or `app.bypass_rls`) from
+whoever used it last. If request B checks out the connection request A just
+returned, B inherits A's identity — the exact cross-tenant leak we were trying to
+kill, reintroduced by connection reuse.
+
+There are two ways to handle a returned connection:
+
+- **Destroy it** (`release(true)`). Safe — the session state dies with it — but
+  brutal: with a pool of 3, destroy-on-release means a fresh TLS + auth handshake
+  on nearly every request. Across regions (see below) that alone was seconds of
+  latency.
+- **Scrub and reuse.** Keep the connection, but wipe every customized session
+  variable first.
+
+We do the second, in a helper called
+[`releaseScoped`](https://github.com/anchit2000/dhaga/blob/main/packages/ee/src/db/pool.ts#L70):
+run `RESET ALL`, then return the connection to the pool; only if the reset itself
+fails do we fall back to destroying it. `RESET ALL` clears **every** session
+customization — both `app.current_user_id` and `app.bypass_rls` — so no tenant
+identity and no admin bypass can ride a reused connection into the next request.
+We verified against real Postgres that `RESET ALL` actually clears both GUCs;
+"probably" is not good enough when the failure mode is cross-tenant exposure.
+
+The result: connections are reused (fast) **and** carry no identity across
+checkouts (safe). We stopped paying for a handshake per request without
+reopening the leak.
+
+## Proving it stays fixed
+
+A subtle isolation guarantee that isn't tested is a guarantee that will regress.
+This work shipped alongside the EE package's **first automated test harness**:
+
+- A **contract test** that `releaseScoped` issues `RESET ALL` and returns the
+  connection to the pool.
+- A **real-Postgres integration test** (skipped when no database URL is present)
+  that reuses a connection across two tenants and asserts **no `user_id`/bypass
+  leak** and correct RLS isolation — verified green against Supabase.
+
+So the two failure modes — leak-on-reuse and wrong-pooler-mode — each have
+something that fails loudly if they ever come back: a test for the first, a boot
+guard for the second.
+
+## A footnote that cost real milliseconds: put the function next to the database
+
+While chasing this we found an orthogonal but expensive issue: the Supabase
+database was in Sydney (`ap-southeast-2`) and the Vercel function was running in
+US-East. Every query paid a ~200ms cross-Pacific round trip, and a page doing a
+dozen queries paid it a dozen times — a big chunk of an 11-second render. Pinning
+the function to the database's region is the fix. It's a reminder that in
+serverless, *where your compute runs relative to your data* is a first-class
+performance decision, not an afterthought.
+
+## The takeaways
+
+1. **RLS is enforced by the database — but scoped by your connection.** The
+   moment a pooler can move your queries to a different backend, or hand your
+   backend to someone else, your isolation model has a hole. Understand your
+   pooler's mode before you trust session-scoped RLS.
+2. **Make the unsafe config refuse to boot.** A fail-loud guard that crashes on
+   the transaction pooler is worth more than a paragraph in a runbook nobody
+   reads.
+3. **Reuse connections, but scrub them.** `RESET ALL` on release buys you pooled
+   performance without leaking session identity. Destroy-on-release is safe but
+   slow; scrub-on-release is safe and fast.
+4. **Test the isolation itself.** A real two-tenant integration test that asserts
+   "B cannot see A" is the only thing that keeps a silent leak from coming back.
+5. **Co-locate compute and data.** Cross-region round trips are invisible in dev
+   and painful in prod.
+
+*The multi-tenant code is source-available under
+[`packages/ee/`](https://github.com/anchit2000/dhaga/tree/main/packages/ee) —
+and self-hosting a single-tenant instance needs none of it. See
+[Self-hosting](/docs/self-hosting).*

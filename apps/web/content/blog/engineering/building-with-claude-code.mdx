@@ -1,0 +1,156 @@
+---
+title: How we build Dhaga with Claude Code
+description: "A checked-in rulebook the AI must obey, hooks that gate every single edit, and a persistent memory that survives across sessions. Our AI-assisted engineering workflow — the practices that make an agent a reliable contributor instead of a fast intern who forgets everything."
+---
+
+<Callout title="The short version">
+A large share of Dhaga is written with an AI coding agent. That only works
+because the agent operates inside guardrails we built *for* it: a **checked-in
+rulebook** (`CLAUDE.md`) it must follow on every task, **hooks** that
+automatically type-check, lint, and length-check every file the moment it's
+edited, and a **persistent memory** that carries hard-won context across
+sessions so the same mistake isn't made twice.
+
+The lesson we keep re-learning: an AI agent's output quality is bounded by the
+*system* around it, not the model alone. Fast code generation is worthless if
+it's subtly wrong or inconsistent with the codebase. This post is the setup that
+makes an agent a dependable teammate — a rulebook, a set of reflexes, and a
+memory.
+</Callout>
+
+*The rest of this post is the deep dive on each piece — the rules, the hooks, and
+the memory — and why each one exists. If you're trying to get real engineering
+work out of a coding agent, this is what "putting it on rails" actually looks
+like in practice.*
+
+---
+
+## 1. A rulebook the agent must obey: `CLAUDE.md`
+
+The single highest-leverage artifact is
+[`CLAUDE.md`](https://github.com/anchit2000/dhaga/blob/main/CLAUDE.md) at the repo
+root — a checked-in file the agent reads at the start of every task and treats as
+overriding its defaults. It's not documentation for humans; it's an operating
+contract for the AI.
+
+It encodes the things a good senior engineer would enforce in review, stated so
+plainly that an agent can't rationalize around them. A few of the rules that
+matter most:
+
+- **Think before coding.** State assumptions; when uncertain, ask instead of
+  guessing; push back when a simpler approach exists; *stop when confused and
+  name what's unclear.* This alone kills most confidently-wrong output.
+- **Simplicity first / surgical changes.** Minimum code that solves the problem;
+  touch only what you must; don't "improve" adjacent code or refactor what isn't
+  broken. Agents love to helpfully rewrite things — this forbids it.
+- **Read before you write.** Read exports, callers, and shared utilities before
+  adding code. "Looks orthogonal" is called out explicitly as dangerous.
+- **Fail loud.** "Completed" is wrong if anything was skipped silently; "tests
+  pass" is wrong if any were skipped. Surface uncertainty, don't hide it.
+- **Docs track code.** Every change updates the docs it affects, in the same PR.
+  A merged change that leaves docs describing old behavior is treated as a bug.
+- **Match the codebase's conventions, even if you disagree.** Conformance beats
+  taste; surface a genuinely harmful convention, but don't fork silently.
+
+The file also pins the **decided stack** ("do not re-litigate without asking"),
+the **file-organization rules** (constants live in one place; a file over 150
+lines becomes a directory), and the **architecture patterns** — including the
+gateway pattern below. The effect is that the agent starts every task already
+knowing the house style, the tech decisions, and the tripwires, instead of
+inventing its own each time.
+
+### Local rulebooks for local surprises
+
+Rules can be scoped to a subtree. The web app carries its own
+[`AGENTS.md`](https://github.com/anchit2000/dhaga/blob/main/apps/web/AGENTS.md)
+with a blunt warning that its framework version has breaking changes versus what
+the model was trained on — *read the installed docs before writing code.* It's a
+targeted antidote to the most common agent failure mode: confidently writing code
+against a remembered-but-outdated API.
+
+## 2. Reflexes on every edit: hooks
+
+Rules the agent *should* follow are good; checks that run whether it followed them
+or not are better. Dhaga wires **PostToolUse hooks** that fire automatically after
+every file write or edit — the agent can't skip them, because the harness runs
+them, not the model. Three run on every `.ts`/`.tsx` file it touches:
+
+| Hook | What it does | Why |
+|---|---|---|
+| **File-length guard** | Warns when a file exceeds **150 lines**, telling the agent to split it into a directory | Enforces the single-responsibility / file-org rule mechanically, not on trust |
+| **Type-check** | Runs `tsc --noEmit` on the file's project and feeds any errors straight back | The agent sees its own type errors immediately and fixes them in the same turn |
+| **Lint** | Runs ESLint on the changed file and returns violations | Style and correctness lints are caught at write time, not in CI later |
+
+The important property: these results are fed **back into the agent's context**
+right after the edit. So a type error or an over-long file isn't discovered
+minutes later in CI — it's surfaced instantly, and the agent corrects it before
+moving on. It turns "the model tries to write correct code" into "the model
+cannot leave a file type-broken without being told." That's the difference
+between hoping and knowing.
+
+## 3. Memory that survives the session
+
+An agent that forgets everything between sessions repeats its mistakes forever.
+So we maintain a **persistent, file-based memory**: durable notes about the
+project — architectural decisions and their *why*, subtle gotchas discovered the
+hard way, feedback the agent has been given, and the current state of ongoing
+work — each written once and indexed so the relevant ones surface on future
+tasks.
+
+The categories that earn their keep:
+
+- **Feedback** — corrections and confirmed approaches, *with the reason.* "Branch
+  off fresh `main` for every change" is worth infinitely more attached to the
+  incident that taught it than as a naked rule.
+- **Project state** — decisions and constraints not derivable from the code:
+  which optimization is deliberate, which follow-up was consciously deferred,
+  what a load test actually measured.
+- **Gotchas** — the "why" behind non-obvious code, so the next session doesn't
+  "clean up" something load-bearing.
+
+The discipline that keeps memory useful rather than noise: only record what the
+repo *doesn't* already say. Code structure, past fixes, and git history are
+already in the repo — memory is for the context that would otherwise evaporate
+when the session ends. (Several of the other posts in this
+[engineering blog](/blog/engineering) exist because the memory of the original
+work — the measured numbers, the rejected approaches — was captured while it was
+fresh.)
+
+## The architecture helps too: patterns that make edits safe
+
+Good agent practices are reinforced by a codebase designed to be *safely
+extended*. Dhaga leans hard on **SOLID** and a **gateway pattern** for exactly
+this reason. The LLM integration, for instance, lives behind an interface — see
+[`packages/core/src/llm/`](https://github.com/anchit2000/dhaga/tree/main/packages/core/src/llm):
+a `LLMClient` contract, a concrete Anthropic implementation, and a factory.
+Adding a new provider is a *new file implementing the interface*, with zero
+changes to callers. The search integration follows the same shape.
+
+Why does this matter for AI-assisted development? Because "add a feature by
+implementing an interface, touching nothing else" is precisely the kind of
+bounded, low-blast-radius change an agent does well — and precisely the kind the
+*surgical-changes* rule demands. The architecture and the rulebook point the same
+direction: small, additive, contained.
+
+## The takeaways
+
+1. **Give the agent a rulebook, checked into the repo.** A `CLAUDE.md` that
+   encodes your conventions, stack decisions, and tripwires turns "generic code
+   generator" into "contributor who knows the house style."
+2. **Make the rules mechanical where you can.** Hooks that type-check, lint, and
+   length-check every edit — and feed the results back — enforce quality without
+   depending on the agent's good intentions.
+3. **Fail loud, and forbid helpful over-reach.** "Surgical changes" and "fail
+   loud" prevent the two most expensive agent behaviors: silent scope creep and
+   silent skipping.
+4. **Persist the *why* across sessions.** A memory of decisions, feedback, and
+   gotchas — with reasons — stops the same lesson from being re-learned every
+   week.
+5. **Design the codebase to be safely extended.** Interfaces and gateways make
+   the natural unit of change "a new file that touches nothing else" — the safest
+   possible thing to hand an agent.
+
+The through-line: **the model is one component in a system.** Invest in the
+rulebook, the reflexes, and the memory around it, and an AI agent becomes a
+genuinely reliable way to build a real product. Skip them, and you get fast code
+you can't trust.

@@ -1,0 +1,135 @@
+---
+title: A schema that heals itself on cold start
+description: "No migration tool, no migration files, and a 15-second sign-in. How a single content hash turned a full schema replay on every serverless cold start into a no-op — while keeping the zero-config, self-healing setup that makes Dhaga trivial to self-host."
+---
+
+<Callout title="The short version">
+Dhaga has no migration tool and no numbered migration files. Instead it ships its
+schema as **idempotent DDL** — `CREATE TABLE IF NOT EXISTS`, `ALTER … IF NOT
+EXISTS`, self-healing `DO` blocks — that it runs on startup to bring any database
+up to the current shape. This is wonderful for self-hosting: point Dhaga at an
+empty Postgres and it builds itself, no migration step to run.
+
+It also made sign-in take ~15 seconds. Replaying ~550 lines of DDL against a
+remote database on every serverless **cold start** is mostly wasted work — the
+schema almost never changed. The fix is one hash: fingerprint the DDL text, and
+skip the whole replay if that exact text has already been applied. Sign-in
+dropped from seconds to milliseconds, and the zero-config magic still works. Here
+is the trade-off and the mechanism.
+</Callout>
+
+*The rest of this post is the deep dive: why we chose idempotent DDL over a
+migration framework, why that choice got expensive on serverless, and the
+content-hash gate that fixed it without giving up the self-healing property.
+Links point at the real code.*
+
+---
+
+## The choice: idempotent DDL instead of migrations
+
+Most apps manage their schema with a migration framework: an ordered list of
+files, a `migrations` table tracking which have run, and a CLI you invoke on
+deploy. It works, but it adds a step and a piece of state that has to be right on
+every environment — including every self-hosted one.
+
+Dhaga made a different call, in service of a product requirement: **self-hosting
+should be trivial.** So the schema is expressed as **idempotent DDL** —
+statements that are safe to run against a database in any state:
+
+- `CREATE TABLE IF NOT EXISTS …`
+- `ALTER TABLE … ADD COLUMN IF NOT EXISTS …`
+- `DO` blocks that inspect the catalog and self-heal (e.g. fix a primary key that
+  the Cloud package needs to be per-tenant).
+
+Run it against an empty database and it builds everything. Run it against a
+fully-migrated database and it does nothing. Run it against a half-built one and
+it fills the gaps. A self-hoster points Dhaga at a blank Postgres and it
+constructs itself on first boot — no migration command, no ordering, no drift to
+reconcile. That's the payoff, and it's a real one.
+
+## The cost: replaying it on every cold start
+
+Serverless functions are ephemeral. Every **cold start** spins up a fresh
+process that has no idea whether the schema is current, so — in the naïve version
+— it just runs the whole idempotent script to be sure. That's ~550 lines of DDL,
+executed against a remote (and, in our case, cross-region) Postgres, on the
+critical path of the request that triggered the cold start.
+
+That request was often **sign-in**. So users were paying for a full schema replay
+before they could log in, and it was most of a **~15-second** sign-in. The DDL
+was almost always a no-op — every `IF NOT EXISTS` found the thing already
+existing — but "check 550 times that nothing needs doing, over a slow link" still
+costs seconds. We were paying the full price of the safety net on every cold
+start while almost never needing it.
+
+## The fix: a content hash that gates the replay
+
+The insight: the DDL only needs to run when the **DDL itself changes.** If the
+exact script we're about to run has already been applied to this database, there
+is provably nothing to do — every statement is idempotent, so re-running
+identical text can't change anything. So: fingerprint the text, remember the
+fingerprint, and skip on a match.
+
+That's
+[`apps/web/src/lib/db/ddl-history.ts`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/lib/db/ddl-history.ts).
+It's tiny:
+
+- A `ddl_history` table —
+  [`CREATE TABLE IF NOT EXISTS ddl_history (…)`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/lib/db/ddl-history.ts#L12) —
+  that stores the hashes of DDL scripts already applied. (Naturally, the one
+  table that gates the replay is itself created idempotently.)
+- [A `sha256` of the DDL text](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/lib/db/ddl-history.ts#L18)
+  as the fingerprint.
+- [`isApplied(hash)`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/lib/db/ddl-history.ts#L28) —
+  a single `SELECT 1 FROM ddl_history WHERE hash = $1`. On a fresh database the
+  table doesn't exist yet, which reads as "not applied" and lets the caller
+  proceed to build everything.
+- [`markApplied(hash)`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/lib/db/ddl-history.ts#L37) —
+  `INSERT … ON CONFLICT (hash) DO NOTHING` after a successful run.
+
+Now a cold start does one cheap indexed lookup instead of 550 lines of remote
+DDL. Change any character of the schema text and the hash changes, so the new
+DDL runs automatically exactly once, then future cold starts skip it again. No
+migration files, no version numbers — the *content* is the version.
+
+The Cloud package has its own schema (tenant tables + RLS), so it carries a
+[deliberate mirror of this file](https://github.com/anchit2000/dhaga/blob/main/packages/ee/src/db/ddl-history.ts).
+It's duplicated on purpose: the Cloud package can't depend on the AGPL core, so
+the two copies are kept in sync by hand — a small, conscious cost to preserve the
+open-core licensing boundary.
+
+## The sharp edges — stated honestly
+
+A self-healing, hash-gated schema has two failure modes worth naming out loud,
+because pretending they don't exist is how you get bitten:
+
+1. **Self-heals only fire when the DDL runs.** Those `DO` blocks that repair an
+   existing database only execute on a hash miss. So if you do **manual schema
+   surgery** on a database directly, the fix won't re-apply on the next boot —
+   the hash still matches. The deliberate escape hatch: delete the matching row
+   from `ddl_history` to force a full re-run.
+2. **Some things must run on *every* cold start, not behind the skip.** The Cloud
+   package's connection-pooling and `BYPASSRLS` assertions are correctness/safety
+   checks about the *live connection*, not the schema — and they must never be
+   moved behind the hash gate, or a misconfigured deploy could sail past them.
+   The skip is for the *schema replay* only.
+
+Calling these out is the point. A clever optimization that hides a footgun is a
+liability; a clever optimization with its footguns documented is an asset.
+
+## The takeaways
+
+1. **Idempotent DDL is a great fit for zero-config self-hosting** — the app
+   builds its own schema and heals partial ones, with no migration step for the
+   operator to get wrong.
+2. **On serverless, "safe to run every time" quietly becomes "run every time."**
+   Ephemeral processes re-do setup work constantly; anything on the cold-start
+   path is on a user's critical path.
+3. **Content-hash the work and skip it when unchanged.** A `sha256` of the DDL
+   text turned a 550-line remote replay into one indexed `SELECT`. The content is
+   the version number.
+4. **Keep an explicit escape hatch** — deleting a `ddl_history` row to force a
+   re-run — so the optimization never traps you after manual intervention.
+5. **Never gate a safety check behind a performance skip.** Know which of your
+   startup steps are "make the schema right" (skippable when unchanged) and which
+   are "make sure this connection is safe" (never skippable).

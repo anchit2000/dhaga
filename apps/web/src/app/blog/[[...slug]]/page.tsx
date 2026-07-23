@@ -7,6 +7,10 @@ import {
 } from "fumadocs-ui/page";
 import { getMDXComponents } from "@/mdx-components";
 import { blogSource } from "@/lib/blog-source";
+import { ShareBar } from "@/components/blog/ShareBar";
+import { Comments } from "@/components/blog/Comments";
+import { QuoteHighlighter } from "@/components/blog/QuoteHighlighter";
+import { BLOG_SITE_URL } from "@/utils/constants/blog";
 import type { Metadata } from "next";
 import type { ReactElement } from "react";
 
@@ -24,12 +28,24 @@ export default async function BlogPageRoute({
   if (!page) notFound();
 
   const MDXContent = page.data.body;
+  // Leaf posts have a category + slug (e.g. ["engineering", "…"]); the /blog,
+  // /blog/engineering, /blog/solutions landing pages don't get engagement UI.
+  const isPost = (slug?.length ?? 0) >= 2;
+  const url = `${BLOG_SITE_URL}/blog/${(slug ?? []).join("/")}`;
+
   return (
     <DocsPage toc={page.data.toc} full={page.data.full}>
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription>{page.data.description}</DocsDescription>
       <DocsBody>
         <MDXContent components={getMDXComponents()} />
+        {isPost ? (
+          <>
+            <ShareBar url={url} title={page.data.title} />
+            <QuoteHighlighter url={url} />
+            <Comments />
+          </>
+        ) : null}
       </DocsBody>
     </DocsPage>
   );

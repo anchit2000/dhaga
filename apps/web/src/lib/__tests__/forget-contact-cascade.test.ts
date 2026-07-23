@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { eq, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
-import { signals } from "@/lib/db/schema";
+import { edgeSuggestions, signals } from "@/lib/db/schema";
 import { createContact, forgetContact, getContact } from "@/lib/repo/contacts";
 import { addNote, listNotes } from "@/lib/repo/notes";
 
@@ -47,6 +47,46 @@ describe("forgetContact cascades to signals", () => {
     expect(await getContact(id)).toBeNull();
     const db = await getDb();
     const remaining = await db.select().from(signals).where(eq(signals.id, signalId));
+    expect(remaining).toHaveLength(0);
+  });
+});
+
+async function insertEdgeSuggestion(contactId: string, sourceNoteId: string): Promise<string> {
+  const db = await getDb();
+  const id = randomUUID();
+  await db.insert(edgeSuggestions).values({
+    id,
+    srcContactId: contactId,
+    predicate: "knows",
+    objectName: "Ajay",
+    objectType: "person",
+    sourceNoteId,
+  });
+  return id;
+}
+
+/**
+ * `edge_suggestions` has NOT NULL ... RESTRICT FKs on both src_contact_id
+ * (→ contacts.id) and source_note_id (→ notes.id) — forgetContact never
+ * deleted from it, so any contact that ever produced a pending relationship
+ * suggestion became permanently un-forgettable: Postgres refused the delete
+ * with a foreign-key violation and the whole GDPR erasure rolled back. Same
+ * bug shape as the signals case above.
+ */
+describe("forgetContact cascades to edge_suggestions", () => {
+  it("forgets a contact that has a pending edge suggestion, and the suggestion is gone too", async () => {
+    const id = await createContact({ ...contactInput, name: "Suggested Person" }, "manual");
+    const noteId = await addNote(id, "text", "Met Ajay through them");
+    const suggestionId = await insertEdgeSuggestion(id, noteId);
+
+    await expect(forgetContact(id)).resolves.toBeUndefined();
+
+    expect(await getContact(id)).toBeNull();
+    const db = await getDb();
+    const remaining = await db
+      .select()
+      .from(edgeSuggestions)
+      .where(eq(edgeSuggestions.id, suggestionId));
     expect(remaining).toHaveLength(0);
   });
 });

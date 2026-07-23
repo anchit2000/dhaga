@@ -95,9 +95,11 @@ everywhere):
    not the plain role name; only the connection *username* changes shape,
    the role itself is still just `dhaga_app`.
 3. As of this project's `packages/ee/src/db/bootstrap.ts`, the app checks
-   this itself at boot — `SELECT rolbypassrls FROM pg_roles WHERE rolname
-   = current_user`, and refuses to start (loud error naming this doc) if
-   the connecting role has `BYPASSRLS`. Don't rely on this alone for a
+   this itself at boot — `SELECT rolbypassrls, rolsuper FROM pg_roles WHERE
+   rolname = current_user`, and refuses to start (loud error naming this doc)
+   if the connecting role has `BYPASSRLS` **or** `SUPERUSER` (a superuser
+   bypasses RLS unconditionally even while `rolbypassrls` reads false). Don't
+   rely on this alone for a
    fresh setup, though — check via the script's own verification query
    *before* traffic hits it, not after.
 
@@ -255,10 +257,15 @@ multi-tenant in containers, additionally:
    role — see "The Postgres role DATABASE_URL connects as matters" above.
 2. Keep pooling **session-scoped**: connect directly (what the compose file
    does) or via a session-mode pooler, never a transaction-mode pooler such
-   as Supabase's port 6543. Tenant scoping rides on session-level
-   `set_config`, which transaction pooling silently breaks; the boot guard
-   in `packages/ee/src/db/bootstrap.ts` refuses to start on a known
-   transaction pooler.
+   as Supabase's port 6543, PgBouncer, Supavisor, or Neon's `-pooler`
+   endpoint. Tenant scoping rides on session-level `set_config`, which
+   transaction pooling silently breaks; the boot guard in
+   `packages/ee/src/db/bootstrap.ts` refuses to start when `DATABASE_URL`
+   looks like a transaction pooler (a `pooler`/`pgbouncer` hostname,
+   `pgbouncer=true`, or Supabase's `:6543`). If that heuristic false-positives
+   on a pooler you have verified is session-scoped, set
+   `DHAGA_ALLOW_TRANSACTION_POOLER=true` to downgrade the throw to a one-time
+   warning.
 3. Add the hosted-mode env vars (`DHAGA_HOSTED_MODE`, `DHAGA_ADMIN_EMAILS`,
    `STRIPE_*`) to the `app` service's `environment` block yourself.
 

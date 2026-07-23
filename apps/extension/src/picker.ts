@@ -41,7 +41,13 @@ export function renderResults(
             const button = document.createElement("button");
             button.type = "button";
             const sub = [hit.title, hit.companyName].filter(Boolean).join(" · ");
-            button.innerHTML = `${hit.name}${sub ? ` <span class="sub">${sub}</span>` : ""}`;
+            button.append(document.createTextNode(hit.name));
+            if (sub) {
+              const subSpan = document.createElement("span");
+              subSpan.className = "sub";
+              subSpan.textContent = sub;
+              button.append(document.createTextNode(" "), subSpan);
+            }
             button.addEventListener("click", () => {
               onSelect(hit);
               for (const other of attachElements.results.querySelectorAll("button")) {

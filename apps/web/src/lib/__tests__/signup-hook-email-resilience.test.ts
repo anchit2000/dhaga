@@ -17,6 +17,15 @@ vi.mock("@/lib/access/notify", () => ({
   notifyAccessRequested: (...args: [string]) => mockNotifyAccessRequested(...args),
 }));
 
+// beforeUserCreate's single-user core guard queries the user table before the
+// signup gate runs; in core mode (no DHAGA_HOSTED_MODE) an empty table means
+// "first account", which lets these gate-behavior cases through unchanged.
+vi.mock("@/lib/db", () => ({
+  getDb: async () => ({
+    select: () => ({ from: () => ({ limit: async () => [] }) }),
+  }),
+}));
+
 function blockedUser(): User & Record<string, unknown> {
   return {
     id: "user_1",

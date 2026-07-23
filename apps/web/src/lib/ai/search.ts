@@ -37,7 +37,10 @@ async function planQuery(query: string): Promise<SearchQueryPlan | null> {
       prompt: buildSearchQueryPrompt(query),
       tier: "extract",
     });
-    await recordAiAction("search", result.model, result.usage);
+    // NOT metered here: a search is one user-visible action, recorded once
+    // when the answer stage completes below. Metering this Haiku plan call
+    // too would charge ~2 of the 25/mo free actions per search (and let a
+    // user at 24 used slip past the single assertAiBudget check above).
     return result.data;
   } catch {
     return null;

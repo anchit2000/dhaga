@@ -37,7 +37,10 @@ export function clampRect(
 }
 
 /** Apply a pointer-drag delta to the rect captured at drag start. Corner
- *  modes resize from that corner; "move" repositions without resizing. */
+ *  modes resize from the dragged corner while pinning the opposite corner:
+ *  a handle dragged inward past MIN_CROP_SIZE stops at the minimum against
+ *  that fixed corner instead of crossing it and teleporting the box.
+ *  "move" repositions without resizing. */
 export function applyDrag(
   mode: DragMode,
   start: CropRect,
@@ -46,19 +49,45 @@ export function applyDrag(
 ): CropRect {
   if (mode === "move") return { ...start, x: start.x + dx, y: start.y + dy };
   let { x, y, width, height } = start;
+  const right = start.x + start.width;
+  const bottom = start.y + start.height;
   if (mode.includes("n")) {
-    y = start.y + dy;
-    height = start.height - dy;
+    // Top edge moves; bottom edge stays pinned. Cap at MIN so shrinking past
+    // it re-anchors y against the fixed bottom rather than overshooting it.
+    height = Math.max(start.height - dy, MIN_CROP_SIZE);
+    y = bottom - height;
   }
   if (mode.includes("s")) {
-    height = start.height + dy;
+    // Bottom edge moves; top edge (start.y) stays pinned.
+    height = Math.max(start.height + dy, MIN_CROP_SIZE);
   }
   if (mode.includes("w")) {
-    x = start.x + dx;
-    width = start.width - dx;
+    // Left edge moves; right edge stays pinned.
+    width = Math.max(start.width - dx, MIN_CROP_SIZE);
+    x = right - width;
   }
   if (mode.includes("e")) {
-    width = start.width + dx;
+    // Right edge moves; left edge (start.x) stays pinned.
+    width = Math.max(start.width + dx, MIN_CROP_SIZE);
   }
   return { x, y, width, height };
+}
+
+/** Rescale a rect from one display size to another so it keeps covering the
+ *  same region of the image after the <img>'s rendered size changes (viewport
+ *  resize, device rotation). Proportional on both axes. */
+export function scaleRect(
+  rect: CropRect,
+  from: { width: number; height: number },
+  to: { width: number; height: number },
+): CropRect {
+  if (from.width === 0 || from.height === 0) return rect;
+  const scaleX = to.width / from.width;
+  const scaleY = to.height / from.height;
+  return {
+    x: rect.x * scaleX,
+    y: rect.y * scaleY,
+    width: rect.width * scaleX,
+    height: rect.height * scaleY,
+  };
 }

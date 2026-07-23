@@ -21,7 +21,9 @@ you get, what you don't, and how the switches work.
 - Don't set `DHAGA_HOSTED_MODE`. That's it — every EE feature goes inert.
 - You do **not** need to delete `packages/ee` from your clone. It's harmless
   dead weight until that flag is set to `"true"`.
-- Registration is open (no invite/approval step) whenever hosted mode is off.
+- Registration is open (no invite/approval step) whenever hosted mode is off,
+  but the core is **single-user**: the first account is created normally and
+  every subsequent signup is rejected (see "Single-user by design" below).
 - There is no admin panel, no "Admin" nav item, and no billing UI in this mode
   — not hidden, not disabled, just not rendered at all.
 
@@ -77,6 +79,30 @@ naming the exact file to remove.
 Note the asymmetry with Level 1: `lib/hosted/gate.ts` itself does **not**
 need to be deleted or edited — its dynamic `import("@dhaga/ee")` is wrapped
 in a try/catch specifically so this file survives the package's removal.
+
+## Single-user by design (core only)
+
+With hosted mode off, the core is **single-user** — it enforces exactly one
+account, and this is a hard rule, not a suggestion. The reason is structural:
+per-user data isolation (row-level security scoping every query to its owner)
+lives entirely in `packages/ee`. The AGPL core's `getDb()` hands every request
+one unscoped connection over one shared graph
+([`apps/web/src/lib/db/request-scope.ts`](../apps/web/src/lib/db/request-scope.ts)).
+That is completely safe for one person, but a second account on the same core
+instance would land in — and read and edit — the first user's contacts, notes,
+and facts. There is no per-user wall to hide behind.
+
+So the signup path refuses to create a second account when hosted mode is off:
+the first signup succeeds normally, and any later one is rejected with a
+`403` explaining why (see `beforeUserCreate` in
+[`apps/web/src/lib/auth/config/index.ts`](../apps/web/src/lib/auth/config/index.ts)).
+
+If you need more than one user with real isolation between them, that's exactly
+what hosted mode (`packages/ee`) provides — enable it (`DHAGA_HOSTED_MODE=true`
+plus real Postgres; see [`DEPLOYING.md`](DEPLOYING.md)) and multi-tenant RLS
+takes over. Self-hosting the core for a genuinely shared, trusted household
+where everyone is fine seeing everyone's data is not supported by relaxing this
+guard — the guard is what keeps "single-user" honest.
 
 ## Disabling just billing (keep admin + early access)
 
@@ -149,12 +175,20 @@ app needs from the database:
   entirely in that case.
 - **Session-scoped pooling** (hosted mode only) — tenant scoping works via
   session-level `set_config('app.current_user_id', …)`, which
-  transaction-mode poolers (e.g. Supabase's port 6543) silently break by
-  swapping the server backend between queries: RLS intermittently returns
-  zero rows *and* the tenant setting can leak onto a backend later handed to
-  another user. Use a direct connection or a session-mode pooler; the boot
-  guard in `packages/ee/src/db/bootstrap.ts` fails loud on known offenders.
-- **A role without `BYPASSRLS`** (hosted mode only) — run
+  transaction-mode poolers (e.g. Supabase's port 6543, PgBouncer, Supavisor,
+  Neon's `-pooler` endpoint) silently break by swapping the server backend
+  between queries: RLS intermittently returns zero rows *and* the tenant
+  setting can leak onto a backend later handed to another user. Use a direct
+  connection or a session-mode pooler; the boot guard in
+  `packages/ee/src/db/bootstrap.ts` fails loud when the connection string
+  looks like a transaction pooler (a `pooler`/`pgbouncer` hostname,
+  `pgbouncer=true`, or Supabase's `:6543`). If that heuristic false-positives
+  on a pooler you have confirmed is session-scoped, set
+  `DHAGA_ALLOW_TRANSACTION_POOLER=true` to downgrade the fail-loud throw to a
+  one-time warning.
+- **A role without `BYPASSRLS` or `SUPERUSER`** (hosted mode only) — either
+  attribute makes the role ignore RLS (a superuser bypasses it unconditionally
+  even while `rolbypassrls` reads false), and the boot guard rejects both. Run
   [`packages/ee/scripts/create-app-role.sql`](../packages/ee/scripts/create-app-role.sql)
   and connect as `dhaga_app`; see DEPLOYING.md's "The Postgres role
   DATABASE_URL connects as matters" for why the provider default role is

@@ -12,7 +12,7 @@ import {
   View,
 } from "react-native";
 
-import { isConfigured, loadSettings, saveSettings } from "@/lib/settings";
+import { isConfigured, isInsecureBaseUrl, loadSettings, saveSettings } from "@/lib/settings";
 import { COLORS } from "@/utils/constants";
 
 export default function SetupScreen() {
@@ -29,6 +29,7 @@ export default function SetupScreen() {
   }, []);
 
   const canSave = baseUrl.trim().length > 0 && apiKey.trim().length > 0 && !saving;
+  const insecureUrl = isInsecureBaseUrl(baseUrl);
 
   const save = async (): Promise<void> => {
     if (!canSave) return;
@@ -67,6 +68,13 @@ export default function SetupScreen() {
             keyboardType="url"
             editable={!saving}
           />
+          {insecureUrl ? (
+            <Text style={styles.warning}>
+              This address is unencrypted (http://). Your API key will be sent in the clear — anyone on
+              the same network could read it. Use https://, or http://localhost, unless this is a
+              trusted private network.
+            </Text>
+          ) : null}
         </View>
         <View style={styles.field}>
           <Text style={styles.label}>API key</Text>
@@ -119,6 +127,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   hint: { color: COLORS.fog, fontSize: 13, lineHeight: 18 },
+  warning: { color: COLORS.amber, fontSize: 13, lineHeight: 18 },
   error: { color: COLORS.amber, fontSize: 13, textAlign: "center" },
   saveButton: {
     backgroundColor: COLORS.amber,

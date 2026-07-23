@@ -47,7 +47,9 @@ function assertSessionScopedPooling(connectionString: string | undefined): void 
   } catch {
     return; // non-URL connection formats can't be checked here
   }
-  if (url.hostname.endsWith("pooler.supabase.com") && url.port === "6543") {
+  const host = url.hostname;
+  const isPoolerHost = host === "pooler.supabase.com" || host.endsWith(".pooler.supabase.com");
+  if (isPoolerHost && url.port === "6543") {
     throw new Error(
       "DATABASE_URL points at Supabase's transaction-mode pooler (port 6543). Tenant scoping " +
         "uses session-level set_config, which transaction pooling silently breaks — queries " +

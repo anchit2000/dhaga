@@ -12,6 +12,8 @@ export function Comments(): ReactElement | null {
   const repoId = process.env.NEXT_PUBLIC_GISCUS_REPO_ID;
   const category = process.env.NEXT_PUBLIC_GISCUS_CATEGORY;
   const categoryId = process.env.NEXT_PUBLIC_GISCUS_CATEGORY_ID;
+  // Any giscus theme name (e.g. dark_dimmed, transparent_dark, dark, light).
+  const theme = process.env.NEXT_PUBLIC_GISCUS_THEME ?? "dark_dimmed";
 
   if (!repo || !repoId || !category || !categoryId) return null;
 
@@ -29,7 +31,7 @@ export function Comments(): ReactElement | null {
         reactionsEnabled="1"
         emitMetadata="0"
         inputPosition="top"
-        theme="transparent_dark"
+        theme={theme}
         lang="en"
         loading="lazy"
       />

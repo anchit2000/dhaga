@@ -1,8 +1,19 @@
 import { seedDomainAccount } from "../seed-lib/seed-domain.mjs";
 
+// Rich B2B-sales demo: Dhaga as the AE's PERSONAL relationship layer that
+// complements the team CRM. A hero champion (Marcus Feld) is fleshed out for
+// the contact-profile money shot — discovery notes + facts w/ receipts,
+// follow-ups, an org relationship map — plus breadth so the dashboard's
+// "threads to pull today" (cadence overdue) and follow-ups tiles are full.
 await seedDomainAccount({
   slug: "b2b-sales",
   displayName: "Priya Nair — Account Executive (demo)",
+
+  relationshipTypes: [
+    { slug: "champion_of", forward: "champions us at", inverse: "championed by" },
+    { slug: "sponsored_by", forward: "sponsored by", inverse: "sponsors" },
+  ],
+
   companies: [
     // Prospect / customer accounts across industries
     { name: "Cargoline Freight", sector: "Logistics" },
@@ -23,63 +34,99 @@ await seedDomainAccount({
     { name: "Coriander Systems Integrators", sector: "Consulting (Partner)" },
     { name: "Ridgeway Cloud Partners", sector: "Cloud Reseller (Partner)" },
   ],
+
   contacts: [
-    // --- Cargoline Freight (key account, closed-won, multi-threaded) ---
+    // ---- HERO: champion at the key account (Cargoline Freight) ----
     {
-      name: "Dev Malhotra",
+      name: "Marcus Feld",
+      hero: true,
       title: "VP Engineering",
       company: "Cargoline Freight",
       location: "Chicago, IL",
-      tags: ["champion", "closed-won"],
-      note: "Champion — cares about onboarding time; moved from Northwind to Cargoline, warm re-intro.",
+      tags: ["champion", "active", "platform-team", "warm-reintro"],
+      cadenceDays: 7,
+      lastReachedOutDaysAgo: 13,
+      notes: [
+        "Discovery call. Cargoline's platform team is drowning in manual onboarding for new freight partners — Marcus wants that automated. He's the technical decision-maker and clearly wants us to win; asked sharp questions and volunteered internal context. Classic champion.",
+        "Follow-up call on his concerns: he needs SOC 2 Type II before security will sign off, and wants a hard number on onboarding time-to-first-value. Nervous that a long ramp will make the platform team resist the change. Asked what a realistic POC looks like.",
+        "Small world — Marcus just moved to Cargoline from Northwind Logistics, where he championed us last year before the budget froze. This is a warm re-intro, not a cold account. He already knows the product; we're picking up where Northwind left off.",
+      ],
+      facts: [
+        { type: "intent", text: "Evaluating us for the platform team; cares most about onboarding time and SOC 2." },
+        { type: "role", text: "VP Engineering at Cargoline Freight." },
+        { type: "personal", text: "Came from Northwind Logistics where he was also a champion." },
+        { type: "preference", text: "Wants a hands-on POC, not a demo." },
+      ],
+      followUps: [
+        { action: "Send Marcus the SOC 2 report + onboarding benchmarks", dueHint: "this week" },
+        { action: "Get the CFO (economic buyer) into next week's call", dueHint: "next week" },
+      ],
     },
+
+    // ---- hero's circle at Cargoline (drives the profile relationship map) ----
     {
       name: "Sofia Reyes",
       title: "CFO",
       company: "Cargoline Freight",
       location: "Chicago, IL",
-      tags: ["economic-buyer", "closed-won"],
-      note: "EB — signed the annual deal; renewal expansion conversation for next fiscal.",
-    },
-    {
-      name: "Grace Okonkwo",
-      title: "Head of Ops",
-      company: "Cargoline Freight",
-      location: "Detroit, MI",
-      tags: ["evaluator", "closed-won"],
-      note: "Ran the operational pilot; strong internal advocate alongside Dev.",
-    },
-    {
-      name: "Marcus Feld",
-      title: "IT Procurement Lead",
-      company: "Cargoline Freight",
-      location: "Chicago, IL",
-      tags: ["blocker"],
-      note: "Pushed hard on security review timelines; neutralized after SOC2 packet shared.",
+      tags: ["economic-buyer", "active"],
+      cadenceDays: 21,
+      lastReachedOutDaysAgo: 18,
+      note: "Economic buyer — holds the budget. Marcus can champion internally but Sofia signs. Wants the ROI framed as reduced ops headcount, not features.",
+      facts: [{ type: "intent", text: "Will fund the deal if onboarding savings clear the ROI bar; wants a business case, not a demo." }],
     },
     {
       name: "Aisha Bello",
       title: "Solutions Architect",
       company: "Cargoline Freight",
       location: "Remote",
-      tags: ["evaluator"],
+      tags: ["evaluator", "technical"],
+      cadenceDays: 14,
+      lastReachedOutDaysAgo: 9,
+      note: "Technical evaluator on Marcus's team — will run the POC hands-on. Kingmaker for the technical win; keep her unblocked.",
+    },
+    {
+      name: "Grace Okonkwo",
+      title: "Head of Ops",
+      company: "Cargoline Freight",
+      location: "Detroit, MI",
+      tags: ["evaluator", "advocate"],
+      cadenceDays: 14,
+      lastReachedOutDaysAgo: 20,
+      note: "Owns the onboarding pain day-to-day; strong internal advocate alongside Marcus. Wants to see the POC run against real partner data.",
+      followUps: [{ action: "Schedule POC scoping call with Grace + Aisha", dueHint: "this week" }],
+    },
+    {
+      name: "Roland Pike",
+      title: "IT Procurement Lead",
+      company: "Cargoline Freight",
+      location: "Chicago, IL",
+      tags: ["blocker", "security"],
+      cadenceDays: 30,
+      lastReachedOutDaysAgo: 22,
+      note: "Blocker — controls the security review and vendor paperwork. Pushing hard on SOC 2 timelines; neutralize by getting the report to him early.",
     },
 
-    // --- Northwind Logistics (competitor unseated Dev; still active) ---
-    {
-      name: "Tomas Novak",
-      title: "VP Operations",
-      company: "Northwind Logistics",
-      location: "Minneapolis, MN",
-      tags: ["economic-buyer"],
-      note: "EB — budget frees up next fiscal year; keep warm until Q3.",
-    },
+    // ---- Northwind Logistics (Marcus's former account; the re-intro mutual) ----
     {
       name: "Rebecca Lin",
       title: "Director of Engineering",
       company: "Northwind Logistics",
       location: "Minneapolis, MN",
-      tags: ["evaluator"],
+      tags: ["advocate", "connector"],
+      cadenceDays: 21,
+      lastReachedOutDaysAgo: 24,
+      note: "Worked with Marcus at Northwind and made the warm re-intro into Cargoline. Still an internal advocate at Northwind — keep her close for when that budget reopens.",
+    },
+    {
+      name: "Tomas Novak",
+      title: "VP Operations",
+      company: "Northwind Logistics",
+      location: "Minneapolis, MN",
+      tags: ["economic-buyer", "nurture"],
+      cadenceDays: 30,
+      lastReachedOutDaysAgo: 41,
+      note: "EB at Northwind — budget freed up next fiscal year; keep warm until Q3. Worked alongside Marcus before Marcus left.",
     },
     {
       name: "Owen Pratt",
@@ -87,25 +134,31 @@ await seedDomainAccount({
       company: "Northwind Logistics",
       location: "Chicago, IL",
       tags: ["blocker"],
-      note: "Prefers incumbent vendor; needs a compelling switching-cost story.",
+      note: "Prefers the incumbent vendor; needs a compelling switching-cost story.",
     },
 
-    // --- HelvetSecure (cybersecurity prospect) ---
-    {
-      name: "Lena Fischer",
-      title: "CISO",
-      company: "HelvetSecure",
-      location: "Zurich, CH",
-      tags: ["economic-buyer"],
-      note: "EB — security-first buyer; wants data-residency guarantees before signing.",
-    },
+    // ---- HelvetSecure (security-first prospect, partner-sourced) ----
     {
       name: "Karim Haddad",
       title: "Head of Platform",
       company: "HelvetSecure",
       location: "Zurich, CH",
-      tags: ["champion"],
-      note: "Champion — built the internal business case; sponsor for the pilot.",
+      tags: ["champion", "active"],
+      cadenceDays: 14,
+      lastReachedOutDaysAgo: 16,
+      note: "Champion — built the internal business case and sponsors the pilot. Sourced via Sophie at Ridgeway. Wants data-residency answers he can take to Lena.",
+      facts: [{ type: "intent", text: "Championing us for a platform pilot; blocked on data-residency guarantees for EU." }],
+    },
+    {
+      name: "Lena Fischer",
+      title: "CISO",
+      company: "HelvetSecure",
+      location: "Zurich, CH",
+      tags: ["economic-buyer", "security"],
+      cadenceDays: 21,
+      lastReachedOutDaysAgo: 27,
+      note: "EB and security gatekeeper — won't sign without EU data-residency guarantees. Karim is prepping her; get ahead of it.",
+      followUps: [{ action: "Send Lena the EU data-residency + subprocessor pack", dueHint: "this week" }],
     },
     {
       name: "Nadia Petrov",
@@ -115,7 +168,78 @@ await seedDomainAccount({
       tags: ["evaluator"],
     },
 
-    // --- Brightwell Health (healthcare, closed-lost) ---
+    // ---- Meridian Retail Group (multi-threaded prospect) ----
+    {
+      name: "Yuki Tanaka",
+      title: "VP Digital",
+      company: "Meridian Retail Group",
+      location: "Seattle, WA",
+      tags: ["champion", "active"],
+      cadenceDays: 10,
+      lastReachedOutDaysAgo: 15,
+      note: "Champion — wants a fast rollout before holiday peak season. The clock is the deal driver; sequence everything around the freeze date.",
+      followUps: [{ action: "Send Yuki the holiday-peak rollout timeline", dueHint: "today" }],
+    },
+    {
+      name: "Fernando Cruz",
+      title: "CFO",
+      company: "Meridian Retail Group",
+      location: "Seattle, WA",
+      tags: ["economic-buyer"],
+      note: "EB — approves once Yuki's rollout plan has a number attached.",
+    },
+    {
+      name: "Ravi Deshpande",
+      title: "Procurement Lead",
+      company: "Meridian Retail Group",
+      location: "Seattle, WA",
+      tags: ["blocker"],
+      cadenceDays: 21,
+      lastReachedOutDaysAgo: 29,
+      note: "Wants a 3-vendor bake-off; slowing momentum against Yuki's timeline.",
+    },
+
+    // ---- Aldergrove Bank (long cycle, board sign-off) ----
+    {
+      name: "Isaac Mbeki",
+      title: "VP Engineering",
+      company: "Aldergrove Bank",
+      location: "Toronto, ON",
+      tags: ["champion"],
+      cadenceDays: 21,
+      lastReachedOutDaysAgo: 19,
+      note: "Champion — sourced through Elena at Coriander. Building the case for Eleanor.",
+    },
+    {
+      name: "Eleanor Voss",
+      title: "Head of Technology",
+      company: "Aldergrove Bank",
+      location: "Toronto, ON",
+      tags: ["economic-buyer"],
+      cadenceDays: 30,
+      lastReachedOutDaysAgo: 26,
+      note: "EB — approval requires board sign-off; long cycle. Don't push the paper, feed the champion.",
+    },
+    {
+      name: "Clara Jensen",
+      title: "Risk & Compliance Lead",
+      company: "Aldergrove Bank",
+      location: "Montreal, QC",
+      tags: ["blocker", "security"],
+    },
+
+    // ---- Brightwell Health (closed-lost; re-engage path) ----
+    {
+      name: "Priscilla Adeyemi",
+      title: "Head of Ops",
+      company: "Brightwell Health",
+      location: "Boston, MA",
+      tags: ["champion", "closed-lost"],
+      cadenceDays: 45,
+      lastReachedOutDaysAgo: 52,
+      note: "Was our champion; frustrated we lost to the incumbent EHR add-on. Still willing to intro us elsewhere — she moves companies often.",
+      followUps: [{ action: "Ask Priscilla for a warm intro at her next company", dueHint: "this month" }],
+    },
     {
       name: "Dr. Alan Whitmore",
       title: "Chief Medical Information Officer",
@@ -124,87 +248,18 @@ await seedDomainAccount({
       tags: ["economic-buyer", "closed-lost"],
       note: "Lost — chose incumbent EHR add-on; revisit after their 2-yr contract lapses.",
     },
-    {
-      name: "Priscilla Adeyemi",
-      title: "Head of Ops",
-      company: "Brightwell Health",
-      location: "Boston, MA",
-      tags: ["champion", "closed-lost"],
-      note: "Was our champion; frustrated with the outcome, willing to intro elsewhere.",
-    },
-    {
-      name: "Gordon Mackie",
-      title: "Compliance Director",
-      company: "Brightwell Health",
-      location: "Providence, RI",
-      tags: ["blocker", "closed-lost"],
-      note: "Blocker — HIPAA review stalled the deal past the budget window.",
-    },
 
-    // --- Meridian Retail Group (multi-threaded prospect) ---
+    // ---- Solvent Manufacturing ----
     {
-      name: "Yuki Tanaka",
-      title: "VP Digital",
-      company: "Meridian Retail Group",
-      location: "Seattle, WA",
-      tags: ["champion"],
-      note: "Champion — wants a fast rollout before holiday peak season.",
+      name: "Henrik Sørensen",
+      title: "Plant Systems Manager",
+      company: "Solvent Manufacturing",
+      location: "Turin, IT",
+      tags: ["champion", "active"],
+      cadenceDays: 14,
+      lastReachedOutDaysAgo: 21,
+      note: "Champion — sees ROI in reduced downtime; needs a floor-level demo his ops team can touch.",
     },
-    {
-      name: "Fernando Cruz",
-      title: "CFO",
-      company: "Meridian Retail Group",
-      location: "Seattle, WA",
-      tags: ["economic-buyer"],
-    },
-    {
-      name: "Hannah Berg",
-      title: "Head of Store Systems",
-      company: "Meridian Retail Group",
-      location: "Portland, OR",
-      tags: ["evaluator"],
-    },
-    {
-      name: "Ravi Deshpande",
-      title: "Procurement Lead",
-      company: "Meridian Retail Group",
-      location: "Seattle, WA",
-      tags: ["blocker"],
-      note: "Wants a 3-vendor bake-off; slowing momentum.",
-    },
-
-    // --- Aldergrove Bank (financial services) ---
-    {
-      name: "Eleanor Voss",
-      title: "Head of Technology",
-      company: "Aldergrove Bank",
-      location: "Toronto, ON",
-      tags: ["economic-buyer"],
-      note: "EB — approval requires board sign-off; long sales cycle.",
-    },
-    {
-      name: "Isaac Mbeki",
-      title: "VP Engineering",
-      company: "Aldergrove Bank",
-      location: "Toronto, ON",
-      tags: ["champion"],
-    },
-    {
-      name: "Clara Jensen",
-      title: "Risk & Compliance Lead",
-      company: "Aldergrove Bank",
-      location: "Montreal, QC",
-      tags: ["blocker"],
-    },
-    {
-      name: "Peter Ostrowski",
-      title: "Solutions Evaluator",
-      company: "Aldergrove Bank",
-      location: "Toronto, ON",
-      tags: ["evaluator"],
-    },
-
-    // --- Solvent Manufacturing ---
     {
       name: "Bianca Ferraro",
       title: "COO",
@@ -212,37 +267,17 @@ await seedDomainAccount({
       location: "Milan, IT",
       tags: ["economic-buyer"],
     },
-    {
-      name: "Henrik Sørensen",
-      title: "Plant Systems Manager",
-      company: "Solvent Manufacturing",
-      location: "Turin, IT",
-      tags: ["champion"],
-      note: "Champion — sees ROI in reduced downtime; needs a floor-level demo.",
-    },
-    {
-      name: "Wei Zhang",
-      title: "Procurement Lead",
-      company: "Solvent Manufacturing",
-      location: "Milan, IT",
-      tags: ["blocker"],
-    },
 
-    // --- Kestrel Aerospace ---
+    // ---- Kestrel Aerospace (compliance-gated) ----
     {
       name: "Colonel Rita Banks",
       title: "Director of Programs",
       company: "Kestrel Aerospace",
       location: "Denver, CO",
       tags: ["economic-buyer"],
-      note: "EB — procurement gated by government compliance; ITAR questions open.",
-    },
-    {
-      name: "Samuel Adeyemi",
-      title: "Lead Systems Engineer",
-      company: "Kestrel Aerospace",
-      location: "Denver, CO",
-      tags: ["evaluator"],
+      cadenceDays: 30,
+      lastReachedOutDaysAgo: 37,
+      note: "EB — procurement gated by government compliance; ITAR questions still open.",
     },
     {
       name: "Diane Kowalski",
@@ -252,14 +287,17 @@ await seedDomainAccount({
       tags: ["champion"],
     },
 
-    // --- Verdant Foods ---
+    // ---- Verdant Foods (champion changed jobs from Meridian) ----
     {
       name: "Olivia Santos",
       title: "VP Supply Chain",
       company: "Verdant Foods",
       location: "Austin, TX",
-      tags: ["champion"],
-      note: "Champion — moved from Meridian Retail; brings prior product familiarity.",
+      tags: ["champion", "changed-jobs"],
+      cadenceDays: 21,
+      lastReachedOutDaysAgo: 17,
+      note: "Champion — moved from Meridian Retail, brings prior product familiarity. Warm path into a brand-new logo.",
+      facts: [{ type: "personal", text: "Previously at Meridian Retail Group; already knows the product from that eval." }],
     },
     {
       name: "Thabo Nkosi",
@@ -268,45 +306,38 @@ await seedDomainAccount({
       location: "Austin, TX",
       tags: ["economic-buyer"],
     },
-    {
-      name: "Greta Lindqvist",
-      title: "Procurement Lead",
-      company: "Verdant Foods",
-      location: "Dallas, TX",
-      tags: ["evaluator"],
-    },
 
-    // --- Pinecrest Insurance ---
-    {
-      name: "Marcus Webb",
-      title: "Chief Digital Officer",
-      company: "Pinecrest Insurance",
-      location: "Hartford, CT",
-      tags: ["economic-buyer"],
-    },
+    // ---- Pinecrest Insurance ----
     {
       name: "Anjali Rao",
       title: "Head of Claims Tech",
       company: "Pinecrest Insurance",
       location: "Hartford, CT",
-      tags: ["champion"],
-      note: "Champion — pushing hard internally; wants case studies from insurance peers.",
+      tags: ["champion", "active"],
+      cadenceDays: 14,
+      lastReachedOutDaysAgo: 12,
+      note: "Champion — pushing hard internally; wants case studies from insurance peers to close her CDO.",
+      followUps: [{ action: "Send Anjali the insurance-peer case studies", dueHint: "this week" }],
     },
     {
-      name: "Douglas Frey",
-      title: "IT Security Lead",
+      name: "Gerald Webb",
+      title: "Chief Digital Officer",
       company: "Pinecrest Insurance",
-      location: "New Haven, CT",
-      tags: ["blocker"],
+      location: "Hartford, CT",
+      tags: ["economic-buyer"],
+      note: "EB — Anjali's boss; approves once she brings peer proof.",
     },
 
-    // --- Lumen Media ---
+    // ---- Lumen Media ----
     {
       name: "Camille Dubois",
       title: "VP Product",
       company: "Lumen Media",
       location: "Los Angeles, CA",
       tags: ["champion"],
+      cadenceDays: 21,
+      lastReachedOutDaysAgo: 28,
+      note: "Champion — cost-sensitive account; wants usage-based pricing modeled before she goes to her CFO.",
     },
     {
       name: "Jerome Baptiste",
@@ -314,24 +345,19 @@ await seedDomainAccount({
       company: "Lumen Media",
       location: "Los Angeles, CA",
       tags: ["economic-buyer"],
-      note: "EB — cost-sensitive; wants usage-based pricing modeled out.",
-    },
-    {
-      name: "Sasha Ivanova",
-      title: "Data Platform Evaluator",
-      company: "Lumen Media",
-      location: "Remote",
-      tags: ["evaluator"],
+      note: "EB — wants usage-based pricing modeled out end to end.",
     },
 
-    // --- Tessellate Analytics (SaaS peer, closed-won) ---
+    // ---- Tessellate Analytics (closed-won reference customer) ----
     {
       name: "Nathan Cole",
       title: "CTO",
       company: "Tessellate Analytics",
       location: "San Francisco, CA",
-      tags: ["champion", "closed-won"],
-      note: "Champion — fast technical win; strong reference customer now.",
+      tags: ["champion", "closed-won", "reference"],
+      cadenceDays: 45,
+      lastReachedOutDaysAgo: 30,
+      note: "Fast technical win; now our strongest reference customer. Happy to take peer calls — use him for Anjali and Karim.",
     },
     {
       name: "Priyanka Sharma",
@@ -340,164 +366,62 @@ await seedDomainAccount({
       location: "San Francisco, CA",
       tags: ["economic-buyer", "closed-won"],
     },
-    {
-      name: "Leo Nakamura",
-      title: "Head of Data Engineering",
-      company: "Tessellate Analytics",
-      location: "San Jose, CA",
-      tags: ["evaluator", "closed-won"],
-    },
 
-    // --- Ironbridge Utilities ---
-    {
-      name: "Fiona Gallagher",
-      title: "Director of Grid Operations",
-      company: "Ironbridge Utilities",
-      location: "Manchester, UK",
-      tags: ["economic-buyer"],
-    },
+    // ---- Ironbridge Utilities ----
     {
       name: "Amara Diallo",
       title: "Head of Ops",
       company: "Ironbridge Utilities",
       location: "Manchester, UK",
       tags: ["champion"],
-      note: "Champion — regulatory reporting is her pain; annual budget cycle starts in autumn.",
-    },
-    {
-      name: "Nigel Thornton",
-      title: "Procurement Lead",
-      company: "Ironbridge Utilities",
-      location: "Leeds, UK",
-      tags: ["blocker"],
+      cadenceDays: 21,
+      lastReachedOutDaysAgo: 33,
+      note: "Champion — regulatory reporting is her pain; annual budget cycle starts in autumn. Sourced via Elena at Coriander.",
     },
 
-    // --- Harbor & Vale Legal ---
-    {
-      name: "Beatrice Holloway",
-      title: "Managing Partner",
-      company: "Harbor & Vale Legal",
-      location: "New York, NY",
-      tags: ["economic-buyer"],
-    },
+    // ---- Harbor & Vale Legal (champion changed jobs from Pinecrest) ----
     {
       name: "Julian Foster",
       title: "Director of Legal Ops",
       company: "Harbor & Vale Legal",
       location: "New York, NY",
-      tags: ["champion"],
-      note: "Champion — wants to cut document turnaround; changed jobs from Pinecrest, warm intro.",
-    },
-    {
-      name: "Mei Lin Chua",
-      title: "IT Evaluator",
-      company: "Harbor & Vale Legal",
-      location: "New York, NY",
-      tags: ["evaluator"],
-    },
-
-    // --- Contacts who changed jobs (cross-account relationships) ---
-    {
-      name: "Victor Almeida",
-      title: "VP Engineering",
-      company: "Verdant Foods",
-      location: "Austin, TX",
       tags: ["champion", "changed-jobs"],
-      note: "Changed jobs — was our EB at Northwind, now VP Eng at Verdant; strong warm path in.",
-    },
-    {
-      name: "Sandra Whitfield",
-      title: "Head of Ops",
-      company: "Meridian Retail Group",
-      location: "Portland, OR",
-      tags: ["evaluator", "changed-jobs"],
-      note: "Changed jobs — moved from Brightwell Health; knows the product from the earlier eval.",
-    },
-    {
-      name: "Ibrahim Toure",
-      title: "CFO",
-      company: "Ironbridge Utilities",
-      location: "London, UK",
-      tags: ["economic-buyer", "changed-jobs"],
-      note: "Changed jobs — previously CFO at Lumen Media; re-engage with prior pricing context.",
+      cadenceDays: 21,
+      lastReachedOutDaysAgo: 14,
+      note: "Champion — wants to cut document turnaround. Changed jobs from Pinecrest, where he saw the product; warm intro carried over.",
     },
 
-    // --- Partner vendor contacts ---
+    // ---- Partner vendor contacts (co-sell sources) ----
     {
       name: "Elena Popescu",
       title: "Partner Alliance Manager",
       company: "Coriander Systems Integrators",
       location: "Bucharest, RO",
-      tags: ["champion"],
-      note: "Co-sell partner — brings us into Aldergrove and Ironbridge deals.",
-    },
-    {
-      name: "David Okoro",
-      title: "Delivery Lead",
-      company: "Coriander Systems Integrators",
-      location: "Lagos, NG",
-      tags: ["evaluator"],
+      tags: ["partner", "co-sell"],
+      cadenceDays: 30,
+      lastReachedOutDaysAgo: 25,
+      note: "Co-sell partner — sources us into Aldergrove and Ironbridge. Nurture the relationship, it pays in pipeline.",
     },
     {
       name: "Sophie Laurent",
       title: "Channel Director",
       company: "Ridgeway Cloud Partners",
       location: "Paris, FR",
-      tags: ["champion"],
-      note: "Reseller — sources cloud-migration deals; introduced HelvetSecure.",
-    },
-    {
-      name: "Tariq Rahman",
-      title: "Solutions Consultant",
-      company: "Ridgeway Cloud Partners",
-      location: "Dubai, AE",
-      tags: ["evaluator"],
-    },
-
-    // --- A few additional stakeholders to round out threads ---
-    {
-      name: "Meredith Vance",
-      title: "Deputy CFO",
-      company: "Cargoline Freight",
-      location: "Chicago, IL",
-      tags: ["economic-buyer", "closed-won"],
-    },
-    {
-      name: "Oscar Bergström",
-      title: "Security Evaluator",
-      company: "Aldergrove Bank",
-      location: "Stockholm, SE",
-      tags: ["evaluator"],
-    },
-    {
-      name: "Lucia Moreno",
-      title: "Head of Ops",
-      company: "Pinecrest Insurance",
-      location: "Hartford, CT",
-      tags: ["evaluator"],
-    },
-    {
-      name: "Frank Delgado",
-      title: "Procurement Lead",
-      company: "Kestrel Aerospace",
-      location: "Denver, CO",
-      tags: ["blocker"],
-    },
-    {
-      name: "Naomi Kwan",
-      title: "VP Engineering",
-      company: "Lumen Media",
-      location: "Los Angeles, CA",
-      tags: ["evaluator"],
+      tags: ["partner", "co-sell"],
+      cadenceDays: 30,
+      lastReachedOutDaysAgo: 23,
+      note: "Reseller — sources cloud-migration deals; introduced HelvetSecure via Karim.",
+      followUps: [{ action: "Send Sophie the updated partner deal-reg form", dueHint: "this week" }],
     },
   ],
+
   events: [
     {
       name: "Dhaga Connect 2026 — User Conference",
       emoji: "🎤",
       tags: ["conference", "flagship"],
       attendees: [
-        "Dev Malhotra",
+        "Marcus Feld",
         "Sofia Reyes",
         "Karim Haddad",
         "Yuki Tanaka",
@@ -512,53 +436,41 @@ await seedDomainAccount({
     {
       name: "Cargoline Freight — Quarterly Business Review",
       emoji: "📊",
-      tags: ["qbr", "closed-won"],
-      attendees: [
-        "Dev Malhotra",
-        "Sofia Reyes",
-        "Grace Okonkwo",
-        "Meredith Vance",
-        "Aisha Bello",
-      ],
+      tags: ["qbr", "key-account"],
+      attendees: ["Marcus Feld", "Sofia Reyes", "Grace Okonkwo", "Aisha Bello", "Roland Pike"],
     },
     {
       name: "Webinar — Data Residency for Regulated Industries",
       emoji: "🖥️",
       tags: ["webinar", "security"],
-      attendees: [
-        "Lena Fischer",
-        "Karim Haddad",
-        "Nadia Petrov",
-        "Clara Jensen",
-        "Douglas Frey",
-        "Oscar Bergström",
-        "Gordon Mackie",
-      ],
+      attendees: ["Lena Fischer", "Karim Haddad", "Nadia Petrov", "Clara Jensen", "Colonel Rita Banks"],
     },
     {
       name: "Meridian Retail — Pre-Holiday Rollout Workshop",
       emoji: "🛍️",
       tags: ["workshop", "prospect"],
-      attendees: [
-        "Yuki Tanaka",
-        "Fernando Cruz",
-        "Hannah Berg",
-        "Ravi Deshpande",
-        "Sandra Whitfield",
-      ],
+      attendees: ["Yuki Tanaka", "Fernando Cruz", "Ravi Deshpande", "Olivia Santos"],
     },
     {
-      name: "Partner Co-Sell Roundtable",
-      emoji: "🤝",
-      tags: ["partner", "co-sell"],
-      attendees: [
-        "Elena Popescu",
-        "David Okoro",
-        "Sophie Laurent",
-        "Tariq Rahman",
-        "Isaac Mbeki",
-        "Amara Diallo",
-      ],
+      name: "Partner Co-Sell Dinner",
+      emoji: "🍽️",
+      tags: ["partner", "co-sell", "dinner"],
+      attendees: ["Elena Popescu", "Sophie Laurent", "Isaac Mbeki", "Amara Diallo", "Karim Haddad"],
     },
+  ],
+
+  relationships: [
+    // Hero's org map at Cargoline + the warm re-intro path from Northwind
+    { from: "Marcus Feld", predicate: "introduced_by", to: "Rebecca Lin" },
+    { from: "Marcus Feld", predicate: "manages", to: "Aisha Bello" },
+    { from: "Grace Okonkwo", predicate: "reports_to", to: "Marcus Feld" },
+    { from: "Marcus Feld", predicate: "colleague_of", to: "Sofia Reyes" },
+    { from: "Marcus Feld", predicate: "worked_with", to: "Tomas Novak" },
+    { from: "Sofia Reyes", predicate: "colleague_of", to: "Roland Pike" },
+    // Partner-sourced champions
+    { from: "Karim Haddad", predicate: "introduced_by", to: "Sophie Laurent" },
+    { from: "Isaac Mbeki", predicate: "introduced_by", to: "Elena Popescu" },
+    // The changed-jobs warm path
+    { from: "Olivia Santos", predicate: "worked_with", to: "Yuki Tanaka" },
   ],
 });

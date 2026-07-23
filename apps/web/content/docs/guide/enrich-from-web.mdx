@@ -1,0 +1,37 @@
+---
+title: Enrich from the web
+description: Search the public web for a person's footprint on demand — always user-triggered, cited on every finding, and saved as a note you can delete.
+---
+
+Sometimes you want more context on a person than your own notes hold. The
+**Enrich from public web ✦** button on a person's page fetches it — on demand,
+never automatically.
+
+![A person's profile with the amber Enrich from public web button and its caption explaining that findings are cited, saved as a note, and fully deletable](/docs/guide/person-facts-enrich.png)
+
+## What it does
+
+Press the button and Dhaga searches the public web for that person's footprint.
+As the caption on the button says, it *"searches the public web for their
+footprint — cited, saved as a note, fully deletable."* Concretely:
+
+1. Findings come back **cited** — every claim links to where it was found.
+2. They're saved as a **normal note** on the person, just like one you'd write
+   yourself.
+3. That note can, in turn, yield **facts** (each with its receipt).
+4. You can **delete** the note — and its derived facts tombstone with it — at
+   any time.
+
+## Privacy
+
+Enrichment is **always user-triggered**. Dhaga never reaches out to the public
+web about a contact on its own or in the background — you press the button, for
+one person, each time. That keeps enrichment consistent with the rest of the
+product: no silent data collection.
+
+<Callout title="Requires a configured search provider">
+Enrichment runs against a web-search backend, which a self-hosted instance has
+to supply. Set `SEARCH_PROVIDER` and its key, or implement your own — see
+[Add a search provider](/docs/extending/search-provider). Without one
+configured, the Enrich button has nothing to call.
+</Callout>

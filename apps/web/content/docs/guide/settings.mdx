@@ -1,0 +1,35 @@
+---
+title: Settings & import
+description: The Settings page — billing, 2FA, calendar, suggestions, card-photo storage, voice engine, API keys — and importing your contacts from a CSV.
+---
+
+**`/app/settings`** is where you tune how Dhaga behaves and connect it to the
+rest of your tools.
+
+![The top of the Dhaga settings page showing billing, security, calendar, suggestions, card-photo, voice, API-key, and import sections](/docs/guide/settings.png)
+
+## What you can configure
+
+- **Billing** — your plan and usage.
+- **Security** — two-factor authentication (2FA) for your account.
+- **Calendar** — connect Google Calendar so Dhaga can work against your
+  schedule.
+- **Suggestions** — the daily reach-out suggestions and digest that feed your
+  Home briefing.
+- **Card photos** — whether the original card image is kept after a scan.
+- **Voice input** — which speech-to-text engine transcribes your voice notes.
+- **API keys** — personal access tokens for the API and the browser extension,
+  and for scripted [exports](/docs/self-hosting/deploy#backups--migration).
+
+<Callout title="Some sections depend on configuration">
+Billing only appears when the instance has Stripe configured, and calendar/
+email features need their providers wired up. On a plain self-host several of
+these sections are intentionally absent — see [Self-hosting](/docs/self-hosting).
+</Callout>
+
+## Import your contacts
+
+The **Import contacts** section brings an existing address book into Dhaga from
+a **Google** or **LinkedIn CSV** export. The file is **parsed in your browser**
+— it doesn't get uploaded somewhere to be processed — and the parsed people land
+in your graph ready to enrich with notes.

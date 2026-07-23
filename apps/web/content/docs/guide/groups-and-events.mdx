@@ -1,0 +1,46 @@
+---
+title: Groups & events
+description: Group the people you met at a gathering into an event, add them in a row from the roster, email a digest, and let Dhaga suggest groups it spots.
+---
+
+An **event** in Dhaga is any gathering or group — a conference, a dinner, a
+team. The people you met there stay grouped, so months later you can still
+answer "who did I meet at that dinner?" The rule is simple: **one event per
+event.**
+
+## Create an event
+
+Go to **`/app/events`**. The inline create form takes a **name**, an **emoji**,
+and a **colour** so each group is recognisable at a glance. Below it, the events
+table lists every group with its emoji, tags, people count, and start date.
+
+![The events page with an inline create-event form showing an emoji and colour-swatch picker, above a table of existing events](/docs/guide/events-list.png)
+
+## Add people to it
+
+Open an event to see its **roster**. Use the **Add people** search box to attach
+several people in a row without leaving the page — type a name, pick, repeat.
+
+![An event detail page showing its people roster and an Add people search box](/docs/guide/event-detail.png)
+
+You can also add a person to an event **from their own profile** — a handy
+shortcut when you're looking at someone and remember where you met them.
+
+## Manage and share
+
+From an event you can:
+
+- **Email a digest** of the attendees to yourself.
+- **Rename, restyle** (emoji/colour), or **retag** the group.
+- **Merge** two events that turned out to be the same gathering.
+
+<Callout title="Digests need email configured">
+The attendee digest sends over email, which a self-hosted instance wires up
+with `RESEND_API_KEY` and friends — see the
+[Self-host env var reference](/docs/self-hosting#self-host-env-var-reference).
+</Callout>
+
+## Suggested groups
+
+Home surfaces **suggested groups** — clusters of people Dhaga noticed belong
+together — so you can turn a pattern it spotted into a real event with one tap.

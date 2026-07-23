@@ -3,14 +3,8 @@ import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/brand/ModeToggle";
 import { ThreadMark } from "@/components/brand/ThreadMark";
 import { ResourcesMenu } from "@/components/landing/ResourcesMenu";
-
-const NAV_LINKS = [
-  { href: "#product", label: "Product" },
-  { href: "#compare", label: "Compare" },
-  { href: "#opensource", label: "Open source" },
-  { href: "#pricing", label: "Pricing" },
-  { href: "#faq", label: "FAQ" },
-];
+import { MobileNav } from "@/components/landing/MobileNav";
+import { NAV_LINKS } from "@/utils/constants/landing";
 
 interface HeaderProps {
   isSignedIn: boolean;
@@ -57,6 +51,7 @@ export function Header({ isSignedIn }: HeaderProps) {
               </Button>
             </>
           )}
+          <MobileNav isSignedIn={isSignedIn} />
         </div>
       </div>
     </header>

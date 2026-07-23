@@ -41,16 +41,22 @@ export default async function BlogPageRoute({
 
   // Hub and category landings render bespoke, auto-generated React — not the
   // hand-authored MDX card lists. The frontmatter is still used, for metadata.
+  // These aren't `DocsPage`s, so they must claim the fumadocs `main` grid area
+  // themselves (`DocsLayout`'s Container is a CSS grid with named areas); left
+  // unplaced they auto-flow into the first gutter track and render half-width.
   if (isBlogIndexRoute(slug)) {
-    if (!slug || slug.length === 0) {
-      return <BlogIndex title={title} description={description} />;
-    }
     return (
-      <CategoryIndex
-        categorySlug={slug[0]}
-        title={title}
-        description={description}
-      />
+      <div className="w-full min-w-0 [grid-area:main]">
+        {!slug || slug.length === 0 ? (
+          <BlogIndex title={title} description={description} />
+        ) : (
+          <CategoryIndex
+            categorySlug={slug[0]}
+            title={title}
+            description={description}
+          />
+        )}
+      </div>
     );
   }
 

@@ -21,3 +21,4 @@ export {
   OSS_PILLARS,
 } from "./sections";
 export { FAQ_ITEMS, PRICING_PLANS } from "./pricing";
+export { NAV_LINKS, RESOURCE_ITEMS } from "./nav";

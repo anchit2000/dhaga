@@ -21,6 +21,18 @@ const nextConfig: NextConfig = {
         outputFileTracingRoot: path.join(__dirname, "../../"),
       }
     : {}),
+  // The founder story moved from /blog/why-i-built-dhaga into the General
+  // category (/blog/general/why-i-built-dhaga). Keep the old URL reachable for
+  // external links and anything still pointing at it.
+  async redirects() {
+    return [
+      {
+        source: "/blog/why-i-built-dhaga",
+        destination: "/blog/general/why-i-built-dhaga",
+        permanent: true,
+      },
+    ];
+  },
   // @dhaga/core and @dhaga/ee ship raw TypeScript; Next transpiles them in-place.
   transpilePackages: ["@dhaga/core", "@dhaga/ee"],
   // Runtime-loaded native/WASM packages stay out of the bundle:

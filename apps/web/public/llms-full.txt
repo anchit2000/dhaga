@@ -1,0 +1,57 @@
+# Dhaga
+
+> Dhaga (धागा — "thread") is an open-source, privacy-first, AI-native personal CRM. Capture contacts anywhere (business-card/badge scan, voice notes, web quick-add, browser extension), turn every note into a private knowledge graph, and query it in natural language.
+
+## About
+
+Dhaga is open-core: the entire CRM is licensed AGPL and runs fully self-hosted,
+with a source-available proprietary cloud tier layered on top. It is built on
+Next.js (App Router) + TypeScript, Postgres + pgvector for storage, and Claude
+(via the Anthropic SDK) for extraction, search, and drafting — with a
+provider-agnostic gateway so you can bring your own key or a local model. Every
+AI-derived fact keeps a receipt back to its source note, and deleting a note
+cascades to the facts and graph edges derived from it. Your contact data is your
+data about third parties; export always works and nothing is collected silently.
+
+## Docs
+
+- [Documentation home](https://dhaga-web.vercel.app/docs)
+- [Using Dhaga (end-user guide)](https://dhaga-web.vercel.app/docs/guide)
+- [Self-hosting](https://dhaga-web.vercel.app/docs/self-hosting)
+- [Extending Dhaga (LLM/search gateways, BYO-key)](https://dhaga-web.vercel.app/docs/extending)
+- [API reference](https://dhaga-web.vercel.app/docs/api)
+- [Contributing](https://dhaga-web.vercel.app/docs/contributing)
+
+## Blog — engineering
+
+- [The Dhaga blog](https://dhaga-web.vercel.app/blog)
+- [Why I built Dhaga (founder story)](https://dhaga-web.vercel.app/blog/why-i-built-dhaga)
+- [Engineering deep dives](https://dhaga-web.vercel.app/blog/engineering)
+- [Building with Claude Code](https://dhaga-web.vercel.app/blog/engineering/building-with-claude-code)
+- [Metering the model (AI unit economics)](https://dhaga-web.vercel.app/blog/engineering/metering-the-model)
+- [Rendering a 21k-node graph in the browser](https://dhaga-web.vercel.app/blog/engineering/rendering-21k-node-graph)
+- [Self-healing schema](https://dhaga-web.vercel.app/blog/engineering/self-healing-schema)
+- [Tenant isolation on serverless Postgres](https://dhaga-web.vercel.app/blog/engineering/tenant-isolation-serverless-postgres)
+- [The feature flag that didn't fire](https://dhaga-web.vercel.app/blog/engineering/the-feature-flag-that-didnt-fire)
+
+## Blog — by profession
+
+- [By profession](https://dhaga-web.vercel.app/blog/solutions)
+- [B2B sales](https://dhaga-web.vercel.app/blog/solutions/b2b-sales)
+- [Community builders](https://dhaga-web.vercel.app/blog/solutions/community-builders)
+- [Consulting](https://dhaga-web.vercel.app/blog/solutions/consulting)
+- [Financial advisors](https://dhaga-web.vercel.app/blog/solutions/financial-advisors)
+- [Founders](https://dhaga-web.vercel.app/blog/solutions/founders)
+- [Legal](https://dhaga-web.vercel.app/blog/solutions/legal)
+- [Nonprofit fundraising](https://dhaga-web.vercel.app/blog/solutions/nonprofit-fundraising)
+- [Real estate](https://dhaga-web.vercel.app/blog/solutions/real-estate)
+- [Recruiting](https://dhaga-web.vercel.app/blog/solutions/recruiting)
+- [Venture capital](https://dhaga-web.vercel.app/blog/solutions/venture-capital)
+
+## Key pages
+
+- [Home](https://dhaga-web.vercel.app/)
+- [Sign up](https://dhaga-web.vercel.app/signup)
+- [Log in](https://dhaga-web.vercel.app/login)
+- [Privacy](https://dhaga-web.vercel.app/privacy)
+- [Source code (GitHub, AGPL core)](https://github.com/anchit2000/dhaga)

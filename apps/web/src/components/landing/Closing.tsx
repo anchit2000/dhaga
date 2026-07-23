@@ -45,6 +45,7 @@ export function Footer() {
             <FooterLink href="#product" label="Product" />
             <FooterLink href="#pricing" label="Pricing" />
             <FooterLink href="#faq" label="FAQ" />
+            <FooterLink href="/blog" label="Blog" />
             <FooterLink href="/docs" label="Docs" />
           </div>
           <div className="space-y-2.5">

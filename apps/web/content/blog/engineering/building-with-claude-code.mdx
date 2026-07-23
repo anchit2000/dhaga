@@ -1,6 +1,9 @@
 ---
 title: How we build Dhaga with Claude Code
 description: "A checked-in rulebook the AI must obey, hooks that gate every single edit, and a persistent memory that survives across sessions. Our AI-assisted engineering workflow — the practices that make an agent a reliable contributor instead of a fast intern who forgets everything."
+date: "2026-07-22"
+author: "Anchit Shrivastava"
+tags: ["engineering", "ai", "claude-code", "developer-workflow", "automation"]
 ---
 
 <Callout title="The short version">
@@ -116,6 +119,37 @@ when the session ends. (Several of the other posts in this
 work — the measured numbers, the rejected approaches — was captured while it was
 fresh.)
 
+## 4. Many agents, one plan: subagent orchestration
+
+A single agent working a long task drifts — context fills up, and late edits
+collide with early ones. For anything large we now run the workflow codified as
+`CLAUDE.md` **Rule 14 — subagent orchestration**, and the page you're reading is
+a worked example of it.
+
+The overhaul that shipped this blog — backfilled post metadata, a new category,
+bespoke auto-generated landing pages, per-post SEO, social-card images, and an
+RSS feed — was built in three phases:
+
+- **A foundation pass first.** One agent lays the shared groundwork everyone else
+  will depend on — here, the blog frontmatter schema and the nav wiring — and
+  *nothing else starts until it lands.* Parallel work on top of a moving
+  foundation is how you get merge chaos.
+- **Then parallel agents, partitioned by file ownership.** Each subagent gets an
+  explicit, disjoint set of files it alone may touch, and an explicit list of
+  files it must *not* — the schema, the shared component map, the marketing
+  header. Non-overlapping ownership is what makes concurrency safe: two agents
+  can't clobber each other if they can't reach the same file.
+- **The main thread stays out of the edit path.** It plans, partitions, and does
+  the final end-to-end validation — the authoritative type-check and build — but
+  it doesn't compete with its own workers for the same files. Planning and
+  verification are exactly the judgment work worth reserving for the thread with
+  the whole picture.
+
+It's the same principle as the *surgical-changes* rule, scaled up: give each
+worker a bounded, contained slice, and the blast radius of any one of them stays
+small. A partitioned fleet of agents ships a big change the way one careful
+engineer ships a small one.
+
 ## The architecture helps too: patterns that make edits safe
 
 Good agent practices are reinforced by a codebase designed to be *safely
@@ -149,6 +183,10 @@ direction: small, additive, contained.
 5. **Design the codebase to be safely extended.** Interfaces and gateways make
    the natural unit of change "a new file that touches nothing else" — the safest
    possible thing to hand an agent.
+6. **Partition big work across agents by file ownership.** A foundation pass
+   first, then parallel workers that each own a disjoint slice, with the main
+   thread reserved for planning and final validation — concurrency without
+   collisions.
 
 The through-line: **the model is one component in a system.** Invest in the
 rulebook, the reflexes, and the memory around it, and an AI agent becomes a

@@ -69,6 +69,16 @@ A merged change that leaves docs describing the old behavior is incomplete —
 stale docs are a bug. Match existing doc conventions; be honest about what's
 built vs pending (Rule 12).
 
+## Rule 14 — Orchestrate with subagents; keep the main thread lean
+For any non-trivial or multi-file task, do the work in subagents and reserve the
+main thread for planning, delegation, and final validation. Exploration, bulk
+edits, and research run in agents so their file dumps stay out of the main
+context. Partition work by file ownership so parallel agents don't collide; run
+a foundation/plumbing pass first when agents share a schema or config. The main
+thread only orchestrates and runs the final verification (build, typecheck,
+lint, screenshots) before reporting. Don't inline bulk work that can be
+delegated. (Trivial one-liners are exempt — use judgment, Rule 2.)
+
 ---
 
 ## Project: Dhaga (धागा — "thread"; formerly working title NetworkPro)

@@ -23,9 +23,9 @@
     "stripe": "^19.3.0"
   },
   "devDependencies": {
-    "@types/node": "^20",
+    "@types/node": "^26",
     "@types/pg": "^8.20.0",
-    "typescript": "^5",
-    "vitest": "^4.1.9"
+    "typescript": "^7",
+    "vitest": "^4.1.10"
   }
 }

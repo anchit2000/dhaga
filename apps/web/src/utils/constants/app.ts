@@ -1,6 +1,6 @@
 /** App-shell constants (the product UI under /app, not the landing page). */
 
-import { CalendarDays, CirclePlus, Home, Shapes, Users, Waypoints } from "lucide-react";
+import { BookOpen, CalendarDays, CirclePlus, Home, Newspaper, Shapes, Users, Waypoints } from "lucide-react";
 import type { CaptureImageType } from "@dhaga/core/src/api/capture";
 
 export const SESSION_COOKIE = "dhaga_session";
@@ -13,12 +13,18 @@ export const APP_NAV_LINKS = [
   { href: "/app/graph", label: "Graph", icon: Waypoints },
 ] as const;
 
-/** Secondary destinations, tucked under the nav's "More" menu. */
+/**
+ * Secondary destinations, tucked under the nav's "More" menu. The trailing
+ * entries (Blog, Docs) point outside the /app tree; MoreMenu separates them
+ * from the in-app pages with a divider.
+ */
 export const APP_MORE_LINKS = [
   { href: "/app/people", label: "People", icon: Users },
   { href: "/app/events", label: "Events", icon: CalendarDays },
   { href: "/app/entities", label: "Entities", icon: Shapes },
   { href: "/app/quick-add", label: "Quick add", icon: CirclePlus },
+  { href: "/blog", label: "Blog", icon: Newspaper },
+  { href: "/docs", label: "Docs", icon: BookOpen },
 ] as const;
 
 export const HOME_PREVIEW_LIMIT = 5;

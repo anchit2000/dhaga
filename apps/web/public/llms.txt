@@ -1,0 +1,26 @@
+# Dhaga
+
+> Dhaga (धागा — "thread") is an open-source, privacy-first, AI-native personal CRM. Capture contacts anywhere (business-card/badge scan, voice notes, web quick-add, browser extension), turn every note into a private knowledge graph, and query it in natural language. Open-core: the whole CRM is AGPL and runs fully self-hosted, with a source-available cloud tier.
+
+## Docs
+
+- [Documentation home](https://dhaga-web.vercel.app/docs): What Dhaga is, how to self-host it, and the product thinking behind it.
+- [Using Dhaga](https://dhaga-web.vercel.app/docs/guide): End-user guide — capturing contacts, building the graph, and asking questions.
+- [Self-hosting](https://dhaga-web.vercel.app/docs/self-hosting): Run the AGPL core yourself with none of the proprietary cloud tier.
+- [Extending Dhaga](https://dhaga-web.vercel.app/docs/extending): Bring-your-own-key LLMs, search providers, and other pluggable gateways.
+- [API reference](https://dhaga-web.vercel.app/docs/api): Generated reference for the shared core (LLM/search clients, prompt builders, types).
+- [Contributing](https://dhaga-web.vercel.app/docs/contributing): How to build, test, and contribute to the project.
+
+## Blog
+
+- [The Dhaga blog](https://dhaga-web.vercel.app/blog): Engineering deep dives and practical guides by profession.
+- [Why I built Dhaga](https://dhaga-web.vercel.app/blog/why-i-built-dhaga): The founder story behind the product.
+- [Engineering](https://dhaga-web.vercel.app/blog/engineering): Deep dives on the hardest problems — rendering a 21k-node graph, AI unit economics, tenant isolation on serverless Postgres.
+- [By profession](https://dhaga-web.vercel.app/blog/solutions): How Dhaga fits real estate, finance, sales, recruiting, legal, VC, and more.
+
+## Key pages
+
+- [Home](https://dhaga-web.vercel.app/): Product overview and the problem Dhaga solves.
+- [Sign up](https://dhaga-web.vercel.app/signup): Create an account.
+- [Privacy](https://dhaga-web.vercel.app/privacy): How Dhaga handles your data.
+- [Source code](https://github.com/anchit2000/dhaga): The AGPL-core repository on GitHub.

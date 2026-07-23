@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/brand/ModeToggle";
 import { ThreadMark } from "@/components/brand/ThreadMark";
+import { ResourcesMenu } from "@/components/landing/ResourcesMenu";
 
 const NAV_LINKS = [
   { href: "#product", label: "Product" },
@@ -9,7 +10,6 @@ const NAV_LINKS = [
   { href: "#opensource", label: "Open source" },
   { href: "#pricing", label: "Pricing" },
   { href: "#faq", label: "FAQ" },
-  { href: "/docs", label: "Docs" },
 ];
 
 interface HeaderProps {
@@ -36,6 +36,7 @@ export function Header({ isSignedIn }: HeaderProps) {
               {link.label}
             </Link>
           ))}
+          <ResourcesMenu />
         </nav>
         <div className="flex items-center gap-2 sm:gap-4">
           <ModeToggle />

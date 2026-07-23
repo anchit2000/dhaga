@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Compass, Ellipsis } from "lucide-react";
@@ -45,13 +46,20 @@ export function MoreMenu() {
         <span className="sr-only">More</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        {APP_MORE_LINKS.map((link) => {
+        {APP_MORE_LINKS.map((link, index) => {
           const Icon = link.icon;
+          // Divide in-app pages from destinations outside the /app tree (Blog, Docs).
+          const startsExternalGroup =
+            !link.href.startsWith("/app") &&
+            (index === 0 || APP_MORE_LINKS[index - 1].href.startsWith("/app"));
           return (
-            <DropdownMenuItem key={link.href} render={<Link href={link.href} />}>
-              <Icon className="size-4" />
-              {link.label}
-            </DropdownMenuItem>
+            <Fragment key={link.href}>
+              {startsExternalGroup ? <DropdownMenuSeparator /> : null}
+              <DropdownMenuItem render={<Link href={link.href} />}>
+                <Icon className="size-4" />
+                {link.label}
+              </DropdownMenuItem>
+            </Fragment>
           );
         })}
         <DropdownMenuSeparator />

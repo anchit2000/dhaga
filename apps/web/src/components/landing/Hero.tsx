@@ -51,6 +51,17 @@ export function Hero() {
           </Button>
         </div>
         <p
+          className={`mt-5 text-sm ${RISE}`}
+          style={{ animationDelay: "0.46s" }}
+        >
+          <Link
+            href="/blog/general/why-i-built-dhaga"
+            className="inline-flex min-h-11 items-center gap-1 text-ember/90 underline-offset-4 transition-colors hover:text-ember hover:underline"
+          >
+            Read why I built this <span aria-hidden="true">&rarr;</span>
+          </Link>
+        </p>
+        <p
           className={`mt-4 text-sm text-fog ${RISE}`}
           style={{ animationDelay: "0.52s" }}
         >

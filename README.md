@@ -18,6 +18,7 @@ AI-derived fact citing the exact note it came from.</p>
 <br/><br/>
 
 <a href="docs/assets/dhaga-launch.mp4"><b>▶ Watch the walkthrough</b></a> &nbsp;·&nbsp;
+<a href="https://dhaga-web.vercel.app/blog/why-i-built-dhaga">Why I built this</a> &nbsp;·&nbsp;
 <a href="docs/SELF_HOSTING.md">Self-hosting</a> &nbsp;·&nbsp;
 <a href="docs/ROADMAP.md">Roadmap</a> &nbsp;·&nbsp;
 <a href="docs/BRD.md">Architecture</a>

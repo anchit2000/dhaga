@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import { Analytics } from "@vercel/analytics/next";
@@ -6,6 +6,8 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ThemeProvider } from "next-themes";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Toaster } from "@/components/ui/sonner";
+import { SiteStructuredData } from "@/components/seo/site-structured-data";
+import { SITE_URL } from "@/utils/constants/site";
 import "./globals.css";
 
 const plexMono = IBM_Plex_Mono({
@@ -42,13 +44,31 @@ export const metadata: Metadata = {
     "knowledge graph",
     "open source CRM",
   ],
+  alternates: {
+    canonical: SITE_URL,
+  },
   openGraph: {
     title: "Dhaga — the AI personal CRM that remembers everyone you meet",
     description:
       "Capture contacts anywhere. Ask your network questions. Get answers with receipts. Open source and private by design.",
     type: "website",
     siteName: "Dhaga",
+    url: SITE_URL,
+    locale: "en_US",
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "Dhaga — the AI personal CRM that remembers everyone you meet",
+    description:
+      "Capture contacts anywhere. Ask your network questions. Get answers with receipts. Open source and private by design.",
+    images: ["/opengraph-image.png"],
+  },
+};
+
+export const viewport: Viewport = {
+  // Brand near-black (matches manifest.ts + --color-ink); themes the mobile
+  // browser chrome.
+  themeColor: "#0d0b09",
 };
 
 export default function RootLayout({
@@ -76,6 +96,7 @@ export default function RootLayout({
           <NuqsAdapter>{children}</NuqsAdapter>
           <Toaster position="bottom-right" />
         </ThemeProvider>
+        <SiteStructuredData />
         <Analytics />
         <SpeedInsights />
       </body>

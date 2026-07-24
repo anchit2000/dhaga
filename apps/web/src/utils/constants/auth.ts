@@ -24,6 +24,17 @@ export interface SocialProviderOption {
 export const GOOGLE_CONTACTS_SCOPE = "https://www.googleapis.com/auth/contacts.readonly";
 export const MICROSOFT_CONTACTS_SCOPE = "Contacts.Read";
 
+/**
+ * Passkey sign-in error codes that mean "the ceremony didn't complete" rather
+ * than "something failed" — the user dismissed the browser prompt, or no
+ * passkey exists on this device. The WebAuthn API can't tell these apart (both
+ * surface as a NotAllowedError → ERROR_CEREMONY_ABORTED), and
+ * @better-auth/passkey maps a non-WebAuthn abort to AUTH_CANCELLED. We treat
+ * both as a soft, non-error state and steer the user to another method instead
+ * of showing a red failure — see components/app/auth/PasskeyButton.tsx.
+ */
+export const PASSKEY_CANCELLED_CODES = ["AUTH_CANCELLED", "ERROR_CEREMONY_ABORTED"] as const;
+
 export type ContactImportProviderId = "google" | "microsoft";
 
 export interface ContactImportProvider {

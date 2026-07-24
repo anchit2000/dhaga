@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SocialButtons } from "@/components/app/auth/SocialButtons";
+import { AuthDivider } from "@/components/app/auth/AuthDivider";
+import { SignupNotice } from "@/components/app/SignupNotice";
 import type { SocialProviderOption } from "@/utils/constants/auth";
 
 interface SignupFormProps {
@@ -21,12 +23,34 @@ export function SignupForm({ socialProviders, defaultEmail }: SignupFormProps) {
   const [error, setError] = useState<string | undefined>();
   const [requested, setRequested] = useState<string | undefined>();
   const [verificationSent, setVerificationSent] = useState(false);
+  const [magicLinkMode, setMagicLinkMode] = useState(false);
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     setPending(true);
     setError(undefined);
+
+    if (magicLinkMode) {
+      // In magic-link mode the account is only created when the user clicks the
+      // link (the verify step runs the signup access gate then) — so the send
+      // itself never returns the 403 access-request response. Keep the copy
+      // honest: tell them to check their email, don't claim the account exists.
+      const { error: linkError } = await authClient.signIn.magicLink({
+        email: String(formData.get("email") ?? ""),
+        name: String(formData.get("name") ?? ""),
+        callbackURL: "/app",
+      });
+      setPending(false);
+      if (linkError) {
+        setError(linkError.message ?? "Couldn't send the sign-in link.");
+        return;
+      }
+      setMagicLinkSent(true);
+      return;
+    }
+
     const { error: signUpError } = await authClient.signUp.email({
       name: String(formData.get("name") ?? ""),
       email: String(formData.get("email") ?? ""),
@@ -48,21 +72,13 @@ export function SignupForm({ socialProviders, defaultEmail }: SignupFormProps) {
     router.refresh();
   }
 
-  if (requested) {
+  if (requested || verificationSent || magicLinkSent) {
     return (
-      <div className="space-y-3 text-center text-sm text-fog" role="status">
-        <p>{requested}</p>
-        <p>There is no account yet. Once approved, use the link in the email to finish signup.</p>
-      </div>
-    );
-  }
-
-  if (verificationSent) {
-    return (
-      <div className="space-y-3 text-center text-sm text-fog" role="status">
-        <p>Check your inbox to verify your email.</p>
-        <p>Your account will be ready after you open the verification link.</p>
-      </div>
+      <SignupNotice
+        requested={requested}
+        verificationSent={verificationSent}
+        magicLinkSent={magicLinkSent}
+      />
     );
   }
 
@@ -89,20 +105,22 @@ export function SignupForm({ socialProviders, defaultEmail }: SignupFormProps) {
             className="h-11"
           />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="password" className="text-fog">
-            Password
-          </Label>
-          <Input
-            id="password"
-            name="password"
-            type="password"
-            required
-            minLength={8}
-            autoComplete="new-password"
-            className="h-11"
-          />
-        </div>
+        {magicLinkMode ? null : (
+          <div className="space-y-2">
+            <Label htmlFor="password" className="text-fog">
+              Password
+            </Label>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              required
+              minLength={8}
+              autoComplete="new-password"
+              className="h-11"
+            />
+          </div>
+        )}
         {error ? (
           <p className="text-sm text-red-400" role="alert">
             {error}
@@ -110,17 +128,20 @@ export function SignupForm({ socialProviders, defaultEmail }: SignupFormProps) {
         ) : null}
         <Button type="submit" disabled={pending} className="w-full">
           {pending ? <Loader2 className="size-4 animate-spin" /> : null}
-          Create account
+          {magicLinkMode
+            ? pending ? "Sending link…" : "Email me a sign-in link"
+            : "Create account"}
         </Button>
+        <button
+          type="button"
+          onClick={() => setMagicLinkMode((v) => !v)}
+          className="w-full text-center text-sm text-fog hover:underline"
+        >
+          {magicLinkMode ? "Use a password instead" : "Email me a sign-in link instead"}
+        </button>
       </form>
 
-      {socialProviders.length > 0 ? (
-        <div className="flex items-center gap-3 text-xs text-fog">
-          <span className="h-px flex-1 bg-seam" />
-          or continue with
-          <span className="h-px flex-1 bg-seam" />
-        </div>
-      ) : null}
+      {socialProviders.length > 0 ? <AuthDivider /> : null}
       <SocialButtons providers={socialProviders} />
     </div>
   );

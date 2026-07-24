@@ -1,3 +1,4 @@
+import { profileFromExtracted } from "@dhaga/core";
 import { rowToRecord } from "./types";
 import type { ImportCandidate } from "./types";
 
@@ -25,7 +26,7 @@ export function linkedInRowsToCandidates(
 
     const connectedOn = record["Connected On"];
     candidates.push({
-      contact: {
+      contact: profileFromExtracted({
         name,
         title: record["Position"] || null,
         company: record["Company"] || null,
@@ -33,7 +34,7 @@ export function linkedInRowsToCandidates(
         phones: [],
         links: record["URL"] ? [record["URL"]] : [],
         location: null,
-      },
+      }),
       receipt: `Imported from LinkedIn Connections export${
         connectedOn ? ` · connected ${connectedOn}` : ""
       }`,

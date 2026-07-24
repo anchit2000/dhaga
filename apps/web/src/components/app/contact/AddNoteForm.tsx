@@ -7,16 +7,22 @@ import { Textarea } from "@/components/ui/textarea";
 import { SubmitButton } from "../SubmitButton";
 import { useDictation } from "./useDictation";
 import { DictationProgress } from "./DictationProgress";
+import { VoiceNoteReview } from "./VoiceNoteReview";
+import { useVoiceReview } from "./useVoiceReview";
 
 export function AddNoteForm({ contactId }: { contactId: string }) {
   const formRef = useRef<HTMLFormElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [dictated, setDictated] = useState(false);
+  // Dhaga Voice (Moonshine) transcripts get tap-to-fix word-chips; every other
+  // engine keeps the plain textarea-append behavior (voiceReview.onDictate no-ops).
+  const voiceReview = useVoiceReview(textareaRef);
   const { supported, listening, transcribing, loadingProgress, partialText, start, stop } = useDictation((text) => {
     const el = textareaRef.current;
     if (!el) return;
     el.value = el.value ? `${el.value.replace(/\s+$/, "")} ${text}` : text;
     setDictated(true);
+    voiceReview.onDictate(el.value);
   });
   const [state, formAction] = useActionState<NoteFormState, FormData>(
     async (previous, formData) => {
@@ -24,6 +30,7 @@ export function AddNoteForm({ contactId }: { contactId: string }) {
       if (!result.error) {
         formRef.current?.reset();
         setDictated(false);
+        voiceReview.reset();
       }
       return result;
     },
@@ -45,6 +52,9 @@ export function AddNoteForm({ contactId }: { contactId: string }) {
             : "What did you learn about them? Facts get extracted automatically."
         }
       />
+      {voiceReview.show ? (
+        <VoiceNoteReview text={voiceReview.text} onChange={voiceReview.onChange} onWordFix={voiceReview.onWordFix} />
+      ) : null}
       {state.error ? (
         <p className="text-sm text-red-400" role="alert">
           {state.error}

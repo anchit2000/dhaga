@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
-import { Loader2, Pencil, X } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,12 +12,12 @@ import {
 } from "@/lib/actions/voice";
 import type { VocabTerm } from "@dhaga/core/src/voice/types";
 
-function SaveButton({ editing }: { editing: boolean }) {
+function AddButton() {
   const { pending } = useFormStatus();
   return (
     <Button type="submit" variant="outline" size="sm" disabled={pending}>
       {pending ? <Loader2 className="size-3.5 animate-spin" /> : null}
-      {editing ? "Update term" : "Add term"}
+      Add word
     </Button>
   );
 }
@@ -51,17 +51,16 @@ function ClearAllButton() {
 }
 
 /** Vocabulary manager for on-device dictation: the terms Dhaga has been taught
- *  to spell/recognize a specific way. Add is an upsert keyed by the term, so
- *  editing re-submits the same term with new aliases (see addVocabTermAction).
- *  Inputs are uncontrolled and reset by remounting (`key`) — on edit-prefill and
- *  after a successful write — which avoids setState-in-effect churn. */
+ *  to spell/recognize a specific way. This is a simple create + delete surface —
+ *  the primary way users teach words is tap-to-fix in the dictation transcript.
+ *  Add is an upsert keyed by the term (see addVocabTermAction). The add form's
+ *  inputs are uncontrolled and reset by remounting (`key`) after a successful
+ *  write — which avoids setState-in-effect churn. */
 export function VoiceTeaching({ terms }: { terms: VocabTerm[] }) {
-  const [draft, setDraft] = useState<{ term: string; aliases: string } | null>(null);
   const [resetKey, setResetKey] = useState(0);
 
-  async function handleSave(formData: FormData): Promise<void> {
+  async function handleAdd(formData: FormData): Promise<void> {
     await addVocabTermAction(formData);
-    setDraft(null);
     setResetKey((key) => key + 1);
   }
 
@@ -76,24 +75,19 @@ export function VoiceTeaching({ terms }: { terms: VocabTerm[] }) {
       </div>
 
       <form
-        key={draft ? `edit:${draft.term}` : `new:${resetKey}`}
-        action={handleSave}
+        key={`new:${resetKey}`}
+        action={handleAdd}
         className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1.5fr_auto] sm:items-end"
       >
         <label className="block text-xs text-fog">
           Term
-          <Input className="mt-1 h-9" name="term" defaultValue={draft?.term ?? ""} placeholder="Anchit" required />
+          <Input className="mt-1 h-9" name="term" placeholder="Anchit" required />
         </label>
         <label className="block text-xs text-fog">
           Heard as (optional)
-          <Input
-            className="mt-1 h-9"
-            name="aliases"
-            defaultValue={draft?.aliases ?? ""}
-            placeholder="An chit, Ankit"
-          />
+          <Input className="mt-1 h-9" name="aliases" placeholder="An chit, Ankit" />
         </label>
-        <SaveButton editing={draft !== null} />
+        <AddButton />
       </form>
 
       {terms.length > 0 ? (
@@ -106,21 +100,10 @@ export function VoiceTeaching({ terms }: { terms: VocabTerm[] }) {
                   <p className="truncate text-xs text-fog">heard as {t.aliases.join(", ")}</p>
                 ) : null}
               </div>
-              <div className="flex shrink-0 items-center gap-1">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={`Edit ${t.term}`}
-                  onClick={() => setDraft({ term: t.term, aliases: t.aliases.join(", ") })}
-                >
-                  <Pencil className="size-3.5" />
-                </Button>
-                <form action={removeVocabTermAction}>
-                  <input type="hidden" name="term" value={t.term} />
-                  <RemoveButton />
-                </form>
-              </div>
+              <form action={removeVocabTermAction} className="shrink-0">
+                <input type="hidden" name="term" value={t.term} />
+                <RemoveButton />
+              </form>
             </li>
           ))}
         </ul>

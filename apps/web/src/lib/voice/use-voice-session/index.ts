@@ -3,48 +3,20 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { noSubscription } from "@/lib/utils";
-import { VoiceSession } from "@dhaga/core/src/voice/session";
-import { DoubleMetaphoneDictionary } from "@dhaga/core/src/voice/teaching/phonetic";
-import { HeuristicEditWatcher } from "@dhaga/core/src/voice/teaching/edit-watcher";
-import { NoopCorrectionEngine } from "@dhaga/core/src/voice/correction/noop";
 import type { SessionEvent } from "@dhaga/core/src/voice/types";
-import { MoonshineAsrEngine } from "@/lib/voice/moonshine";
-import { createMic, type Mic } from "@/lib/voice/mic";
-import { DbVocabStore } from "@/lib/voice/db-vocab-store";
 import { isWebGpuAvailable } from "@/lib/voice/capability";
 import type { DictationState } from "@/components/app/contact/useDictation";
+import { ensureRuntime, setActiveSink, releaseActiveSink } from "./runtime";
+
+export { teachVocab } from "./runtime";
 
 /**
  * "Dhaga Voice" (Moonshine) dictation, wired to the useDictation contract.
  * Push-to-talk: start() begins live capture; stop() finalizes through the
  * phonetic teaching layer and hands the corrected text to onFinalText. The
- * engine + VoiceSession are a MODULE-LEVEL singleton (like whisper-model-loader)
- * so the model loads once and every surface shares one WebGPU context; a single
- * active-sink slot routes events to whichever surface is currently recording.
+ * engine + VoiceSession are a module-level singleton owned by ./runtime.
  */
 const WASM_NOTICE = "WebGPU wasn't available — running the on-device model on CPU, which is slower.";
-
-let sharedEngine: MoonshineAsrEngine | null = null;
-let sharedSession: VoiceSession | null = null;
-let sharedMic: Mic | null = null;
-let activeSink: ((event: SessionEvent) => void) | null = null;
-
-function ensureRuntime(): { engine: MoonshineAsrEngine; session: VoiceSession; mic: Mic } {
-  if (!sharedEngine || !sharedSession || !sharedMic) {
-    sharedEngine = new MoonshineAsrEngine();
-    sharedSession = new VoiceSession({
-      asr: sharedEngine,
-      dict: new DoubleMetaphoneDictionary(),
-      correction: new NoopCorrectionEngine(),
-      store: new DbVocabStore(),
-      watcher: new HeuristicEditWatcher(),
-      // Delegate to whichever surface is recording; dropped when none is.
-      sink: (event) => activeSink?.(event),
-    });
-    sharedMic = createMic((frame) => sharedSession?.pushFrame(frame));
-  }
-  return { engine: sharedEngine, session: sharedSession, mic: sharedMic };
-}
 
 export function useVoiceSession(onFinalText: (text: string) => void): DictationState {
   // SSR-safe mic-capability check without a hydration mismatch.
@@ -76,18 +48,13 @@ export function useVoiceSession(onFinalText: (text: string) => void): DictationS
 
   // Release the mic + relinquish the sink if this surface unmounts mid-record.
   useEffect(() => {
-    return () => {
-      if (activeSink === handleEvent) {
-        sharedMic?.stop();
-        activeSink = null;
-      }
-    };
+    return () => releaseActiveSink(handleEvent);
   }, [handleEvent]);
 
   async function start(): Promise<void> {
     if (!supported || listening) return;
     const { engine, session, mic } = ensureRuntime();
-    activeSink = handleEvent; // route the singleton's events to this surface
+    setActiveSink(handleEvent); // route the singleton's events to this surface
     try {
       if (!engine.isReady()) {
         setLoadingProgress(0);

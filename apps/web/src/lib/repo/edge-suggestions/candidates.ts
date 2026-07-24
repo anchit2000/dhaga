@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { ilike, or } from "drizzle-orm";
+import { and, ilike, ne, or } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { contacts } from "@/lib/db/schema";
 import { escapeLike } from "@/utils/escape-like";
@@ -30,7 +30,15 @@ export async function findRelationshipCandidates(
   const rows = await db
     .select({ id: contacts.id, name: contacts.name, title: contacts.title })
     .from(contacts)
-    .where(or(ilike(contacts.name, escapeLike(trimmed)), ilike(contacts.name, `${escapeLike(firstWord)}%`)))
+    // Never auto-link to an existing "mentioned" stub — matching bare phrases
+    // (e.g. "his son") by surface name across different contacts would silently
+    // merge two unrelated people. Each mention mints its own note-scoped stub instead.
+    .where(
+      and(
+        ne(contacts.source, "mentioned"),
+        or(ilike(contacts.name, escapeLike(trimmed)), ilike(contacts.name, `${escapeLike(firstWord)}%`)),
+      ),
+    )
     .limit(8);
   const lower = trimmed.toLocaleLowerCase();
   return rows.sort((a, b) => {

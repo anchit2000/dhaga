@@ -142,6 +142,7 @@ export async function listContactsPage({ page, pageSize, name, title, company, t
 }): Promise<{ rows: ContactListItem[]; total: number }> {
   const db = await getDb();
   const conditions = [
+    ne(contacts.source, "mentioned"),
     name ? ilike(contacts.name, `%${name}%`) : undefined,
     title ? eq(contacts.title, title) : undefined,
     company ? eq(companies.name, company) : undefined,

@@ -14,7 +14,7 @@ import type { Pool, PoolClient } from "pg";
  */
 
 /** Max acquisition attempts (incl. the first); override with DB_CONNECT_RETRY_MAX. */
-const CONNECT_RETRY_MAX_DEFAULT = 5;
+const CONNECT_RETRY_MAX_DEFAULT = 3;
 /** First backoff step in ms (doubles each retry); override with DB_CONNECT_RETRY_BASE_MS. */
 const CONNECT_RETRY_BASE_MS_DEFAULT = 100;
 

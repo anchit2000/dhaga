@@ -3,6 +3,7 @@ import { QuickAddForm } from "@/components/app/QuickAddForm";
 import { activeEventId } from "@/lib/active-event";
 import { aiActionsUsedThisMonth, aiUsageLabel, effectiveMonthlyAiCap } from "@/lib/ai/metering";
 import { getCachedAppConfig } from "@/lib/cache/app-navigation";
+import { getDb } from "@/lib/db/request-scope";
 import { getBillingGate } from "@/lib/hosted/gate";
 import { listEvents } from "@/lib/repo/events";
 import { HOME_PREVIEW_LIMIT } from "@/utils/constants/app";
@@ -19,7 +20,9 @@ export async function HomeDock({ userId }: { userId: string }): Promise<ReactEle
     listEvents(HOME_PREVIEW_LIMIT),
     getCachedAppConfig(userId),
     hasLLM() ? aiActionsUsedThisMonth() : Promise.resolve(0),
-    hasLLM() ? getBillingGate().then((gate) => gate.hasUnlimitedAi(userId)) : Promise.resolve(false),
+    hasLLM()
+      ? getBillingGate().then(async (gate) => gate.hasUnlimitedAi(userId, await getDb()))
+      : Promise.resolve(false),
   ]);
   const usageLabel = hasLLM()
     ? aiUsageLabel({ used, cap: await effectiveMonthlyAiCap(), unlimited })

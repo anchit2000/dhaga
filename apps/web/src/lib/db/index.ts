@@ -97,6 +97,9 @@ async function initHosted(connectionString: string): Promise<DhagaDb> {
     new Pool({
       connectionString,
       max: poolMaxFromEnv(process.env.DB_POOL_MAX_CORE, DB_POOL_MAX_CORE_DEFAULT),
+      // No warm floor: let idle backends drain fully so this instance never
+      // holds a slot it isn't actively using against the shared pool_size of 15.
+      min: 0,
       connectionTimeoutMillis: DB_POOL_CONNECTION_TIMEOUT_MS,
       idleTimeoutMillis: DB_POOL_IDLE_TIMEOUT_MS,
     }),

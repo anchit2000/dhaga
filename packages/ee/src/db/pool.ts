@@ -11,10 +11,11 @@ import type { PoolClient } from "pg";
 
 /** Default max for this tenant pool; override with DB_POOL_MAX_TENANT. */
 const TENANT_POOL_MAX_DEFAULT = 3;
-/** Fail fast on a saturated pool instead of hanging forever. */
-const POOL_CONNECTION_TIMEOUT_MS = 10_000;
+/** Fail fast on a saturated pool instead of hanging forever — short so a doomed
+ *  acquire fails in ~3s rather than pinning a request for ~10s per retry. */
+const POOL_CONNECTION_TIMEOUT_MS = 3_000;
 /** Close idle backends quickly so a warm instance stops hoarding slots. */
-const POOL_IDLE_TIMEOUT_MS = 10_000;
+const POOL_IDLE_TIMEOUT_MS = 2_000;
 
 /** Parse a positive-integer pool size from env, falling back on missing/NaN. */
 function tenantPoolMax(): number {
@@ -40,6 +41,9 @@ export function getPool(): Pool {
   pool ??= new Pool({
     connectionString,
     max: tenantPoolMax(),
+    // No warm floor: idle backends drain fully so this instance never holds a
+    // tenant slot it isn't using against the shared pool_size of 15.
+    min: 0,
     connectionTimeoutMillis: POOL_CONNECTION_TIMEOUT_MS,
     idleTimeoutMillis: POOL_IDLE_TIMEOUT_MS,
   });

@@ -125,7 +125,7 @@ cap makes it worse. Read → compute → write, no await-on-network mid-transact
   `EMAXCONNSESSION`/`XX000 max clients reached in session mode`, and
   node-postgres can throw `timeout exceeded when trying to connect` — both
   transient (a slot frees within ms). Connection acquisition now retries just
-  these, with exponential backoff + jitter, before giving up (default 5
+  these, with exponential backoff + jitter, before giving up (default 3
   attempts / 100 ms base, `DB_CONNECT_RETRY_MAX` / `DB_CONNECT_RETRY_BASE_MS`).
   Both the EE tenant pool (`packages/ee/src/db/connect-retry.ts`, at
   `openTenantConnection`/`openAdminConnection`) and the core pool

@@ -19,11 +19,12 @@
 export const DB_POOL_MAX_CORE_DEFAULT = 2;
 
 /** Reject a connection request after this long instead of hanging forever on a
- *  saturated pool — a fast, clear failure beats a silent stall. */
-export const DB_POOL_CONNECTION_TIMEOUT_MS = 10_000;
+ *  saturated pool — a fast, clear failure beats a silent stall. Kept short so a
+ *  doomed acquire fails fast rather than pinning a request for ~10s per retry. */
+export const DB_POOL_CONNECTION_TIMEOUT_MS = 3_000;
 
 /** Close idle backends quickly so a warm instance stops hoarding the shared 15. */
-export const DB_POOL_IDLE_TIMEOUT_MS = 10_000;
+export const DB_POOL_IDLE_TIMEOUT_MS = 2_000;
 
 /**
  * Transient-rejection retry (see lib/db/connect-retry.ts). When several warm
@@ -34,7 +35,7 @@ export const DB_POOL_IDLE_TIMEOUT_MS = 10_000;
  * Both maxes are env-overridable (DB_CONNECT_RETRY_MAX / DB_CONNECT_RETRY_BASE_MS).
  */
 /** Max acquisition attempts (incl. the first); override with DB_CONNECT_RETRY_MAX. */
-export const DB_CONNECT_RETRY_MAX_DEFAULT = 5;
+export const DB_CONNECT_RETRY_MAX_DEFAULT = 3;
 /** First backoff step in ms (doubles each retry); override with DB_CONNECT_RETRY_BASE_MS. */
 export const DB_CONNECT_RETRY_BASE_MS_DEFAULT = 100;
 

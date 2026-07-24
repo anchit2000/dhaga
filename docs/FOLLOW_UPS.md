@@ -48,7 +48,7 @@ hardening, and correctness items. Grouped by area.
   request — any `/app/*` page or `/api/*` route, not just search — pays a fixed
   setup cost before its query runs: Better Auth session validation (a DB lookup),
   then `openTenantConnection` (`pool.connect()` — a fresh TCP+TLS+auth handshake
-  when no warm connection is idle, and `idleTimeoutMillis` is 10s so spaced
+  when no warm connection is idle, and `idleTimeoutMillis` is 2s so spaced
   requests re-handshake — plus a `set_config('app.current_user_id', …)` query),
   then the query, then `RESET ALL` on release. At ~150ms/round-trip to a
   region-away Postgres (the US-function → Sydney-DB latency flagged in

@@ -9,6 +9,7 @@ import {
   getDailySuggestionCount,
   getSchedulePrefs,
   isDailyDigestEnabled,
+  isMorningReminderEnabled,
 } from "@/lib/repo/suggestion-settings";
 import { countCardImages } from "@/lib/repo/card-images";
 import { CalendarConnectionsSetting } from "@/components/app/settings/CalendarConnectionsSetting";
@@ -64,12 +65,20 @@ export async function CalendarSection({
 }
 
 export async function SuggestionsSection() {
-  const [count, prefs, digestEnabled] = await Promise.all([
+  const [count, prefs, digestEnabled, reminderEnabled] = await Promise.all([
     getDailySuggestionCount(),
     getSchedulePrefs(),
     isDailyDigestEnabled(),
+    isMorningReminderEnabled(),
   ]);
-  return <SuggestionsSetting count={count} prefs={prefs} digestEnabled={digestEnabled} />;
+  return (
+    <SuggestionsSetting
+      count={count}
+      prefs={prefs}
+      digestEnabled={digestEnabled}
+      reminderEnabled={reminderEnabled}
+    />
+  );
 }
 
 export async function CardPhotoSection() {

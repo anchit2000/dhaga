@@ -33,6 +33,22 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // Cross-origin isolation for the /app routes only, so Dhaga Voice's on-device
+  // ASR can use WebGPU + threaded WASM (SharedArrayBuffer). Scoped to /app/**
+  // so the marketing/blog/docs pages (which embed cross-origin media and third-
+  // party frames) keep loading normally. COEP: credentialless — not require-corp
+  // — lets the model files load from the HF CDN without per-asset CORP headers.
+  async headers() {
+    return [
+      {
+        source: "/app/:path*",
+        headers: [
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+          { key: "Cross-Origin-Embedder-Policy", value: "credentialless" },
+        ],
+      },
+    ];
+  },
   // @dhaga/core and @dhaga/ee ship raw TypeScript; Next transpiles them in-place.
   transpilePackages: ["@dhaga/core", "@dhaga/ee"],
   // Runtime-loaded native/WASM packages stay out of the bundle:

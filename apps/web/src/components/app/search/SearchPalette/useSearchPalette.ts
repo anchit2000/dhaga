@@ -35,7 +35,17 @@ export function useSearchPalette(initialWeights: SearchWeights) {
   );
   const [askState, askDispatch, askPending] = useActionState(askAiAction, EMPTY_ASK);
   const formId = useId();
-  const dictation = useDictation(setQuery);
+  // Dictation must APPEND, not replace: engines fire onFinalText once per
+  // finalized segment (the browser engine with continuous=true emits several
+  // finals for one spoken sentence), so passing setQuery directly would
+  // collapse a multi-segment sentence to only its last segment. Accumulate
+  // each segment onto the current query — the same append pattern the note /
+  // quick-add textareas use — via the functional updater so async finals
+  // don't read a stale query. Typing/clearing still go through the Input's
+  // onChange → setQuery(value), which replaces as before.
+  const dictation = useDictation((text) =>
+    setQuery((prev) => (prev ? `${prev.replace(/\s+$/, "")} ${text}` : text)),
+  );
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {

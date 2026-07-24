@@ -8,6 +8,10 @@ import { useSttEngine } from "./SttEngineContext";
 import { useLocalWhisper } from "./useLocalWhisper";
 import { useRealtimeWhisper } from "./useRealtimeWhisper";
 import { getSpeechRecognitionCtor, type SpeechRecognitionLike } from "./browser-speech";
+import { useVoiceSession, useWebGpuAvailable } from "@/lib/voice/use-voice-session";
+
+export { isWebGpuAvailable } from "@/lib/voice/capability";
+const MOONSHINE_FALLBACK_NOTICE = "WebGPU isn't available here, so voice notes use the browser's speech engine.";
 
 /** How long to let the browser engine listen with zero results (not even
  *  an interim one) before treating it as the Brave/vanilla-Chromium silent
@@ -34,6 +38,10 @@ export interface DictationState {
   partialText: string | null;
   start(): void;
   stop(): void;
+  /** Dhaga Voice backend, or "fallback" when it degraded to the browser engine (no WebGPU). */
+  backend?: "webgpu" | "wasm" | "fallback";
+  /** A degraded-state notice to surface (e.g. no WebGPU); null/undefined if none. */
+  notice?: string | null;
 }
 
 function useBrowserDictation(onFinalText: (text: string) => void): DictationState {
@@ -130,6 +138,12 @@ export function useDictation(onFinalText: (text: string) => void): DictationStat
   const browser = useBrowserDictation(onFinalText);
   const local = useLocalWhisper(onFinalText);
   const realtime = useRealtimeWhisper(onFinalText);
+  const moonshine = useVoiceSession(onFinalText);
+  const webgpu = useWebGpuAvailable();
+  if (engine === "moonshine") {
+    // No WebGPU → degrade to the browser engine (not slow WASM), surfacing why.
+    return webgpu === false ? { ...browser, backend: "fallback", notice: MOONSHINE_FALLBACK_NOTICE } : moonshine;
+  }
   if (engine === "local") return local;
   if (engine === "realtime") return realtime;
   return browser;

@@ -8,6 +8,7 @@ import { notifyAccessRequested } from "@/lib/access/notify";
 import { sendPasswordResetEmail, sendVerifyEmail, sendWelcomeEmail } from "./emails";
 import { buildPlugins } from "./plugins";
 import { socialProviderConfig } from "./social";
+import { previewTrustedOrigins } from "./trusted-origins";
 import type { User } from "better-auth";
 
 /**
@@ -89,6 +90,9 @@ let authPromise: ReturnType<typeof buildAuth> | undefined;
 async function buildAuth() {
   return betterAuth({
     database: drizzleAdapter(await getDb(), { provider: "pg" }),
+    // baseURL + BETTER_AUTH_TRUSTED_ORIGINS are trusted natively; this adds the
+    // current Vercel preview deployment's own URLs. See ./trusted-origins.
+    trustedOrigins: previewTrustedOrigins(),
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: true,

@@ -42,6 +42,25 @@ hardening, and correctness items. Grouped by area.
   no lock; worst case a dismissed duplicate-name suggestion reappears once under
   a concurrent double-click. Low priority.
 
+## Self-hosting / packaging
+
+- **Relocate the admin/EE surface into `packages/ee`.** The "provably-100%-AGPL"
+  proof (`.github/workflows/ci.yml`'s `verify-without-ee` job and
+  `docs/SELF_HOSTING.md` "Level 2") deletes a hand-maintained list of admin
+  files that physically live in `apps/web/src` but depend on removed EE code:
+  `app/app/admin/`, `lib/actions/admin/`, `components/app/admin/`,
+  `components/app/table/AdminTables.tsx`, and the `api/stripe` + `api/access-requests`
+  routes. Every new admin/EE feature has to be added to that list by hand, and
+  forgetting silently breaks the pure-AGPL build — this happened when
+  `SubscriptionControls.tsx` was added (it imports `lib/actions/admin/subscriptions`),
+  and again each time the surface grows. Move the admin/EE UI + server actions
+  into `packages/ee` and load them dynamically (the way `apps/web/src/lib/hosted/gate.ts`
+  already loads EE *logic*), so Level 2 collapses to just "delete `packages/ee`"
+  with no stragglers to enumerate. Note: this shifts those files from AGPL to
+  PolyForm Shield — a licensing decision, not just a refactor. (Level 1
+  self-hosting is unaffected either way; the admin panel 404s without the EE
+  flag regardless.)
+
 ## Minor / enhancements
 
 - **Firecrawl retry/backoff.** `firecrawl-client.ts` has no retry on transient

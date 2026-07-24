@@ -63,6 +63,7 @@ apps/web/src/app/app/admin/
 apps/web/src/app/api/access-requests/
 apps/web/src/app/api/stripe/
 apps/web/src/lib/actions/admin/
+apps/web/src/components/app/admin/
 apps/web/src/components/app/table/AdminTables.tsx
 ```
 

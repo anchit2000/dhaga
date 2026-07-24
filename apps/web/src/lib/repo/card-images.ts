@@ -21,6 +21,30 @@ export async function saveCardImage(
   return id;
 }
 
+/**
+ * Store several photos of the SAME contact (front+back, leaflet pages) as
+ * visual receipts in one insert, preserving the given order. Returns the new
+ * row ids in the same order. `card_images` has no per-contact unique
+ * constraint, so multiple rows per contact are expected here.
+ */
+export async function saveCardImages(
+  contactId: string,
+  noteId: string | null,
+  images: Array<{ mediaType: string; dataBase64: string }>,
+): Promise<string[]> {
+  if (images.length === 0) return [];
+  const db = await getDb();
+  const rows = images.map((image) => ({
+    id: randomUUID(),
+    contactId,
+    noteId,
+    mediaType: image.mediaType,
+    dataBase64: image.dataBase64,
+  }));
+  await db.insert(cardImages).values(rows);
+  return rows.map((row) => row.id);
+}
+
 export async function getCardImage(id: string): Promise<CardImageRow | null> {
   const db = await getDb();
   const [row] = await db.select().from(cardImages).where(eq(cardImages.id, id)).limit(1);

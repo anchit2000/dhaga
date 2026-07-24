@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { profileFromExtracted } from "@dhaga/core";
 import type { ExtractedContact } from "@dhaga/core";
+import type { CaptureImage } from "@dhaga/core/src/api/capture";
 import { ContactForm } from "../ContactForm";
 import { EventPicker, type EventOption } from "../EventPicker";
 
@@ -11,8 +12,7 @@ export function QuickAddResult({
   via,
   notice,
   sourceText,
-  imageBase64,
-  imageType,
+  images,
   events,
   defaultEventId,
 }: {
@@ -20,8 +20,8 @@ export function QuickAddResult({
   via?: "ai" | "heuristic";
   notice?: string;
   sourceText?: string;
-  imageBase64?: string;
-  imageType?: string;
+  /** All card images that fed this scan; persisted with the saved contact. */
+  images?: CaptureImage[];
   events: EventOption[];
   defaultEventId?: string;
 }) {
@@ -43,8 +43,7 @@ export function QuickAddResult({
         <ContactForm initial={profileFromExtracted(contact)} submitLabel="Save person">
           <input type="hidden" name="source" value="quick_add" />
           <input type="hidden" name="sourceText" value={sourceText ?? ""} />
-          <input type="hidden" name="imageBase64" value={imageBase64 ?? ""} />
-          <input type="hidden" name="imageType" value={imageType ?? ""} />
+          <input type="hidden" name="capturedImages" value={JSON.stringify(images ?? [])} />
           <EventPicker events={events} defaultEventId={defaultEventId} />
         </ContactForm>
       </div>

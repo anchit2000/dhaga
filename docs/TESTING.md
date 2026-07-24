@@ -383,8 +383,19 @@ Singapore
 - [ ] After saving: the person's page shows the photo under **Card photo**
       (the visual receipt). Clicking it opens the full-size image.
 - [ ] Desktop: choose an image file instead — same flow.
+- [ ] **Multi-image**: add several photos in one capture — front **and** back
+      of the same card (or several leaflet pages) via multi-file select or the
+      thumbnail tray's "Add photos". They extract into a **single** merged
+      contact (e.g. name/title from the front, address/phone from the back),
+      and after saving **every** image appears as its own receipt on the
+      person's page. Removing a thumbnail before scanning drops that image;
+      the count reads `n/6` and "Add" disables at six.
+- [ ] **Desktop live webcam**: "Use live camera" → allow camera → take
+      multiple shots (each drops into the tray) → Done → Scan — same merge
+      into one contact. Denying the permission shows a message and a
+      "Choose a photo instead" fallback.
 - [ ] Without a key: honest "Card scanning needs cloud AI" error
-      (`hasLLM()` gate, `apps/web/src/lib/ai/card-scan.ts:28`).
+      (`hasLLM()` gate, `apps/web/src/lib/ai/card-scan.ts:30`).
 
 ### 7d. Card-photo storage setting (Settings page)
 

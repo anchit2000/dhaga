@@ -8,12 +8,22 @@
 /** Accepted card-photo formats for the image-scan path. */
 export type CaptureImageType = "image/jpeg" | "image/png" | "image/webp";
 
+/**
+ * One card photo. Several of these (front+back of a card, pages of a leaflet)
+ * can be captured together — they all describe the SAME contact and merge into
+ * one. Each carries its own base64 (no data-URI prefix) and MIME type.
+ */
+export interface CaptureImage {
+  imageBase64: string;
+  imageType: CaptureImageType;
+}
+
 /** Which pipeline produced the extraction. */
 export type CaptureVia = "ai" | "heuristic";
 
 /**
  * All fields optional; the server picks the branch:
- * - `imageBase64` (+ `imageType`) → vision card scan
+ * - `images` (or legacy `imageBase64` + `imageType`) → vision card scan
  * - `contactId` + `raw` → attach the text as a note on an existing contact
  * - `raw` alone → extract a new contact from text
  */
@@ -24,7 +34,18 @@ export interface CaptureRequest {
   sourceUrl?: string;
   /** Attach mode: id of the existing contact the text belongs to. */
   contactId?: string;
-  /** Raw base64 (no data-URI prefix). ≤8,000,000 chars (~6 MB). */
+  /**
+   * Preferred image path: one or more photos of the SAME card/leaflet
+   * (front+back, or multiple pages) merged into one contact. Each ≤8,000,000
+   * chars (~6 MB) base64, no data-URI prefix.
+   */
+  images?: CaptureImage[];
+  /**
+   * Legacy single-image fields, kept for back-compat with queued mobile
+   * requests persisted before `images[]` existed. Prefer `images[]`; the
+   * server treats a lone scalar as a one-element `images` array.
+   * Raw base64 (no data-URI prefix). ≤8,000,000 chars (~6 MB).
+   */
   imageBase64?: string;
   imageType?: CaptureImageType;
   /** Coarse geohash-6 of the scan location (mobile, permission-gated; BRD §6.2). */

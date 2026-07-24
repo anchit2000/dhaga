@@ -121,8 +121,8 @@ export function useCaptureFlow() {
     setVoiceHint,
     busy,
     outcome,
-    pendingPhoto: photo.pendingPhoto,
-    setPendingPhoto: photo.setPendingPhoto,
+    pendingPhotos: photo.pendingPhotos,
+    reviewing: photo.reviewing,
     pendingCount,
     drainPending,
     eventToName,
@@ -130,7 +130,11 @@ export function useCaptureFlow() {
     dismissEventPrompt,
     shootCamera: photo.shootCamera,
     pickFromLibrary: photo.pickFromLibrary,
-    applyCroppedPhoto: photo.applyCroppedPhoto,
+    reviewPending: photo.reviewPending,
+    removePendingPhoto: photo.removePendingPhoto,
+    cropPendingPhoto: photo.cropPendingPhoto,
+    cancelReview: photo.cancelReview,
+    scanPending: photo.scanPending,
     submitText,
   };
 }

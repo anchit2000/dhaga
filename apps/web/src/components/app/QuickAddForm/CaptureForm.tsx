@@ -1,22 +1,24 @@
-import type { RefObject } from "react";
+"use client";
+
+import type { Dispatch, RefObject, SetStateAction } from "react";
 import { Textarea } from "@/components/ui/textarea";
-import { PhotoCropper } from "../PhotoCropper";
 import { SubmitButton } from "../SubmitButton";
-import { PhotoCaptureInput } from "./PhotoCaptureInput";
+import { CardPhotoCapture } from "./CardPhotoCapture";
 import { QuickAddDock } from "./QuickAddDock";
 
 type Mode = "paste" | "photo";
 
-/** Mode toggle + paste/photo forms + inline dock + crop review, shared by the
- *  home dock's expanded state and the standalone /app/quick-add page. */
+/** Mode toggle + paste form + multi-image card tray + inline dock, shared by
+ *  the home dock's expanded state and the standalone /app/quick-add page. */
 export function CaptureForm({
   mode,
   setMode,
   formAction,
   storeCardPhotos,
   pasteTextareaRef,
-  photoToCrop,
-  setPhotoToCrop,
+  photos,
+  setPhotos,
+  pending = false,
   error,
   notice,
   captureOpen,
@@ -28,8 +30,11 @@ export function CaptureForm({
   formAction: (formData: FormData) => void;
   storeCardPhotos: boolean;
   pasteTextareaRef: RefObject<HTMLTextAreaElement | null>;
-  photoToCrop: File | null;
-  setPhotoToCrop: (file: File | null) => void;
+  /** The card-image tray: several photos describing ONE contact. */
+  photos: File[];
+  setPhotos: Dispatch<SetStateAction<File[]>>;
+  /** Extraction in flight — drives the multi-image "Scan" button's loading state. */
+  pending?: boolean;
   error?: string;
   notice?: string;
   captureOpen: boolean;
@@ -72,10 +77,13 @@ export function CaptureForm({
           <SubmitButton>Extract contact</SubmitButton>
         </form>
       ) : (
-        <form action={formAction} className="space-y-4">
-          <PhotoCaptureInput storeCardPhotos={storeCardPhotos} onPhotoSelected={setPhotoToCrop} />
-          <SubmitButton>Scan card</SubmitButton>
-        </form>
+        <CardPhotoCapture
+          storeCardPhotos={storeCardPhotos}
+          photos={photos}
+          setPhotos={setPhotos}
+          pending={pending}
+          formAction={formAction}
+        />
       )}
 
       {error ? (
@@ -93,19 +101,6 @@ export function CaptureForm({
         onCaptureToggle={onCaptureToggle}
         floating={!inDialog}
       />
-
-      {photoToCrop ? (
-        <PhotoCropper
-          file={photoToCrop}
-          onCancel={() => setPhotoToCrop(null)}
-          onConfirm={(cropped) => {
-            setPhotoToCrop(null);
-            const formData = new FormData();
-            formData.set("photo", cropped);
-            formAction(formData);
-          }}
-        />
-      ) : null}
     </div>
   );
 }

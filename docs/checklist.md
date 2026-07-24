@@ -72,6 +72,8 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 
 - [x] Paste email signature / free text → extracted contact (LLM, heuristic fallback)
 - [x] Card photo scan (M1 web path): phone camera/upload → vision parse → review → receipt
+- [x] Multi-image card scan: capture/upload several photos of the same card (front + back) or a multi-page leaflet together → merged server-side into one contact, every image kept as its own visual receipt; web (mobile-browser multi-shot camera, desktop live webcam, multi-file upload) + mobile Expo parity, backward compatible with the single-image path (mobile shares §12's on-device-verification caveat)
+- [ ] Multi-contact extraction from one capture (a leaflet/roster listing several people → several contacts) — not in scope yet; a multi-image capture always merges into a single contact
 - [x] Card photos stored as visual receipts (user's own DB — local or hosted), shown on the contact page
 - [x] Settings page: per-user "store card photos" toggle + purge-all button
 - [x] Photo deletion cascades: gone with its receipt note, gone with "forget this person"

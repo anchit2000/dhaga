@@ -7,6 +7,7 @@ import { Header } from "@/components/landing/Header";
 import { Hero } from "@/components/landing/Hero";
 import { FeatureStory } from "@/components/landing/FeatureStory";
 import { HowItWorks, StatsBand } from "@/components/landing/Sections";
+import { NetworkSandbox } from "@/components/landing/NetworkSandbox";
 import { OpenSource } from "@/components/landing/OpenSource";
 import { Pricing } from "@/components/landing/Pricing";
 import { StickyCta } from "@/components/landing/StickyCta";
@@ -23,6 +24,7 @@ export default async function Home() {
       <Hero />
       <StatsBand />
       <HowItWorks />
+      <NetworkSandbox />
       <FeatureStory />
       <AskDemo />
       <Comparison />

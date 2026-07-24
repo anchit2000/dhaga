@@ -106,8 +106,8 @@ export async function renameEvent(
   return (await response.json()) as EventRenameResponse;
 }
 
-/** Shared by captureContact and renameEvent: both APIs return `{ error }` on failure. */
-async function errorMessage(response: Response, fallback: string): Promise<string> {
+/** Shared by all API helpers (here + api-growth): both APIs return `{ error }` on failure. */
+export async function errorMessage(response: Response, fallback: string): Promise<string> {
   if (response.status === 401) {
     return "API key rejected — create one in Dhaga web Settings and enter it on the setup screen.";
   }

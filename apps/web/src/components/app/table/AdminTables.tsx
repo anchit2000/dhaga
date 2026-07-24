@@ -13,7 +13,7 @@ interface UserRow { id: string; name: string; email: string; isAdmin: boolean; c
 interface SubscriptionRow { id: string; userId: string; plan: string; status: string; currentPeriodEnd: Date | null; }
 
 const USER_COLUMNS: DataTableColumn<UserRow>[] = [
-  { id: "name", label: "Name", value: (row) => row.name, render: (row) => <Link href={`/app/admin/users/${row.id}`} className="hover:text-ember">{row.name}</Link> },
+  { id: "name", label: "Name", value: (row) => row.name, render: (row) => <Link href={`/app/admin/users/${row.id}`} className="hover:text-ember">{row.name || <span className="text-fog">{row.email}</span>}</Link> },
   { id: "email", label: "Email", value: (row) => row.email },
   { id: "joined", label: "Joined", value: (row) => formatDate(row.createdAt) },
   { id: "role", label: "Role", value: (row) => row.isAdmin ? "admin" : "user", options: USER_ROLE_OPTIONS, render: (row) => row.isAdmin ? <Badge>admin</Badge> : "user" },

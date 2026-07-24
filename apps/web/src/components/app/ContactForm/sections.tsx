@@ -96,6 +96,8 @@ export function PositionSection({
                 inputValue={item.company ?? ""}
                 onInputValueChange={(value) => update({ company: value })}
                 onSelect={(target) => update({ company: target.label })}
+                onCreate={(name) => update({ company: name })}
+                createLabel="Create company"
                 placeholder="Company"
                 inputClassName="h-8"
               />

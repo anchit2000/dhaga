@@ -29,7 +29,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] `apps/web/.env.example` documenting every env var
 - [x] CI (typecheck + lint + tests + build on push)
 - [x] Test suite (vitest, in-memory PGlite): heuristic parser, export formats, receipts cascade
-- [x] Fix Dependabot alert (postcss `<8.5.10` via next — npm override to ^8.5.16)
+- [x] Fix Dependabot alert (postcss `<8.5.10` via next — npm override to ^8.5.16) (needed a version-keyed postcss override to actually dedupe next's nested pin — PR #55)
 - [x] Deploy to Vercel (landing + app)
 
 ## 1. Shared core — `packages/core`
@@ -54,6 +54,9 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Loading skeletons on data-heavy screens (route `loading.tsx` files)
 - [x] Dark warm theme reused from landing tokens
 - [x] Home dashboard: due reach-outs + open follow-ups across the graph
+- [x] Per-section Suspense streaming on home/profile/settings (each data region streams independently behind its own boundary)
+- [x] Home stat strip: people/companies/notes/facts/relationships/events/follow-ups/entities counts via one aggregate RLS-scoped query (`lib/repo/stats.ts`), own Suspense region
+- [x] Searchable EntityCombobox + trigram GIN indexes replace bare entity text boxes
 - [ ] Fix render-blocking font/animation on first load (BRD §7.6) — Geist Pixel self-hosted via `next/font/local` (was a `display=block` Google Fonts `<link>`, invisible text until it loaded); landing WebGL cursor + GSAP scroll thread deferred via `next/dynamic({ ssr: false })` so they no longer block first paint — 2026-07-12, build verification + push still pending
 - [ ] Cache authenticated `/app/*` navigation so switching pages doesn't re-run the full Postgres query set on every click (BRD §7.6) — per-user scoped, invalidated on mutation, not a raw TTL
 
@@ -70,13 +73,15 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] `embeddings` table (pgvector, 384-dim, receipts via owner_type/owner_id)
 - [x] `follow_ups` table
 - [x] `ai_actions` metering table (day one requirement)
-- [x] Deletion cascade: contact → notes → facts → edges → embeddings ("forget this person") — `forgetContact` already did this correctly (`repo/contacts/mutations.ts`)
+- [x] Deletion cascade: contact → notes → facts → edges → embeddings ("forget this person") — `forgetContact` cascaded the chain, but deleting a contact that had produced relationship suggestions was blocked by `edge_suggestions` RESTRICT FKs until PR #57 extended the cascade to them (`repo/contacts/mutations.ts`)
 - [x] Note deletion tombstones derived facts/edges (receipts invariant) — embeddings cleanup moved into `deleteNote` itself (2026-07-07, was only in the action layer, so any other caller skipped it); `graph-receipts.test.ts` now asserts embeddings are gone, not pushed
 
 ## 4. Capture — web quick-add (v1.1, M1-equivalent for web)
 
 - [x] Paste email signature / free text → extracted contact (LLM, heuristic fallback)
 - [x] Card photo scan (M1 web path): phone camera/upload → vision parse → review → receipt
+- [x] Multi-image card scan: capture/upload several photos of the same card (front + back) or a multi-page leaflet together → merged server-side into one contact, every image kept as its own visual receipt; web (mobile-browser multi-shot camera, desktop live webcam, multi-file upload) + mobile Expo parity, backward compatible with the single-image path (mobile shares §12's on-device-verification caveat)
+- [ ] Multi-contact extraction from one capture (a leaflet/roster listing several people → several contacts) — not in scope yet; a multi-image capture always merges into a single contact
 - [x] Card photos stored as visual receipts (user's own DB — local or hosted), shown on the contact page
 - [x] Settings page: per-user "store card photos" toggle + purge-all button
 - [x] Photo deletion cascades: gone with its receipt note, gone with "forget this person"
@@ -86,8 +91,14 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Manual add-contact form (no extraction path)
 - [x] People list with filter + contact detail page
 - [x] Company auto-link: extracted company name → find-or-create `companies` row
+- [x] Jobs editor — create a new company inline when there's no match (reuses EntityCombobox create + `findOrCreateCompany`)
 - [x] User-triggered enrichment: web search → cited enrichment note → receipted facts
 - [x] LinkedIn Connections CSV import — user's own LinkedIn data export → bulk contacts, ToS-safe (BRD §6.7) (v1.1); `lib/import/linkedin.ts`, wired into `/app/import`, LinkedIn header format covered by `csv-import.test.ts`/`import-repo.test.ts`
+- [x] Google Contacts CSV import — user's own Google export (both header generations, `:::` multi-values) → bulk contacts (v1.1); `lib/import/google.ts`, wired into `/app/import`, covered by `csv-import.test.ts`/`import-repo.test.ts`
+- [x] vCard (.vcf) import — user's own device export → bulk contacts, covers Apple/iCloud, Android, and Google Contacts device exports (vCard 2.1/3.0/4.0) (v1.1); `lib/import/vcard/` (tokenize/map/labels, dependency-free, parsed 100% client-side), wired into `/app/import` via `parseContactsVcard`, phone-dedup makes re-import safe for email-less device cards; covered by `vcard-import.test.ts` (incl. the QUOTED-PRINTABLE accented-name regression guard) + `import-repo.test.ts`
+- [x] OAuth contact connectors: **Connect Google Contacts** (People API) + **Connect Outlook / Hotmail** (Microsoft Graph) → one-click import into the same review flow (v1.1, BRD §6.7); reuses better-auth social login (`linkSocial` scope grant + auto-refreshing `getAccessToken`); provider gateway `lib/import/providers/` (Google/Microsoft mappers, `getContactsProvider` factory) covered by `contacts-providers.test.ts`; env-gated (buttons hidden unless `<PROVIDER>_CLIENT_ID/SECRET` set) so self-hosting is unaffected; OAuth tokens encrypted at rest (`encryptOAuthTokens`). Operator setup: `docs/CONTACT_IMPORT_SETUP.md`. **Pending:** Google sensitive-scope verification + Microsoft publisher verification for public (frictionless) use — works now for the owner + test users.
+- [x] Import scale hardening: >40 MB / >20k-row files warn (not crash), upload batch 50→200, DataTable review is paginated; very large lists degrade gracefully
+- [x] Mobile: on-device contact import via `expo-contacts` (SDK 57 legacy API) — permission-gated select → map to `ContactProfile` → `POST /api/import` with the per-user `x-api-key` (v1.1, honors the mobile/web parity rule); `apps/mobile/src/{app/import.tsx,components/contact-import/,lib/contacts/map.ts}` + web route `apps/web/src/app/api/import/route.ts`; mapper covered by `device-contact-map.test.ts`. **Pending on-device build/test** (native module added — needs a dev build, not OTA; user will test later).
 - [x] Waitlist signups get a confirmation email (Resend)
 
 ## 5. Events / auto-grouping (M2)
@@ -104,9 +115,21 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Extraction: note → facts/relationships/follow-ups/tags (Haiku, structured output)
 - [x] Facts render on contact page with receipt ("from note, \{date\}")
 - [x] User can edit/delete a fact inline (M4 acceptance)
+- [x] Manual add-fact / add-follow-up forms (no extraction path, NULL receipt)
 - [x] Deleting a note tombstones its derived facts/edges
+- [x] Re-process a note: manual "re-run extraction" on an existing note (text/voice/capture_source) — after an edit or a missed fact — re-enqueues a `note_extraction` job for the same note; idempotent (worker's `clearNoteDerivations` replaces the note's prior facts/edges/follow-ups, never duplicates), AI budget still metered in the worker
 - [x] Voice notes on web (browser SpeechRecognition → transcript → extraction)
 - [ ] Voice notes on mobile (whisper.cpp / Apple Speech — mobile milestone) — built via `expo-speech-recognition` (wraps iOS `SFSpeechRecognizer`/Android `SpeechRecognizer`, forced on-device, no audio/transcript leaves the phone); tap mic → live interim transcript fills the same text-review box typed input uses (`e64b336`). Typecheck/lint pass; **package has no published SDK-57 tag yet** (installed cleanly, types check, but native linking in an EAS/dev-client build is unverified) — needs a real device build before this can be checked off, not pushed
+
+### Voice STT + phonetic teaching (2026-07-24) — built, pending real verification
+
+- [x] **STT is now a pluggable engine gateway** — the `AsrEngine` contract lives in `@dhaga/core/src/voice/asr/types`; a contributor adds a better model by implementing it + one `useDictation` branch + one `EngineOption`. All existing whisper engines kept (browser / on-device Whisper / realtime).
+- [x] **"Dhaga Voice" (Moonshine tiny) engine, web** — on-device WebGPU streaming, the new **default when WebGPU is available**; degrades to the browser engine + an inline notice when it isn't (not slow WASM). `@huggingface/transformers` dynamic-import-only; COOP/COEP scoped to `/app/**`. *(typecheck + prod build pass; **pending real-browser mic/WebGPU verification**)*
+- [x] **Phonetic teaching (double-metaphone)** — shared pure-TS core (`@dhaga/core/src/voice/teaching`), **deep-import-only, Hermes-safe** (never the core barrel); web dictation applies taught spellings on finalize; **teaching/vocabulary manager in Settings** (Settings restructured into tabs — Account/Capture/Calendar/Suggestions/Import). *(pending real testing)*
+- [x] **Mobile phonetic teaching (parity)** — shared core wired into `expo-speech-recognition` dictation (`correct()` on the transcript, interim + final) + a `vocab` screen; JSON-file `VocabStore`. *(pending device build)*
+- [x] `voice_vocab` table (synthetic `id` PK, mirrors `settings`; EE `TENANT_TABLES` adds RLS) + `/api/voice/vocab` (GET/POST/DELETE) + `"use server"` actions + export coverage; AGPL-core path unaffected (no `apps/web`→`@dhaga/ee` import). LLM self-correction stays **PARKED** (§20 backlog — needs a GPU).
+- [x] Search dictation append-vs-replace bug fixed (multi-segment finals accumulate).
+- [ ] **Real-browser + device verification** (mic capture, WebGPU streaming accuracy, teaching round-trip) and **commit** (currently uncommitted on `main`).
 
 ## 7. Knowledge graph v0 (M5)
 
@@ -173,6 +196,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [ ] Job-change detection — simplified to web-search-only per product decision (2026-07-05), superseding the CSV-diff mechanism in BRD §6.7: shares the signal-detection sweep with the news watchlist below, `kind: "job_change"` when the search results show a different title/employer than what's on file. Typecheck/lint/build/tests pass; manual click-through needs a real `FIRECRAWL_API_KEY` + `ANTHROPIC_API_KEY`, not done
 - [ ] Opt-in news watchlist: per-contact "Watch for job changes & news" toggle (contact page) → nightly cron (`/api/jobs/detect-signals`, `apps/web/vercel.json`) → provider-agnostic web search (`packages/core/src/search`, Firecrawl by default — cheaper per-search than an LLM's own web-search tool) → Haiku classifies hits → `signals` table → Home "Signals" feed + contact page, "Add as note" (receipted) or dismiss. Capped per plan (`PRO_TIER_WATCHLIST_CAP`/`FREE_TIER_WATCHLIST_CAP`). Typecheck/lint/build/tests pass (`signals.test.ts`, `search-client.test.ts`); manual click-through not done (needs live API keys)
 - [x] Keep-in-touch cadence reminders + Home reach-out feed (ideas.md #2)
+- [x] Opt-in morning follow-up reminder email (daily nudge for open follow-ups + due reach-outs via `/api/jobs/daily`, dummy-account exclusion via `isDummyAccount()`)
 - [ ] Automatic relationship-decay detection — built read-time (no nightly job needed): "Going quiet" feed on Home surfaces contacts with no touch in ~8 months and no cadence set (`repo/strength.ts`); typecheck/lint/build/tests pass, manual click-through not done
 - [ ] Relationship-strength score from own-graph data (interaction recency/frequency, notes, events — no external data) — built: 0–100 recency×frequency score (`scoreStrength`), ranks the Going-quiet feed strongest-first; tests in `strength.test.ts`, manual click-through not done
 - [x] Post-event digest email (user-triggered from the event page, template-based)
@@ -209,6 +233,8 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] `docker compose up` — multi-stage `Dockerfile` (node:22-slim, standalone output via `DHAGA_STANDALONE=1`, non-root, 494MB) + `compose.yml` (pgvector/pgvector:pg16 db with healthcheck) verified end-to-end 2026-07-16: Postgres-backed and zero-config PGlite boots both serve with clean first-boot DDL self-heal (the earlier single-stage image was never actually runnable — missing workspace manifest)
 - [ ] Public roadmap + good-first-issues — `docs/ROADMAP.md` written 2026-07-07, now linked from `README.md`'s Status section (2026-07-12); good-first-issue candidates drafted but intentionally not posted as real GitHub issues yet (that's a public/outward action for the owner to approve)
 - [ ] Replace randomuser.me landing portraits with licensed photos before paid marketing
+- [x] Docs/nav/SEO overhaul (2026-07-23): Resources discoverability nav + two-track `/docs` hub segregation (product vs guides), blog categories + frontmatter, full SEO suite (sitemap/robots/llms.txt/RSS/OG/JSON-LD), CLAUDE.md Rule 14 (subagent orchestration)
+- [ ] SEO content cluster — 15 "Guides" posts (10 pillars + 5 "Dhaga vs X" comparisons; personal-CRM / networking, India + founder slant, high-CTR titles/metas) under a new `guides` blog category, plus reusable on-brand MDX visual components (`Figure`/`NodeGraph`/`FlowDiagram`/`Timeline`/`FeatureMatrix`/`StatStrip` in `apps/web/src/components/blog/visuals`, registered in `mdx-components.tsx`) — written 2026-07-24, builds clean (SSG); pending in-browser visual QA
 
 ## 19. SaaS platform — accounts, multi-tenancy, billing, admin (Dhaga Cloud)
 
@@ -232,3 +258,24 @@ this is a stub, the only gap is the manual click-through + push.
 - [ ] First-admin bootstrap via `DHAGA_ADMIN_EMAILS` (see `SELF_HOSTING.md`)
 - [ ] Stripe billing: Checkout (Pro/Lifetime), billing portal, webhook (4 event types), AI-cap bypass for paid users
 - [ ] Billing UI cleanly absent (not broken) when `STRIPE_SECRET_KEY` is unset, even in hosted mode
+
+## 20. Considered features backlog (2026-07 review)
+
+New gaps from a July 2026 competitive review. All unbuilt — considered, not
+committed. Full rationale, dedup against existing scope, and the
+considered-and-declined items live in [BRD](/docs/product/brd) §5.4. Gaps already
+tracked are **not** re-added here (relationship-strength score → §14; LinkedIn
+import + job-change detection + keep-in-touch nudges → §4/§14; WhatsApp capture
+→ §16); an external fundraising-discovery suite and iMessage/SMS capture were
+declined (BRD §5.4).
+
+- [ ] Personal MCP server — expose the user's own graph (read-only, user-scoped) to external AI clients (Claude Desktop/Code, Cursor)
+- [ ] Duplicate-contact detection & merge (entity resolution) across import sources — per-user, distinct from team cross-user dedup
+- [ ] AI-suggested connections — surface likely edges from shared company/school/city/event; suggested, never auto-linked
+- [ ] Relationship analytics dashboard — network stats (most-connected, longest-known, city clusters, network growth), own-graph only
+- [ ] Contact/profile completeness scoring + enrichment nudges (enrichment stays user-triggered)
+- [ ] Map view of contacts' locations ("who's nearby when I travel") — renders locations already on file, no live tracking
+- [ ] Personal-life logging modules (optional, off by default): gift tracking, journal/diary + mood, activity log, debt tracking, pets
+- [ ] Mail-merge / bulk personalized outreach + public API + Zapier app — extends the existing outbound webhooks (§16)
+- [ ] Two-way native phone address-book sync — extends the current one-way expo-contacts import (§12)
+- [ ] Voice dictation self-correction ("schedule at 3, no make it 4") — semantic LLM edits + a deterministic number/time pass; **deferred pending a dedicated GPU host** for the correction model. The in-browser correction LLM is CPU-bound (~48 s/edit) on consumer GPUs, too slow to be "then and there". Prototyped in the browser-voice R&D (`llm-experiments` repo, `feat/voice-browser-jarvis`); real-time in-browser STT (Moonshine, WebGPU) is proven there and is the intended `whisper-base` replacement that ports independently — only the correction layer is parked. (BRD §5.4)

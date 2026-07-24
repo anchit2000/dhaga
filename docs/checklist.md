@@ -19,7 +19,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] `apps/web/.env.example` documenting every env var
 - [x] CI (typecheck + lint + tests + build on push)
 - [x] Test suite (vitest, in-memory PGlite): heuristic parser, export formats, receipts cascade
-- [x] Fix Dependabot alert (postcss <8.5.10 via next — npm override to ^8.5.16)
+- [x] Fix Dependabot alert (postcss <8.5.10 via next — npm override to ^8.5.16) (needed a version-keyed postcss override to actually dedupe next's nested pin — PR #55)
 - [x] Deploy to Vercel (landing + app)
 
 ## 1. Shared core — `packages/core`
@@ -44,6 +44,9 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Loading skeletons on data-heavy screens (route `loading.tsx` files)
 - [x] Dark warm theme reused from landing tokens
 - [x] Home dashboard: due reach-outs + open follow-ups across the graph
+- [x] Per-section Suspense streaming on home/profile/settings (each data region streams independently behind its own boundary)
+- [x] Home stat strip: people/companies/notes/facts/relationships/events/follow-ups/entities counts via one aggregate RLS-scoped query (`lib/repo/stats.ts`), own Suspense region
+- [x] Searchable EntityCombobox + trigram GIN indexes replace bare entity text boxes
 - [ ] Fix render-blocking font/animation on first load (BRD §7.6) — Geist Pixel self-hosted via `next/font/local` (was a `display=block` Google Fonts `<link>`, invisible text until it loaded); landing WebGL cursor + GSAP scroll thread deferred via `next/dynamic({ ssr: false })` so they no longer block first paint — 2026-07-12, build verification + push still pending
 - [ ] Cache authenticated `/app/*` navigation so switching pages doesn't re-run the full Postgres query set on every click (BRD §7.6) — per-user scoped, invalidated on mutation, not a raw TTL. Built (`perf/app-nav-cache`): a `cachePerUser`/`invalidatePerUser` helper (`lib/cache/per-user.ts`) over `unstable_cache` — cache key + tag both include `userId` and the read runs inside `withUserDb(userId)`, so an entry can only ever hold that user's data (missed invalidation = same-user staleness, never cross-tenant leak). The force-dynamic shell (`getCachedAppConfig`: isAdmin/searchWeights/**sttEngine**/storeCardPhotos) now costs **zero** Postgres round-trips per nav, and the node-type ontology (`getCachedNodeTypes`, home/entities) is cached too; both bust via `revalidateTag(..,{expire:0})` in their settings/node-type mutations. Volatile feeds (due reach-outs, signals, suggestions) intentionally left live. The heaviest hot read, **`/api/graph/full`**, is also cached now via `cachePerUserVersioned`/`getCachedFullGraph` — version-keyed on the cheap `fetchGraphVersion()` aggregate, so a graph change changes the key (no explicit invalidation, never stale) and the multi-table assembly runs once per version instead of per request. Store backend is Next's default incremental cache; Redis = a `cacheHandler` in `next.config.ts`, no app-code change (Vercel already has a durable shared Data Cache). Typecheck/lint/vitest pass; **still to do**: manual browser pass + push; extend to `schedulePrefs`/`calendarConnected` (home) with their own tags
 - [ ] Read scale at ~10k users — cache the remaining **hot reads** per user (contact/event lists version-keyed + JSON-safe; data-only parts of the home feed) with the `cachePerUserVersioned` pattern, behind a Redis `cacheHandler` for shared multi-instance self-hosting — graph payload already done; see [SCALING.md](SCALING.md) §1 + roadmap
@@ -65,7 +68,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] `embeddings` table (pgvector, 384-dim, receipts via owner_type/owner_id)
 - [x] `follow_ups` table
 - [x] `ai_actions` metering table (day one requirement)
-- [x] Deletion cascade: contact → notes → facts → edges → embeddings ("forget this person") — `forgetContact` already did this correctly (`repo/contacts/mutations.ts`)
+- [x] Deletion cascade: contact → notes → facts → edges → embeddings ("forget this person") — `forgetContact` cascaded the chain, but deleting a contact that had produced relationship suggestions was blocked by `edge_suggestions` RESTRICT FKs until PR #57 extended the cascade to them (`repo/contacts/mutations.ts`)
 - [x] Note deletion tombstones derived facts/edges (receipts invariant) — embeddings cleanup moved into `deleteNote` itself (2026-07-07, was only in the action layer, so any other caller skipped it); `graph-receipts.test.ts` now asserts embeddings are gone, not pushed
 
 ## 4. Capture — web quick-add (v1.1, M1-equivalent for web)
@@ -83,6 +86,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Manual add-contact form (no extraction path)
 - [x] People list with filter + contact detail page
 - [x] Company auto-link: extracted company name → find-or-create `companies` row
+- [x] Jobs editor — create a new company inline when there's no match (reuses EntityCombobox create + `findOrCreateCompany`)
 - [x] User-triggered enrichment: web search → cited enrichment note → receipted facts
 - [x] LinkedIn Connections CSV import — user's own LinkedIn data export → bulk contacts, ToS-safe (BRD §6.7) (v1.1); `lib/import/linkedin.ts`, wired into `/app/import`, LinkedIn header format covered by `csv-import.test.ts`/`import-repo.test.ts`
 - [x] Google Contacts CSV import — user's own Google export (both header generations, `:::` multi-values) → bulk contacts (v1.1); `lib/import/google.ts`, wired into `/app/import`, covered by `csv-import.test.ts`/`import-repo.test.ts`
@@ -108,6 +112,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Extraction: note → facts/relationships/follow-ups/tags (Haiku, structured output)
 - [x] Facts render on contact page with receipt ("from note, {date}")
 - [x] User can edit/delete a fact inline (M4 acceptance)
+- [x] Manual add-fact / add-follow-up forms (no extraction path, NULL receipt)
 - [x] Deleting a note tombstones its derived facts/edges
 - [x] Re-process a note: manual "re-run extraction" on an existing note (text/voice/capture_source) — after an edit or a missed fact — re-enqueues a `note_extraction` job for the same note; idempotent (worker's `clearNoteDerivations` replaces the note's prior facts/edges/follow-ups, never duplicates), AI budget still metered in the worker
 - [x] Voice notes on web (browser SpeechRecognition → transcript → extraction)
@@ -190,6 +195,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [ ] Job-change detection — simplified to web-search-only per product decision (2026-07-05), superseding the CSV-diff mechanism in BRD §6.7: shares the signal-detection sweep with the news watchlist below, `kind: "job_change"` when the search results show a different title/employer than what's on file. Typecheck/lint/build/tests pass; manual click-through needs a real `FIRECRAWL_API_KEY` + `ANTHROPIC_API_KEY`, not done
 - [ ] Opt-in news watchlist: per-contact "Watch for job changes & news" toggle (contact page) → nightly cron (`/api/jobs/detect-signals`, `apps/web/vercel.json`) → provider-agnostic web search (`packages/core/src/search`, Firecrawl by default — cheaper per-search than an LLM's own web-search tool) → Haiku classifies hits → `signals` table → Home "Signals" feed + contact page, "Add as note" (receipted) or dismiss. Capped per plan (`PRO_TIER_WATCHLIST_CAP`/`FREE_TIER_WATCHLIST_CAP`). Typecheck/lint/build/tests pass (`signals.test.ts`, `search-client.test.ts`); manual click-through not done (needs live API keys)
 - [x] Keep-in-touch cadence reminders + Home reach-out feed (ideas.md #2)
+- [x] Opt-in morning follow-up reminder email (daily nudge for open follow-ups + due reach-outs via `/api/jobs/daily`, dummy-account exclusion via `isDummyAccount()`)
 - [ ] Automatic relationship-decay detection — built read-time (no nightly job needed): "Going quiet" feed on Home surfaces contacts with no touch in ~8 months and no cadence set (`repo/strength.ts`); typecheck/lint/build/tests pass, manual click-through not done
 - [ ] Relationship-strength score from own-graph data (interaction recency/frequency, notes, events — no external data) — built: 0–100 recency×frequency score (`scoreStrength`), ranks the Going-quiet feed strongest-first; tests in `strength.test.ts`, manual click-through not done
 - [x] Post-event digest email (user-triggered from the event page, template-based)
@@ -226,7 +232,8 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] `docker compose up` — multi-stage `Dockerfile` (node:22-slim, standalone output via `DHAGA_STANDALONE=1`, non-root, 494MB) + `compose.yml` (pgvector/pgvector:pg16 db with healthcheck) verified end-to-end 2026-07-16: Postgres-backed and zero-config PGlite boots both serve with clean first-boot DDL self-heal (the earlier single-stage image was never actually runnable — missing workspace manifest)
 - [ ] Public roadmap + good-first-issues — `docs/ROADMAP.md` written 2026-07-07, now linked from `README.md`'s Status section (2026-07-12); good-first-issue candidates drafted but intentionally not posted as real GitHub issues yet (that's a public/outward action for the owner to approve)
 - [ ] Replace randomuser.me landing portraits with licensed photos before paid marketing
-- [ ] SEO content cluster — 10 pillar "Guides" posts (personal-CRM / networking, India + founder slant, high-CTR titles/metas) under a new `guides` blog category, plus reusable on-brand MDX visual components (`Figure`/`NodeGraph`/`FlowDiagram`/`Timeline`/`FeatureMatrix`/`StatStrip` in `apps/web/src/components/blog/visuals`, registered in `mdx-components.tsx`) — written 2026-07-24, builds clean (SSG); pending in-browser visual QA + merge
+- [x] Docs/nav/SEO overhaul (2026-07-23): Resources discoverability nav + two-track `/docs` hub segregation (product vs guides), blog categories + frontmatter, full SEO suite (sitemap/robots/llms.txt/RSS/OG/JSON-LD), CLAUDE.md Rule 14 (subagent orchestration)
+- [ ] SEO content cluster — 15 "Guides" posts (10 pillars + 5 "Dhaga vs X" comparisons; personal-CRM / networking, India + founder slant, high-CTR titles/metas) under a new `guides` blog category, plus reusable on-brand MDX visual components (`Figure`/`NodeGraph`/`FlowDiagram`/`Timeline`/`FeatureMatrix`/`StatStrip` in `apps/web/src/components/blog/visuals`, registered in `mdx-components.tsx`) — written 2026-07-24, builds clean (SSG); pending in-browser visual QA
 
 ## 19. SaaS platform — accounts, multi-tenancy, billing, admin (Dhaga Cloud)
 

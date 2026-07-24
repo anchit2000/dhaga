@@ -31,6 +31,10 @@ Two very different things deploy from this repo today:
      project, copy its connection string). **Without this, `/app` cannot
      store anything on Vercel**; with it, the full app works.
    - `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` — once `DATABASE_URL` is set.
+   - `BETTER_AUTH_TRUSTED_ORIGINS` — optional; extra origins allowed on
+     sign-in/sign-up beyond `BETTER_AUTH_URL` (comma-separated or a wildcard),
+     to avoid `INVALID_ORIGIN`. Vercel preview URLs are auto-trusted, so this
+     is usually unneeded.
    - `ANTHROPIC_API_KEY` — AI features.
    - `DHAGA_EMBEDDINGS=off` recommended on Vercel for now: the local
      embedding model (~100 MB of native runtime) is a poor fit for
@@ -40,6 +44,9 @@ Two very different things deploy from this repo today:
      cron; Vercel sends `Authorization: Bearer $CRON_SECRET` to it
      automatically once the var is set (unset = the route 401s to everyone,
      including Vercel's own cron — the feature is simply off).
+   - `NEXT_PUBLIC_SITE_URL` — set once a custom domain is attached (step 4):
+     the canonical origin for the sitemap, robots.txt, OG tags, and llms.txt.
+     Defaults to the Vercel preview URL until then.
 4. Deploy. Add your domain under Settings → Domains.
 
 ### Hosted-mode extras (Dhaga Cloud only — skip for plain self-hosting)

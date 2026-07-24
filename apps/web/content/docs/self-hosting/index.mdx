@@ -24,7 +24,9 @@ you get, what you don't, and how the switches work.
 - Don't set `DHAGA_HOSTED_MODE`. That's it — every EE feature goes inert.
 - You do **not** need to delete `packages/ee` from your clone. It's harmless
   dead weight until that flag is set to `"true"`.
-- Registration is open (no invite/approval step) whenever hosted mode is off.
+- Registration is open (no invite/approval step) whenever hosted mode is off,
+  but the core is **single-user**: the first account is created normally and
+  every subsequent signup is rejected (see "Single-user by design" below).
 - There is no admin panel, no "Admin" nav item, and no billing UI in this mode
   — not hidden, not disabled, just not rendered at all.
 
@@ -64,6 +66,7 @@ apps/web/src/app/app/admin/
 apps/web/src/app/api/access-requests/
 apps/web/src/app/api/stripe/
 apps/web/src/lib/actions/admin/
+apps/web/src/components/app/admin/
 apps/web/src/components/app/table/AdminTables.tsx
 ```
 
@@ -80,6 +83,30 @@ naming the exact file to remove.
 Note the asymmetry with Level 1: `lib/hosted/gate.ts` itself does **not**
 need to be deleted or edited — its dynamic `import("@dhaga/ee")` is wrapped
 in a try/catch specifically so this file survives the package's removal.
+
+## Single-user by design (core only)
+
+With hosted mode off, the core is **single-user** — it enforces exactly one
+account, and this is a hard rule, not a suggestion. The reason is structural:
+per-user data isolation (row-level security scoping every query to its owner)
+lives entirely in `packages/ee`. The AGPL core's `getDb()` hands every request
+one unscoped connection over one shared graph
+([`apps/web/src/lib/db/request-scope.ts`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/lib/db/request-scope.ts)).
+That is completely safe for one person, but a second account on the same core
+instance would land in — and read and edit — the first user's contacts, notes,
+and facts. There is no per-user wall to hide behind.
+
+So the signup path refuses to create a second account when hosted mode is off:
+the first signup succeeds normally, and any later one is rejected with a
+`403` explaining why (see `beforeUserCreate` in
+[`apps/web/src/lib/auth/config/index.ts`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/lib/auth/config/index.ts)).
+
+If you need more than one user with real isolation between them, that's exactly
+what hosted mode (`packages/ee`) provides — enable it (`DHAGA_HOSTED_MODE=true`
+plus real Postgres; see [Deploying](/docs/self-hosting/deploy)) and multi-tenant RLS
+takes over. Self-hosting the core for a genuinely shared, trusted household
+where everyone is fine seeing everyone's data is not supported by relaxing this
+guard — the guard is what keeps "single-user" honest.
 
 ## Disabling just billing (keep admin + early access)
 
@@ -115,6 +142,24 @@ only an admin can approve. `DHAGA_ADMIN_EMAILS` breaks that circle:
 env-config, not a stored credential, and only your deployment operator
 controls it.
 
+## Managing a user's subscription and AI allowance (hosted/EE admin)
+
+From a user's detail page (`/app/admin/users/[id]`) an admin can, without
+Stripe, comp that user's access:
+
+- **Plan** — set `free`, `pro`, or `lifetime`. `free` removes the subscription
+  row (the account falls back to free tier); `pro`/`lifetime` grant unlimited
+  cloud AI.
+- **Expiry** — an optional date on a paid plan. Once it passes, unlimited AI
+  lapses automatically (leave it blank for no expiry).
+- **AI credits** — a per-user monthly cloud-AI-action allowance, stored as the
+  `ai_monthly_cap_override` setting. This overrides both the free-tier cap and
+  `DHAGA_AI_MONTHLY_CAP` for that one user; blank or `0` clears it.
+
+These controls live only in the EE admin panel — a core-only self-host raises
+the cap for *everyone* with `DHAGA_AI_MONTHLY_CAP` instead (see the env table
+below).
+
 ## Running with `docker compose up`
 
 The repo root has a [`Dockerfile`](https://github.com/anchit2000/dhaga/blob/main/Dockerfile) and [`compose.yml`](https://github.com/anchit2000/dhaga/blob/main/compose.yml)
@@ -138,6 +183,15 @@ is no migration step.
 None of the `packages/ee` vars are wired into `compose.yml` — this is the
 plain AGPL self-host path (Level 1 above).
 
+**Contact import is fully core** — the `.vcf`/CSV file importer, the mobile
+`POST /api/import` endpoint, and the OAuth contact connectors all live in the
+AGPL core (no `@dhaga/ee`). The **Connect Google / Outlook** buttons are
+env-gated: they appear only when `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` or
+`MICROSOFT_CLIENT_ID`/`MICROSOFT_CLIENT_SECRET` are set, so a self-host with none
+of them simply shows file import — no missing-feature errors. See
+`docs/CONTACT_IMPORT_SETUP.md` to configure the connectors. Provider OAuth tokens
+are encrypted at rest (`encryptOAuthTokens`).
+
 ### Custom database deployments
 
 `compose.yml` is a working reference, not a requirement — `DATABASE_URL` can
@@ -152,12 +206,20 @@ app needs from the database:
   entirely in that case.
 - **Session-scoped pooling** (hosted mode only) — tenant scoping works via
   session-level `set_config('app.current_user_id', …)`, which
-  transaction-mode poolers (e.g. Supabase's port 6543) silently break by
-  swapping the server backend between queries: RLS intermittently returns
-  zero rows *and* the tenant setting can leak onto a backend later handed to
-  another user. Use a direct connection or a session-mode pooler; the boot
-  guard in `packages/ee/src/db/bootstrap.ts` fails loud on known offenders.
-- **A role without `BYPASSRLS`** (hosted mode only) — run
+  transaction-mode poolers (e.g. Supabase's port 6543, PgBouncer, Supavisor,
+  Neon's `-pooler` endpoint) silently break by swapping the server backend
+  between queries: RLS intermittently returns zero rows *and* the tenant
+  setting can leak onto a backend later handed to another user. Use a direct
+  connection or a session-mode pooler; the boot guard in
+  `packages/ee/src/db/bootstrap.ts` fails loud when the connection string
+  looks like a transaction pooler (a `pooler`/`pgbouncer` hostname,
+  `pgbouncer=true`, or Supabase's `:6543`). If that heuristic false-positives
+  on a pooler you have confirmed is session-scoped, set
+  `DHAGA_ALLOW_TRANSACTION_POOLER=true` to downgrade the fail-loud throw to a
+  one-time warning.
+- **A role without `BYPASSRLS` or `SUPERUSER`** (hosted mode only) — either
+  attribute makes the role ignore RLS (a superuser bypasses it unconditionally
+  even while `rolbypassrls` reads false), and the boot guard rejects both. Run
   [`packages/ee/scripts/create-app-role.sql`](https://github.com/anchit2000/dhaga/blob/main/packages/ee/scripts/create-app-role.sql)
   and connect as `dhaga_app`; see [Deploying](/docs/self-hosting/deploy)'s "The Postgres role
   DATABASE_URL connects as matters" for why the provider default role is
@@ -191,9 +253,12 @@ None of the `packages/ee/.env.example` vars (`DHAGA_HOSTED_MODE`,
 |---|---|---|
 | `BETTER_AUTH_SECRET` | Yes | `openssl rand -base64 32` |
 | `BETTER_AUTH_URL` | Yes | Your instance's base URL |
+| `BETTER_AUTH_TRUSTED_ORIGINS` | No | Extra allowed origins beyond `BETTER_AUTH_URL` (comma-separated or wildcard) — avoids `INVALID_ORIGIN`; Vercel preview URLs are auto-trusted |
+| `NEXT_PUBLIC_SITE_URL` | No | Canonical origin for sitemap/robots/OG/llms.txt; defaults to the production deployment origin when unset |
 | `DATABASE_URL` | Only on serverless (Vercel) | Otherwise defaults to embedded PGlite |
 | `ANTHROPIC_API_KEY` | No | AI features degrade to heuristic parsing / disabled without it |
-| `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `DHAGA_OWNER_EMAIL` | No | Event digests only |
+| `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `DHAGA_OWNER_EMAIL` | No | Event digests, reach-out digest + morning follow-up reminder |
+| `MORNING_REMINDER_HOURLY` | No | Set `true` only if you drive `/api/jobs/daily` hourly — then the morning reminder lands at the recipient's local ~08:00; unset on the single Hobby cron |
 | `TELEGRAM_*` | No | Owner-only bot capture |
 | `DHAGA_WEBHOOK_URL` | No | Outbound automation |
 | `SEARCH_PROVIDER`, `FIRECRAWL_API_KEY` | No | Job-change detection + news watchlist |

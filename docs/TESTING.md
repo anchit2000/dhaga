@@ -536,6 +536,15 @@ On a contact, add this note:
       digest (people + facts + follow-ups) arrives at `DHAGA_OWNER_EMAIL`.
 - [ ] Unset `DHAGA_OWNER_EMAIL` and retry — clear "Set DHAGA_OWNER_EMAIL…"
       error, no crash (`apps/web/src/lib/actions/events.ts:53`).
+- [ ] **Settings** → Suggestions tab → enable **Morning follow-up reminders**
+      → hit `/api/jobs/daily` (same `CRON_SECRET` header as §7j) with open
+      follow-ups or due reach-outs pending — an email lands at
+      `DHAGA_OWNER_EMAIL` naming the pending count. Confirm the dummy/
+      load-test account (`loadtest@dhaga.internal`) never receives it even if
+      it's the configured owner — `isDummyAccount()` skips it
+      (`apps/web/src/lib/jobs/morning-reminder.ts:48`). Gated on `RESEND_*`
+      being set; `MORNING_REMINDER_HOURLY=true` additionally restricts the
+      send to the recipient's local ~08:00 run.
 
 ### 7q. Telegram bot & outbound webhooks (optional envs)
 

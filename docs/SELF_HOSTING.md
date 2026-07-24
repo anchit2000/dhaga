@@ -250,6 +250,8 @@ None of the `packages/ee/.env.example` vars (`DHAGA_HOSTED_MODE`,
 |---|---|---|
 | `BETTER_AUTH_SECRET` | Yes | `openssl rand -base64 32` |
 | `BETTER_AUTH_URL` | Yes | Your instance's base URL |
+| `BETTER_AUTH_TRUSTED_ORIGINS` | No | Extra allowed origins beyond `BETTER_AUTH_URL` (comma-separated or wildcard) — avoids `INVALID_ORIGIN`; Vercel preview URLs are auto-trusted |
+| `NEXT_PUBLIC_SITE_URL` | No | Canonical origin for sitemap/robots/OG/llms.txt; defaults to the production deployment origin when unset |
 | `DATABASE_URL` | Only on serverless (Vercel) | Otherwise defaults to embedded PGlite |
 | `ANTHROPIC_API_KEY` | No | AI features degrade to heuristic parsing / disabled without it |
 | `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `DHAGA_OWNER_EMAIL` | No | Event digests, reach-out digest + morning follow-up reminder |

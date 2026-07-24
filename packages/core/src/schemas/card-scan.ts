@@ -9,7 +9,9 @@ import { extractedContactSchema } from "./contact";
 export const cardScanSchema = extractedContactSchema.extend({
   raw_text: z
     .string()
-    .describe("Verbatim transcription of all legible text on the card"),
+    .describe(
+      "Combined verbatim transcription of all legible text across every provided photo (which may be several views of the same card/leaflet, e.g. front and back)",
+    ),
 });
 
 export type CardScan = z.infer<typeof cardScanSchema>;

@@ -36,6 +36,13 @@ export const FALLBACK_IMAGE_COMPRESS = 0.7;
 export const CAPTURE_QUALITY = 0.7;
 
 /**
+ * Most photos of one card/leaflet that merge into a single contact (front+back,
+ * or a few leaflet pages). Caps camera multi-shot and library multi-select so a
+ * scan can't balloon the /api/capture body past the server's per-image limits.
+ */
+export const MAX_SCAN_IMAGES = 6;
+
+/**
  * Crop review screen (docs/ideas.md #2). Business cards rarely fill the
  * whole camera frame, so the default rectangle starts inset instead of
  * covering the full photo.

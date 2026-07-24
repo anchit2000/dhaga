@@ -50,6 +50,16 @@ export const CARD_IMAGE_TYPES = [
 ] as const satisfies readonly CaptureImageType[];
 export type CardImageType = (typeof CARD_IMAGE_TYPES)[number];
 
+/** Max raw byte size of a single uploaded card photo (~6 MB). */
+export const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
+
+/**
+ * Max photos merged into ONE contact per scan — front+back of a card, or a
+ * few pages of the same leaflet. They all describe the same person; the
+ * server merges them and keeps each as a visual receipt.
+ */
+export const MAX_CARD_IMAGES = 6;
+
 /** Keep-in-touch cadence choices (docs/ideas.md #2). */
 export const CADENCE_OPTIONS = [
   { label: "Daily", days: 1 },

@@ -12,12 +12,13 @@ import {
 } from "@/lib/repo/contacts";
 import { addNote } from "@/lib/repo/notes";
 import { upsertEmbedding } from "@/lib/repo/embeddings";
-import { saveCardImage } from "@/lib/repo/card-images";
+import { saveCardImages } from "@/lib/repo/card-images";
 import { shouldStoreCardPhotos } from "@/lib/repo/settings";
 import { addContactToEvent, createEvent } from "@/lib/repo/events";
-import { CARD_IMAGE_TYPES } from "@/utils/constants/app";
+import { CARD_IMAGE_TYPES, MAX_CARD_IMAGES } from "@/utils/constants/app";
 import { contactProfileSchema } from "@dhaga/core";
 import type { ContactProfile } from "@dhaga/core";
+import type { CaptureImage } from "@dhaga/core/src/api/capture";
 
 export interface ContactFormState {
   error?: string;
@@ -47,6 +48,34 @@ function parseProfilePayload(
   return { ok: true, profile: result.data };
 }
 
+/**
+ * Card scans carry every photo through the review form in the single
+ * `capturedImages` hidden field (JSON of a CaptureImage[]). Re-validate it
+ * here — never trust the client shape — dropping anything malformed and
+ * capping the count, so a tampered field can't wedge the save.
+ */
+function parseCapturedImages(formData: FormData): CaptureImage[] {
+  const raw = String(formData.get("capturedImages") ?? "").trim();
+  if (!raw) return [];
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(parsed)) return [];
+  const images: CaptureImage[] = [];
+  for (const item of parsed) {
+    if (typeof item !== "object" || item === null) continue;
+    const { imageBase64, imageType } = item as { imageBase64?: unknown; imageType?: unknown };
+    if (typeof imageBase64 !== "string" || !imageBase64) continue;
+    const type = CARD_IMAGE_TYPES.find((candidate) => candidate === imageType);
+    if (!type) continue;
+    images.push({ imageBase64, imageType: type });
+  }
+  return images.slice(0, MAX_CARD_IMAGES);
+}
+
 export async function createContactAction(
   _previous: ContactFormState,
   formData: FormData,
@@ -66,14 +95,18 @@ export async function createContactAction(
     await upsertEmbedding("note", noteId, id, sourceText);
   }
 
-  // Card scans carry the photo through the review form; store it as the
+  // Card scans carry every photo through the review form; store each as a
   // visual receipt (re-check the setting — it may have changed since scan).
-  const imageBase64 = field(formData, "imageBase64");
-  const imageType = CARD_IMAGE_TYPES.find(
-    (type) => type === field(formData, "imageType"),
-  );
-  if (imageBase64 && imageType && (await shouldStoreCardPhotos())) {
-    await saveCardImage(id, noteId, imageType, imageBase64);
+  const capturedImages = parseCapturedImages(formData);
+  if (capturedImages.length > 0 && (await shouldStoreCardPhotos())) {
+    await saveCardImages(
+      id,
+      noteId,
+      capturedImages.map((image) => ({
+        mediaType: image.imageType,
+        dataBase64: image.imageBase64,
+      })),
+    );
   }
 
   const newEventName = field(formData, "newEventName");

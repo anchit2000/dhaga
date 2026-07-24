@@ -1,7 +1,7 @@
 import { requireUserIdFromRequest } from "@/lib/auth/guard";
 import { enforceRateLimit, RateLimitError } from "@/lib/ratelimit";
 import { handleAttachCapture, handleImageCapture, handleTextCapture } from "./handlers";
-import { parseCaptureRequest } from "./parse-request";
+import { CaptureValidationError, parseCaptureRequest } from "./parse-request";
 
 /**
  * One-shot capture for external surfaces (browser extension; later, mobile
@@ -33,11 +33,13 @@ export async function POST(request: Request): Promise<Response> {
   let parsed;
   try {
     parsed = await parseCaptureRequest(request);
-  } catch {
-    return Response.json({ error: "Invalid request." }, { status: 400 });
+  } catch (error) {
+    const message =
+      error instanceof CaptureValidationError ? error.message : "Invalid request.";
+    return Response.json({ error: message }, { status: 400 });
   }
 
-  if (parsed.imageBase64) return handleImageCapture(userId, parsed);
+  if (parsed.images.length > 0) return handleImageCapture(userId, parsed);
 
   if (!parsed.raw) {
     return Response.json({ error: "Nothing to capture." }, { status: 400 });

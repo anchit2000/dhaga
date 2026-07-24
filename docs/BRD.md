@@ -143,7 +143,7 @@ The MVP must prove one loop end-to-end:
 
 | Dimension | MVP | Full Product |
 |---|---|---|
-| Capture | Card scan, vCard QR, voice notes (mobile) | + badges, web quick-add (paste email/article/URL), browser extension one-click add, LinkedIn Connections CSV import, email forwarding, LinkedIn QR, call-log prompts |
+| Capture | Card scan (single or multi-image), vCard QR, voice notes (mobile) | + badges, web quick-add (paste email/article/URL), browser extension one-click add, LinkedIn Connections CSV import, email forwarding, LinkedIn QR, call-log prompts |
 | Intelligence | Extraction + NL search + follow-up drafts | + enrichment, change detection, decay alerts, pre-meeting briefs, warm paths |
 | Graph | Per-user, on-device, basic edges | Rich ontology, article-to-contact links, team-shared graph, cross-user dedup |
 | Platform | iOS + Android (one RN codebase) | + web app + browser extension + watch/widgets |
@@ -187,6 +187,7 @@ A July 2026 competitive review surfaced feature gaps. The genuinely-additive one
 - **OCR is free and on-device.** iOS: Apple Vision framework (`VNRecognizeTextRequest`) — excellent accuracy, zero cost, zero latency, zero privacy exposure. Android: Google ML Kit Text Recognition (also free, on-device).
 - OCR yields raw text lines + bounding boxes. A **small LLM call** (or on-device model) converts raw OCR text → structured contact JSON (name/title/company/email/phone/address), handling layout ambiguity that regex can't ("is this line a company or a title?").
 - Fallback for degraded/multilingual cards: server-side pass with a vision-capable model (send the image, get structured JSON directly). This is the premium path, used only when on-device confidence is low.
+- **One card, one or many photos.** A single capture can bundle multiple images of the same card (front + back) or a multi-page leaflet — via multi-shot camera, desktop live webcam, or multi-file upload on web and mobile; the server vision pass merges them into one contact and keeps every image as a receipt. (Extracting *several* contacts from one leaflet is not yet in scope — a multi-image capture always yields a single contact.)
 
 ### 6.2 Auto-grouping (M2)
 

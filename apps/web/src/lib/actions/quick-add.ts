@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { requireUserId } from "@/lib/auth/guard";
 import { extractAndApplyNote } from "@/lib/ai/note-extraction";
 import { extractContactFromText } from "@/lib/ai/contact-extraction";
-import { scanCardImage } from "@/lib/ai/card-scan";
+import { scanCardImages } from "@/lib/ai/card-scan";
 import { shouldStoreCardPhotos } from "@/lib/repo/settings";
 import {
   findContactIdentityCandidates,
@@ -13,10 +13,9 @@ import {
 } from "@/lib/repo/contacts";
 import { addNote } from "@/lib/repo/notes";
 import { upsertEmbedding } from "@/lib/repo/embeddings";
-import { CARD_IMAGE_TYPES } from "@/utils/constants/app";
+import { CARD_IMAGE_TYPES, MAX_CARD_IMAGES, MAX_IMAGE_BYTES } from "@/utils/constants/app";
 import type { ExtractedContact, LLMImage } from "@dhaga/core";
-
-const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
+import type { CaptureImage } from "@dhaga/core/src/api/capture";
 
 export interface QuickAddState {
   contact?: ExtractedContact;
@@ -24,10 +23,10 @@ export interface QuickAddState {
   notice?: string;
   error?: string;
   sourceText?: string;
-  /** Set only when store-card-photos is on — carried through the review
-   *  form so the photo is saved as a visual receipt alongside the contact. */
-  imageBase64?: string;
-  imageType?: string;
+  /** Set only when store-card-photos is on — every scanned photo, carried
+   *  through the review form (as the `capturedImages` hidden field) so each
+   *  is saved as a visual receipt alongside the merged contact. */
+  images?: CaptureImage[];
   matches?: ContactIdentityCandidate[];
 }
 
@@ -72,27 +71,36 @@ export async function attachCapturedNoteAction(formData: FormData): Promise<void
   redirect(`/app/people/${contactId}`);
 }
 
-/** Card-photo path (M1): parse the photo; keep it as a visual receipt
- *  unless the user turned storage off in Settings. */
+/** Card-photo path (M1): parse one or more photos of the same card
+ *  (front+back, leaflet pages) into ONE contact; keep each as a visual
+ *  receipt unless the user turned storage off in Settings. */
 export async function scanCardAction(
   _previous: QuickAddState,
   formData: FormData,
 ): Promise<QuickAddState> {
   const userId = await requireUserId();
-  const photo = formData.get("photo");
-  if (!(photo instanceof File) || photo.size === 0) {
+  const photos = formData
+    .getAll("photo")
+    .filter((photo): photo is File => photo instanceof File && photo.size > 0);
+  if (photos.length === 0) {
     return { error: "Take or choose a card photo first." };
   }
-  const mediaType = CARD_IMAGE_TYPES.find((type) => type === photo.type);
-  if (!mediaType) return { error: "Use a JPEG, PNG, or WebP photo." };
-  if (photo.size > MAX_IMAGE_BYTES) {
-    return { error: "Photo too large — try again (max 6 MB)." };
+  if (photos.length > MAX_CARD_IMAGES) {
+    return { error: `Up to ${MAX_CARD_IMAGES} photos per card.` };
   }
-  const image: LLMImage = {
-    mediaType,
-    dataBase64: Buffer.from(await photo.arrayBuffer()).toString("base64"),
-  };
-  const result = await scanCardImage(userId, image);
+  const images: LLMImage[] = [];
+  const captured: CaptureImage[] = [];
+  for (const photo of photos) {
+    const mediaType = CARD_IMAGE_TYPES.find((type) => type === photo.type);
+    if (!mediaType) return { error: "Use a JPEG, PNG, or WebP photo." };
+    if (photo.size > MAX_IMAGE_BYTES) {
+      return { error: "Photo too large — try again (max 6 MB each)." };
+    }
+    const dataBase64 = Buffer.from(await photo.arrayBuffer()).toString("base64");
+    images.push({ mediaType, dataBase64 });
+    captured.push({ imageBase64: dataBase64, imageType: mediaType });
+  }
+  const result = await scanCardImages(userId, images);
   if (result.error || !result.contact) {
     return { error: result.error ?? "The scan failed." };
   }
@@ -101,7 +109,6 @@ export async function scanCardAction(
     contact: result.contact,
     via: "ai",
     sourceText: result.rawText,
-    imageBase64: storePhoto ? image.dataBase64 : undefined,
-    imageType: storePhoto ? mediaType : undefined,
+    images: storePhoto ? captured : undefined,
   };
 }

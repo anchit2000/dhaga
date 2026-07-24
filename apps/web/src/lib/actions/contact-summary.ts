@@ -1,6 +1,7 @@
 "use server";
 
 import { requireUserId } from "@/lib/auth/guard";
+import { withUserDb } from "@/lib/db/request-scope";
 import type { NoteRow } from "@/lib/db/schema";
 import { getContact } from "@/lib/repo/contacts";
 import { listContactEvents } from "@/lib/repo/events";
@@ -39,33 +40,39 @@ export async function getContactSummaryAction(
   _previous: ContactSummaryState,
   formData: FormData,
 ): Promise<ContactSummaryState> {
-  await requireUserId();
+  const userId = await requireUserId();
   const contactId = String(formData.get("contactId") ?? "");
   if (!contactId) return { error: "Missing contact." };
 
-  const detail = await getContact(contactId);
-  if (!detail) return { error: "Contact not found." };
+  // All four reads run on ONE scoped connection. In a server action React
+  // cache() does not dedupe getDb(), so without this scope getContact plus the
+  // three-way Promise.all would each check out a separate tenant-pool
+  // connection — four against a max-of-three pool → connect-timeout deadlock.
+  return withUserDb(userId, async () => {
+    const detail = await getContact(contactId);
+    if (!detail) return { error: "Contact not found." };
 
-  const [notes, facts, events] = await Promise.all([
-    listNotes(contactId),
-    listFacts(contactId),
-    listContactEvents(contactId),
-  ]);
+    const [notes, facts, events] = await Promise.all([
+      listNotes(contactId),
+      listFacts(contactId),
+      listContactEvents(contactId),
+    ]);
 
-  return {
-    summary: {
-      id: detail.contact.id,
-      name: detail.contact.name,
-      title: detail.contact.title,
-      companyName: detail.companyName,
-      tags: detail.contact.tags,
-      emails: detail.contact.emails,
-      phones: detail.contact.phones,
-      links: detail.contact.links,
-      location: detail.contact.location,
-      notes: notes.slice(0, CONTACT_SUMMARY_NOTE_LIMIT),
-      facts: facts.slice(0, CONTACT_SUMMARY_FACT_LIMIT),
-      events,
-    },
-  };
+    return {
+      summary: {
+        id: detail.contact.id,
+        name: detail.contact.name,
+        title: detail.contact.title,
+        companyName: detail.companyName,
+        tags: detail.contact.tags,
+        emails: detail.contact.emails,
+        phones: detail.contact.phones,
+        links: detail.contact.links,
+        location: detail.contact.location,
+        notes: notes.slice(0, CONTACT_SUMMARY_NOTE_LIMIT),
+        facts: facts.slice(0, CONTACT_SUMMARY_FACT_LIMIT),
+        events,
+      },
+    };
+  });
 }

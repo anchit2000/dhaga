@@ -4,6 +4,7 @@ import {
   getLLMClient,
   hasLLM,
 } from "@dhaga/core";
+import { withUserDb } from "@/lib/db/request-scope";
 import { getContact } from "@/lib/repo/contacts";
 import { listFacts, listNotes, listOpenFollowUps } from "@/lib/repo/notes";
 import { listContactEvents } from "@/lib/repo/events";
@@ -23,14 +24,26 @@ export async function generateBrief(
   if (!hasLLM()) {
     return { error: "Configure an LLM provider to generate briefs." };
   }
-  const detail = await getContact(contactId);
-  if (!detail) return { error: "Contact not found." };
-  const [facts, notes, events, followUps] = await Promise.all([
-    listFacts(contactId),
-    listNotes(contactId),
-    listContactEvents(contactId),
-    listOpenFollowUps(contactId),
-  ]);
+  // Load the whole graph context in ONE scoped connection. Without the
+  // withUserDb scope, these five getDb()-acquiring reads (getContact + the
+  // four-way Promise.all) each check out a separate tenant-pool connection in
+  // this server-action context — five at once against a max-of-three pool,
+  // which dead-locked on the connect timeout. The scope also releases the
+  // connection before the LLM call below, so nothing is held across that
+  // network round-trip (SCALING.md lever 2).
+  const bundle = await withUserDb(userId, async () => {
+    const detail = await getContact(contactId);
+    if (!detail) return null;
+    const [facts, notes, events, followUps] = await Promise.all([
+      listFacts(contactId),
+      listNotes(contactId),
+      listContactEvents(contactId),
+      listOpenFollowUps(contactId),
+    ]);
+    return { detail, facts, notes, events, followUps };
+  });
+  if (!bundle) return { error: "Contact not found." };
+  const { detail, facts, notes, events, followUps } = bundle;
 
   try {
     await requireFeature(userId, "pre_meeting_brief");

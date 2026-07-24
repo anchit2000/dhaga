@@ -161,6 +161,15 @@ is no migration step.
 None of the `packages/ee` vars are wired into `compose.yml` — this is the
 plain AGPL self-host path (Level 1 above).
 
+**Contact import is fully core** — the `.vcf`/CSV file importer, the mobile
+`POST /api/import` endpoint, and the OAuth contact connectors all live in the
+AGPL core (no `@dhaga/ee`). The **Connect Google / Outlook** buttons are
+env-gated: they appear only when `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` or
+`MICROSOFT_CLIENT_ID`/`MICROSOFT_CLIENT_SECRET` are set, so a self-host with none
+of them simply shows file import — no missing-feature errors. See
+`docs/CONTACT_IMPORT_SETUP.md` to configure the connectors. Provider OAuth tokens
+are encrypted at rest (`encryptOAuthTokens`).
+
 ### Custom database deployments
 
 `compose.yml` is a working reference, not a requirement — `DATABASE_URL` can

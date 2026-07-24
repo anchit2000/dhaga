@@ -1,15 +1,20 @@
 import { Feather } from "@expo/vector-icons";
 import { Stack, router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { Pressable } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 
 import { COLORS } from "@/utils/constants";
 
-function SettingsButton() {
+function HeaderActions() {
   return (
-    <Pressable onPress={() => router.push("/setup")} hitSlop={12} accessibilityLabel="Settings">
-      <Feather name="settings" size={20} color={COLORS.paper} />
-    </Pressable>
+    <View style={styles.headerActions}>
+      <Pressable onPress={() => router.push("/import")} hitSlop={12} accessibilityLabel="Import contacts">
+        <Feather name="users" size={20} color={COLORS.paper} />
+      </Pressable>
+      <Pressable onPress={() => router.push("/setup")} hitSlop={12} accessibilityLabel="Settings">
+        <Feather name="settings" size={20} color={COLORS.paper} />
+      </Pressable>
+    </View>
   );
 }
 
@@ -26,9 +31,14 @@ export default function RootLayout() {
           contentStyle: { backgroundColor: COLORS.ink },
         }}
       >
-        <Stack.Screen name="index" options={{ title: "Dhaga", headerRight: SettingsButton }} />
+        <Stack.Screen name="index" options={{ title: "Dhaga", headerRight: HeaderActions }} />
         <Stack.Screen name="setup" options={{ title: "Connect to Dhaga" }} />
+        <Stack.Screen name="import" options={{ title: "Import contacts" }} />
       </Stack>
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  headerActions: { flexDirection: "row", alignItems: "center", gap: 20 },
+});

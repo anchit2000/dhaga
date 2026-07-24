@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { profileFromExtracted } from "@dhaga/core";
 import { importContacts } from "@/lib/repo/import";
 import { getContact, listContacts } from "@/lib/repo/contacts";
 import { listNotes } from "@/lib/repo/notes";
@@ -9,8 +10,20 @@ const candidate = (
   name: string,
   company: string | null,
   emails: string[] = [],
+  phones: string[] = [],
 ): ImportCandidate => ({
-  contact: { name, title: null, company, emails, phones: [], links: [], location: null },
+  // The pipeline carries the rich ContactProfile now; lift the lean fields the
+  // dedup logic reads (name, company via primaryPosition, emails/phones) with
+  // the same helper Google/LinkedIn use, so these tests exercise the real shape.
+  contact: profileFromExtracted({
+    name,
+    title: null,
+    company,
+    emails,
+    phones,
+    links: [],
+    location: null,
+  }),
   receipt: `Imported from LinkedIn Connections export · connected 1 Jan 2026`,
 });
 
@@ -67,6 +80,21 @@ describe("bulk import", () => {
         candidate("Import Four Again", null, ["four@import.example"]),
       ],
       "google",
+    );
+    expect(summary).toEqual({ created: 1, skipped: 1 });
+  });
+
+  it("dedupes by phone when neither side has an email (the .vcf device-import path)", async () => {
+    // Device/.vcf contacts routinely carry a number but no address. Two
+    // differently-named cards sharing a phone are the same person; without
+    // phone dedup a re-import would silently duplicate them. Formatting
+    // differs across exports, so the match must survive punctuation.
+    const summary = await importContacts(
+      [
+        candidate("Phone Person", null, [], ["+1 (555) 010-2020"]),
+        candidate("Phone Person Nickname", null, [], ["+15550102020"]),
+      ],
+      "vcard",
     );
     expect(summary).toEqual({ created: 1, skipped: 1 });
   });

@@ -1,3 +1,4 @@
+import { profileFromExtracted } from "@dhaga/core";
 import { rowToRecord } from "./types";
 import type { ImportCandidate } from "./types";
 
@@ -64,7 +65,7 @@ export function googleRowsToCandidates(
       .join("\n");
 
     candidates.push({
-      contact: {
+      contact: profileFromExtracted({
         name,
         title: first(record, "Organization Title", "Organization 1 - Title") || null,
         company: first(record, "Organization Name", "Organization 1 - Name") || null,
@@ -72,7 +73,7 @@ export function googleRowsToCandidates(
         phones: multiValues(record, PHONE_HEADER),
         links: multiValues(record, WEBSITE_HEADER),
         location: multiValues(record, ADDRESS_HEADER)[0] ?? null,
-      },
+      }),
       receipt,
     });
   }

@@ -10,6 +10,7 @@ import { listCalendarConnections } from "@/lib/repo/calendar";
 import {
   getDailySuggestionCount,
   getSchedulePrefs,
+  isConfirmationsDigestEnabled,
   isDailyDigestEnabled,
   isMorningReminderEnabled,
 } from "@/lib/repo/suggestion-settings";
@@ -86,10 +87,11 @@ export async function CalendarSection({
 }
 
 export async function SuggestionsSection() {
-  const [count, prefs, digestEnabled, reminderEnabled] = await Promise.all([
+  const [count, prefs, digestEnabled, confirmationsDigestEnabled, reminderEnabled] = await Promise.all([
     getDailySuggestionCount(),
     getSchedulePrefs(),
     isDailyDigestEnabled(),
+    isConfirmationsDigestEnabled(),
     isMorningReminderEnabled(),
   ]);
   return (
@@ -97,6 +99,7 @@ export async function SuggestionsSection() {
       count={count}
       prefs={prefs}
       digestEnabled={digestEnabled}
+      confirmationsDigestEnabled={confirmationsDigestEnabled}
       reminderEnabled={reminderEnabled}
     />
   );

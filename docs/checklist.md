@@ -129,6 +129,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Contact page: same-company + same-event + edge connections render
 - [x] Graph browser page (React Flow: people/companies, typed edges, ring layout)
 - [x] Tag ontology v0 (tags from extraction, filter chips on People)
+- [x] Confirmations centre — unified "AI proposes, code disposes" inbox (`/app/confirmations` + nav badge + Home tile) generalizing edge-suggestions into typed `confirmations` (entity_link / subject_resolution "who is _he_?" / enrichment_match / supplement); ambiguous extraction defers to a confirmation, deterministic resolver applies on confirm; opt-in email digest on the daily cron
 
 ## 8. Natural-language search (M6)
 

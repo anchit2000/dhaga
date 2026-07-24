@@ -13,7 +13,10 @@ export type EdgeSuggestionTarget =
   | { entityId: string }
   | { newEntity: { typeId: string } };
 
-async function resolveTarget(
+/** Resolve where a confirmed suggestion points, minting a contact/entity when
+ *  the user chose "none of these — create new". Shared with the unified
+ *  confirmations resolver (lib/repo/confirmations). */
+export async function resolveTarget(
   target: EdgeSuggestionTarget,
   objectName: string,
 ): Promise<{ dstType: "contact" | "entity"; dstId: string }> {

@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useFormStatus } from "react-dom";
-import { Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PrefToggle, SaveButton } from "@/components/app/settings/SuggestionsToggles";
 import {
+  setConfirmationsDigestEnabledAction,
   setDailyDigestEnabledAction,
   setMorningReminderEnabledAction,
   setSuggestionSettingsAction,
@@ -16,40 +15,6 @@ import {
   MIN_DAILY_SUGGESTION_COUNT,
 } from "@/utils/constants/suggestions";
 
-function SaveButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" variant="outline" size="sm" disabled={pending}>
-      {pending ? <Loader2 className="size-3.5 animate-spin" /> : null}
-      Save
-    </Button>
-  );
-}
-
-function PrefToggle({ enabled, label }: { enabled: boolean; label: string }) {
-  const { pending } = useFormStatus();
-  return (
-    <button
-      type="submit"
-      disabled={pending}
-      role="switch"
-      aria-checked={enabled}
-      aria-label={label}
-      className={`relative h-7 w-12 shrink-0 rounded-full border transition-colors disabled:opacity-60 ${
-        enabled ? "border-amber/50 bg-amber/30" : "border-seam bg-wash/[0.06]"
-      }`}
-    >
-      <span
-        className={`absolute top-0.5 flex size-5.5 items-center justify-center rounded-full transition-all ${
-          enabled ? "left-6 bg-amber" : "left-0.5 bg-fog/60"
-        }`}
-      >
-        {pending ? <Loader2 className="size-3 animate-spin text-on-accent" /> : null}
-      </span>
-    </button>
-  );
-}
-
 const fieldLabel = "block text-xs text-fog";
 const fieldBox = "mt-1 w-full";
 
@@ -58,11 +23,13 @@ export function SuggestionsSetting({
   count,
   prefs,
   digestEnabled,
+  confirmationsDigestEnabled,
   reminderEnabled,
 }: {
   count: number;
   prefs: SchedulePrefs;
   digestEnabled: boolean;
+  confirmationsDigestEnabled: boolean;
   reminderEnabled: boolean;
 }) {
   const offsetRef = useRef<HTMLInputElement>(null);
@@ -129,6 +96,21 @@ export function SuggestionsSetting({
           </p>
         </div>
         <PrefToggle enabled={digestEnabled} label="Daily email digest" />
+      </form>
+
+      <form
+        action={setConfirmationsDigestEnabledAction}
+        className="flex items-start justify-between gap-4 border-t border-seam pt-4"
+      >
+        <input type="hidden" name="enabled" value={confirmationsDigestEnabled ? "off" : "on"} />
+        <div>
+          <p className="text-sm font-medium text-paper">Confirmations digest</p>
+          <p className="mt-1 text-sm text-fog">
+            Email a summary of pending confirmations waiting for your review. Requires email to be
+            configured on your server.
+          </p>
+        </div>
+        <PrefToggle enabled={confirmationsDigestEnabled} label="Confirmations digest" />
       </form>
 
       <form action={setMorningReminderEnabledAction} className="flex items-start justify-between gap-4 border-t border-seam pt-4">

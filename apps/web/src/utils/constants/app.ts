@@ -1,6 +1,6 @@
 /** App-shell constants (the product UI under /app, not the landing page). */
 
-import { BookOpen, CalendarDays, CirclePlus, Gift, Home, Newspaper, Shapes, Sparkles, Upload, Users, Waypoints } from "lucide-react";
+import { BookOpen, CalendarDays, CirclePlus, Gift, Home, Inbox, Newspaper, Shapes, Sparkles, Upload, Users, Waypoints } from "lucide-react";
 import type { CaptureImageType } from "@dhaga/core/src/api/capture";
 
 export const SESSION_COOKIE = "dhaga_session";
@@ -10,6 +10,7 @@ export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
 /** Primary nav pills, always visible. */
 export const APP_NAV_LINKS = [
   { href: "/app", label: "Home", icon: Home },
+  { href: "/app/confirmations", label: "Confirmations", icon: Inbox },
   { href: "/app/graph", label: "Graph", icon: Waypoints },
 ] as const;
 

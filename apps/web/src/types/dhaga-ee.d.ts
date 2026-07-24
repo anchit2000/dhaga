@@ -8,12 +8,14 @@ declare module "@dhaga/ee" {
   import type {
     AdminGate,
     BillingGate,
+    ReferralGate,
     SignupGate,
     TenantGate,
   } from "@/lib/hosted/gate";
 
-  export const tenantGate: TenantGate; // see ScopedConnection in lib/hosted/gate.ts
+  export const tenantGate: TenantGate; // see ScopedConnection in lib/hosted/gate
   export const signupGate: SignupGate;
   export const billingGate: BillingGate;
   export const adminGate: AdminGate;
+  export const referralGate: ReferralGate;
 }

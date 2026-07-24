@@ -394,6 +394,27 @@ Per-card pipeline (OCR parse ≈ 800 in / 200 out tokens on Haiku): **≈ $0.002
 - Prompt/eval library in the open: contributors improve extraction quality measurably (eval suite gates PRs).
 - Plugin interface for capture sources (badge formats, email parsers) and export targets (CRMs) — the integrations surface area becomes community-maintained.
 
+### 8.6 Viral growth loops (built 2026-07)
+
+A private CRM has no inherent network effect — nobody else sees your graph — so
+distribution is engineered as three deliberate, privacy-safe loops (build detail
+in `docs/checklist.md` §21):
+
+- **Network Wrapped** — a contact-free, proud-to-post share card ("47 people met
+  this month", "12 at this event", "strongest cluster: fintech"), computed
+  deterministically from the user's own graph (no LLM, no metered cost). Every
+  share is a faceless ad; it exposes aggregate counts + category superlatives
+  only, never a third party's name. Server-rendered in feed/story/unfurl formats
+  and free to all users — it's a growth surface, not a paywalled one.
+- **Public graph sandbox** — the landing lets anyone drag/zoom a real-scale
+  (21k-node) but entirely synthetic network, loaded only on demand. It turns the
+  product's hardest-to-explain value (a living knowledge graph) into a
+  screenshot-worthy toy with zero signup friction, reusing the same sigma.js
+  renderer the app ships.
+- **Two-sided referral** — a free month of Pro for both advocate and referee
+  (hosted tier); a valid invite also admits the referee past the early-access
+  wall. The one loop that directly compounds paid conversion.
+
 ---
 
 ## 9. Delivery Plan & Milestones

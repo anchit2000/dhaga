@@ -32,10 +32,10 @@ export interface SignupGate {
   checkEmail(email: string): Promise<{ allowed: boolean; reason?: string }>;
   /** Called when a signup attempt is blocked — files (or no-ops, in core
    *  mode) an access request so the same email can just retry once approved
-   *  instead of needing the separate /api/access-requests form first. */
-  /** True only when a new pending request was created (or an old rejection
-   *  was reopened after the cooldown). Callers use this to avoid sending a
-   *  fresh confirmation email on every signup retry. */
+   *  instead of needing the separate /api/access-requests form first. True
+   *  only when a new pending request was created (or an old rejection was
+   *  reopened after the cooldown) — callers use it to avoid re-sending a
+   *  confirmation email on every signup retry. */
   requestAccess(email: string): Promise<boolean>;
 }
 
@@ -59,6 +59,30 @@ export interface AdminGate {
   isAdmin(userId: string): Promise<boolean>;
 }
 
+/** Advocate-facing summary of a user's referral standing (hosted only). */
+export interface ReferralSummary {
+  code: string;
+  rewardedCount: number;
+  pendingCount: number;
+}
+
+export interface ReferralGate {
+  getOrCreateCode(userId: string): Promise<string>;
+  /** Null in core-only mode → the referral UI renders nothing (like billing). */
+  getSummary(userId: string): Promise<ReferralSummary | null>;
+  /** Gates the signup-allowlist bypass: true if `code` is real + usable. */
+  isValidCode(code: string): Promise<boolean>;
+  /** Record a pending referrer→referee link at signup; idempotent per referee. */
+  recordReferral(input: {
+    code: string;
+    refereeUserId: string;
+    refereeEmail: string;
+  }): Promise<{ recorded: boolean; reason?: string }>;
+  /** Fire the two-sided reward once the referee verifies their email.
+   *  Idempotent; grants a Pro month to BOTH sides. */
+  grantRewardOnVerification(id: string): Promise<{ rewarded: boolean }>;
+}
+
 const openSignupGate: SignupGate = {
   checkEmail: async () => ({ allowed: true }),
   requestAccess: async () => false,
@@ -73,12 +97,17 @@ const noBillingGate: BillingGate = {
     throw new Error("Billing isn't available on this instance.");
   },
 };
-const noAdminGate: AdminGate = {
-  isAdmin: async () => false,
+const noAdminGate: AdminGate = { isAdmin: async () => false };
+const noReferralGate: ReferralGate = {
+  getOrCreateCode: async () => {
+    throw new Error("Referrals aren't available on this instance.");
+  },
+  getSummary: async () => null,
+  isValidCode: async () => false,
+  recordReferral: async () => ({ recorded: false, reason: "unavailable" }),
+  grantRewardOnVerification: async () => ({ rewarded: false }),
 };
-const noTenantGate: TenantGate = {
-  scopedDb: async () => null,
-};
+const noTenantGate: TenantGate = { scopedDb: async () => null };
 
 async function loadEe(): Promise<typeof import("@dhaga/ee") | null> {
   if (process.env.DHAGA_HOSTED_MODE !== "true") return null;
@@ -92,17 +121,17 @@ async function loadEe(): Promise<typeof import("@dhaga/ee") | null> {
 export async function getTenantGate(): Promise<TenantGate> {
   return (await loadEe())?.tenantGate ?? noTenantGate;
 }
-
 export async function getSignupGate(): Promise<SignupGate> {
   return (await loadEe())?.signupGate ?? openSignupGate;
 }
-
 export async function getBillingGate(): Promise<BillingGate> {
   return (await loadEe())?.billingGate ?? noBillingGate;
 }
-
 export async function getAdminGate(): Promise<AdminGate> {
   return (await loadEe())?.adminGate ?? noAdminGate;
+}
+export async function getReferralGate(): Promise<ReferralGate> {
+  return (await loadEe())?.referralGate ?? noReferralGate;
 }
 
 /**

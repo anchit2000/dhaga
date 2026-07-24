@@ -11,7 +11,8 @@
     ".": "./src/index.ts",
     "./access-requests": "./src/access-requests/index.ts",
     "./admin": "./src/admin/index.ts",
-    "./billing": "./src/billing/index.ts"
+    "./billing": "./src/billing/index.ts",
+    "./referrals": "./src/referrals/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

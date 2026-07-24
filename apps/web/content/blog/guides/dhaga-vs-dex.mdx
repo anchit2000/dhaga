@@ -1,0 +1,117 @@
+---
+title: "Dhaga vs Dex: Private CRM vs Auto-Sync CRM"
+description: "Dex vs Dhaga compared — automatic LinkedIn/email sync vs open-source privacy and a free tier that actually works. Which personal CRM fits?"
+date: "2026-07-24"
+author: "Anchit Shrivastava"
+tags: ["personal-crm", "dex", "comparison", "guide"]
+---
+
+<Callout title="The short version">
+Dex is the category-leading personal CRM, and its whole superpower is automatic capture — it syncs your Gmail, calendar, and LinkedIn for you and even detects job changes. Dhaga doesn't do live sync yet; it's the open-source, self-hostable, privacy-first option with a free tier that's actually usable. So "Dhaga vs Dex" really comes down to one honest question: do you want zero-effort auto-sync in a polished cloud app, or do you want to own your data outright? Pick by that, not by feature counts.
+</Callout>
+
+If you've been shopping for a personal CRM, you've hit Dex (getdex.com). It's the most well-known dedicated one for a reason: roughly 30,000+ users, a clean product, and a pitch that lands — "one place for your relationships," built for people, not a sales pipeline. If you're weighing it against an open-source challenger, this is the honest Dex-vs-Dhaga breakdown, written by someone who builds the challenger. I'll be upfront about where Dex plainly wins, because it wins a lot.
+
+The short version of the tension: Dex is a managed cloud product that captures your network *for* you. Dhaga is a private, open-source graph you feed and own. Those are two genuinely different bets, and the right one depends entirely on what you value.
+
+## The core difference: automatic capture vs. private ownership
+
+Everything else is downstream of this one split.
+
+**Dex's bet is convenience.** It plugs into the accounts where your relationships already live — Gmail/Outlook (two-way email sync), Google Calendar, LinkedIn — and quietly builds your CRM without you typing much at all. Its most impressive trick: automatic **job-change detection**, so when a contact moves companies, Dex notices and nudges you to reach out. That is a real, mature, hard-to-build feature, and it's the beating heart of the product.
+
+**Dhaga's bet is ownership.** It's an AI-native personal CRM built privacy-first: you capture people as you go, those notes become a private knowledge graph you query in plain English, and the whole thing is open-source (AGPL) and self-hostable. The tradeoff is the honest headline of this whole comparison: **Dhaga has no live email, calendar, or LinkedIn sync today.** You get contacts in through manual add, a LinkedIn Connections CSV export, a browser extension, a paste of an email signature, or a Telegram bot — not an ambient background feed.
+
+So if the single most important thing to you is that your CRM fills itself, stop reading and get Dex. That's not false modesty; it's the truth, and it's what Dex is best in the world at.
+
+## Where Dex wins (and it's not close on these)
+
+Being fair here matters, because Dex is the incumbent and it earned the position. Where it's clearly ahead of Dhaga right now:
+
+- **Automatic capture from email, LinkedIn, and calendar.** The whole value prop, and it's mature. Two-way Gmail/Outlook sync, calendar sync, LinkedIn auto-sync (up to 9,000 connections on the top plan), iMessage/social sync, two-way phone-contact sync. Dhaga has none of these as live sync.
+- **Automatic job-change detection + reach-out notifications.** Dhaga has no live equivalent shipping today.
+- **Mature, polished native mobile + desktop.** Dex has real iOS and Android apps (with business-card scan and AI voice notes on mobile) and a desktop app. Dhaga's mobile surface today is an installable PWA — the native apps are still in progress.
+- **AI pre-meeting briefs from your calendar.** Dex Copilot / Ask Dex does natural-language recall and CRUD ("who did I meet at the Google event in product?"), plus calendar-aware meeting prep and daily digests.
+- **A shipped MCP server + agent skill, today.** You can point Claude or ChatGPT at Dex and have it operate the CRM. Dhaga does not ship an MCP server.
+- **Power-user plumbing.** Mail merge, Zapier, and a public API on the Professional plan.
+- **Brand, reliability, and a big user base.** ~30,000+ users and years of polish. A newer open-source project can't hand you that on day one.
+
+Dex is also privacy-*respecting* in the ways that matter to most people: it's supported by subscriptions rather than ads, says it never sells your data, and gives you full export and delete. The one thing it can't offer — because it would break its own model — is self-hosting.
+
+## Where Dhaga wins
+
+Now the other side, honestly. These are real advantages, and most of them are exactly the things Dex *structurally can't* match without abandoning its cloud model.
+
+- **Open-source and self-hostable.** Dhaga is AGPL with a one-command `docker compose up`. Your entire relationship graph can live on infrastructure you control — inside India if data residency matters to you. Dex is closed-source central cloud; there's no self-host, and there never can be without changing what Dex is.
+- **A free tier that's actually usable.** This is the sharpest contrast. Dex's free plan exists but is deliberately thin: unlimited contacts, but *basic reminders only* — no integrations, no AI, and no mobile app. Dhaga's free tier is a real working tool: manual capture, notes, follow-up reminders, warm-path finding, and search across your own graph, at zero cloud-AI cost. (Dhaga's AI features — natural-language recall, card and voice capture, drafting — are the paid tier, around $8/month. Cloud AI is opt-in and metered, never always-on.)
+- **Fact-level provenance and cascade delete.** Every AI-derived fact in Dhaga keeps a receipt — the note it came from. Delete that note and its derived facts, edges, and embeddings go with it. "Forget this person" cascades completely. That's a privacy invariant built into the schema, not a settings toggle.
+- **Warm-intro pathfinding at zero AI cost.** Dhaga walks your own graph — shared companies, events, and relationships — to find the shortest warm path to someone you want to reach. It's local graph traversal, so it costs nothing and reveals nothing to a model.
+- **Cheap capture rails with no integration or subscription.** A Telegram bot, a paste box, a LinkedIn CSV import, a browser extension. None of it requires wiring up an OAuth integration or paying for a tier.
+- **India + founder/operator/VC positioning.** Built for people who live on warm intros and read pricing in rupees, not just US knowledge workers.
+
+<NodeGraph
+  caption="Warm-path finding walks your own graph — no AI call, no data leaving your server."
+  height={360}
+  nodes={[
+    { id: "you", label: "You", x: 80, y: 180, kind: "you" },
+    { id: "m1", label: "Priya (ex-colleague)", x: 300, y: 100, kind: "mutual" },
+    { id: "m2", label: "Dinner contact", x: 300, y: 260, kind: "contact" },
+    { id: "t1", label: "Fund partner", x: 560, y: 180, kind: "target" },
+  ]}
+  edges={[
+    { from: "you", to: "m1", strong: true },
+    { from: "m1", to: "t1", strong: true },
+    { from: "you", to: "m2" },
+  ]}
+/>
+
+## Feature by feature
+
+Here's the head-to-head. Read the highlighted rows in both directions — the bottom row is where Dex wins outright, and it's the most important row for a lot of people.
+
+<FeatureMatrix
+  caption="Dhaga vs Dex. Dhaga wins ownership and a usable free tier; Dex wins automatic capture. Verify current plans before you commit."
+  highlightColumn={1}
+  columns={["", "Dhaga", "Dex"]}
+  rows={[
+    { feature: "Natural-language AI recall", values: [true, true] },
+    { feature: "Warm-intro / connection graph", values: [true, "Partial"] },
+    { feature: "Voice + business-card capture", values: [true, true] },
+    { feature: "Self-host / open-source", values: [true, false] },
+    { feature: "Free tier that's actually usable", values: [true, "Limited"] },
+    { feature: "Own / export your data", values: ["Self-host", "Cloud"] },
+    { feature: "Auto-capture from email / LinkedIn / calendar", values: [false, true] },
+  ]}
+/>
+
+A couple of honest footnotes on that table. Dhaga's natural-language recall and card/voice capture live in the paid tier, not the free one — the free tier is manual capture plus keyword search of your own graph. And "Partial" on Dex's connection graph is fair: Dex maps your contacts and surfaces mutuals, but explicit warm-intro pathfinding is a Dhaga strength.
+
+## Pricing, read honestly
+
+Dex's real prices: **Free** ($0, basic reminders only). **Premium** ~$12/month billed annually ($144/year) or $20/month monthly — this is the tier that unlocks LinkedIn, Gmail, calendar, AI, and mobile. **Professional** ~$20/month annually adds LinkedIn up to 9,000 connections, Outlook, mail merge, Zapier, and the API. There's a 7-day trial and up to a 50% student discount.
+
+For an Indian reader, the Premium tier is roughly ₹12,000 a year — and note that the *useful* Dex (integrations + AI + mobile) starts at Premium, not free. Dhaga's free tier is a genuinely usable manual CRM at ₹0, with AI on a ~$8/month Pro plan if and when you want it. If you're comparing total cost of ownership across the field, our roundup of the [best personal CRM apps in India](/blog/guides/best-personal-crm-apps-india) puts both in context with Monica, Mesh, and Notion.
+
+## Which should you choose?
+
+This one maps cleanly. No hand-waving:
+
+| If you… | Choose |
+|---|---|
+| Want zero-effort auto-capture from email/LinkedIn/calendar | **Dex** |
+| Want polished native mobile + desktop today | **Dex** |
+| Will happily pay ~$12/mo for a managed product that "just works" | **Dex** |
+| Require privacy, data ownership, or self-hosting | **Dhaga** |
+| Prefer open-source you can audit and run yourself | **Dhaga** |
+| Want a genuinely useful *free* manual tier (AI only if you opt in) | **Dhaga** |
+| Are a founder/operator/VC in India living on warm intros | **Dhaga** |
+
+> The real question isn't which tool has more features. It's whether you'd rather your CRM fill itself in someone else's cloud, or stay entirely yours on infrastructure you control.
+
+If you want the deeper why-you-own-it argument, [Personal CRM vs LinkedIn](/blog/guides/personal-crm-vs-linkedin) covers why a public directory can't be your private memory. And if what you actually want is the open-source lane specifically, [Dhaga vs Monica](/blog/guides/dhaga-vs-monica) compares the two AGPL options head-to-head.
+
+## The takeaway
+
+Dex is the safer, more finished product, and if automatic capture is the feature you'd trade everything else for, it's the right call — a Dex alternative only makes sense if you're optimizing for something Dex doesn't give you. But if you searched for a getdex alternative because you want ownership, an open-source codebase, self-hosting, and a free tier that isn't crippled, that's a different tool with a different bet.
+
+That tool is [Dhaga](/) — free to start, open-source to inspect, and yours to run. Just go in clear-eyed: you're trading Dex's automatic sync for control, not getting both. Today, that's the honest deal.

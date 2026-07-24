@@ -148,6 +148,34 @@ The MVP must prove one loop end-to-end:
 | Sync | Optional encrypted backup | Full multi-device sync (mobile ↔ web ↔ extension), team workspaces |
 | Monetization | Free beta | Free tier + Pro (lifetime or annual) + Teams (per-seat) |
 
+### 5.4 Considered features backlog (2026-07 review)
+
+A July 2026 competitive review surfaced feature gaps. The genuinely-additive ones (deduped against existing scope) are captured below as **backlog — considered, not committed, and unbuilt.** They inherit Dhaga's constraints: own-graph-first, no scraping, privacy by default (§6.7). Tracked as unchecked items in [checklist.md](checklist.md) §20.
+
+| Candidate | Notes |
+|---|---|
+| **Personal MCP server** — expose the user's own graph (read-only) to external AI clients (Claude Desktop/Code, Cursor) so any assistant can query their private network | Backlog. Self-host-friendly; read-only, user-scoped, nothing leaves the user's instance beyond the connected client |
+| **Duplicate-contact detection & merge (entity resolution)** across import sources | Backlog. Distinct from the team-graph cross-user dedup in §5.3 — this is per-user resolution across LinkedIn/vCard/Google/manual sources |
+| **AI-suggested connections** — surface likely graph edges from shared company/school/city/event | Backlog. Own-graph inference only; suggested, never auto-linked (mirrors the confirm-inbox pattern) |
+| **Relationship analytics dashboard** — most-connected, longest-known, city clusters, network growth | Backlog. Read-only stats over the user's own graph; no external data |
+| **Profile-completeness scoring + enrichment nudges** | Backlog. Nudge to fill gaps; enrichment stays user-triggered per §7.5 |
+| **Map view of contacts' locations** ("who's nearby when I travel") | Backlog. Renders locations the user already holds; no live tracking |
+| **Personal-life logging modules (optional)** — gift tracking, journal/diary + mood, activity log, debt tracking, pets | Backlog. Optional modules to reach broader personal-relationship breadth; off by default so the professional-networking core stays uncluttered |
+| **Mail-merge / bulk personalized outreach + public API + Zapier app** | Backlog. Extends the existing outbound webhooks (checklist §16) and the Zapier/webhooks line already in §5.2 v1.4; bulk outreach is the new delta |
+| **Two-way native phone address-book sync** | Backlog. Extends the current one-way expo-contacts import (§6.7) to write curated contacts back to the phone |
+
+**Already covered — not re-added:**
+
+- *Relationship-strength scoring* is already scoped: §6.7 "Relationship strength" row + checklist §14.
+- *LinkedIn import & job-change detection / reach-out nudges* are already scoped: LinkedIn Connections CSV + QR import (§6.7, checklist §4/§16), job-change detection + news watchlist + keep-in-touch cadence (§5.2 v1.2, checklist §14). Continuous *automatic* LinkedIn network sync is **not** on the roadmap — it requires scraping/session-piggybacking, a §6.7 hard line.
+- *WhatsApp capture* is already tracked (§5.2 v1.4, checklist §16).
+
+**Considered and declined (different product / against policy):**
+
+- **iMessage / SMS capture** — declined. SMS/call-log ingestion is a §6.7 hard line (blocked by iOS, disallowed by Play Store policy). WhatsApp share-to-capture (§5.2 v1.4) is the ToS-clean equivalent.
+- **External fundraising suite** — a curated *external* investor database, cold-outreach sequences, pitch-deck hosting/analytics, and an AI deck reviewer. Declined: that is a fundraising-discovery product, not a personal CRM. Dhaga records the investors *you* actually meet; it does not sell an external investor list or run outbound campaigns.
+- **Enterprise org graph** — a firm-*owned* relationship graph mined at bank/PE scale. Declined: Dhaga's team story is individual-first (§5.2 v2.0 / checklist §17 "who knows whom" across a small team), not an enterprise deal-intelligence platform whose graph the employer owns.
+
 ---
 
 ## 6. How It Will Be Achieved — Feature-by-Feature Mechanics

@@ -1,0 +1,113 @@
+---
+title: "Dhaga vs YourPond: Which Personal CRM Remembers?"
+description: "YourPond vs Dhaga — a polished iOS relationship app vs an open-source, AI-native personal CRM you own. Which remembers your network best?"
+date: "2026-07-24"
+author: "Anchit Shrivastava"
+tags: ["personal-crm", "yourpond", "comparison", "guide"]
+---
+
+<Callout title="The short version">
+YourPond is a polished, 5.0-rated iOS app built to make you "the friend who remembers" — warm profiles, a multi-generational family tree, a map of where people live, and an analytics dashboard. Dhaga is an open-source, AI-native personal CRM you can self-host and query in plain English. If you want a finished consumer contact book for your personal life on an iPhone, pick YourPond. If you want to own your data and *ask* your network questions, pick Dhaga.
+</Callout>
+
+Every personal CRM app sells the same promise: remember the people you meet, so you're not the one who forgets a name, a birthday, or the fact that someone offered to help. YourPond and Dhaga both make that promise. They just answer the question — which personal CRM actually *remembers*? — in two very different ways.
+
+One is a closed, genuinely beautiful iOS app that remembers *for* you. The other is open-source infrastructure that remembers *with* you, on hardware you can control. This is an honest Dhaga vs YourPond comparison, written by someone who builds one of them — so I'll be upfront about where Dhaga wins and where YourPond plainly does it better today.
+
+## What YourPond gets right
+
+Let's start with credit, because YourPond (yourpond.io, by Lilypad Labs) earns it. Its tagline — "Be the friend who remembers" — is aimed squarely at thoughtful individuals keeping up with friends, family, and personal life, with a secondary pitch to founders. It carries a 5.0 App Store rating, and the product feels like it.
+
+The rich contact profiles go well beyond name and number: how you met, birthdays, education, preferences, pets, even "moments" you want to hold onto. Its signature features are the ones most personal CRM apps don't bother with — a relationship graph plus a genuine **multi-generational family tree** that models in-laws, step-relations, and inferred links, a **map** of where your contacts live, and a finished relationship **analytics dashboard**. It surfaces mutual connections and introduction suggestions (including warm-intro paths to investors on its founders page), and it nudges you with reminders for birthdays, anniversaries, and thank-you notes. You can capture by natural-language text, and there's **voice entry on iOS**. Pricing is a simple flat Pro tier — no AI metering to think about.
+
+That is a lot of finished, warm, consumer-grade polish. If your goal is a beautiful holiday-card list with gift preferences and thank-you nudges, YourPond is a strong pick, and Dhaga is honestly behind it on several of these: Dhaga's native mobile app is still early, and it has no family-tree modeling, no map view, and no polished analytics dashboard. Credit where it's due.
+
+## Where the two apps diverge
+
+Here's the head-to-head on the axes that separate these two tools rather than the ones they share.
+
+<FeatureMatrix
+  caption="Dhaga vs YourPond on the features that actually differ. Verify current pricing and platform support before you commit — both products move fast."
+  highlightColumn={1}
+  columns={["", "Dhaga", "YourPond"]}
+  rows={[
+    { feature: "Natural-language AI recall (ask your network)", values: [true, false] },
+    { feature: "Warm-intro / connection graph", values: [true, true] },
+    { feature: "Voice + business-card capture", values: [true, "Voice (iOS)"] },
+    { feature: "Self-host / open-source", values: [true, false] },
+    { feature: "Free tier", values: [true, "≤25 contacts"] },
+    { feature: "Own your data (not readable by vendor)", values: ["Self-host", false] },
+    { feature: "Android + web", values: [true, "iOS-first"] },
+  ]}
+/>
+
+Both apps map your connections and suggest warm intros, so don't read that row as a knock on either — a connection graph is table stakes now. The real forks are two: what the AI is *for*, and who can read your data.
+
+## Fork one — AI for entry, or AI for recall
+
+This is the most important distinction in the whole comparison, and it's easy to miss because both apps say "AI."
+
+YourPond uses AI for contact **entry**. Paste a bio or a signature and it extracts the fields for you — a genuinely useful Pro feature that saves typing. But that's where the intelligence stops. There's no evidence YourPond lets you *ask* your contacts anything in natural language; you can't query "who do I know in fintech who mentioned they angel invest?" and get an answer back. The AI fills the form; it doesn't answer the question.
+
+Dhaga's entire thesis is the second half. Capture a person however is fastest, and Dhaga turns those notes into a private knowledge graph you query in plain English — recall, not just entry. That's the part that decides whether a personal CRM app actually earns the word "remembers." One caveat, stated plainly: Dhaga's natural-language recall is the paid tier. The free tier covers manual capture, notes, and organization; cloud AI (the "ask your network" part, plus follow-up drafts) is metered and paid, around $8/month.
+
+<FlowDiagram
+  caption="Both apps use AI to turn a paste into structured facts. YourPond's AI stops at Extract — Dhaga keeps going, so you can ask the graph questions months later."
+  stages={[
+    { label: "Capture", sub: "Card, voice, paste, extension" },
+    { label: "Extract", sub: "Structured facts" },
+    { label: "Graph", sub: "Private, queryable" },
+    { label: "Ask", sub: "Plain-English recall" },
+  ]}
+/>
+
+## Fork two — who can read your data
+
+YourPond is privacy-*conscious*, and it's important to be precise here rather than sloppy. Sensitive fields are encrypted at rest, and the company is clear: no ads, no data sales, no AI training on your data. That's a better posture than most consumer apps.
+
+But it is explicitly **not** zero-knowledge, and YourPond says so plainly — the vendor *can* read your data. It's a closed-source cloud app with no self-host option, built on the usual stack (Clerk for auth, Stripe for billing, Anthropic for extraction, which holds typed text up to 30 days). Export exists but is **manual** — you email them to get it. None of that makes YourPond "not private"; it makes it a trusted-cloud model, where your relationship history lives on infrastructure the vendor controls and can see.
+
+Dhaga sits on the other side of that fork by design. It's open-source (AGPL) and self-hostable with a single `docker compose up`, so if you run it yourself there is no vendor in the loop to read your data. Export is self-serve — CSV, vCard, or a full JSON dump, any time, no email required. Every AI-derived fact keeps a receipt pointing back to the note it came from, and deleting a note tombstones the facts it produced, so "forget this person" actually cascades. The hosted tier is a convenience where you trust open, auditable code rather than a black box; the guarantee that the vendor can't read your data comes from self-hosting. If you're specifically hunting for a **YourPond alternative** whose privacy model is ownership rather than trust, that's the whole reason Dhaga exists.
+
+## Capture and platforms
+
+The two apps also draw people in through very different doors.
+
+| | Dhaga | YourPond |
+|---|---|---|
+| Text / paste (AI extract) | Yes | Yes (Pro) |
+| Voice capture | Web app | iOS only |
+| Business-card scan | Yes | No |
+| Browser extension | Yes | No |
+| Chat capture | Telegram bot | No |
+| Bulk import | CSV, vCard, connectors | LinkedIn / Google / CSV / Excel (Pro) |
+| Platforms | Web + installable PWA (native mobile early) | iOS-first, limited web, no Android |
+
+YourPond's capture is text, iOS voice, and bulk import — polished, but narrower, and firmly iOS-first with no Android and no India presence. Dhaga spreads capture across more channels: a business-card scanner, voice notes on the web app, a quick paste, a browser extension, and even a Telegram bot, plus CSV and vCard import. It runs on the web today with an installable PWA on Android and iPhone, while the native mobile apps are still in progress — so YourPond wins the "finished native iPhone experience," and Dhaga wins the "works on Android and the web, and captures from more places."
+
+On price: YourPond is free permanently up to 25 contacts, then $10/month or $100/year for unlimited plus AI entry, import, and analytics. Dhaga's free tier has no contact cap but no cloud AI; Pro is around $8/month for metered AI recall and drafts, and because it's open-source, self-hosting removes the per-seat cost entirely.
+
+## Who should choose which
+
+> The best personal CRM isn't the one with the longest feature list — it's the one whose data model and privacy posture you can live with for years. Pick the fork, then pick the app.
+
+Map it to how you actually work:
+
+| If you… | Choose |
+|---|---|
+| Are an iPhone user who wants a beautiful, finished contact book for friends and family | YourPond |
+| Love family-tree modeling, a map of where people live, and a relationship-analytics dashboard | YourPond |
+| Are fine with a closed cloud app that can read your (encrypted) data | YourPond |
+| Want open-source, self-host, and data you actually own | Dhaga |
+| Want to *ask* your network questions in plain English | Dhaga |
+| Need multi-channel capture, Android + web, and a founder / operator / VC (India) slant | Dhaga |
+
+Neither answer is wrong. They're built for different people, and the honest test is which set of tradeoffs you'd still be happy with in two years of feeding it your relationships.
+
+## Takeaway
+
+YourPond is the better *finished consumer product* right now — a warm, polished, 5.0-rated iOS app that will make you the friend who remembers birthdays. Dhaga is the better *foundation to own* — open-source, self-hostable, multi-channel capture, and natural-language recall over a private knowledge graph, with the tradeoff that native mobile is still early and the smartest AI is the paid tier.
+
+If you want to see how both stack up against the wider field, [Best Personal CRM Apps in India (2026)](/blog/guides/best-personal-crm-apps-india) runs the same honest lens across six tools, and [Dhaga vs Dex](/blog/guides/dhaga-vs-dex) covers the other polished-cloud comparison people ask about.
+
+If the open-source, own-your-data, ask-it-in-plain-English bundle is what you're after, [Dhaga](/) is free to start and open to inspect.

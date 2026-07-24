@@ -1,0 +1,113 @@
+---
+title: "Dhaga vs Monica: Open-Source Personal CRM Compared"
+description: "Monica vs Dhaga — two open-source, self-hostable personal CRMs compared on AI, capture, and features. Which should you self-host?"
+date: "2026-07-24"
+author: "Anchit Shrivastava"
+tags: ["personal-crm", "monica", "open-source", "comparison", "guide"]
+---
+
+<Callout title="The short version">
+Monica and Dhaga are the two serious open-source, self-hostable personal CRMs — same license (AGPL), opposite bets. Monica is mature, community-loved, and built for the breadth of your personal life (gifts, journal, debts, reminders), with **no AI, on purpose**. Dhaga is newer and AI-native: card/voice capture, a private knowledge graph, natural-language recall, and warm-intro pathfinding. Pick Monica for a proven manual relationship journal; pick Dhaga if you want AI to do the capturing and remembering. Both let you self-host and own your data.
+</Callout>
+
+If you've decided your relationship data belongs on infrastructure you control, the open-source shortlist is genuinely short. In the **open source personal CRM** niche, two names come up again and again: Monica — the incumbent — and Dhaga, the newer AI-native option. This guide is the honest **dhaga vs monica** comparison: where each one wins, where each one loses, and which one you should actually self-host.
+
+Full disclosure up front: I build Dhaga. So I'm going to be scrupulous about Monica's strengths, because a comparison that trashes a genuinely excellent tool isn't worth reading. Monica is very good. For a lot of people it's the right answer.
+
+## Two open-source twins, opposite bets
+
+Both tools rhyme on the fundamentals, which is exactly why people compare them:
+
+- **Both are AGPL-3.0 and self-hostable.** You can `docker compose up` either one, point it at your own database, and never send your contacts to anyone else's cloud.
+- **Both are personal CRMs, not sales CRMs.** Neither is a deal pipeline. Both are private memory about the people in your life.
+- **Both have a free path.** Monica is free to self-host (its hosted tier starts at 10 contacts free); Dhaga's core is free and open, with a free tier you run yourself.
+
+Then they diverge, hard. **Monica** (MonicaHQ) launched around 2017 on PHP/Laravel and spent nearly a decade getting deep at one thing: manually logging the texture of your personal relationships. Its README says it plainly — there is no AI, by design. **Dhaga** started from the opposite premise: that typing everything by hand is the failure mode, and AI should do the capture and recall for you. One tool bet on **breadth without AI**; the other bet on **AI plus a graph**. Almost every real difference below flows from that one split.
+
+## Where Monica is genuinely better
+
+Let me state Monica's wins without softening them, because they're real and they matter.
+
+**Maturity and community.** Monica has roughly eight years of polish and one of the larger communities in open-source personal software. That shows up as stability, documentation, translations, and a plugin ecosystem Dhaga simply hasn't had time to grow.
+
+<StatStrip
+  caption="Monica's maturity, by the numbers — figures from MonicaHQ's public GitHub repo and pricing page."
+  stats={[
+    { value: "~25k", label: "GitHub stars" },
+    { value: "27", label: "Languages supported" },
+    { value: "~2017", label: "In production since" },
+    { value: "$9/mo", label: "Flat hosted price, unlimited" },
+  ]}
+/>
+
+**Breadth of personal-life logging.** This is Monica's real moat, and it's substantial. Monica tracks gifts (given and received), a journal with mood, debts you owe or are owed, activities you did together, pets, tasks, calls, documents, and multiple separate vaults. If your goal is a rich, hand-kept diary of the people you love — birthdays, the book you lent them, the gift idea you had in June — Monica has years of thoughtful features Dhaga has not built and isn't trying to.
+
+**A flat, proven price.** Monica's hosted tier is a simple $9/month or $90/year, unlimited contacts, no metering. Predictability is a feature.
+
+**"No AI" is itself a feature.** For a privacy purist, Monica's zero-AI stance is a selling point, not a gap. Nothing gets inferred, nothing gets metered, nothing leaves the box unless you typed it. That's a legitimate thing to want, and Dhaga — which does call a model for its AI features — can't offer that particular kind of quiet.
+
+> If you want a proven, self-hostable journal of your relationships and you'd rather no model ever touch your notes, this comparison has a short answer: use Monica.
+
+Monica's one honest gap is capture and recall speed — everything goes in by hand, comes back out by browsing, and there's no shipped production mobile app today. A ground-up rewrite (codenamed Chandler) is in beta, so the project is far from stalled.
+
+## Where Dhaga pulls ahead
+
+Dhaga's whole reason to exist is the thing Monica deliberately skipped: getting information *in* and *back out* without manual labor.
+
+**AI-native capture.** Scan a business card with your phone, dictate a voice note in the browser, paste an email signature, or clip a page with the extension — Dhaga extracts the structured fields for you to review, instead of asking you to type name / company / title into a form. (Card scan and browser voice capture are built and shipped on the web app today.)
+
+**A private knowledge graph, not a flat list.** Your notes get turned into structured facts and typed relationships — works-at, knows, met-at — so your contacts form a graph you can traverse, not rows you scroll.
+
+**Natural-language recall.** Ask *"who do I know who invests in climate?"* in plain English and get an answer built from **your own** notes, each with a receipt pointing back to the note it came from. This is the feature Monica has no equivalent for — and it's a **monica personal crm alternative**'s clearest reason to exist. One caveat, stated plainly: Dhaga's AI recall is a **paid** capability. The free tier is manual entry with **zero cloud AI** — closer to Monica's model than to Dhaga's paid one — and self-hosters bring their own API key.
+
+**Warm-intro pathfinding.** Because the graph is real, Dhaga can trace a path from you to someone you want to reach through shared mutuals. Monica maps direct relationships; it doesn't do multi-hop introduction paths. (This one runs on local graph traversal, so it costs no AI spend at all.)
+
+**Receipts and cascade delete.** Every AI-derived fact stores the note it came from, and deleting a contact cascades through notes, facts, edges, and embeddings — so "forget this person" actually forgets them. For an AI product, that provenance is the privacy floor.
+
+**Native mobile is in progress.** An early Expo build (iOS + Android) exists but isn't the finished app yet — so on mobile, honestly, both projects are still catching up.
+
+Here's the whole thing on one grid.
+
+<FeatureMatrix
+  caption="Dhaga vs Monica across the axes that separate them. Both assume self-hosting for the data column."
+  highlightColumn={1}
+  columns={["", "Dhaga", "Monica"]}
+  rows={[
+    { feature: "Natural-language AI recall", values: [true, false] },
+    { feature: "Warm-intro / connection graph", values: [true, false] },
+    { feature: "Voice + business-card capture", values: [true, false] },
+    { feature: "Self-host / open-source", values: [true, true] },
+    { feature: "Free tier", values: [true, true] },
+    { feature: "Own / export your data", values: ["Self-host", "Self-host"] },
+    { feature: "Personal-life logging breadth (gifts, journal, debts)", values: ["Lean", true] },
+  ]}
+/>
+
+Read that last row carefully — it's the honest one. Monica wins breadth; Dhaga wins AI and graph. Neither column is a knock on the other tool; they set out to build different things.
+
+## The pricing math
+
+Both are free to self-host, which is the comparison that actually matters for a **self-hosted personal crm**. On the hosted side:
+
+| | Monica | Dhaga |
+|---|---|---|
+| Self-host | Free (AGPL) | Free (AGPL core) |
+| Hosted free tier | 10 contacts | Free tier (manual, no cloud AI) |
+| Hosted paid | $9/mo flat, unlimited | Paid tier unlocks AI (capture, recall, drafts) |
+| AI metering | None (no AI) | Yes — AI is the metered, paid layer |
+
+The philosophies show through even here. Monica charges a flat fee for a feature set with no variable inference cost behind it. Dhaga meters AI because AI has a real per-call cost — and keeps a genuinely usable free tier that doesn't touch a model at all. If you never want to pay for or think about inference, that's a point for Monica.
+
+## Who should choose which
+
+**Choose Monica if** you want a proven, free, self-hostable journal of your personal relationships; you value the gifts / journal / debts / activities breadth; and you either distrust AI or simply don't want it near your notes. Monica is the mature, honest, no-surprises choice, and any **monica crm alternative** has to earn its place against roughly eight years of polish.
+
+**Choose Dhaga if** you want AI to do the capturing and the remembering — card and voice capture in, natural-language recall out — plus warm-intro pathfinding across your graph; you're a founder, operator, or investor (especially in India) who lives on warm intros; you want native mobile on the roadmap; and you still want open-source and self-host as the non-negotiable floor.
+
+If you're weighing self-hosting more broadly, our guide on [open-source & self-hosted CRM for startups](/blog/guides/open-source-self-hosted-crm-startups) goes deeper on the ops trade-offs. Comparing hosted tools too? The [best personal CRM apps in India](/blog/guides/best-personal-crm-apps-india) roundup covers the proprietary field, and [Dhaga vs Dex](/blog/guides/dhaga-vs-dex) pits Dhaga against the best-known closed-source AI option.
+
+## The takeaway
+
+Monica and Dhaga are two open-source twins that made opposite bets. Monica bet on breadth without AI and won a mature, beloved tool for hand-keeping the details of your personal life. Dhaga bet on AI plus a graph and built capture, recall, and warm-intro pathfinding on top of the same open-source, self-hostable foundation. There's no loser here — just two honest answers to "what should remembering people feel like."
+
+If the AI-native, graph-native side is what you've been missing, take a look at [Dhaga](/). And if it's the manual, journal-rich side you want, Monica is genuinely excellent — go use it.

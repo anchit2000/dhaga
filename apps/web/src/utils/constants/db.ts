@@ -26,11 +26,45 @@ export const DB_POOL_CONNECTION_TIMEOUT_MS = 10_000;
 export const DB_POOL_IDLE_TIMEOUT_MS = 10_000;
 
 /**
+ * Transient-rejection retry (see lib/db/connect-retry.ts). When several warm
+ * instances briefly overshoot the shared pool_size of 15, Supavisor rejects a
+ * new backend with EMAXCONNSESSION / "max clients reached" — but a slot frees
+ * within ms, so a short backoff-and-retry clears it. Retry is the graceful
+ * lever; raising Supabase's pool_size is the durable one (docs/SCALING.md).
+ * Both maxes are env-overridable (DB_CONNECT_RETRY_MAX / DB_CONNECT_RETRY_BASE_MS).
+ */
+/** Max acquisition attempts (incl. the first); override with DB_CONNECT_RETRY_MAX. */
+export const DB_CONNECT_RETRY_MAX_DEFAULT = 5;
+/** First backoff step in ms (doubles each retry); override with DB_CONNECT_RETRY_BASE_MS. */
+export const DB_CONNECT_RETRY_BASE_MS_DEFAULT = 100;
+
+/**
  * Parse a positive-integer pool size from an env var, falling back to the
  * default on missing/NaN/non-positive input (same defensive shape as
- * monthlyAiCap() in lib/ai/metering.ts).
+ * monthlyAiCap() in lib/ai/metering.ts). Also reused for the retry counts above.
  */
 export function poolMaxFromEnv(raw: string | undefined, fallback: number): number {
   const value = Number(raw);
   return Number.isFinite(value) && value > 0 ? Math.floor(value) : fallback;
+}
+
+/**
+ * True ONLY for the transient session-pool rejections a retry can clear (a slot
+ * frees on its own within ms): Supavisor's `XX000 … max clients reached in
+ * session mode` (some drivers surface it as code `EMAXCONNSESSION`), and
+ * node-postgres' own `timeout exceeded when trying to connect`. Everything else
+ * (auth failure, bad SQL, a real network drop) is NOT transient and returns
+ * false so it fails loud on the first attempt.
+ *
+ * Duplicated (not imported) from packages/ee/src/db/connect-retry.ts on purpose:
+ * this file is AGPL core and must build with packages/ee deleted, so it can
+ * never import from @dhaga/ee. Keep the two copies in sync.
+ */
+export function isTransientConnectionError(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  const { code, message } = error as { code?: unknown; message?: unknown };
+  const text = typeof message === "string" ? message : "";
+  if (code === "EMAXCONNSESSION") return true;
+  if (code === "XX000" && /max clients reached/i.test(text)) return true;
+  return /timeout exceeded when trying to connect/i.test(text);
 }

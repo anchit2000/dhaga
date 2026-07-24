@@ -10,6 +10,8 @@ interface ProviderCredentials {
   clientId: string;
   clientSecret: string;
   tenantId?: string;
+  accessType?: "offline" | "online";
+  prompt?: "select_account" | "consent" | "login" | "none" | "select_account consent";
 }
 
 export function socialProviderConfig(): Record<string, ProviderCredentials> {
@@ -22,6 +24,14 @@ export function socialProviderConfig(): Record<string, ProviderCredentials> {
   }
   if (config.microsoft) {
     config.microsoft.tenantId = process.env.MICROSOFT_TENANT_ID ?? "common";
+  }
+  if (config.google) {
+    // Contacts import calls auth.api.getAccessToken(), which can only refresh
+    // an expired Google token when a refresh token was issued — and Google
+    // only issues one with offline access plus a forced consent prompt.
+    // Without this, provider access dies ~1h after sign-in.
+    config.google.accessType = "offline";
+    config.google.prompt = "consent";
   }
   return config;
 }

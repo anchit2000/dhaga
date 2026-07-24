@@ -1,9 +1,9 @@
-import type { ExtractedContact } from "@dhaga/core";
+import type { ContactProfile } from "@dhaga/core";
 
-export type ImportFormat = "google" | "linkedin";
+export type ImportFormat = "google" | "linkedin" | "vcard" | "microsoft" | "device";
 
 export interface ImportCandidate {
-  contact: ExtractedContact;
+  contact: ContactProfile;
   /** Becomes the contact's capture_source note — the receipt for every imported field. */
   receipt: string;
 }

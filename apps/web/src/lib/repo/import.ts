@@ -1,11 +1,11 @@
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { companies, contacts } from "@/lib/db/schema";
-import { createContact } from "./contacts";
+import { createContactProfile } from "@/lib/repo/contacts/write";
 import { addNote } from "./notes";
 import { emitWebhook } from "@/lib/webhooks";
 import { normalizeForMatch } from "@/lib/text-match";
-import { methodValues } from "@dhaga/core";
+import { methodValues, primaryPosition } from "@dhaga/core";
 import type { ImportCandidate, ImportFormat } from "@/lib/import";
 
 export interface ImportSummary {
@@ -16,7 +16,9 @@ export interface ImportSummary {
 /**
  * Bulk-create reviewed CSV candidates. Dedup makes re-importing a newer
  * export safe (the LinkedIn re-import path, BRD §6.7): a candidate is
- * skipped when any of its emails already exists in the graph, or when
+ * skipped when any of its emails already exists in the graph, when any of
+ * its (digit-normalized) phones already exists — device contacts often
+ * carry no email, so phone dedup keeps .vcf re-imports safe — or when
  * name + company match an existing contact exactly. Every created contact
  * gets a capture_source note as the receipt for its imported fields.
  * Receipt notes are not embedded: their fields already live on the contact
@@ -28,20 +30,34 @@ export async function importContacts(
   format: ImportFormat,
 ): Promise<ImportSummary> {
   const db = await getDb();
+  // Dedup preload: one scan of the graph per call. Large connector/vCard
+  // imports arrive as multiple batches (BATCH_SIZE), so this runs once per
+  // batch — acceptable at current scale (only the four needed columns are
+  // selected). If contact counts grow large enough that repeated full scans
+  // hurt, hoist this into a per-import in-memory index or add a covering
+  // index; a streaming rewrite is out of scope here.
   const existing = await db
     .select({
       name: contacts.name,
       emails: contacts.emails,
+      phones: contacts.phones,
       companyName: companies.name,
     })
     .from(contacts)
     .leftJoin(companies, eq(contacts.companyId, companies.id));
 
+  const normalizePhone = (phone: string): string => phone.replace(/[^\d+]/g, "");
+
   const emailSeen = new Set<string>();
+  const phoneSeen = new Set<string>();
   const nameSeen = new Set<string>();
   for (const row of existing) {
-    // row.emails is labeled objects now (and legacy string rows) — normalise.
+    // row.emails/phones are labeled objects now (and legacy string rows) — normalise.
     for (const email of methodValues(row.emails)) emailSeen.add(email.toLowerCase());
+    for (const phone of methodValues(row.phones)) {
+      const normalized = normalizePhone(phone);
+      if (normalized) phoneSeen.add(normalized);
+    }
     nameSeen.add(
       `${normalizeForMatch(row.name)}|${normalizeForMatch(row.companyName ?? "")}`,
     );
@@ -50,17 +66,25 @@ export async function importContacts(
   let created = 0;
   let skipped = 0;
   for (const candidate of candidates) {
-    const emails = candidate.contact.emails.map((email) => email.toLowerCase());
+    const emails = methodValues(candidate.contact.emails).map((email) => email.toLowerCase());
+    const phones = methodValues(candidate.contact.phones)
+      .map(normalizePhone)
+      .filter(Boolean);
     const nameKey = `${normalizeForMatch(candidate.contact.name)}|${normalizeForMatch(
-      candidate.contact.company ?? "",
+      primaryPosition(candidate.contact.positions)?.company ?? "",
     )}`;
-    if (emails.some((email) => emailSeen.has(email)) || nameSeen.has(nameKey)) {
+    if (
+      emails.some((email) => emailSeen.has(email)) ||
+      phones.some((phone) => phoneSeen.has(phone)) ||
+      nameSeen.has(nameKey)
+    ) {
       skipped++;
       continue;
     }
-    const id = await createContact(candidate.contact, "import", { skipWebhook: true });
+    const id = await createContactProfile(candidate.contact, "import", { skipWebhook: true });
     await addNote(id, "capture_source", candidate.receipt);
     emails.forEach((email) => emailSeen.add(email));
+    phones.forEach((phone) => phoneSeen.add(phone));
     nameSeen.add(nameKey);
     created++;
   }

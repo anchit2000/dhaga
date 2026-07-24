@@ -9,12 +9,14 @@ import {
   addNote,
   deleteFact,
   deleteNote,
+  getNote,
   setFollowUpStatus,
   updateFactText,
   verifyFact,
 } from "@/lib/repo/notes";
 import { createExtractionJob } from "@/lib/repo/extraction-jobs";
 import { upsertEmbedding } from "@/lib/repo/embeddings";
+import { REPROCESSABLE_NOTE_KINDS } from "@/utils/constants/extraction-jobs";
 
 export interface NoteFormState {
   notice?: string;
@@ -45,6 +47,31 @@ export async function addNoteAction(
   await createExtractionJob({ contactId, kind: "note_extraction", noteId });
   revalidatePath(`/app/people/${contactId}`);
   return { notice: "Note saved — extracting facts…" };
+}
+
+/**
+ * Manually re-run extraction on an existing note — for after the user edits a
+ * note or the first pass missed a fact. Enqueues a fresh note_extraction job
+ * for the SAME note and returns immediately; the person page's poller fires the
+ * worker exactly as for a new note. The worker clears the note's prior
+ * derivations (clearNoteDerivations) before re-extracting, so a re-run REPLACES
+ * this note's facts/edges/follow-ups instead of duplicating them. This reuses
+ * the whole background pipeline — the per-user AI budget is still enforced
+ * downstream in the worker (assertAiBudget), so re-processing never bypasses
+ * metering.
+ */
+export async function reprocessNoteAction(formData: FormData): Promise<void> {
+  await requireUserId();
+  const noteId = String(formData.get("noteId") ?? "");
+  const contactId = String(formData.get("contactId") ?? "");
+  if (!noteId || !contactId) return;
+  // RLS scopes getNote to this user; a note they don't own reads back null.
+  const note = await getNote(noteId);
+  if (!note || note.contactId !== contactId) return;
+  // Only trusted user captures re-extract in "note" mode (see REPROCESSABLE_NOTE_KINDS).
+  if (!(REPROCESSABLE_NOTE_KINDS as readonly string[]).includes(note.kind)) return;
+  await createExtractionJob({ contactId, kind: "note_extraction", noteId });
+  revalidatePath(`/app/people/${contactId}`);
 }
 
 /** Entity notes save as-is — no extraction job (plain notes by design). */

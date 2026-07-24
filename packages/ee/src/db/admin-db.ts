@@ -1,6 +1,7 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { PoolClient } from "pg";
 import { getPool, releaseScoped } from "./pool";
+import { connectWithRetry } from "./connect-retry";
 import { ensureEeSchema } from "./bootstrap";
 
 /**
@@ -11,7 +12,9 @@ import { ensureEeSchema } from "./bootstrap";
  */
 export async function openAdminConnection() {
   await ensureEeSchema(getPool());
-  const client: PoolClient = await getPool().connect();
+  // Retry a momentary EMAXCONNSESSION/connect-timeout on acquisition rather
+  // than 500 the admin panel / Stripe webhook (see connectWithRetry).
+  const client: PoolClient = await connectWithRetry(getPool());
   try {
     await client.query("SELECT set_config('app.bypass_rls', 'true', false)");
   } catch (error) {

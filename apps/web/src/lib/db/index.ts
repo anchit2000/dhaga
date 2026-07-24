@@ -11,6 +11,7 @@ import {
   DB_POOL_MAX_CORE_DEFAULT,
   poolMaxFromEnv,
 } from "@/utils/constants/db";
+import { withConnectRetry } from "./connect-retry";
 import { DDL } from "./ddl";
 import { ddlAlreadyApplied, ddlFingerprint, recordDdlApplied } from "./ddl-history";
 import { companies, contacts } from "./schema/contacts";
@@ -86,12 +87,18 @@ async function initHosted(connectionString: string): Promise<DhagaDb> {
   // core + tenant small enough that several instances fit under 15 — default
   // 2 + 3 = 5/instance. connectionTimeoutMillis makes a saturated pool fail
   // fast instead of hanging. See @/utils/constants/db for the full math.
-  store.__dhagaPool ??= new Pool({
-    connectionString,
-    max: poolMaxFromEnv(process.env.DB_POOL_MAX_CORE, DB_POOL_MAX_CORE_DEFAULT),
-    connectionTimeoutMillis: DB_POOL_CONNECTION_TIMEOUT_MS,
-    idleTimeoutMillis: DB_POOL_IDLE_TIMEOUT_MS,
-  });
+  // withConnectRetry makes the pool ride out a momentary EMAXCONNSESSION /
+  // connect-timeout (a slot frees within ms) instead of 500ing — better-auth's
+  // per-request session read runs through this pool via drizzle, so the retry
+  // has to live on the pool object. See ./connect-retry.
+  store.__dhagaPool ??= withConnectRetry(
+    new Pool({
+      connectionString,
+      max: poolMaxFromEnv(process.env.DB_POOL_MAX_CORE, DB_POOL_MAX_CORE_DEFAULT),
+      connectionTimeoutMillis: DB_POOL_CONNECTION_TIMEOUT_MS,
+      idleTimeoutMillis: DB_POOL_IDLE_TIMEOUT_MS,
+    }),
+  );
   // Re-executing the full idempotent DDL on every cold start costs seconds
   // against a remote database; skip it when this exact text already ran.
   const fingerprint = ddlFingerprint(DDL);

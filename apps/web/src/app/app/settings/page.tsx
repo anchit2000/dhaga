@@ -8,6 +8,7 @@ import {
   BillingSection,
   CalendarSection,
   CardPhotoSection,
+  ProfileSection,
   SecuritySection,
   SuggestionsSection,
   VoiceInputSection,
@@ -42,6 +43,9 @@ export default async function SettingsPage({
         calendarActive={Boolean(calendar)}
         account={
           <>
+            <Suspense fallback={<ListSkeleton rows={2} />}>
+              <ProfileSection />
+            </Suspense>
             <Suspense fallback={<ListSkeleton rows={2} />}>
               <BillingSection />
             </Suspense>

@@ -1,6 +1,7 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { PoolClient } from "pg";
 import { getPool, releaseScoped } from "../db/pool";
+import { connectWithRetry } from "../db/connect-retry";
 import { ensureEeSchema } from "../db/bootstrap";
 
 /**
@@ -16,7 +17,10 @@ import { ensureEeSchema } from "../db/bootstrap";
  */
 export async function openTenantConnection(userId: string) {
   await ensureEeSchema(getPool());
-  const client: PoolClient = await getPool().connect();
+  // getPool().connect() through a retry that rides out a momentary
+  // EMAXCONNSESSION/connect-timeout (see connectWithRetry) — this is the
+  // hottest choke point: every authed request opens a tenant connection here.
+  const client: PoolClient = await connectWithRetry(getPool());
   try {
     await client.query("SELECT set_config('app.current_user_id', $1, false)", [userId]);
   } catch (error) {

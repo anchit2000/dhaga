@@ -16,17 +16,22 @@ export interface CardScanResult {
 }
 
 /**
- * Card/badge photo → contact via the vision model (M1 server path).
- * No offline fallback exists for images, so failures are explicit.
- * Scanning never stores anything — callers persist the photo (visual
- * receipt) only when the store-card-photos setting allows it.
+ * Card/badge photos → ONE contact via the vision model (M1 server path).
+ * Several photos of the same card (front+back, leaflet pages) merge into a
+ * single contact and a combined raw_text. No offline fallback exists for
+ * images, so failures are explicit. Scanning never stores anything — callers
+ * persist the photos (visual receipts) only when the store-card-photos
+ * setting allows it.
  */
-export async function scanCardImage(
+export async function scanCardImages(
   userId: string,
-  image: LLMImage,
+  images: LLMImage[],
 ): Promise<CardScanResult> {
   if (!hasLLM()) {
     return { error: "Card scanning needs a configured cloud LLM provider." };
+  }
+  if (images.length === 0) {
+    return { error: "Add at least one card photo to scan." };
   }
   try {
     await assertAiBudget(userId);
@@ -35,7 +40,7 @@ export async function scanCardImage(
       system: CARD_SCAN_SYSTEM,
       prompt: CARD_SCAN_PROMPT,
       tier: "extract",
-      images: [image],
+      images,
     });
     await recordAiAction("contact_parse", result.model, result.usage);
     const { raw_text, ...contact } = result.data;

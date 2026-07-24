@@ -4,6 +4,20 @@ import type {
   CaptureVia,
 } from "@dhaga/core/src/api/capture";
 
+/**
+ * Growth-surface response/stat contracts, re-exported from the core deep paths
+ * (never the package barrel — it pulls in the server SDK). Screens import these
+ * view types from "@/types"; the transport layer (@/lib/api) imports them from
+ * core directly, like its neighbours.
+ */
+export type {
+  WrappedApiResponse,
+  WrappedStats,
+  WrappedScope,
+  WrappedScopeKind,
+} from "@dhaga/core/src/api/wrapped";
+export type { ReferralApiResponse, ReferralInfo } from "@dhaga/core/src/api/referral";
+
 /** Connection settings the user enters once; held in SecureStore. */
 export interface MobileSettings {
   /** Dhaga web app origin, no trailing slash (LAN IP in development). */

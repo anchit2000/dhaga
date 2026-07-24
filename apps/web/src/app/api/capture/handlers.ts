@@ -1,13 +1,14 @@
 import { extractContactFromText } from "@/lib/ai/contact-extraction";
 import { extractAndApplyNote } from "@/lib/ai/note-extraction";
-import { scanCardImage } from "@/lib/ai/card-scan";
+import { scanCardImages } from "@/lib/ai/card-scan";
 import { createContact, getContact } from "@/lib/repo/contacts";
 import { addNote } from "@/lib/repo/notes";
 import { upsertEmbedding } from "@/lib/repo/embeddings";
-import { saveCardImage } from "@/lib/repo/card-images";
+import { saveCardImages } from "@/lib/repo/card-images";
 import { shouldStoreCardPhotos } from "@/lib/repo/settings";
 import { attachScanToEvent } from "@/lib/repo/event-clustering";
-import { CARD_IMAGE_TYPES } from "@/utils/constants/app";
+import { MAX_CARD_IMAGES } from "@/utils/constants/app";
+import type { LLMImage } from "@dhaga/core";
 import type {
   CaptureAttachResponse,
   CaptureImageResponse,
@@ -15,6 +16,9 @@ import type {
   CaptureTextResponse,
 } from "@dhaga/core/src/api/capture";
 import type { ParsedCaptureRequest } from "./parse-request";
+
+/** ~6 MB once base64-encoded — the per-image ceiling for the scan path. */
+const MAX_IMAGE_BASE64_CHARS = 8_000_000;
 
 /**
  * M2 auto event grouping (BRD §6.2): only attempted when the client sent
@@ -30,23 +34,34 @@ async function eventForScan(
   return { id: result.eventId, isNew: result.isNew };
 }
 
-/** Card-photo path (mobile/API clients): vision-parse; the photo is kept as
- *  a visual receipt unless the store-card-photos setting is off. */
+/** Card-photo path (mobile/API clients): several photos of the SAME card
+ *  (front+back, leaflet pages) merge into ONE contact; each is kept as a
+ *  visual receipt unless the store-card-photos setting is off. */
 export async function handleImageCapture(
   userId: string,
   request: ParsedCaptureRequest,
 ): Promise<Response> {
-  const mediaType = CARD_IMAGE_TYPES.find((type) => type === request.imageType);
-  if (!mediaType) {
-    return Response.json(
-      { error: "imageType must be image/jpeg, image/png, or image/webp." },
-      { status: 400 },
-    );
+  const { images } = request;
+  if (images.length === 0) {
+    return Response.json({ error: "No card photo to scan." }, { status: 400 });
   }
-  if (request.imageBase64.length > 8_000_000) {
-    return Response.json({ error: "Image too large (max ~6 MB)." }, { status: 400 });
+  // Per-image ceiling, then a total-size sanity cap across all photos.
+  let totalChars = 0;
+  for (const image of images) {
+    if (image.imageBase64.length > MAX_IMAGE_BASE64_CHARS) {
+      return Response.json({ error: "Image too large (max ~6 MB each)." }, { status: 400 });
+    }
+    totalChars += image.imageBase64.length;
   }
-  const scan = await scanCardImage(userId, { mediaType, dataBase64: request.imageBase64 });
+  if (totalChars > MAX_IMAGE_BASE64_CHARS * MAX_CARD_IMAGES) {
+    return Response.json({ error: "Those photos are too large in total." }, { status: 400 });
+  }
+  // One shape serves both the vision call and the stored receipts.
+  const receipts: LLMImage[] = images.map((image) => ({
+    mediaType: image.imageType,
+    dataBase64: image.imageBase64,
+  }));
+  const scan = await scanCardImages(userId, receipts);
   if (scan.error || !scan.contact) {
     return Response.json({ error: scan.error ?? "Scan failed." }, { status: 422 });
   }
@@ -58,7 +73,7 @@ export async function handleImageCapture(
     await upsertEmbedding("note", noteId, id, receipt);
   }
   const photoStored = await shouldStoreCardPhotos();
-  if (photoStored) await saveCardImage(id, noteId, mediaType, request.imageBase64);
+  if (photoStored) await saveCardImages(id, noteId, receipts);
   return Response.json({
     id,
     name: scan.contact.name,

@@ -27,6 +27,21 @@ export function TileSkeleton({ rows, className }: { rows: number; className?: st
   );
 }
 
+/** Home's metric strip as skeletons — mirrors StatStrip's 2/4-col grid so the
+ *  region reserves its height and never reflows once the counts land. */
+export function StatStripSkeleton() {
+  return (
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {Array.from({ length: 8 }).map((_, index) => (
+        <div key={index} className="flex flex-col gap-2 rounded-2xl border border-seam bg-panel p-4">
+          <Skeleton className="h-8 w-12" />
+          <Skeleton className="h-2.5 w-16" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /** Home's full bento grid as skeletons — one shape for the route loader and
  *  the dashboard's own Suspense fallback so the grid never reflows. */
 export function HomeBentoSkeleton() {

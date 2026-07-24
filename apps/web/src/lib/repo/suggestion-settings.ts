@@ -18,6 +18,7 @@ const SUGGESTION_COUNT_KEY = "daily_suggestion_count";
 const SCHEDULE_PREFS_KEY = "schedule_prefs";
 const DAILY_DIGEST_KEY = "daily_digest_enabled";
 const CONFIRMATIONS_DIGEST_KEY = "confirmations_digest_enabled";
+const MORNING_REMINDER_KEY = "morning_reminder_enabled";
 
 export interface SchedulePrefs {
   startHour: number;
@@ -85,4 +86,17 @@ export async function isConfirmationsDigestEnabled(): Promise<boolean> {
 
 export async function setConfirmationsDigestEnabled(enabled: boolean): Promise<void> {
   await setSetting(CONFIRMATIONS_DIGEST_KEY, enabled ? "on" : "off");
+}
+
+/**
+ * Whether the user opted into the morning follow-up reminder email — a daily
+ * nudge to open Dhaga when items are pending (default: off; privacy-first, we
+ * never email a user who hasn't asked to be emailed).
+ */
+export async function isMorningReminderEnabled(): Promise<boolean> {
+  return (await getSetting(MORNING_REMINDER_KEY)) === "on";
+}
+
+export async function setMorningReminderEnabled(enabled: boolean): Promise<void> {
+  await setSetting(MORNING_REMINDER_KEY, enabled ? "on" : "off");
 }

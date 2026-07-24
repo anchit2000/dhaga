@@ -30,7 +30,8 @@ export async function purgeCardPhotosAction(): Promise<void> {
 export async function setSttEngineAction(formData: FormData): Promise<void> {
   const userId = await requireUserId();
   const raw = formData.get("engine");
-  const engine: SttEngine = raw === "local" || raw === "realtime" ? raw : "browser";
+  const engine: SttEngine =
+    raw === "local" || raw === "realtime" || raw === "moonshine" ? raw : "browser";
   await setSttEngine(engine);
   invalidateAppNavigation(userId);
   revalidatePath("/app/settings");

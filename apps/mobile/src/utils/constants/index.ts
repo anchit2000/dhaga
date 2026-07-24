@@ -19,6 +19,20 @@ export const SETTINGS_KEYS = {
 } as const;
 
 /**
+ * On-device voice-vocabulary store: a document-directory JSON file (same
+ * convention as pending-capture.json) holding the terms the user has taught
+ * dictation to spell a specific way.
+ */
+export const VOCAB_STORE_FILE = "voice-vocab.json";
+
+/** Default decoder/LLM biasing weight for a freshly taught vocab term. */
+export const VOCAB_DEFAULT_BOOST = 1;
+
+/** expo-router segment name + href for the voice-vocabulary teaching screen. */
+export const VOCAB_SCREEN = "vocab" as const;
+export const VOCAB_HREF = "/vocab" as const;
+
+/**
  * OCR output below this bar (or with no @ and no digit) is judged unusable
  * and the scan falls back to uploading the photo for a server vision parse.
  */
@@ -34,6 +48,13 @@ export const FALLBACK_IMAGE_COMPRESS = 0.7;
 
 /** Shutter capture quality (0–1). */
 export const CAPTURE_QUALITY = 0.7;
+
+/**
+ * Most photos of one card/leaflet that merge into a single contact (front+back,
+ * or a few leaflet pages). Caps camera multi-shot and library multi-select so a
+ * scan can't balloon the /api/capture body past the server's per-image limits.
+ */
+export const MAX_SCAN_IMAGES = 6;
 
 /**
  * Crop review screen (docs/ideas.md #2). Business cards rarely fill the

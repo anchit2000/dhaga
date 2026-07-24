@@ -1,12 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { listRelationshipTypesAction, type RelationshipTypeOption } from "@/lib/actions/relationship-types";
 import { createRelationshipAction } from "@/lib/actions/relationships";
 import { RELATIONSHIP_KIND_LABELS } from "@/utils/constants/graph";
 import type { GraphTarget } from "@/lib/repo/graph-data";
@@ -14,8 +13,17 @@ import { DirectionPreview } from "./DirectionPreview";
 import { PredicateField } from "./PredicateField";
 import { TargetPicker } from "./TargetPicker";
 import { buildPredicateOptions, type PredicateOption } from "./predicate-options";
+import { useRelationshipTypes } from "./useRelationshipTypes";
 
 export type RelationshipSourceKind = "contact" | "company" | "event" | "entity";
+
+/** What the dialog hands its host when the user confirms an edge — enough for
+ *  the host to render an optimistic row and build the server submit itself. */
+export interface RelationshipDraft {
+  target: GraphTarget;
+  predicate: PredicateOption;
+  flipped: boolean;
+}
 
 /**
  * Manual edge creation from any node page or the graph side panel. The source
@@ -28,37 +36,26 @@ export function AddRelationshipDialog({
   sourceKind,
   sourceLabel,
   onCreated,
+  onCreate,
 }: {
   sourceId: string;
   sourceKind: RelationshipSourceKind;
   /** Optional display name for the preview; falls back to "This person" etc. */
   sourceLabel?: string;
   onCreated?: () => void;
+  /** When set, the host owns the write (optimistic list): the dialog closes
+   *  instantly and hands off the draft instead of calling the action itself. */
+  onCreate?: (draft: RelationshipDraft) => void;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [customTypes, setCustomTypes] = useState<RelationshipTypeOption[] | null>(null);
+  const { customTypes, addType } = useRelationshipTypes(open);
   const [target, setTarget] = useState<GraphTarget | null>(null);
   const [predicate, setPredicate] = useState<PredicateOption | null>(null);
   const [flipped, setFlipped] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const sourceName = sourceLabel ?? `This ${RELATIONSHIP_KIND_LABELS[sourceKind].toLowerCase()}`;
-
-  useEffect(() => {
-    if (!open || customTypes !== null) return;
-    let cancelled = false;
-    listRelationshipTypesAction()
-      .then((types) => {
-        if (!cancelled) setCustomTypes(types);
-      })
-      .catch(() => {
-        if (!cancelled) setCustomTypes([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [open, customTypes]);
 
   function handleOpenChange(next: boolean): void {
     setOpen(next);
@@ -72,6 +69,14 @@ export function AddRelationshipDialog({
 
   function submit(): void {
     if (!target || !predicate) return;
+    if (onCreate) {
+      // Host-owned optimistic path: hand off the draft and close instantly —
+      // the new row already appears in the host's list.
+      onCreate({ target, predicate, flipped });
+      handleOpenChange(false);
+      onCreated?.();
+      return;
+    }
     startTransition(async () => {
       const source = { id: sourceId, kind: sourceKind };
       const [src, dst] = flipped ? [target, source] : [source, target];
@@ -112,12 +117,10 @@ export function AddRelationshipDialog({
             <div className="space-y-1.5">
               <Label className="text-fog">Relationship</Label>
               <PredicateField
-                options={buildPredicateOptions(customTypes ?? [], sourceKind, target?.kind ?? null)}
+                options={buildPredicateOptions(customTypes, sourceKind, target?.kind ?? null)}
                 value={predicate}
                 onSelect={setPredicate}
-                onTypeCreated={(created) =>
-                  setCustomTypes((current) => [...(current ?? []), created])
-                }
+                onTypeCreated={addType}
               />
             </div>
             {predicate ? (

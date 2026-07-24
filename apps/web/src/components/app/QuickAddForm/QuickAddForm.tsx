@@ -34,13 +34,19 @@ export function QuickAddForm({
 }) {
   const [mode, setMode] = useState<Mode>("paste");
   const [captureOpen, setCaptureOpen] = useState(!homeDock);
-  const [photoToCrop, setPhotoToCrop] = useState<File | null>(null);
+  const [photos, setPhotos] = useState<File[]>([]);
   const pasteTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [state, formAction, pending] = useActionState<QuickAddState, FormData>(
     async (previous, formData) => {
-      const photo = formData.get("photo");
-      if (photo instanceof File && photo.size > 0) {
-        formData.set("photo", await downscalePhoto(photo));
+      const photoFiles = formData
+        .getAll("photo")
+        .filter((entry): entry is File => entry instanceof File && entry.size > 0);
+      if (photoFiles.length > 0) {
+        // Downscale each image before upload, then re-emit them all as `photo`
+        // entries (the server reads getAll("photo") and merges them into one).
+        const downscaled = await Promise.all(photoFiles.map((file) => downscalePhoto(file)));
+        formData.delete("photo");
+        for (const file of downscaled) formData.append("photo", file);
         return scanCardAction(previous, formData);
       }
       return extractQuickAddAction(previous, formData);
@@ -75,8 +81,9 @@ export function QuickAddForm({
         formAction={formAction}
         storeCardPhotos={storeCardPhotos}
         pasteTextareaRef={pasteTextareaRef}
-        photoToCrop={photoToCrop}
-        setPhotoToCrop={setPhotoToCrop}
+        photos={photos}
+        setPhotos={setPhotos}
+        pending={pending}
         error={state.error}
         notice={state.notice}
         captureOpen={captureOpen}
@@ -101,8 +108,7 @@ export function QuickAddForm({
           via={state.via}
           notice={state.notice}
           sourceText={state.sourceText}
-          imageBase64={state.imageBase64}
-          imageType={state.imageType}
+          images={state.images}
           events={events}
           defaultEventId={defaultEventId}
         />

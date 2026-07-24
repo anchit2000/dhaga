@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { CameraCaptureView } from "@/components/camera-capture-view";
-import { CropReviewView } from "@/components/crop-review";
+import { CropReviewStrip } from "@/components/crop-review/strip";
 import { TextCaptureView } from "@/components/text-capture-view";
 import { ResultBanner } from "@/components/result-banner";
 import { BottomDock } from "@/components/bottom-dock";
@@ -29,8 +29,8 @@ export default function CaptureScreen() {
     setVoiceHint,
     busy,
     outcome,
-    pendingPhoto,
-    setPendingPhoto,
+    pendingPhotos,
+    reviewing,
     pendingCount,
     drainPending,
     eventToName,
@@ -38,7 +38,11 @@ export default function CaptureScreen() {
     dismissEventPrompt,
     shootCamera,
     pickFromLibrary,
-    applyCroppedPhoto,
+    reviewPending,
+    removePendingPhoto,
+    cropPendingPhoto,
+    cancelReview,
+    scanPending,
     submitText,
   } = useCaptureFlow();
   const {
@@ -99,18 +103,24 @@ export default function CaptureScreen() {
         onOpen={() => void openLinkedInAddForm()}
         onDismiss={dismissLinkedInPrompt}
       />
-      {pendingPhoto ? (
-        <CropReviewView
-          photoUri={pendingPhoto.uri}
-          photoWidth={pendingPhoto.width}
-          photoHeight={pendingPhoto.height}
-          onCancel={() => setPendingPhoto(null)}
-          onConfirm={(uri) => void applyCroppedPhoto(uri)}
+      {reviewing && pendingPhotos.length > 0 ? (
+        <CropReviewStrip
+          photos={pendingPhotos}
+          busy={busy}
+          onCrop={cropPendingPhoto}
+          onRemove={removePendingPhoto}
+          onConfirm={() => void scanPending()}
+          onCancel={cancelReview}
         />
       ) : (
         <>
           {mode === "camera" ? (
-            <CameraCaptureView ref={cameraRef} onLinkedInQrDetected={handleLinkedInQrDetected} />
+            <CameraCaptureView
+              ref={cameraRef}
+              pendingCount={pendingPhotos.length}
+              onReview={reviewPending}
+              onLinkedInQrDetected={handleLinkedInQrDetected}
+            />
           ) : (
             <TextCaptureView value={text} onChangeText={setText} onSubmit={submitTypedText} busy={busy} hint={voiceHint} />
           )}

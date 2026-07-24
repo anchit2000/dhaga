@@ -1,5 +1,14 @@
+"use client";
+
 import Link from "next/link";
-import { AddRelationshipDialog, type RelationshipSourceKind } from "@/components/app/relationships/AddRelationshipDialog";
+import { useRouter } from "next/navigation";
+import {
+  AddRelationshipDialog,
+  type RelationshipDraft,
+  type RelationshipSourceKind,
+} from "@/components/app/relationships/AddRelationshipDialog";
+import { createRelationshipAction } from "@/lib/actions/relationships";
+import { useOptimisticList } from "@/lib/hooks/useOptimisticList";
 import { RELATIONSHIP_KIND_LABELS } from "@/utils/constants/graph";
 import { RelationshipDeleteButton } from "./RelationshipDeleteButton";
 
@@ -26,6 +35,10 @@ function hrefFor(row: RelationshipRowView): string {
  * the other endpoint (kind-aware), each is deletable, and new edges start
  * from the AddRelationshipDialog. Shown by default (not behind a click) so an
  * extracted edge like "son of" is immediately visible.
+ *
+ * Adds are optimistic: the new row appears the instant the dialog confirms,
+ * then the server write + revalidation reconcile it. A failed write rolls the
+ * row back and offers Retry (useOptimisticList).
  */
 export function RelationshipSection({
   sourceId,
@@ -38,19 +51,56 @@ export function RelationshipSection({
   sourceLabel: string;
   rows: RelationshipRowView[];
 }) {
+  const router = useRouter();
+  const { items, add } = useOptimisticList<RelationshipRowView>({
+    items: rows,
+    errorMessage: "Couldn't add the relationship — try again.",
+  });
+
+  function handleCreate({ target, predicate, flipped }: RelationshipDraft): void {
+    const optimisticRow: RelationshipRowView = {
+      edgeId: `optimistic-${crypto.randomUUID()}`,
+      targetId: target.id,
+      kind: target.kind,
+      name: target.label,
+      role: predicate.forward,
+      mentioned: false,
+    };
+    add(optimisticRow, async () => {
+      const source = { id: sourceId, kind: sourceKind };
+      const other = { id: target.id, kind: target.kind };
+      const [src, dst] = flipped ? [other, source] : [source, other];
+      const result = await createRelationshipAction({
+        srcId: src.id,
+        srcKind: src.kind,
+        dstId: dst.id,
+        dstKind: dst.kind,
+        predicate: predicate.slug,
+      });
+      if (result.error) return result.error;
+      router.refresh();
+      return null;
+    });
+  }
+
   return (
     <section className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-display text-lg">Relationships</h2>
-        <AddRelationshipDialog sourceId={sourceId} sourceKind={sourceKind} sourceLabel={sourceLabel} />
+        <AddRelationshipDialog
+          sourceId={sourceId}
+          sourceKind={sourceKind}
+          sourceLabel={sourceLabel}
+          onCreate={handleCreate}
+        />
       </div>
-      {rows.length === 0 ? (
+      {items.length === 0 ? (
         <p className="text-sm text-fog">
           No relationships yet — connect {sourceLabel} to the people and places around them.
         </p>
       ) : (
         <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {rows.map((row) => (
+          {items.map((row) => (
             <li
               key={row.edgeId}
               className="flex h-full items-center gap-1 rounded-xl border border-seam bg-panel py-2.5 pl-3 pr-2 transition-colors hover:bg-wash/[0.03]"

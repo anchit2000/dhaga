@@ -45,9 +45,18 @@ other clients. The app now refuses to boot on 6543 (fail-loud guard in
 handles Vercel's many instances far better than direct connections), while
 pinning one backend per client so session state is safe; the app frees its
 slots quickly (small per-instance `max`, and tenant-scoped clients are
-discarded after each request). If session-pooler slots ever run out under
-load, raise `pool_size` in Supabase's pooler settings — the durable fix
-(transaction-scoped tenancy) is tracked as a follow-up on PR #11.
+discarded after each request). When warm instances briefly overshoot the
+shared 15 and the pooler rejects a new backend (`EMAXCONNSESSION` / `max
+clients reached`, or node-postgres' `timeout exceeded when trying to
+connect`), connection acquisition now retries the transient rejection with
+backoff+jitter instead of 500ing (`connect-retry.ts` in both
+`packages/ee/src/db/` and `apps/web/src/lib/db/`; tune with
+`DB_CONNECT_RETRY_MAX` / `DB_CONNECT_RETRY_BASE_MS`). That is a graceful
+safety net, not more capacity: if session-pooler slots run out under
+sustained load, the durable lever is raising `pool_size` in Supabase's pooler
+settings (see docs/SCALING.md §2). Session mode stays required — the durable
+fix for the double-connection hold (transaction-scoped tenancy) is tracked as
+a follow-up on PR #11.
 
 **Step 3 — pgvector.** You should *not* need to touch the Supabase SQL
 editor yourself: the app's own idempotent schema DDL runs
@@ -374,8 +383,19 @@ Singapore
 - [ ] After saving: the person's page shows the photo under **Card photo**
       (the visual receipt). Clicking it opens the full-size image.
 - [ ] Desktop: choose an image file instead — same flow.
+- [ ] **Multi-image**: add several photos in one capture — front **and** back
+      of the same card (or several leaflet pages) via multi-file select or the
+      thumbnail tray's "Add photos". They extract into a **single** merged
+      contact (e.g. name/title from the front, address/phone from the back),
+      and after saving **every** image appears as its own receipt on the
+      person's page. Removing a thumbnail before scanning drops that image;
+      the count reads `n/6` and "Add" disables at six.
+- [ ] **Desktop live webcam**: "Use live camera" → allow camera → take
+      multiple shots (each drops into the tray) → Done → Scan — same merge
+      into one contact. Denying the permission shows a message and a
+      "Choose a photo instead" fallback.
 - [ ] Without a key: honest "Card scanning needs cloud AI" error
-      (`hasLLM()` gate, `apps/web/src/lib/ai/card-scan.ts:28`).
+      (`hasLLM()` gate, `apps/web/src/lib/ai/card-scan.ts:30`).
 
 ### 7d. Card-photo storage setting (Settings page)
 

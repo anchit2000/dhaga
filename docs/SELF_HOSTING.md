@@ -114,6 +114,26 @@ that key itself and renders nothing — not a broken "Upgrade" button, no
 section at all — while the admin panel and early-access gate keep working
 normally.
 
+## Referral rewards (hosted/EE only)
+
+The two-sided referral program (a free month of Pro for both advocate and
+referee) lives entirely in `packages/ee` and only functions in hosted mode — it
+extends a user's `subscriptions` row, which the core has no concept of, and a
+self-host is single-user anyway (there's nobody to refer). On a self-host the
+referral surfaces are simply absent: `/api/referral` returns
+`{ referral: null }` and `/app/referral` shows an "unavailable" note — the same
+permissive-fallback pattern as billing (`getReferralGate()` in
+`apps/web/src/lib/hosted/gate`).
+
+In hosted mode the reward is delivered Stripe-safely. An advocate who already
+has a live Stripe subscription is given a Stripe coupon — set
+`STRIPE_REFERRAL_COUPON_ID` to a `duration: once`, 100%-off coupon you create in
+the Stripe dashboard — while free/comp users get an additive comp Pro month
+(their `current_period_end` is extended, never downgrading a lifetime grant). If
+`STRIPE_REFERRAL_COUPON_ID` is unset when a paying advocate qualifies, the grant
+fails loud and the referral stays `pending` for retry rather than silently
+half-rewarding.
+
 ## Creating the first admin user
 
 There's a deliberate chicken-and-egg problem here: the admin panel can only
@@ -252,7 +272,8 @@ None of the `packages/ee/.env.example` vars (`DHAGA_HOSTED_MODE`,
 | `BETTER_AUTH_URL` | Yes | Your instance's base URL |
 | `DATABASE_URL` | Only on serverless (Vercel) | Otherwise defaults to embedded PGlite |
 | `ANTHROPIC_API_KEY` | No | AI features degrade to heuristic parsing / disabled without it |
-| `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `DHAGA_OWNER_EMAIL` | No | Event digests only |
+| `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `DHAGA_OWNER_EMAIL` | No | Event digests, reach-out digest + morning follow-up reminder |
+| `MORNING_REMINDER_HOURLY` | No | Set `true` only if you drive `/api/jobs/daily` hourly — then the morning reminder lands at the recipient's local ~08:00; unset on the single Hobby cron |
 | `TELEGRAM_*` | No | Owner-only bot capture |
 | `DHAGA_WEBHOOK_URL` | No | Outbound automation |
 | `SEARCH_PROVIDER`, `FIRECRAWL_API_KEY` | No | Job-change detection + news watchlist |

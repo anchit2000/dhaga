@@ -143,7 +143,7 @@ The MVP must prove one loop end-to-end:
 
 | Dimension | MVP | Full Product |
 |---|---|---|
-| Capture | Card scan, vCard QR, voice notes (mobile) | + badges, web quick-add (paste email/article/URL), browser extension one-click add, LinkedIn Connections CSV import, email forwarding, LinkedIn QR, call-log prompts |
+| Capture | Card scan (single or multi-image), vCard QR, voice notes (mobile) | + badges, web quick-add (paste email/article/URL), browser extension one-click add, LinkedIn Connections CSV import, email forwarding, LinkedIn QR, call-log prompts |
 | Intelligence | Extraction + NL search + follow-up drafts | + enrichment, change detection, decay alerts, pre-meeting briefs, warm paths |
 | Graph | Per-user, on-device, basic edges | Rich ontology, article-to-contact links, team-shared graph, cross-user dedup |
 | Platform | iOS + Android (one RN codebase) | + web app + browser extension + watch/widgets |
@@ -165,6 +165,7 @@ A July 2026 competitive review surfaced feature gaps. The genuinely-additive one
 | **Personal-life logging modules (optional)** — gift tracking, journal/diary + mood, activity log, debt tracking, pets | Backlog. Optional modules to reach broader personal-relationship breadth; off by default so the professional-networking core stays uncluttered |
 | **Mail-merge / bulk personalized outreach + public API + Zapier app** | Backlog. Extends the existing outbound webhooks (checklist §16) and the Zapier/webhooks line already in §5.2 v1.4; bulk outreach is the new delta |
 | **Two-way native phone address-book sync** | Backlog. Extends the current one-way expo-contacts import (§6.7) to write curated contacts back to the phone |
+| **Voice dictation self-correction** — spoken self-edits ("schedule at 3, no make it 4") folded into the transcript, both a semantic LLM pass and a deterministic number/time pass | Backlog — **deferred pending a dedicated GPU host** for the correction model. Prototyped in the browser-voice R&D (separate `llm-experiments` repo, `feat/voice-browser-jarvis`): the real-time in-browser STT (Moonshine, WebGPU) is proven and is the intended `whisper-base` replacement — it ports independently and now. But the in-browser correction LLM is **CPU-bound (~48 s/edit) on consumer GPUs** where WebGPU falls back to CPU — too slow to be the "then and there" correction the product needs. Ships when a dedicated 24 GB-class GPU can host the correction model server-side (aligns with the §7.2 Phase-2 server tier). The STT-side layers (phonetic teaching, deterministic cleanup) are **not** part of this deferral — they ship with the STT |
 
 **Already covered — not re-added:**
 
@@ -187,6 +188,7 @@ A July 2026 competitive review surfaced feature gaps. The genuinely-additive one
 - **OCR is free and on-device.** iOS: Apple Vision framework (`VNRecognizeTextRequest`) — excellent accuracy, zero cost, zero latency, zero privacy exposure. Android: Google ML Kit Text Recognition (also free, on-device).
 - OCR yields raw text lines + bounding boxes. A **small LLM call** (or on-device model) converts raw OCR text → structured contact JSON (name/title/company/email/phone/address), handling layout ambiguity that regex can't ("is this line a company or a title?").
 - Fallback for degraded/multilingual cards: server-side pass with a vision-capable model (send the image, get structured JSON directly). This is the premium path, used only when on-device confidence is low.
+- **One card, one or many photos.** A single capture can bundle multiple images of the same card (front + back) or a multi-page leaflet — via multi-shot camera, desktop live webcam, or multi-file upload on web and mobile; the server vision pass merges them into one contact and keeps every image as a receipt. (Extracting *several* contacts from one leaflet is not yet in scope — a multi-image capture always yields a single contact.)
 
 ### 6.2 Auto-grouping (M2)
 
@@ -391,6 +393,27 @@ Per-card pipeline (OCR parse ≈ 800 in / 200 out tokens on Haiku): **≈ $0.002
 - Public roadmap + good-first-issues on capture parsers and language support.
 - Prompt/eval library in the open: contributors improve extraction quality measurably (eval suite gates PRs).
 - Plugin interface for capture sources (badge formats, email parsers) and export targets (CRMs) — the integrations surface area becomes community-maintained.
+
+### 8.6 Viral growth loops (built 2026-07)
+
+A private CRM has no inherent network effect — nobody else sees your graph — so
+distribution is engineered as three deliberate, privacy-safe loops (build detail
+in `docs/checklist.md` §21):
+
+- **Network Wrapped** — a contact-free, proud-to-post share card ("47 people met
+  this month", "12 at this event", "strongest cluster: fintech"), computed
+  deterministically from the user's own graph (no LLM, no metered cost). Every
+  share is a faceless ad; it exposes aggregate counts + category superlatives
+  only, never a third party's name. Server-rendered in feed/story/unfurl formats
+  and free to all users — it's a growth surface, not a paywalled one.
+- **Public graph sandbox** — the landing lets anyone drag/zoom a real-scale
+  (21k-node) but entirely synthetic network, loaded only on demand. It turns the
+  product's hardest-to-explain value (a living knowledge graph) into a
+  screenshot-worthy toy with zero signup friction, reusing the same sigma.js
+  renderer the app ships.
+- **Two-sided referral** — a free month of Pro for both advocate and referee
+  (hosted tier); a valid invite also admits the referee past the early-access
+  wall. The one loop that directly compounds paid conversion.
 
 ---
 

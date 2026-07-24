@@ -1,5 +1,8 @@
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
+import { useFocusEffect } from "expo-router";
 import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from "expo-speech-recognition";
+
+import { useVoiceVocab } from "./use-voice-vocab";
 
 /**
  * On-device voice dictation for the capture screen's text box (checklist.md
@@ -20,6 +23,14 @@ export function useDictation(text: string, setText: (value: string) => void, set
   // phrase is appended here; interim phrases preview on top without being
   // committed, so a partial guess never permanently overwrites prior text.
   const baseTextRef = useRef("");
+  // Deterministic phonetic teaching (see @dhaga/core voice teaching). Reloaded
+  // on focus so terms taught on the vocab screen apply the moment we return.
+  const { correct, reload } = useVoiceVocab();
+  useFocusEffect(
+    useCallback(() => {
+      void reload();
+    }, [reload]),
+  );
 
   useSpeechRecognitionEvent("end", () => setListening(false));
 
@@ -29,8 +40,11 @@ export function useDictation(text: string, setText: (value: string) => void, set
   });
 
   useSpeechRecognitionEvent("result", (event) => {
-    const transcript = event.results[0]?.transcript.trim();
-    if (!transcript) return;
+    const raw = event.results[0]?.transcript.trim();
+    if (!raw) return;
+    // Apply taught spellings before merging, so both interim previews and the
+    // finalized phrase committed to baseTextRef show the corrected text.
+    const transcript = correct(raw);
     const merged = baseTextRef.current ? `${baseTextRef.current} ${transcript}` : transcript;
     if (event.isFinal) baseTextRef.current = merged;
     setText(merged);

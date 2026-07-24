@@ -1,0 +1,56 @@
+import type { WrappedCardFormat } from "@dhaga/core/src/api/wrapped";
+
+/**
+ * Network Wrapped — shared, contact-free "in review" card constants.
+ * The card is server-rendered via next/og (satori), which has no access to
+ * CSS custom properties, so the brand palette is inlined here as hex. Keep in
+ * sync with the --brand-* tokens in apps/web/src/app/globals.css (dark).
+ */
+
+/** Aspect ratios of the generated share image, in pixels. */
+export const WRAPPED_CARD_SIZES: Record<
+  WrappedCardFormat,
+  { width: number; height: number }
+> = {
+  landscape: { width: 1200, height: 630 }, // OG / Twitter link unfurl
+  square: { width: 1080, height: 1080 }, // IG / LinkedIn feed post
+  story: { width: 1080, height: 1920 }, // IG / WhatsApp vertical story
+};
+
+export const WRAPPED_DEFAULT_FORMAT: WrappedCardFormat = "landscape";
+
+/** Brand palette for the OG card (mirrors globals.css .dark --brand-*). */
+export const WRAPPED_CARD_COLORS = {
+  ink: "#0d0b09",
+  panel: "#16120e",
+  panel2: "#1d1812",
+  seam: "#2b241b",
+  paper: "#f3ede2",
+  fog: "#a49a8a",
+  amber: "#e2a44c",
+  ember: "#c37731",
+  onAccent: "#0d0b09",
+} as const;
+
+/** How many category bars the card's mini-distribution shows. */
+export const WRAPPED_CLUSTER_TOP_N = 5;
+
+/** Public, unfurlable share-page base path: `/wrapped/<token>`. */
+export const WRAPPED_SHARE_PATH = "/wrapped";
+
+/** Dynamic OG image route: `/wrapped/og?...`. */
+export const WRAPPED_OG_PATH = "/wrapped/og";
+
+/** Query-param keys carried by the (public, contact-free) OG image URL. */
+export const WRAPPED_OG_PARAMS = {
+  format: "f",
+  scopeLabel: "s",
+  newPeople: "n",
+  totalNetwork: "t",
+  eventsAttended: "e",
+  overdueFollowUps: "o",
+  clusterKey: "ck",
+  clusterCount: "cc",
+  /** HMAC token covering the above, to prevent forged vanity cards. */
+  token: "sig",
+} as const;

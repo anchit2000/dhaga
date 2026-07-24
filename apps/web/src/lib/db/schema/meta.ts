@@ -1,4 +1,4 @@
-import { integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { integer, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 /**
  * Metering: every cloud AI call is logged (day-one requirement, BRD §8).
@@ -21,3 +21,22 @@ export const settings = pgTable("settings", {
   value: text("value").notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+/**
+ * A user's taught dictation vocabulary. `keys` are precomputed double-metaphone
+ * codes for `term` + `aliases` (the phonetic lookup index). Per-user uniqueness
+ * of `termLc` is enforced in the repo, not by a DB constraint — see
+ * lib/repo/voice-vocab.ts and the DDL note in ddl/core/meta.ts.
+ */
+export const voiceVocab = pgTable("voice_vocab", {
+  id: text("id").primaryKey(),
+  term: text("term").notNull(),
+  termLc: text("term_lc").notNull(),
+  aliases: jsonb("aliases").$type<string[]>().notNull().default([]),
+  keys: jsonb("keys").$type<string[]>().notNull().default([]),
+  boost: integer("boost").notNull().default(8),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type VoiceVocabRow = typeof voiceVocab.$inferSelect;

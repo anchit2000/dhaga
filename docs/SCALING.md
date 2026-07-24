@@ -118,9 +118,30 @@ cap makes it worse. Read → compute → write, no await-on-network mid-transact
   DB. Rule of thumb for a scoped read: resolve `getDb()` **once**, and prefer one
   round-trip over a fan-out.
 
+- **Transient acquisition rejections are retried, not surfaced as 500s.**
+  Supabase's session pooler exposes a fixed `pool_size` of 15 backends shared
+  across every warm instance (see `@/utils/constants/db`). When several
+  instances briefly overshoot it, Supavisor rejects a new backend with
+  `EMAXCONNSESSION`/`XX000 max clients reached in session mode`, and
+  node-postgres can throw `timeout exceeded when trying to connect` — both
+  transient (a slot frees within ms). Connection acquisition now retries just
+  these, with exponential backoff + jitter, before giving up (default 5
+  attempts / 100 ms base, `DB_CONNECT_RETRY_MAX` / `DB_CONNECT_RETRY_BASE_MS`).
+  Both the EE tenant pool (`packages/ee/src/db/connect-retry.ts`, at
+  `openTenantConnection`/`openAdminConnection`) and the core pool
+  (`apps/web/src/lib/db/connect-retry.ts`, which better-auth's per-request
+  session read rides through via drizzle) are covered. Only the transient
+  predicate is retried — a real error still fails loud on the first attempt.
+  **This is a graceful degradation, not a capacity increase:** the durable
+  lever for sustained pressure is raising `pool_size` in Supabase's pooler
+  settings (session mode stays required — transaction pooling breaks tenant
+  scoping, `bootstrap.ts` enforces it).
+
 Not yet done: a formal audit of all ~14 `db.transaction(...)` sites confirming
 none await network I/O mid-transaction. No known offender, but not verified
-exhaustively.
+exhaustively. The transient-retry above also does not cover the EE
+`drizzle(getPool())` reads (admin/access-request/billing repos) — those
+lower-frequency paths issue `pool.query` without the wrapper.
 
 ## 3. Read replicas — 🔴 not built (future scope)
 

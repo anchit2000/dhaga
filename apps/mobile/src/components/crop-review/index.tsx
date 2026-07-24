@@ -9,13 +9,15 @@ import { CropOverlay, type CropOverlayHandle } from "./crop-overlay";
 import { clamp, computeDisplayBox, defaultCropRect, type Size } from "./geometry";
 
 import type { LayoutChangeEvent } from "react-native";
+import type { CapturedPhoto } from "@/components/camera-capture-view";
 
 export interface CropReviewViewProps {
   photoUri: string;
   /** Native pixel size of the photo, from the camera/picker result. */
   photoWidth: number;
   photoHeight: number;
-  onConfirm: (croppedUri: string) => void;
+  /** The cropped photo (new uri + its pixel size, so it can be re-cropped). */
+  onConfirm: (cropped: CapturedPhoto) => void;
   onCancel: () => void;
 }
 
@@ -57,7 +59,8 @@ export function CropReviewView({ photoUri, photoWidth, photoHeight, onConfirm, o
 
       const rendered = await ImageManipulator.manipulate(photoUri).crop({ originX, originY, width, height }).renderAsync();
       const saved = await rendered.saveAsync({ format: SaveFormat.JPEG, compress: CROP_JPEG_COMPRESS });
-      onConfirm(saved.uri);
+      // The crop rect's pixel size is the cropped image's size — carry it so the photo can be re-cropped.
+      onConfirm({ uri: saved.uri, width, height });
     } catch {
       setError("Couldn't crop that photo. Try again or retake it.");
       setBusy(false);

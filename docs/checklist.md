@@ -72,6 +72,8 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 
 - [x] Paste email signature / free text → extracted contact (LLM, heuristic fallback)
 - [x] Card photo scan (M1 web path): phone camera/upload → vision parse → review → receipt
+- [x] Multi-image card scan: capture/upload several photos of the same card (front + back) or a multi-page leaflet together → merged server-side into one contact, every image kept as its own visual receipt; web (mobile-browser multi-shot camera, desktop live webcam, multi-file upload) + mobile Expo parity, backward compatible with the single-image path (mobile shares §12's on-device-verification caveat)
+- [ ] Multi-contact extraction from one capture (a leaflet/roster listing several people → several contacts) — not in scope yet; a multi-image capture always merges into a single contact
 - [x] Card photos stored as visual receipts (user's own DB — local or hosted), shown on the contact page
 - [x] Settings page: per-user "store card photos" toggle + purge-all button
 - [x] Photo deletion cascades: gone with its receipt note, gone with "forget this person"
@@ -107,8 +109,19 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Facts render on contact page with receipt ("from note, {date}")
 - [x] User can edit/delete a fact inline (M4 acceptance)
 - [x] Deleting a note tombstones its derived facts/edges
+- [x] Re-process a note: manual "re-run extraction" on an existing note (text/voice/capture_source) — after an edit or a missed fact — re-enqueues a `note_extraction` job for the same note; idempotent (worker's `clearNoteDerivations` replaces the note's prior facts/edges/follow-ups, never duplicates), AI budget still metered in the worker
 - [x] Voice notes on web (browser SpeechRecognition → transcript → extraction)
 - [ ] Voice notes on mobile (whisper.cpp / Apple Speech — mobile milestone) — built via `expo-speech-recognition` (wraps iOS `SFSpeechRecognizer`/Android `SpeechRecognizer`, forced on-device, no audio/transcript leaves the phone); tap mic → live interim transcript fills the same text-review box typed input uses (`e64b336`). Typecheck/lint pass; **package has no published SDK-57 tag yet** (installed cleanly, types check, but native linking in an EAS/dev-client build is unverified) — needs a real device build before this can be checked off, not pushed
+
+### Voice STT + phonetic teaching (2026-07-24) — built, pending real verification
+
+- [x] **STT is now a pluggable engine gateway** — the `AsrEngine` contract lives in `@dhaga/core/src/voice/asr/types`; a contributor adds a better model by implementing it + one `useDictation` branch + one `EngineOption`. All existing whisper engines kept (browser / on-device Whisper / realtime).
+- [x] **"Dhaga Voice" (Moonshine tiny) engine, web** — on-device WebGPU streaming, the new **default when WebGPU is available**; degrades to the browser engine + an inline notice when it isn't (not slow WASM). `@huggingface/transformers` dynamic-import-only; COOP/COEP scoped to `/app/**`. *(typecheck + prod build pass; **pending real-browser mic/WebGPU verification**)*
+- [x] **Phonetic teaching (double-metaphone)** — shared pure-TS core (`@dhaga/core/src/voice/teaching`), **deep-import-only, Hermes-safe** (never the core barrel); web dictation applies taught spellings on finalize; **teaching/vocabulary manager in Settings** (Settings restructured into tabs — Account/Capture/Calendar/Suggestions/Import). *(pending real testing)*
+- [x] **Mobile phonetic teaching (parity)** — shared core wired into `expo-speech-recognition` dictation (`correct()` on the transcript, interim + final) + a `vocab` screen; JSON-file `VocabStore`. *(pending device build)*
+- [x] `voice_vocab` table (synthetic `id` PK, mirrors `settings`; EE `TENANT_TABLES` adds RLS) + `/api/voice/vocab` (GET/POST/DELETE) + `"use server"` actions + export coverage; AGPL-core path unaffected (no `apps/web`→`@dhaga/ee` import). LLM self-correction stays **PARKED** (§20 backlog — needs a GPU).
+- [x] Search dictation append-vs-replace bug fixed (multi-segment finals accumulate).
+- [ ] **Real-browser + device verification** (mic capture, WebGPU streaming accuracy, teaching round-trip) and **commit** (currently uncommitted on `main`).
 
 ## 7. Knowledge graph v0 (M5)
 
@@ -258,3 +271,42 @@ declined (BRD §5.4).
 - [ ] Personal-life logging modules (optional, off by default): gift tracking, journal/diary + mood, activity log, debt tracking, pets
 - [ ] Mail-merge / bulk personalized outreach + public API + Zapier app — extends the existing outbound webhooks (§16)
 - [ ] Two-way native phone address-book sync — extends the current one-way expo-contacts import (§12)
+- [ ] Voice dictation self-correction ("schedule at 3, no make it 4") — semantic LLM edits + a deterministic number/time pass; **deferred pending a dedicated GPU host** for the correction model. The in-browser correction LLM is CPU-bound (~48 s/edit) on consumer GPUs, too slow to be "then and there". Prototyped in the browser-voice R&D (`llm-experiments` repo, `feat/voice-browser-jarvis`); real-time in-browser STT (Moonshine, WebGPU) is proven there and is the intended `whisper-base` replacement that ports independently — only the correction layer is parked. (BRD §5.4)
+
+## 21. Viral growth loops (2026-07-24)
+
+Three growth features built together on `feat/network-wrapped-viral`. All are
+typecheck/lint/build-clean across every workspace and the EE reward logic is
+unit-tested; **not yet manually click-tested in a browser or pushed** — same
+`[x]` bar as §19, so they stay unchecked until that happens. The public graph
+sandbox is web-only by design (a marketing surface); Wrapped + referral ship on
+web and mobile per the parity rule.
+
+- [ ] **Network Wrapped** — a contact-free, proud-to-post share card computed
+  deterministically from the user's own graph (no LLM, zero metered cost, Rule
+  5). Scope-selectable: per event, or per week/month/quarter/year/all-time
+  ("47 people this month", "12 at an event"). Server-rendered `next/og` card in
+  three formats (1200×630 unfurl / 1080×1080 square / 1080×1920 story), with
+  HMAC-signed params so cards can't be forged; public `/wrapped/[token]` unfurl
+  page; authed `/app/wrapped` scope-picker + share modal (download / copy /
+  native-share). Stats repo `lib/repo/wrapped` runs ONE aggregate query (no
+  `getDb()` fan-out). Privacy: the card carries counts + cluster CATEGORY only;
+  third-party names (top company, most-connected person) are reveal-gated in-app
+  and never enter the token/URL/image. `/api/wrapped` (x-api-key) + mobile
+  `wrapped` screen (RN `Share`).
+- [ ] **Public interactive graph sandbox** (landing, web-only) — a STATIC,
+  anonymized network the visitor drags/zooms/hovers, reusing the `/app` sigma
+  renderer verbatim (`useRenderer`/reducers/theme/camera) with positions baked
+  offline. Loads ONLY on demand: the landing ships a light teaser + CTA; the
+  sigma chunk + `graph-core.json` (~3.9k nodes, ~134 KB gz) fetch on click, and
+  `graph-full.json` (21k nodes, ~820 KB gz) only on "Explode to full network".
+  Baked by `scripts/export-public-graph.mjs` from the deterministic seed
+  generator (synthetic names, no PII, no DB, no network).
+- [ ] **Two-sided referral** (hosted/EE) — a free month of Pro for both sides.
+  `/r/<code>` sets an httpOnly cookie; a valid code admits the referee past the
+  invite allowlist; the reward fires on email-verify. Stripe-safe: a live-Stripe
+  advocate gets a 100%-off-1-month coupon (`STRIPE_REFERRAL_COUPON_ID`), free
+  users get an additive comp Pro month (null-preserving). Anti-abuse: self-ref +
+  duplicate + per-referrer cap. `packages/ee/src/referrals` (control-plane
+  tables, no RLS); web `/app/referral` + `/api/referral`; mobile advocate
+  screen. Redemption is web-signup only.

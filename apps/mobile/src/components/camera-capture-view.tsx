@@ -17,6 +17,11 @@ export interface CameraCaptureHandle {
 }
 
 interface CameraCaptureViewProps {
+  /** How many photos are already captured this batch — drives the multi-shot
+   *  count pill and whether the "Done" control shows. */
+  pendingCount: number;
+  /** Tapped when the user is finished shooting; proceeds to the crop-strip review. */
+  onReview: () => void;
   /** Fired when the live preview reads a QR code encoding a LinkedIn profile
    *  URL (docs/ideas.md's "LinkedIn QR format support") — this view only
    *  detects; the capture screen decides what happens next. */
@@ -25,7 +30,7 @@ interface CameraCaptureViewProps {
 
 /** Live camera preview; capture is triggered externally (from BottomDock) via the exposed ref. */
 export const CameraCaptureView = forwardRef<CameraCaptureHandle, CameraCaptureViewProps>(
-  function CameraCaptureView({ onLinkedInQrDetected }, ref) {
+  function CameraCaptureView({ pendingCount, onReview, onLinkedInQrDetected }, ref) {
     const cameraRef = useRef<CameraView>(null);
     const [permission, requestPermission] = useCameraPermissions();
 
@@ -69,13 +74,53 @@ export const CameraCaptureView = forwardRef<CameraCaptureHandle, CameraCaptureVi
           const match = matchLinkedInProfileUrl(result.data);
           if (match) onLinkedInQrDetected(match);
         }}
-      />
+      >
+        {pendingCount > 0 ? (
+          <View style={styles.topBar} pointerEvents="box-none">
+            <View style={styles.countPill}>
+              <Text style={styles.countLabel}>
+                {pendingCount} photo{pendingCount === 1 ? "" : "s"}
+              </Text>
+            </View>
+            <Pressable style={styles.doneButton} onPress={onReview} accessibilityLabel="Done capturing">
+              <Text style={styles.doneLabel}>Done</Text>
+            </Pressable>
+          </View>
+        ) : null}
+      </CameraView>
     );
   },
 );
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: COLORS.ink },
+  topBar: {
+    position: "absolute",
+    top: 12,
+    left: 16,
+    right: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  countPill: {
+    minHeight: 36,
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    justifyContent: "center",
+    backgroundColor: "rgba(13, 11, 9, 0.7)",
+    borderWidth: 1,
+    borderColor: COLORS.seam,
+  },
+  countLabel: { color: COLORS.paper, fontSize: 14, fontWeight: "600" },
+  doneButton: {
+    minHeight: 44,
+    borderRadius: 999,
+    paddingHorizontal: 24,
+    justifyContent: "center",
+    backgroundColor: COLORS.amber,
+  },
+  doneLabel: { color: COLORS.ink, fontSize: 16, fontWeight: "600" },
   centered: { alignItems: "center", justifyContent: "center", padding: 24, gap: 20 },
   permissionText: { color: COLORS.fog, fontSize: 16, lineHeight: 24, textAlign: "center" },
   grantButton: {

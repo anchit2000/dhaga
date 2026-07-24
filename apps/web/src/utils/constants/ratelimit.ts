@@ -12,6 +12,9 @@ export const RATE_LIMITS = {
   /** Bulk contact import (OAuth provider fetch, mobile /api/import). One call
    *  pulls/sends a whole batch, so a modest window is plenty. */
   import: { points: 12, durationSec: 60 },
+  /** Taught dictation vocabulary CRUD (/api/voice/vocab). User-driven and
+   *  low-frequency, but a session start re-reads it, so keep the window roomy. */
+  voice_vocab: { points: 60, durationSec: 60 },
 } as const;
 
 export type RateLimitBucket = keyof typeof RATE_LIMITS;

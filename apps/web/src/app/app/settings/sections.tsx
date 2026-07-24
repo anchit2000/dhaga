@@ -1,23 +1,28 @@
 import { headers } from "next/headers";
-import { listConnectableCalendarProviders } from "@dhaga/core";
+import { hasLLM, listConnectableCalendarProviders } from "@dhaga/core";
 import { getCurrentUser, requireUserIdForPage } from "@/lib/auth/guard";
 import { getAuth } from "@/lib/auth/config";
 import { getBillingGate } from "@/lib/hosted/gate";
+import { aiActionsUsedThisMonth, effectiveMonthlyAiCap } from "@/lib/ai/metering";
 import { getSttEngine, shouldStoreCardPhotos } from "@/lib/repo/settings";
+import { listVocab } from "@/lib/repo/voice-vocab";
 import { listCalendarConnections } from "@/lib/repo/calendar";
 import {
   getDailySuggestionCount,
   getSchedulePrefs,
   isConfirmationsDigestEnabled,
   isDailyDigestEnabled,
+  isMorningReminderEnabled,
 } from "@/lib/repo/suggestion-settings";
 import { countCardImages } from "@/lib/repo/card-images";
 import { CalendarConnectionsSetting } from "@/components/app/settings/CalendarConnectionsSetting";
 import { SuggestionsSetting } from "@/components/app/settings/SuggestionsSetting";
 import { CardPhotoSetting } from "@/components/app/settings/CardPhotoSetting";
 import { VoiceInputSetting } from "@/components/app/settings/VoiceInputSetting";
+import { VoiceTeaching } from "@/components/app/settings/VoiceTeaching";
 import { ApiKeysSetting } from "@/components/app/settings/ApiKeysSetting";
 import { BillingSetting } from "@/components/app/settings/BillingSetting";
+import { ProfileSetting } from "@/components/app/settings/ProfileSetting";
 import { SecuritySetting } from "@/components/app/settings/SecuritySetting";
 
 /**
@@ -27,11 +32,28 @@ import { SecuritySetting } from "@/components/app/settings/SecuritySetting";
  * the one request-pinned tenant connection (safe) and the memoized session.
  */
 
-/** Only renders on a hosted instance with EE billing (getPlanSummary non-null). */
+/** Name (editable via better-auth) + account email (read-only). Core — renders
+ *  the same in self-host and hosted mode. */
+export async function ProfileSection() {
+  const user = await getCurrentUser();
+  return user ? <ProfileSetting name={user.name} email={user.email} /> : null;
+}
+
+/** Only renders on a hosted instance with EE billing (getPlanSummary non-null).
+ *  When it does, it also surfaces the acting user's monthly AI-credit balance,
+ *  read through the same metering accessors that enforce the cap (hasLLM gate,
+ *  so no line shows when the instance has no LLM configured). */
 export async function BillingSection() {
   const userId = await requireUserIdForPage();
-  const planSummary = await (await getBillingGate()).getPlanSummary(userId);
-  return planSummary ? <BillingSetting summary={planSummary} /> : null;
+  const gate = await getBillingGate();
+  const planSummary = await gate.getPlanSummary(userId);
+  if (!planSummary) return null;
+  const [used, unlimited] = await Promise.all([
+    hasLLM() ? aiActionsUsedThisMonth() : Promise.resolve(0),
+    hasLLM() ? gate.hasUnlimitedAi(userId) : Promise.resolve(false),
+  ]);
+  const aiUsage = hasLLM() ? { used, cap: await effectiveMonthlyAiCap(), unlimited } : null;
+  return <BillingSetting summary={planSummary} aiUsage={aiUsage} />;
 }
 
 export async function SecuritySection() {
@@ -65,11 +87,12 @@ export async function CalendarSection({
 }
 
 export async function SuggestionsSection() {
-  const [count, prefs, digestEnabled, confirmationsDigestEnabled] = await Promise.all([
+  const [count, prefs, digestEnabled, confirmationsDigestEnabled, reminderEnabled] = await Promise.all([
     getDailySuggestionCount(),
     getSchedulePrefs(),
     isDailyDigestEnabled(),
     isConfirmationsDigestEnabled(),
+    isMorningReminderEnabled(),
   ]);
   return (
     <SuggestionsSetting
@@ -77,6 +100,7 @@ export async function SuggestionsSection() {
       prefs={prefs}
       digestEnabled={digestEnabled}
       confirmationsDigestEnabled={confirmationsDigestEnabled}
+      reminderEnabled={reminderEnabled}
     />
   );
 }
@@ -89,6 +113,11 @@ export async function CardPhotoSection() {
 export async function VoiceInputSection() {
   const engine = await getSttEngine();
   return <VoiceInputSetting engine={engine} />;
+}
+
+export async function VoiceTeachingSection() {
+  const terms = await listVocab();
+  return <VoiceTeaching terms={terms} />;
 }
 
 export async function ApiKeysSection() {

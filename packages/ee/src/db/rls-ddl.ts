@@ -25,6 +25,7 @@ const TENANT_TABLES = [
   "entities",
   "relationship_types",
   "graph_layouts",
+  "voice_vocab",
 ] as const;
 
 /**

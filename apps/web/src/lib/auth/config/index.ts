@@ -1,81 +1,20 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { APIError } from "better-auth/api";
 import { getDb } from "@/lib/db";
-import { authUser } from "@/lib/db/schema";
-import { getSignupGate } from "@/lib/hosted/gate";
-import { notifyAccessRequested } from "@/lib/access/notify";
+import {
+  grantReferralRewardOnVerification,
+  recordReferralFromCookie,
+} from "@/lib/referral";
 import { sendPasswordResetEmail, sendVerifyEmail, sendWelcomeEmail } from "./emails";
 import { buildPlugins } from "./plugins";
 import { socialProviderConfig } from "./social";
 import { previewTrustedOrigins } from "./trusted-origins";
-import type { User } from "better-auth";
+import { beforeUserCreate } from "./signup-hooks";
 
-/**
- * The signup gate's `create.before` hook body — extracted (rather than left
- * inline) so it's independently unit-testable. notifyAccessRequested sends
- * up to two emails (lib/email/send.ts, via Resend); a transient
- * provider/network failure there must never replace the intended
- * `APIError("FORBIDDEN", ...)` below with an unrelated 500 — the
- * confirmation email is a courtesy, not something the signup rejection can
- * be blocked on. This call site can't reach for next/server's after() the
- * way the other notifyAccessRequested caller (api/access-requests/route.ts)
- * does: better-auth's own types allow the hook's `context` to be null (it
- * isn't guaranteed to run inside an active Next.js request scope), and this
- * exact function also runs directly against a plain DB connection under
- * vitest with no HTTP request in play at all — after() would throw there.
- * A plain try/catch works in every one of those cases.
- */
-/**
- * Single-user guard for the AGPL core (non-EE) path. Multi-tenant isolation
- * (per-user RLS scoping) lives exclusively in packages/ee; the core `getDb()`
- * hands every request one unscoped connection over one shared graph (see
- * lib/db/request-scope.ts). That is safe for exactly one account, but nothing
- * otherwise stops a second signup from landing in — and reading — the first
- * user's data. So when hosted mode is off (`DHAGA_HOSTED_MODE` !== "true",
- * the same signal lib/hosted/gate.ts uses to decide whether packages/ee is
- * loaded) we reject creating a second account. Multi-user requires hosted
- * mode / packages/ee — see docs/SELF_HOSTING.md.
- */
-async function assertSingleUserOnCore(): Promise<void> {
-  if (process.env.DHAGA_HOSTED_MODE === "true") return;
-  const db = await getDb();
-  const [existing] = await db.select({ id: authUser.id }).from(authUser).limit(1);
-  if (existing) {
-    throw new APIError("FORBIDDEN", {
-      message:
-        "This Dhaga instance is single-user: the open-source core has no per-user data isolation, so it allows only one account. Multi-user support requires hosted mode (packages/ee) — see docs/SELF_HOSTING.md.",
-    });
-  }
-}
-
-export async function beforeUserCreate(
-  user: User & Record<string, unknown>,
-): Promise<{ data: User & Record<string, unknown> } | void> {
-  await assertSingleUserOnCore();
-  const gate = await getSignupGate();
-  const { allowed, reason } = await gate.checkEmail(user.email);
-  if (!allowed) {
-    // The blocked signup attempt doubles as an access request, so
-    // the same email just works once an admin approves it — no
-    // separate "request access" step required first.
-    const submitted = await gate.requestAccess(user.email);
-    if (submitted) {
-      try {
-        await notifyAccessRequested(user.email);
-      } catch {
-        // Swallowed deliberately: the FORBIDDEN rejection below must always
-        // reach the caller, regardless of whether this best-effort
-        // confirmation email succeeds.
-      }
-    }
-    throw new APIError("FORBIDDEN", {
-      message:
-        reason ?? "We've sent your access request — check your email once you're approved.",
-    });
-  }
-  return { data: user };
-}
+/** Re-exported so `@/lib/auth/config` stays the stable import for both the
+ *  auth wiring and the vitest suites (the signup-gate logic lives in
+ *  ./signup-hooks). */
+export { beforeUserCreate };
 
 /**
  * Lazily built and cached (not a top-level `await getDb()`): merely
@@ -110,6 +49,8 @@ async function buildAuth() {
       autoSignInAfterVerification: true,
       afterEmailVerification: async (user) => {
         await sendWelcomeEmail(user.email).catch(() => undefined);
+        // Two-sided reward, once the referee has proven their email.
+        await grantReferralRewardOnVerification(user.id);
       },
     },
     onAPIError: { errorURL: "/auth/error" },
@@ -132,6 +73,13 @@ async function buildAuth() {
           after: async (user) => {
             if (user.emailVerified) {
               await sendWelcomeEmail(user.email).catch(() => undefined);
+            }
+            // Record the pending referral (best-effort; never blocks signup).
+            await recordReferralFromCookie(user.id, user.email);
+            // OAuth signups can arrive already-verified and so never reach
+            // afterEmailVerification — fire their reward here instead.
+            if (user.emailVerified) {
+              await grantReferralRewardOnVerification(user.id);
             }
           },
         },

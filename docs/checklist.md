@@ -278,3 +278,41 @@ declined (BRD §5.4).
 - [ ] Mail-merge / bulk personalized outreach + public API + Zapier app — extends the existing outbound webhooks (§16)
 - [ ] Two-way native phone address-book sync — extends the current one-way expo-contacts import (§12)
 - [ ] Voice dictation self-correction ("schedule at 3, no make it 4") — semantic LLM edits + a deterministic number/time pass; **deferred pending a dedicated GPU host** for the correction model. The in-browser correction LLM is CPU-bound (~48 s/edit) on consumer GPUs, too slow to be "then and there". Prototyped in the browser-voice R&D (`llm-experiments` repo, `feat/voice-browser-jarvis`); real-time in-browser STT (Moonshine, WebGPU) is proven there and is the intended `whisper-base` replacement that ports independently — only the correction layer is parked. (BRD §5.4)
+
+## 21. Viral growth loops (2026-07-24)
+
+Three growth features built together on `feat/network-wrapped-viral`. All are
+typecheck/lint/build-clean across every workspace and the EE reward logic is
+unit-tested; **not yet manually click-tested in a browser or pushed** — same
+`[x]` bar as §19, so they stay unchecked until that happens. The public graph
+sandbox is web-only by design (a marketing surface); Wrapped + referral ship on
+web and mobile per the parity rule.
+
+- [ ] **Network Wrapped** — a contact-free, proud-to-post share card computed
+  deterministically from the user's own graph (no LLM, zero metered cost, Rule
+  5). Scope-selectable: per event, or per week/month/quarter/year/all-time
+  ("47 people this month", "12 at an event"). Server-rendered `next/og` card in
+  three formats (1200×630 unfurl / 1080×1080 square / 1080×1920 story), with
+  HMAC-signed params so cards can't be forged; public `/wrapped/[token]` unfurl
+  page; authed `/app/wrapped` scope-picker + share modal (download / copy /
+  native-share). Stats repo `lib/repo/wrapped` runs ONE aggregate query (no
+  `getDb()` fan-out). Privacy: the card carries counts + cluster CATEGORY only;
+  third-party names (top company, most-connected person) are reveal-gated in-app
+  and never enter the token/URL/image. `/api/wrapped` (x-api-key) + mobile
+  `wrapped` screen (RN `Share`).
+- [ ] **Public interactive graph sandbox** (landing, web-only) — a STATIC,
+  anonymized network the visitor drags/zooms/hovers, reusing the `/app` sigma
+  renderer verbatim (`useRenderer`/reducers/theme/camera) with positions baked
+  offline. Loads ONLY on demand: the landing ships a light teaser + CTA; the
+  sigma chunk + `graph-core.json` (~3.9k nodes, ~134 KB gz) fetch on click, and
+  `graph-full.json` (21k nodes, ~820 KB gz) only on "Explode to full network".
+  Baked by `scripts/export-public-graph.mjs` from the deterministic seed
+  generator (synthetic names, no PII, no DB, no network).
+- [ ] **Two-sided referral** (hosted/EE) — a free month of Pro for both sides.
+  `/r/<code>` sets an httpOnly cookie; a valid code admits the referee past the
+  invite allowlist; the reward fires on email-verify. Stripe-safe: a live-Stripe
+  advocate gets a 100%-off-1-month coupon (`STRIPE_REFERRAL_COUPON_ID`), free
+  users get an additive comp Pro month (null-preserving). Anti-abuse: self-ref +
+  duplicate + per-referrer cap. `packages/ee/src/referrals` (control-plane
+  tables, no RLS); web `/app/referral` + `/api/referral`; mobile advocate
+  screen. Redemption is web-signup only.

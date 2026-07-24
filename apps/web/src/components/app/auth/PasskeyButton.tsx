@@ -23,7 +23,7 @@ export function PasskeyButton() {
       // "No passkey exists" and "user dismissed the prompt" are indistinguishable
       // at the WebAuthn layer (both come back cancelled). Neither is a failure —
       // guide the user to another method instead of a red error.
-      if (signInError.code && (PASSKEY_CANCELLED_CODES as readonly string[]).includes(signInError.code)) {
+      if ("code" in signInError && (PASSKEY_CANCELLED_CODES as readonly string[]).includes(signInError.code)) {
         setNotice("No passkey found on this device. Use your email or a sign-in link instead.");
         return;
       }

@@ -135,6 +135,7 @@ export function EntityCombobox({
             type="button"
             onClick={() => {
               onCreate?.(trimmed);
+              setOpen(false);
               reset();
             }}
             className="flex min-h-11 w-full items-center gap-2 px-3 py-2 text-left text-sm text-amber hover:bg-wash/[0.05]"

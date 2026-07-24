@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db/request-scope";
 import { aiActions } from "@/lib/db/schema";
 import { getBillingGate } from "@/lib/hosted/gate";
 import { enforceRateLimit, RateLimitError } from "@/lib/ratelimit";
+import { AI_MONTHLY_CAP_OVERRIDE_KEY, getSetting } from "@/lib/repo/settings";
 import { FREE_TIER_AI_ACTIONS_PER_MONTH } from "@/utils/constants/app";
 import type { LLMUsage } from "@dhaga/core";
 
@@ -17,6 +18,28 @@ export function monthlyAiCap(): number {
   return Number.isFinite(fromEnv) && fromEnv > 0
     ? fromEnv
     : FREE_TIER_AI_ACTIONS_PER_MONTH;
+}
+
+/**
+ * A per-user monthly AI-action allowance ("credits") an admin can grant, stored
+ * on the acting user's `ai_monthly_cap_override` setting. Returns a positive
+ * integer or null (absent / blank / 0 / negative / non-integer → no override).
+ */
+async function resolveAiCapOverride(): Promise<number | null> {
+  const raw = await getSetting(AI_MONTHLY_CAP_OVERRIDE_KEY);
+  if (raw === null) return null;
+  const n = Number(raw);
+  return Number.isInteger(n) && n > 0 ? n : null;
+}
+
+/**
+ * The cap actually enforced for the acting user: an admin-granted per-user
+ * override if set, otherwise the instance default (`DHAGA_AI_MONTHLY_CAP` env,
+ * else the free-tier constant of 0). Reads the acting user's own setting, so
+ * under EE it is correctly per-user (RLS); in core it is the single global row.
+ */
+export async function effectiveMonthlyAiCap(): Promise<number> {
+  return (await resolveAiCapOverride()) ?? monthlyAiCap();
 }
 
 /**
@@ -76,7 +99,7 @@ export async function assertAiBudget(userId: string): Promise<void> {
     throw error;
   }
   if (await (await getBillingGate()).hasUnlimitedAi(userId)) return;
-  const cap = monthlyAiCap();
+  const cap = await effectiveMonthlyAiCap();
   if ((await aiActionsUsedThisMonth()) >= cap) {
     throw new AiBudgetError(`Monthly AI action cap reached (${cap}).`);
   }

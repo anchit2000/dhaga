@@ -49,11 +49,13 @@ export async function createFollowUpAction(
   await requireUserId();
   const contactId = String(formData.get("contactId") ?? "");
   const action = String(formData.get("action") ?? "").trim();
-  const dueHint = String(formData.get("dueHint") ?? "").trim() || null;
+  const dueRaw = String(formData.get("dueDate") ?? "").trim();
+  const parsedDue = dueRaw ? new Date(dueRaw) : null;
+  const dueDate = parsedDue && !Number.isNaN(parsedDue.getTime()) ? parsedDue : null;
   if (!contactId) return { error: "Missing contact." };
   if (!action) return { error: "Describe the follow-up first." };
   if (!(await getContact(contactId))) return { error: "Contact not found." };
-  await addFollowUp(contactId, action, dueHint);
+  await addFollowUp(contactId, action, dueDate);
   revalidatePath(`/app/people/${contactId}`);
   revalidatePath("/app");
   return { notice: "Follow-up added." };

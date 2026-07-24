@@ -177,6 +177,29 @@ one-file change. Pacer also covers throttle / rate-limit / queue for future UI
 needs (e.g. throttling the graph search input); add those behind the same
 `@/lib/data` adapters rather than importing Pacer directly in components.
 
+### 11. Date picker — `react-day-picker` (adopted 2026-07-24)
+
+The follow-up "when" field and the admin subscription-expiry field both need a
+calendar date picker. Base UI (the repo's primitive stack) ships a `Popover`
+but **no** calendar/date-picker primitive, so a calendar library is required —
+don't hand-roll month grids, keyboard nav, and date math.
+
+- **`react-day-picker` v10** is headless/className-driven and React 19
+  compatible. It supplies only the calendar; we anchor it in our own
+  `components/ui/popover.tsx` (a thin wrapper over **Base UI's** `Popover`,
+  `@base-ui/react/popover`, styled like `combobox.tsx`/`dropdown-menu.tsx`) so
+  the floating panel keeps the same portal/positioning/keyboard/a11y as the rest
+  of the UI — the same "headless lib themed to Base UI, no second primitive
+  stack" reasoning as the Combobox (§8, Rule 7/Rule 11).
+- Themed to the amber/seam/panel palette via the `classNames` prop **only** — no
+  `react-day-picker/style.css` global import — so `components/ui/date-picker.tsx`
+  stays self-contained and matches the repo's token approach. Its transitive
+  `date-fns` comes along; that's the one new dependency's cost.
+- `DatePicker` supports plain server-action `<form>`s: when given a `name` it
+  also emits a hidden ISO `<input>`, so the admin expiry form submits the chosen
+  date without client wiring. **Used by:** follow-up due date + admin
+  subscription expiry.
+
 ---
 
 ## Keep hand-rolled (deliberate)
@@ -200,5 +223,6 @@ needs (e.g. throttling the graph search input); add those behind the same
 - [TanStack Form comparison](https://tanstack.com/form/latest/docs/comparison) · [RHF vs TanStack Form (LogRocket)](https://blog.logrocket.com/tanstack-form-vs-react-hook-form/)
 - [FlashList](https://docs.expo.dev/versions/latest/sdk/flash-list/)
 - [react-easy-crop](https://www.npmjs.com/package/react-easy-crop)
+- [react-day-picker](https://daypicker.dev/) · [Base UI Popover](https://base-ui.com/react/components/popover)
 - [shadcn Command / cmdk](https://ui.shadcn.com/docs/components/radix/command)
 - [rate-limiter-flexible](https://github.com/animir/node-rate-limiter-flexible) · [@upstash/ratelimit](https://github.com/upstash/ratelimit-js) · [@vercel/firewall rate limiting](https://vercel.com/docs/vercel-firewall/vercel-waf/rate-limiting) · [TanStack Pacer (client-side)](https://tanstack.com/pacer/latest/docs/guides/rate-limiting)

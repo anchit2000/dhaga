@@ -1,10 +1,24 @@
 import { getSubscriptionForUser } from "./repo";
 import { createCheckoutUrl, createPortalUrl } from "./checkout";
+import type { SubscriptionRow } from "../db/schema";
+
+/**
+ * Pure entitlement predicate: a subscription grants unlimited AI only while it
+ * is active, on a paid plan, and not past its expiry. `currentPeriodEnd` may be
+ * set by Stripe (the paid renewal boundary) or by an admin (a manual comp that
+ * should lapse) — either way, once it's in the past the entitlement is gone.
+ * Split out from the DB read (and taking `now`) so the expiry logic is unit-
+ * testable without a database.
+ */
+export function isUnlimitedAiSub(sub: SubscriptionRow | null, now: Date = new Date()): boolean {
+  if (!sub) return false;
+  if (sub.status !== "active") return false;
+  if (sub.plan !== "pro" && sub.plan !== "lifetime") return false;
+  return sub.currentPeriodEnd === null || sub.currentPeriodEnd > now;
+}
 
 export async function hasUnlimitedAi(userId: string): Promise<boolean> {
-  const sub = await getSubscriptionForUser(userId);
-  if (!sub) return false;
-  return sub.status === "active" && (sub.plan === "pro" || sub.plan === "lifetime");
+  return isUnlimitedAiSub(await getSubscriptionForUser(userId));
 }
 
 export async function getPlanSummary(userId: string) {

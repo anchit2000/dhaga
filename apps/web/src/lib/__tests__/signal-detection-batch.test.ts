@@ -176,7 +176,15 @@ describe("nightly signal detection — Batch API two-phase job", () => {
     submitError = false;
     submittedItems = null;
     await runSignalDetection();
-    expect(submittedItems?.some((item) => item.id === contactId)).toBe(true);
+    // `submittedItems = null` above narrows the type to `null`; the reassignment
+    // happens inside the mocked batch client, which TS can't see — restore the
+    // declared type at the read site so `.some` type-checks (the null reset must
+    // stay: it proves the next run genuinely re-submits the still-due contact).
+    expect(
+      (submittedItems as BatchExtractItem<unknown>[] | null)?.some(
+        (item) => item.id === contactId,
+      ),
+    ).toBe(true);
 
     await setPendingSignalBatchId(null); // leave the shared batch pointer clean
   });

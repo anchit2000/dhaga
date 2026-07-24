@@ -27,6 +27,7 @@ export {
   type EdgeSuggestionRow,
   type FollowUpRow,
 } from "./notes";
+export { confirmations, type ConfirmationRow } from "./confirmations";
 export { embeddings, type EmbeddingRow } from "./embeddings";
 export { extractionJobs, type ExtractionJobRow } from "./jobs";
 export { signals, type SignalRow } from "./signals";

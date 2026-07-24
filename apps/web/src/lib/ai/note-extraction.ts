@@ -10,6 +10,7 @@ import {
   type NoteExtraction,
 } from "@dhaga/core";
 import { withUserDb } from "@/lib/db/request-scope";
+import { createEnrichmentMatchConfirmation } from "@/lib/repo/confirmations";
 import { applyExtraction } from "@/lib/repo/graph";
 import { listNodeTypes } from "@/lib/repo/node-types";
 import { AiBudgetError, assertAiBudget, recordAiAction } from "./metering";
@@ -98,7 +99,23 @@ export async function extractAndApplyNote(
   try {
     await withUserDb(userId, async () => {
       await recordAiAction("note_extraction", model, usage);
-      await applyExtraction(contactId, noteId, extraction, { unverified: enrichment });
+      const { factIds } = await applyExtraction(contactId, noteId, extraction, {
+        unverified: enrichment,
+      });
+      // Enrichment writes facts unverified (kept as-is) AND raises one
+      // enrichment_match confirmation per fact — web findings can be the wrong
+      // person, so each stays badged until the user confirms or deletes it
+      // (dismiss deletes the fact). Note facts are trusted and never gated.
+      if (enrichment) {
+        for (const factId of factIds) {
+          await createEnrichmentMatchConfirmation({
+            factId,
+            contactId,
+            question: `Is this web-sourced detail about ${contactName} correct?`,
+            sourceNoteId: noteId,
+          });
+        }
+      }
     });
   } catch (error) {
     // Log server-side so a recurring graph-write failure is diagnosable —

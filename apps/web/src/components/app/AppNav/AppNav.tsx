@@ -14,9 +14,11 @@ import { ProfileMenu } from "./ProfileMenu";
 export function AppNav({
   isAdmin,
   initialSearchWeights,
+  confirmationsCount,
 }: {
   isAdmin: boolean;
   initialSearchWeights: SearchWeights;
+  confirmationsCount: number;
 }) {
   return (
     <header className="sticky top-0 z-40">
@@ -43,7 +45,7 @@ export function AppNav({
               <ThreadMark size={20} />
               dhaga
             </Link>
-            <NavLinks />
+            <NavLinks confirmationsCount={confirmationsCount} />
           </div>
 
           <div className="ml-auto flex shrink-0 items-center gap-1">

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "@/lib/auth/guard";
 import {
+  setConfirmationsDigestEnabled,
   setDailyDigestEnabled,
   setDailySuggestionCount,
   setMorningReminderEnabled,
@@ -47,6 +48,12 @@ export async function setSuggestionSettingsAction(formData: FormData): Promise<v
 export async function setDailyDigestEnabledAction(formData: FormData): Promise<void> {
   await requireUserId();
   await setDailyDigestEnabled(formData.get("enabled") === "on");
+  revalidatePath("/app/settings");
+}
+
+export async function setConfirmationsDigestEnabledAction(formData: FormData): Promise<void> {
+  await requireUserId();
+  await setConfirmationsDigestEnabled(formData.get("enabled") === "on");
   revalidatePath("/app/settings");
 }
 

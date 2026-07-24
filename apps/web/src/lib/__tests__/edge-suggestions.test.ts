@@ -5,10 +5,10 @@ import { createContact } from "@/lib/repo/contacts";
 import { addNote } from "@/lib/repo/notes";
 import { applyExtraction } from "@/lib/repo/graph";
 import {
-  confirmEdgeSuggestion,
-  dismissEdgeSuggestion,
-  listPendingEdgeSuggestions,
-} from "@/lib/repo/edge-suggestions";
+  dismissConfirmation,
+  listPendingConfirmations,
+  resolveConfirmation,
+} from "@/lib/repo/confirmations";
 import { listContactRelationships } from "@/lib/repo/relationships";
 
 function knows(objectName: string): NoteExtraction {
@@ -27,7 +27,7 @@ async function makeContact(name: string): Promise<string> {
 }
 
 describe("ambiguous person relationships defer to a confirmation", () => {
-  it("creates a pending suggestion (no edge) when the name matches two contacts", async () => {
+  it("creates a pending confirmation (no edge) when the name matches two contacts", async () => {
     const me = await makeContact("Meera Suggest");
     const ajayA = await makeContact("Ajay Kumar Suggest");
     const ajayB = await makeContact("Ajay Singh Suggest");
@@ -38,46 +38,54 @@ describe("ambiguous person relationships defer to a confirmation", () => {
     // edge is written until the user confirms which one.
     expect(await listContactRelationships(me)).toHaveLength(0);
 
-    const mine = (await listPendingEdgeSuggestions()).find((s) => s.srcContactId === me);
+    const mine = (await listPendingConfirmations()).find(
+      (c) => c.payload.type === "entity_link" && c.payload.apply.srcContactId === me,
+    );
     expect(mine).toBeTruthy();
-    expect(mine?.objectName).toBe("Ajay");
-    const candidateIds = mine?.candidates.map((c) => c.id) ?? [];
+    const payload = mine!.payload;
+    if (payload.type !== "entity_link") throw new Error("expected an entity_link confirmation");
+    expect(payload.apply.objectName).toBe("Ajay");
+    const candidateIds = payload.options.map((o) => o.id);
     expect(candidateIds).toContain(ajayA);
     expect(candidateIds).toContain(ajayB);
   });
 
-  it("confirming links the edge to the chosen contact and clears the suggestion", async () => {
+  it("confirming links the edge to the chosen contact and clears the confirmation", async () => {
     const me = await makeContact("Nina Confirm");
     await makeContact("Ajay Alpha Confirm");
     const ajayB = await makeContact("Ajay Beta Confirm");
     const note = await addNote(me, "text", "I know Ajay");
     await applyExtraction(me, note, knows("Ajay"));
-    const suggestion = (await listPendingEdgeSuggestions()).find((s) => s.srcContactId === me);
-    expect(suggestion).toBeTruthy();
+    const confirmation = (await listPendingConfirmations()).find(
+      (c) => c.payload.type === "entity_link" && c.payload.apply.srcContactId === me,
+    );
+    expect(confirmation).toBeTruthy();
 
-    await confirmEdgeSuggestion(suggestion!.id, { contactId: ajayB });
+    await resolveConfirmation(confirmation!.id, { target: { contactId: ajayB } });
 
     const rels = await listContactRelationships(me);
     expect(rels).toHaveLength(1);
     expect(rels[0].contactId).toBe(ajayB);
     expect(
-      (await listPendingEdgeSuggestions()).some((s) => s.id === suggestion!.id),
+      (await listPendingConfirmations()).some((c) => c.id === confirmation!.id),
     ).toBe(false);
   });
 
-  it("dismissing drops the suggestion without ever writing an edge", async () => {
+  it("dismissing drops the confirmation without ever writing an edge", async () => {
     const me = await makeContact("Omar Dismiss");
     await makeContact("Ajay Gamma Dismiss");
     await makeContact("Ajay Delta Dismiss");
     const note = await addNote(me, "text", "I know Ajay");
     await applyExtraction(me, note, knows("Ajay"));
-    const suggestion = (await listPendingEdgeSuggestions()).find((s) => s.srcContactId === me);
-    expect(suggestion).toBeTruthy();
+    const confirmation = (await listPendingConfirmations()).find(
+      (c) => c.payload.type === "entity_link" && c.payload.apply.srcContactId === me,
+    );
+    expect(confirmation).toBeTruthy();
 
-    await dismissEdgeSuggestion(suggestion!.id);
+    await dismissConfirmation(confirmation!.id);
     expect(await listContactRelationships(me)).toHaveLength(0);
     expect(
-      (await listPendingEdgeSuggestions()).some((s) => s.id === suggestion!.id),
+      (await listPendingConfirmations()).some((c) => c.id === confirmation!.id),
     ).toBe(false);
   });
 });

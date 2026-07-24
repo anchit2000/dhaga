@@ -1,15 +1,14 @@
 import Link from "next/link";
 import { dayLoad, findOpenSlots } from "@dhaga/core";
+import { ConfirmationsPreview } from "@/components/app/home/ConfirmationsPreview";
 import { HomeDashboard } from "@/components/app/home/HomeDashboard";
 import { HomeTile } from "@/components/app/home/HomeTile";
-import { RelationshipInbox } from "@/components/app/relationships/RelationshipInbox";
 import { SuggestionsPanel } from "@/components/app/import/SuggestionsPanel";
 import { Button } from "@/components/ui/button";
-import { getCachedNodeTypes } from "@/lib/cache/node-types";
 import { getFreeBusy, hasCalendarConnection } from "@/lib/repo/calendar";
+import { listPendingConfirmations } from "@/lib/repo/confirmations";
 import { listContacts } from "@/lib/repo/contacts";
 import { buildDailySuggestions } from "@/lib/repo/daily-suggestions";
-import { listPendingEdgeSuggestions } from "@/lib/repo/edge-suggestions";
 import { listEvents } from "@/lib/repo/events";
 import { listAllOpenFollowUps, listDueReachOuts } from "@/lib/repo/reminders";
 import { listNewSignals } from "@/lib/repo/signals";
@@ -31,7 +30,7 @@ const WEEK_MS = 7 * 86_400_000;
  * tile needs — so they resolve together. The serial getFreeBusy → buildDailySuggestions
  * dependency stays here as one unit; it is a genuine data dependency, not parallelizable.
  */
-export async function DashboardSection({ userId }: { userId: string }): Promise<ReactElement> {
+export async function DashboardSection(): Promise<ReactElement> {
   const [
     people,
     events,
@@ -42,8 +41,7 @@ export async function DashboardSection({ userId }: { userId: string }): Promise<
     suggestedClusters,
     calendarConnected,
     prefs,
-    pendingSuggestions,
-    nodeTypes,
+    pendingConfirmations,
   ] = await Promise.all([
     listContacts(undefined, undefined, HOME_PREVIEW_LIMIT),
     listEvents(HOME_PREVIEW_LIMIT),
@@ -54,8 +52,7 @@ export async function DashboardSection({ userId }: { userId: string }): Promise<
     getSuggestedClusters(),
     hasCalendarConnection(),
     getSchedulePrefs(),
-    listPendingEdgeSuggestions(),
-    getCachedNodeTypes(userId),
+    listPendingConfirmations(),
   ]);
 
   const now = new Date();
@@ -119,7 +116,7 @@ export async function DashboardSection({ userId }: { userId: string }): Promise<
         openFollowUps={openFollowUps}
         quietContacts={quietContacts}
         newSignals={newSignals}
-        inbox={<RelationshipInbox suggestions={pendingSuggestions} nodeTypes={nodeTypes.map(({ id, name, slug }) => ({ id, name, slug }))} />}
+        inbox={<ConfirmationsPreview confirmations={pendingConfirmations} />}
         groups={suggestedClusters.length > 0 ? (
           <HomeTile title="Suggested groups">
             <SuggestionsPanel clusters={suggestedClusters} />

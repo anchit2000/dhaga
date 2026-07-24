@@ -6,9 +6,10 @@ import { Loader2 } from "lucide-react";
 import { useNavigationFeedback } from "@/components/app/NavigationFeedback";
 import { cn } from "@/lib/utils";
 import { APP_NAV_LINKS } from "@/utils/constants/app";
+import { NavBadge } from "./NavBadge";
 import { isNavLinkActive, isNavLinkPending } from "./link-state";
 
-export function NavLinks() {
+export function NavLinks({ confirmationsCount }: { confirmationsCount: number }) {
   const pathname = usePathname();
   const { pendingHref } = useNavigationFeedback();
 
@@ -37,6 +38,9 @@ export function NavLinks() {
               <Icon className="size-3.5" />
             )}
             {link.label}
+            {link.href === "/app/confirmations" ? (
+              <NavBadge count={confirmationsCount} />
+            ) : null}
           </Link>
         );
       })}

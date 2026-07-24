@@ -3,7 +3,7 @@ import { createEntity, listEntities } from "@/lib/repo/entities";
 import { createNodeType } from "@/lib/repo/node-types";
 import { addNote } from "@/lib/repo/notes";
 import { applyExtraction } from "@/lib/repo/graph";
-import { listPendingEdgeSuggestions } from "@/lib/repo/edge-suggestions";
+import { listPendingConfirmations } from "@/lib/repo/confirmations";
 import { listContactRelationships } from "@/lib/repo/relationships";
 import { edgeReceipt, entityRel, makeContact } from "./helpers";
 
@@ -22,12 +22,15 @@ describe("entity relationships resolve like people, but never auto-create", () =
     // WHY: receipts invariant — every AI-derived edge keeps source_note_id so
     // deleting the note tombstones it.
     expect(await edgeReceipt(entityId)).toBe(noteId);
+    // Confident unique match links directly — it must never queue a confirmation.
     expect(
-      (await listPendingEdgeSuggestions()).filter((s) => s.srcContactId === me),
+      (await listPendingConfirmations()).filter(
+        (c) => c.payload.type === "entity_link" && c.payload.apply.srcContactId === me,
+      ),
     ).toHaveLength(0);
   });
 
-  it("defers to a suggestion (no edge) when the name matches more than one entity", async () => {
+  it("defers to a confirmation (no edge) when the name matches more than one entity", async () => {
     const typeId = await createNodeType({ name: "Club", color: "#a78bfa" });
     const clubA = await createEntity({ typeId, name: "Peakfit Club" });
     const clubB = await createEntity({ typeId, name: "Peakfit Society" });
@@ -38,14 +41,19 @@ describe("entity relationships resolve like people, but never auto-create", () =
     // WHY: with two "Peakfit"s, guessing risks linking the wrong place — no
     // edge until the user confirms which one.
     expect(await listContactRelationships(me)).toHaveLength(0);
-    const mine = (await listPendingEdgeSuggestions()).find((s) => s.srcContactId === me);
-    expect(mine?.objectType).toBe("entity");
-    expect(mine?.entityTypeHint).toBe("club");
-    const ids = mine?.candidates.map((c) => c.id) ?? [];
+    const mine = (await listPendingConfirmations()).find(
+      (c) => c.payload.type === "entity_link" && c.payload.apply.srcContactId === me,
+    );
+    expect(mine).toBeTruthy();
+    const payload = mine!.payload;
+    if (payload.type !== "entity_link") throw new Error("expected an entity_link confirmation");
+    expect(payload.apply.objectType).toBe("entity");
+    expect(payload.apply.entityTypeHint).toBe("club");
+    const ids = payload.options.map((o) => o.id);
     expect(ids).toContain(clubA);
     expect(ids).toContain(clubB);
-    // Entity candidates surface their node type where person rows show a title.
-    expect(mine?.candidates[0].title).toBe("Club");
+    // Entity options surface their node type as the sublabel where person rows show a title.
+    expect(payload.options[0].sublabel).toBe("Club");
   });
 
   it("proposes creation (zero candidates) when nothing matches — never auto-creates", async () => {
@@ -57,9 +65,14 @@ describe("entity relationships resolve like people, but never auto-create", () =
     // so an unknown name must become a proposal, not a silent new row.
     expect(await listContactRelationships(me)).toHaveLength(0);
     expect((await listEntities()).some((e) => e.name === "Quietwood Dojo")).toBe(false);
-    const mine = (await listPendingEdgeSuggestions()).find((s) => s.srcContactId === me);
-    expect(mine?.objectType).toBe("entity");
-    expect(mine?.candidates).toHaveLength(0);
-    expect(mine?.entityTypeHint).toBe("dojo");
+    const mine = (await listPendingConfirmations()).find(
+      (c) => c.payload.type === "entity_link" && c.payload.apply.srcContactId === me,
+    );
+    expect(mine).toBeTruthy();
+    const payload = mine!.payload;
+    if (payload.type !== "entity_link") throw new Error("expected an entity_link confirmation");
+    expect(payload.apply.objectType).toBe("entity");
+    expect(payload.options).toHaveLength(0);
+    expect(payload.apply.entityTypeHint).toBe("dojo");
   });
 });

@@ -11,8 +11,8 @@ import type { NoteExtraction } from "@dhaga/core";
  * Write one note's extraction into the graph. Every row carries
  * source_note_id — deleting the note tombstones all of this.
  * Relationship objects resolve per kind in ./relationship-rows: unambiguous
- * ones become edges now, ambiguous (or unknown-entity) ones become
- * edge_suggestions for the user to confirm.
+ * ones become edges now, ambiguous (or unknown-entity) ones become pending
+ * confirmations for the user to resolve (no new edge_suggestions rows).
  *
  * Each entity type is written with one multi-row `db.insert(...).values([...])`
  * instead of N single-row inserts in a loop: a single INSERT statement is
@@ -31,7 +31,7 @@ export async function applyExtraction(
   noteId: string,
   extraction: NoteExtraction,
   opts: { unverified?: boolean } = {},
-): Promise<void> {
+): Promise<{ factIds: string[] }> {
   const db = await getDb();
   const unverified = opts.unverified ?? false;
 
@@ -98,4 +98,8 @@ export async function applyExtraction(
     const merged = [...new Set([...(row?.tags ?? []), ...extraction.tags])];
     await db.update(contacts).set({ tags: merged }).where(eq(contacts.id, contactId));
   }
+
+  // Fact ids in extraction.facts order, so enrichment can raise one
+  // enrichment_match confirmation per unverified fact it just wrote.
+  return { factIds: factRows.map((row) => row.id) };
 }

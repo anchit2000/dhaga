@@ -6,3 +6,4 @@ export const adminGate = {
 
 export * from "./repo";
 export * from "./usage";
+export * from "./subscription-admin";

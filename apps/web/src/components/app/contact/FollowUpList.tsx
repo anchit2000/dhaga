@@ -1,6 +1,7 @@
 import { Check } from "lucide-react";
 import { completeFollowUpAction } from "@/lib/actions/notes";
 import type { FollowUpRow } from "@/lib/db/schema";
+import { formatDate } from "@/utils/format-date";
 import { AddFollowUpForm } from "./AddFollowUpForm";
 
 export function FollowUpList({
@@ -34,7 +35,9 @@ export function FollowUpList({
               </form>
               <p className="min-w-0 flex-1 text-sm text-paper">
                 {followUp.action}
-                {followUp.dueHint ? (
+                {followUp.dueDate ? (
+                  <span className="text-fog"> — {formatDate(followUp.dueDate)}</span>
+                ) : followUp.dueHint ? (
                   <span className="text-fog"> — {followUp.dueHint}</span>
                 ) : null}
               </p>

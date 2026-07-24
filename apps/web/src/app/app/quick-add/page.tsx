@@ -1,6 +1,6 @@
 import { requireUserIdForPage } from "@/lib/auth/guard";
 import { getCachedAppConfig } from "@/lib/cache/app-navigation";
-import { aiActionsUsedThisMonth, aiUsageLabel, monthlyAiCap } from "@/lib/ai/metering";
+import { aiActionsUsedThisMonth, aiUsageLabel, effectiveMonthlyAiCap } from "@/lib/ai/metering";
 import { getBillingGate } from "@/lib/hosted/gate";
 import { listEvents } from "@/lib/repo/events";
 import { activeEventId } from "@/lib/active-event";
@@ -18,7 +18,9 @@ export default async function QuickAddPage() {
     getCachedAppConfig(userId),
   ]);
   const storeCardPhotos = appConfig.storeCardPhotos;
-  const usageLabel = hasLLM() ? aiUsageLabel({ used, cap: monthlyAiCap(), unlimited }) : null;
+  const usageLabel = hasLLM()
+    ? aiUsageLabel({ used, cap: await effectiveMonthlyAiCap(), unlimited })
+    : null;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">

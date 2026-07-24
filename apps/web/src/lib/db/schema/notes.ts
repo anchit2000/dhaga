@@ -77,7 +77,10 @@ export const followUps = pgTable("follow_ups", {
     .notNull()
     .references(() => contacts.id),
   action: text("action").notNull(),
+  // Free-text timing hint the LLM fills with prose ("next quarter"). Manual
+  // entries use dueDate instead — a machine date from the date picker.
   dueHint: text("due_hint"),
+  dueDate: timestamp("due_date", { withTimezone: true }),
   status: text("status").notNull(), // "open" | "done" | "dismissed"
   sourceNoteId: text("source_note_id").references(() => notes.id),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

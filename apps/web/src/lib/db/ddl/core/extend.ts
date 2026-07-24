@@ -9,10 +9,15 @@ CREATE TABLE IF NOT EXISTS follow_ups (
   contact_id text NOT NULL REFERENCES contacts(id),
   action text NOT NULL,
   due_hint text,
+  due_date timestamptz,
   status text NOT NULL DEFAULT 'open',
   source_note_id text REFERENCES notes(id),
   created_at timestamptz NOT NULL DEFAULT now()
 );
+
+-- Additive for pre-existing tables: manual follow-ups store a machine date here
+-- (the date picker); due_hint stays for the LLM's free-text timing prose.
+ALTER TABLE follow_ups ADD COLUMN IF NOT EXISTS due_date timestamptz;
 
 -- The person page lists only a contact's OPEN follow-ups, newest-first. Partial
 -- on status keeps the index to the handful of live rows per contact.

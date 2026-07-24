@@ -25,17 +25,18 @@ export async function addFact(
   return id;
 }
 
-/** Insert an open, user-typed follow-up. dueHint is a free-text timing hint —
- *  the same column extraction fills with prose like "next quarter". */
+/** Insert an open, user-typed follow-up. The manual path stores a machine
+ *  dueDate from the date picker (dueHint stays null — that column is the LLM's
+ *  free-text timing prose, e.g. "next quarter"). */
 export async function addFollowUp(
   contactId: string,
   action: string,
-  dueHint: string | null,
+  dueDate: Date | null,
 ): Promise<string> {
   const db = await getDb();
   const id = randomUUID();
   await db
     .insert(followUps)
-    .values({ id, contactId, action: action.trim(), dueHint, status: "open" });
+    .values({ id, contactId, action: action.trim(), dueDate, status: "open" });
   return id;
 }

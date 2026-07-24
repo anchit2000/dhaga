@@ -117,6 +117,26 @@ that key itself and renders nothing — not a broken "Upgrade" button, no
 section at all — while the admin panel and early-access gate keep working
 normally.
 
+## Referral rewards (hosted/EE only)
+
+The two-sided referral program (a free month of Pro for both advocate and
+referee) lives entirely in `packages/ee` and only functions in hosted mode — it
+extends a user's `subscriptions` row, which the core has no concept of, and a
+self-host is single-user anyway (there's nobody to refer). On a self-host the
+referral surfaces are simply absent: `/api/referral` returns
+`{ referral: null }` and `/app/referral` shows an "unavailable" note — the same
+permissive-fallback pattern as billing (`getReferralGate()` in
+`apps/web/src/lib/hosted/gate`).
+
+In hosted mode the reward is delivered Stripe-safely. An advocate who already
+has a live Stripe subscription is given a Stripe coupon — set
+`STRIPE_REFERRAL_COUPON_ID` to a `duration: once`, 100%-off coupon you create in
+the Stripe dashboard — while free/comp users get an additive comp Pro month
+(their `current_period_end` is extended, never downgrading a lifetime grant). If
+`STRIPE_REFERRAL_COUPON_ID` is unset when a paying advocate qualifies, the grant
+fails loud and the referral stays `pending` for retry rather than silently
+half-rewarding.
+
 ## Creating the first admin user
 
 There's a deliberate chicken-and-egg problem here: the admin panel can only

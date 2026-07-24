@@ -167,6 +167,8 @@ needs (e.g. throttling the graph search input); add those behind the same
 | Surface | Why it stays |
 |---|---|
 | CSV + vCard import parsers (`lib/import/`) | Deliberately hand-rolled and dependency-free so the raw file is parsed 100% client-side (local-privacy) — no `.vcf`/CSV npm parser is added even if one looks tidier. |
+| Contacts OAuth connectors (`lib/import/providers/`) | Direct `fetch` to People API / Graph behind a `ContactsProvider` gateway (mirrors the LLMClient/SearchClient pattern) — no `googleapis`/`@microsoft/graph` SDK; the two REST calls we make aren't worth the bundle/transitive surface. Adding a provider = one file + one factory case. |
+| Mobile device contacts (`expo-contacts`, SDK 57 **legacy** entry) | Adopted Expo module (like `expo-camera`). Use `expo-contacts/legacy` — SDK 57's new default export is an async class-based API; the legacy plain-object `getContactsAsync` is what the pure device→ContactProfile mapper needs. |
 | Graph stack (`sigma`, `graphology`, layout workers) | Already library-based; the custom perf work is product moat. |
 | `use-graph-data` SWR/ETag/IDB boot | Coupled to layout + perf beacons; revisit only with §5. |
 | Landing decor (`Particles`, `GlassSurface`, `DecryptedText`, …) | Visual identity, no state logic worth outsourcing. |

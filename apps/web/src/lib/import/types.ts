@@ -1,6 +1,6 @@
 import type { ContactProfile } from "@dhaga/core";
 
-export type ImportFormat = "google" | "linkedin" | "vcard";
+export type ImportFormat = "google" | "linkedin" | "vcard" | "microsoft" | "device";
 
 export interface ImportCandidate {
   contact: ContactProfile;

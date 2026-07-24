@@ -30,6 +30,12 @@ export async function importContacts(
   format: ImportFormat,
 ): Promise<ImportSummary> {
   const db = await getDb();
+  // Dedup preload: one scan of the graph per call. Large connector/vCard
+  // imports arrive as multiple batches (BATCH_SIZE), so this runs once per
+  // batch — acceptable at current scale (only the four needed columns are
+  // selected). If contact counts grow large enough that repeated full scans
+  // hurt, hoist this into a per-import in-memory index or add a covering
+  // index; a streaming rewrite is out of scope here.
   const existing = await db
     .select({
       name: contacts.name,

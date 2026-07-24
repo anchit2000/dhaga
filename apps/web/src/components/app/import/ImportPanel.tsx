@@ -1,36 +1,39 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Loader2, Upload } from "lucide-react";
-import { primaryPosition } from "@dhaga/core";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { isVcard, parseContactsCsv, parseContactsVcard } from "@/lib/import";
 import { importCsvBatchAction } from "@/lib/actions/import";
-import { ReviewTable } from "./ReviewTable";
-import { ImportInstructions } from "./ImportInstructions";
+import { ImportDropzone } from "./ImportDropzone";
+import { ImportReview } from "./ImportReview";
 import type { ImportCandidate, ImportFormat } from "@/lib/import";
 
-const BATCH_SIZE = 50;
-const FORMAT_LABELS: Record<ImportFormat, string> = {
-  google: "Google Contacts",
-  linkedin: "LinkedIn Connections",
-  vcard: "vCard (Apple / Android / iCloud)",
-};
+const BATCH_SIZE = 200;
+const LARGE_FILE_BYTES = 40 * 1024 * 1024;
+const LARGE_COUNT = 20_000;
 
 export function ImportPanel() {
   const router = useRouter();
-  const fileRef = useRef<HTMLInputElement>(null);
   const [candidates, setCandidates] = useState<ImportCandidate[]>([]);
   const [format, setFormat] = useState<ImportFormat>("google");
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState(0);
 
+  function applyCandidates(next: ImportCandidate[], nextFormat: ImportFormat): void {
+    setCandidates(next);
+    setFormat(nextFormat);
+    setSelected(new Set(next.map((_, index) => index)));
+  }
+
   async function handleFile(file: File | undefined): Promise<void> {
     if (!file) return;
+    if (file.size > LARGE_FILE_BYTES) {
+      toast.warning(
+        "This file is very large — import may be slow; consider splitting it into smaller .vcf files.",
+      );
+    }
     const text = await file.text();
     const result =
       file.name.toLowerCase().endsWith(".vcf") || isVcard(text)
@@ -44,15 +47,25 @@ export function ImportPanel() {
       toast.error("No importable rows found in that file.");
       return;
     }
-    setCandidates(result.candidates);
-    setFormat(result.format);
-    setSelected(new Set(result.candidates.map((_, index) => index)));
+    if (result.candidates.length > LARGE_COUNT) {
+      toast.info(
+        `Parsed ${result.candidates.length.toLocaleString()} contacts — a large import may take a while.`,
+      );
+    }
+    applyCandidates(result.candidates, result.format);
   }
 
   function selectWhere(predicate: (candidate: ImportCandidate) => boolean): void {
     setSelected(
       new Set(candidates.flatMap((candidate, index) => (predicate(candidate) ? [index] : []))),
     );
+  }
+
+  function toggle(index: number): void {
+    const next = new Set(selected);
+    if (next.has(index)) next.delete(index);
+    else next.add(index);
+    setSelected(next);
   }
 
   async function runImport(): Promise<void> {
@@ -85,75 +98,22 @@ export function ImportPanel() {
 
   if (candidates.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-seam bg-panel p-8 text-center">
-        <Upload className="mx-auto size-6 text-ember" />
-        <p className="mt-3 text-sm text-paper">
-          Apple, Android, or iCloud contacts (.vcf) — or a Google / LinkedIn CSV
-        </p>
-        <p className="mx-auto mt-1 max-w-md text-xs text-fog">
-          Parsed in your browser — only the rows you select are uploaded. Every
-          imported field keeps a receipt note.
-        </p>
-        <Button className="mt-4" size="sm" onClick={() => fileRef.current?.click()}>
-          Choose file
-        </Button>
-        <input
-          ref={fileRef}
-          type="file"
-          accept=".csv,.vcf,text/csv,text/vcard,text/x-vcard"
-          className="hidden"
-          onChange={(event) => void handleFile(event.target.files?.[0])}
-        />
-        <ImportInstructions />
-      </div>
+      <ImportDropzone onFile={(file) => void handleFile(file)} onCandidates={applyCandidates} />
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <Badge variant="outline">{FORMAT_LABELS[format]}</Badge>
-        <span className="text-xs text-fog">
-          {selected.size} of {candidates.length} selected
-        </span>
-        <span className="flex flex-wrap gap-1.5">
-          <Button variant="outline" size="sm" onClick={() => selectWhere(() => true)}>
-            All
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setSelected(new Set())}>
-            None
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => selectWhere((c) => !!primaryPosition(c.contact.positions)?.company)}>
-            With company
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => selectWhere((c) => c.contact.emails.length > 0)}>
-            With email
-          </Button>
-        </span>
-      </div>
-
-      <ReviewTable
-        candidates={candidates}
-        selected={selected}
-        onToggle={(index) => {
-          const next = new Set(selected);
-          if (next.has(index)) next.delete(index);
-          else next.add(index);
-          setSelected(next);
-        }}
-      />
-
-      <div className="flex items-center gap-3">
-        <Button disabled={importing || selected.size === 0} onClick={() => void runImport()}>
-          {importing ? <Loader2 className="size-4 animate-spin" /> : null}
-          {importing
-            ? `Importing ${progress}/${selected.size}…`
-            : `Import ${selected.size} selected`}
-        </Button>
-        <Button variant="outline" disabled={importing} onClick={() => setCandidates([])}>
-          Cancel
-        </Button>
-      </div>
-    </div>
+    <ImportReview
+      candidates={candidates}
+      format={format}
+      selected={selected}
+      importing={importing}
+      progress={progress}
+      onSelectWhere={selectWhere}
+      onClear={() => setSelected(new Set())}
+      onToggle={toggle}
+      onImport={() => void runImport()}
+      onCancel={() => setCandidates([])}
+    />
   );
 }

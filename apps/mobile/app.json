@@ -54,6 +54,12 @@
           "speechRecognitionPermission": "Dhaga uses on-device speech recognition to turn what you say into text. Nothing is sent to a server."
         }
       ],
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "Dhaga reads your device contacts so you can import people you already know."
+        }
+      ],
       "expo-secure-store"
     ],
     "experiments": {

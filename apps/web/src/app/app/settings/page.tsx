@@ -7,6 +7,7 @@ import {
   BillingSection,
   CalendarSection,
   CardPhotoSection,
+  ProfileSection,
   SecuritySection,
   SuggestionsSection,
   VoiceInputSection,
@@ -31,6 +32,9 @@ export default async function SettingsPage({
           Everything here is about what Dhaga keeps — and only for you.
         </p>
       </div>
+      <Suspense fallback={<ListSkeleton rows={2} />}>
+        <ProfileSection />
+      </Suspense>
       <Suspense fallback={<ListSkeleton rows={2} />}>
         <BillingSection />
       </Suspense>

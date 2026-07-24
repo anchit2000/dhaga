@@ -12,9 +12,46 @@ const PLAN_LABEL: Record<PlanSummary["plan"], string> = {
   lifetime: "Lifetime",
 };
 
+/** Monthly AI-action allowance for the acting user, as counted by the metering
+ *  layer (used vs the effective cap, or unlimited on a paid plan). Absent when
+ *  the instance has no LLM configured, so no credits line renders. */
+export interface AiUsage {
+  used: number;
+  cap: number;
+  unlimited: boolean;
+}
+
+/** Credits row: foregrounds how many AI actions are left this month, mirroring
+ *  how metering.ts counts them (used vs cap, unlimited on a paid plan). */
+function AiCreditsRow({ used, cap, unlimited }: AiUsage) {
+  const remaining = Math.max(0, cap - used);
+  return (
+    <div className="border-t border-seam pt-4">
+      <p className="text-sm font-medium text-paper">AI credits</p>
+      {unlimited ? (
+        <p className="mt-1 text-sm text-fog">
+          <span className="text-paper">Unlimited</span> — {used} AI actions used this month
+        </p>
+      ) : cap > 0 ? (
+        <p className="mt-1 text-sm text-fog">
+          <span className="text-amber">{remaining}</span> of {cap} AI actions left this month
+        </p>
+      ) : (
+        <p className="mt-1 text-sm text-fog">Cloud AI is included with a paid plan.</p>
+      )}
+    </div>
+  );
+}
+
 /** Only rendered when the settings page's PlanSummary fetch is non-null —
  *  i.e. only on a hosted instance with EE billing active. */
-export function BillingSetting({ summary }: { summary: PlanSummary }) {
+export function BillingSetting({
+  summary,
+  aiUsage,
+}: {
+  summary: PlanSummary;
+  aiUsage?: AiUsage | null;
+}) {
   return (
     <div className="space-y-4 rounded-2xl border border-seam bg-panel p-5 sm:p-6">
       <div className="flex items-center justify-between gap-4">
@@ -37,6 +74,7 @@ export function BillingSetting({ summary }: { summary: PlanSummary }) {
           </form>
         ) : null}
       </div>
+      {aiUsage ? <AiCreditsRow {...aiUsage} /> : null}
       {summary.plan === "free" ? (
         <div className="flex flex-wrap gap-2 border-t border-seam pt-4">
           <form action={createCheckoutSessionAction}>

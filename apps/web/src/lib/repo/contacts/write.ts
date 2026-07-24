@@ -41,17 +41,20 @@ export async function findOrCreateCompany(name: string): Promise<string> {
 
 type ResolvedPosition = { position: Position; companyId: string | null };
 
-/** Resolve each position's company to a companies row (dedup by name). Runs
- *  before the write transaction — findOrCreateCompany opens its own. */
+/** Resolve each position's company to a companies row. SEQUENTIAL, not
+ *  Promise.all: findOrCreateCompany opens its own connection+transaction, so a
+ *  concurrent fan-out checked out one tenant-pool connection per position and a
+ *  multi-job contact exhausted the max-3 pool (a server action gets no React
+ *  cache() getDb() dedupe). The name→id memo collapses repeat companies. */
 async function resolvePositions(list: Position[]): Promise<ResolvedPosition[]> {
-  return Promise.all(
-    list.map(async (position) => ({
-      position,
-      companyId: position.company?.trim()
-        ? await findOrCreateCompany(position.company)
-        : null,
-    })),
-  );
+  const byName = new Map<string, string | null>();
+  const out: ResolvedPosition[] = [];
+  for (const position of list) {
+    const name = position.company?.trim();
+    if (name && !byName.has(name)) byName.set(name, await findOrCreateCompany(name));
+    out.push({ position, companyId: name ? byName.get(name) ?? null : null });
+  }
+  return out;
 }
 
 /** Contact-row values from a profile. The primary position (first current,

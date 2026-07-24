@@ -42,6 +42,36 @@ hardening, and correctness items. Grouped by area.
   no lock; worst case a dismissed duplicate-name suggestion reappears once under
   a concurrent double-click. Low priority.
 
+## Performance / scaling
+
+- **Per-request fixed overhead (~1s floor, cross-region).** Every authenticated
+  request — any `/app/*` page or `/api/*` route, not just search — pays a fixed
+  setup cost before its query runs: Better Auth session validation (a DB lookup),
+  then `openTenantConnection` (`pool.connect()` — a fresh TCP+TLS+auth handshake
+  when no warm connection is idle, and `idleTimeoutMillis` is 10s so spaced
+  requests re-handshake — plus a `set_config('app.current_user_id', …)` query),
+  then the query, then `RESET ALL` on release. At ~150ms/round-trip to a
+  region-away Postgres (the US-function → Sydney-DB latency flagged in
+  [`SCALING.md`](SCALING.md)), those 2–4 serial setup round-trips plus any cold
+  handshake dominate small requests — the ~1s floor observed in the search
+  benchmarks (`apps/web/scripts/bench`). It is not search-specific and was left
+  untouched by the search round-trip work. Enhancement scope, app-wide: (1)
+  cache/skip redundant session validation on the hot path; (2) keep the tenant
+  pool warm (raise `idleTimeoutMillis`, or a keepalive) so steady traffic stops
+  paying the connect handshake — weigh against the max-15-backend Supabase cap;
+  (3) co-locate the Vercel function region with the DB region to cut the
+  round-trip base latency. Each is a broad infra change, not a per-endpoint fix.
+
+- **Concurrent `getDb()` fan-out (general pattern).** A request that fires 2+
+  `getDb()`-acquiring operations concurrently (`Promise.all` over functions that
+  each `await getDb()` internally) checks out one tenant-pool connection per
+  branch — concurrent `getDb()` calls do not dedupe to one connection inside a
+  Server Action — and exhausts the `max=3` tenant pool (HTTP 500). The two search
+  reads are fixed (one query on one connection); a repo-wide audit for other
+  fan-out sites rides with that change. Rule of thumb (now in
+  [`SCALING.md`](SCALING.md) lever 2): resolve `getDb()` **once** per request and
+  thread the handle; prefer one round-trip over a fan-out.
+
 ## Minor / enhancements
 
 - **Firecrawl retry/backoff.** `firecrawl-client.ts` has no retry on transient

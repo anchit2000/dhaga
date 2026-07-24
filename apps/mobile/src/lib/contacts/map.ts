@@ -1,6 +1,44 @@
-import type { Address as DeviceAddress, Contact, Date as DeviceDate } from "expo-contacts/legacy";
 import type { Address, ContactMethod, ImportantDate, Position } from "@dhaga/core";
 import type { ImportContactInput } from "@dhaga/core/src/api/import";
+
+/**
+ * The device-contact shape this mapper consumes. Defined locally — not imported
+ * from a native contacts package — so this module (and its web-run unit test)
+ * pulls in no React-Native-only dependency. Field names and optionality mirror
+ * the OS address-book contact, so a real device contact is assignable to
+ * `DeviceContact` without a cast.
+ */
+export interface DeviceDate {
+  day: number;
+  month: number;
+  year?: number;
+}
+
+export interface DeviceAddress {
+  label?: string;
+  street?: string;
+  city?: string;
+  region?: string;
+  postalCode?: string;
+  country?: string;
+  id?: string;
+}
+
+export interface DeviceContact {
+  contactType?: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  nickname?: string;
+  company?: string;
+  jobTitle?: string;
+  department?: string;
+  note?: string;
+  birthday?: DeviceDate;
+  emails?: { email?: string; label?: string; id?: string }[];
+  phoneNumbers?: { number?: string; label?: string; id?: string }[];
+  addresses?: DeviceAddress[];
+}
 
 /** Receipt notes are capped by the schema + /api/import at 2,000 chars. */
 const RECEIPT_MAX = 2000;
@@ -14,19 +52,19 @@ function capitalizeLabel(label: string | undefined): string | null {
 }
 
 /** Prefer the OS-formatted full name; fall back to first + last. */
-function resolveName(c: Contact): string {
+function resolveName(c: DeviceContact): string {
   const full = c.name?.trim();
   if (full) return full;
   return [c.firstName, c.lastName].filter(Boolean).join(" ").trim();
 }
 
-function toMethods(entries: { value: string | undefined; label: string }[]): ContactMethod[] {
+function toMethods(entries: { value: string | undefined; label: string | undefined }[]): ContactMethod[] {
   return entries
     .map((e) => ({ value: (e.value ?? "").trim(), label: capitalizeLabel(e.label), note: null }))
     .filter((m) => m.value.length > 0);
 }
 
-function toPositions(c: Contact): Position[] {
+function toPositions(c: DeviceContact): Position[] {
   const title = c.jobTitle?.trim() || null;
   const company = c.company?.trim() || null;
   const department = c.department?.trim() || null;
@@ -46,7 +84,7 @@ function toAddress(a: DeviceAddress): Address {
   };
 }
 
-/** expo-contacts months are 0-based (JS Date). ISO when the year is known. */
+/** Device dates use 0-based months (JS `Date`). ISO when the year is known. */
 function toBirthday(b: DeviceDate): ImportantDate {
   const mm = String(b.month + 1).padStart(2, "0");
   const dd = String(b.day).padStart(2, "0");
@@ -61,11 +99,11 @@ function buildReceipt(note: string | undefined): string {
 }
 
 /**
- * Map one expo-contacts device contact into an import candidate. Pure and
- * unit-testable (no expo runtime). Returns null when the contact has no name —
- * a nameless row is not a person worth importing.
+ * Map one device contact into an import candidate. Pure and unit-testable (no
+ * device runtime needed). Returns null when the contact has no name — a
+ * nameless row is not a person worth importing.
  */
-export function deviceContactToCandidate(c: Contact): ImportContactInput | null {
+export function deviceContactToCandidate(c: DeviceContact): ImportContactInput | null {
   const name = resolveName(c);
   if (!name) return null;
   return {

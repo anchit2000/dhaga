@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
-import type { Contact } from "expo-contacts/legacy";
 // The device→profile mapper lives in the mobile app but is a pure function with
-// no React Native runtime imports, so it is unit-tested here where vitest runs
-// (the mobile app has no test runner of its own yet).
+// no React Native runtime imports — it consumes its own DeviceContact contract —
+// so it is unit-tested here where vitest runs (the mobile app has no test runner
+// of its own yet).
 import { deviceContactToCandidate } from "../../../../mobile/src/lib/contacts/map";
+import type { DeviceContact } from "../../../../mobile/src/lib/contacts/map";
 
 /** A realistic device contact: labeled email/phone, employment, and a birthday. */
-const RICH_CONTACT: Contact = {
+const RICH_CONTACT: DeviceContact = {
   contactType: "person",
   name: "Ada Lovelace",
   firstName: "Ada",
@@ -65,7 +66,7 @@ describe("deviceContactToCandidate", () => {
   });
 
   it("returns null for a nameless contact (nothing worth importing)", () => {
-    const nameless: Contact = { contactType: "person", name: "" };
+    const nameless: DeviceContact = { contactType: "person", name: "" };
     expect(deviceContactToCandidate(nameless)).toBeNull();
   });
 });

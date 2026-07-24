@@ -8,6 +8,7 @@ import { listCalendarConnections } from "@/lib/repo/calendar";
 import {
   getDailySuggestionCount,
   getSchedulePrefs,
+  isConfirmationsDigestEnabled,
   isDailyDigestEnabled,
 } from "@/lib/repo/suggestion-settings";
 import { countCardImages } from "@/lib/repo/card-images";
@@ -64,12 +65,20 @@ export async function CalendarSection({
 }
 
 export async function SuggestionsSection() {
-  const [count, prefs, digestEnabled] = await Promise.all([
+  const [count, prefs, digestEnabled, confirmationsDigestEnabled] = await Promise.all([
     getDailySuggestionCount(),
     getSchedulePrefs(),
     isDailyDigestEnabled(),
+    isConfirmationsDigestEnabled(),
   ]);
-  return <SuggestionsSetting count={count} prefs={prefs} digestEnabled={digestEnabled} />;
+  return (
+    <SuggestionsSetting
+      count={count}
+      prefs={prefs}
+      digestEnabled={digestEnabled}
+      confirmationsDigestEnabled={confirmationsDigestEnabled}
+    />
+  );
 }
 
 export async function CardPhotoSection() {

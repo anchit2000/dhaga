@@ -17,6 +17,7 @@ import {
 const SUGGESTION_COUNT_KEY = "daily_suggestion_count";
 const SCHEDULE_PREFS_KEY = "schedule_prefs";
 const DAILY_DIGEST_KEY = "daily_digest_enabled";
+const CONFIRMATIONS_DIGEST_KEY = "confirmations_digest_enabled";
 
 export interface SchedulePrefs {
   startHour: number;
@@ -75,4 +76,13 @@ export async function isDailyDigestEnabled(): Promise<boolean> {
 
 export async function setDailyDigestEnabled(enabled: boolean): Promise<void> {
   await setSetting(DAILY_DIGEST_KEY, enabled ? "on" : "off");
+}
+
+/** Whether the user opted into the pending-confirmations email digest (default: off). */
+export async function isConfirmationsDigestEnabled(): Promise<boolean> {
+  return (await getSetting(CONFIRMATIONS_DIGEST_KEY)) === "on";
+}
+
+export async function setConfirmationsDigestEnabled(enabled: boolean): Promise<void> {
+  await setSetting(CONFIRMATIONS_DIGEST_KEY, enabled ? "on" : "off");
 }

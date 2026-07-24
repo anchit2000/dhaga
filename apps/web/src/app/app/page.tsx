@@ -31,7 +31,7 @@ export default async function HomePage() {
           </>
         }
       >
-        <DashboardSection userId={userId} />
+        <DashboardSection />
       </Suspense>
 
       <Suspense fallback={null}>

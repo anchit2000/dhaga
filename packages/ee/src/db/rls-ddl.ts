@@ -12,6 +12,7 @@ const TENANT_TABLES = [
   "facts",
   "edges",
   "edge_suggestions",
+  "confirmations",
   "follow_ups",
   "embeddings",
   "card_images",
@@ -74,6 +75,20 @@ BEGIN
   UPDATE positions p SET user_id = c.user_id
   FROM contacts c
   WHERE p.contact_id = c.id AND p.user_id IS NULL AND c.user_id IS NOT NULL;
+END $$;
+
+-- Same story for confirmations: core's ddl/confirmations.ts backfills pending
+-- edge_suggestions into it BEFORE this loop adds user_id, so those migrated
+-- rows arrive user_id NULL — invisible to every tenant. Derive the owner from
+-- the contact each row points at (contact_id = the source contact), exactly
+-- like positions above. bypass_rls is transaction-local; without it this
+-- UPDATE would itself be filtered to zero rows by the policy just added.
+DO $$
+BEGIN
+  PERFORM set_config('app.bypass_rls', 'true', true);
+  UPDATE confirmations cf SET user_id = c.user_id
+  FROM contacts c
+  WHERE cf.contact_id = c.id AND cf.user_id IS NULL AND c.user_id IS NOT NULL;
 END $$;
 
 -- settings is keyed (key) globally today; make it per-user (user_id, key).

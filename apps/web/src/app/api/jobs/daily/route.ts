@@ -1,10 +1,12 @@
+import { runConfirmationsDigest } from "@/lib/jobs/confirmations-digest";
 import { runDailyDigest } from "@/lib/jobs/daily-digest";
 import { runSignalDetection } from "@/lib/jobs/detect-signals";
 
 /**
  * The single daily-jobs entrypoint. Vercel Hobby allows only one cron, so all
- * once-a-day work runs here: signal detection plus the reach-out digest. It's a
- * plain authenticated GET — Vercel Cron sends `Authorization: Bearer $CRON_SECRET`
+ * once-a-day work runs here: signal detection, the reach-out digest, and the
+ * confirmations digest. It's a plain authenticated GET — Vercel Cron sends
+ * `Authorization: Bearer $CRON_SECRET`
  * (apps/web/vercel.json), and off Vercel ANY scheduler (system crontab, GitHub
  * Actions, a container sidecar) hits the same URL with the same header
  * (scripts/run-daily-jobs.sh, docs/SELF_HOSTING.md). Fails closed: no secret set
@@ -17,5 +19,6 @@ export async function GET(request: Request): Promise<Response> {
   }
   const signals = await runSignalDetection();
   const digest = await runDailyDigest();
-  return Response.json({ signals, digest });
+  const confirmationsDigest = await runConfirmationsDigest();
+  return Response.json({ signals, digest, confirmationsDigest });
 }

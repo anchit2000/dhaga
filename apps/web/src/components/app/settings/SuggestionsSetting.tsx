@@ -5,7 +5,11 @@ import { useFormStatus } from "react-dom";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { setDailyDigestEnabledAction, setSuggestionSettingsAction } from "@/lib/actions/suggestions";
+import {
+  setConfirmationsDigestEnabledAction,
+  setDailyDigestEnabledAction,
+  setSuggestionSettingsAction,
+} from "@/lib/actions/suggestions";
 import type { SchedulePrefs } from "@/lib/repo/suggestion-settings";
 import {
   MAX_DAILY_SUGGESTION_COUNT,
@@ -22,7 +26,7 @@ function SaveButton() {
   );
 }
 
-function DigestToggle({ enabled }: { enabled: boolean }) {
+function PrefToggle({ enabled, label }: { enabled: boolean; label: string }) {
   const { pending } = useFormStatus();
   return (
     <button
@@ -30,7 +34,7 @@ function DigestToggle({ enabled }: { enabled: boolean }) {
       disabled={pending}
       role="switch"
       aria-checked={enabled}
-      aria-label="Daily email digest"
+      aria-label={label}
       className={`relative h-7 w-12 shrink-0 rounded-full border transition-colors disabled:opacity-60 ${
         enabled ? "border-amber/50 bg-amber/30" : "border-seam bg-wash/[0.06]"
       }`}
@@ -54,10 +58,12 @@ export function SuggestionsSetting({
   count,
   prefs,
   digestEnabled,
+  confirmationsDigestEnabled,
 }: {
   count: number;
   prefs: SchedulePrefs;
   digestEnabled: boolean;
+  confirmationsDigestEnabled: boolean;
 }) {
   const offsetRef = useRef<HTMLInputElement>(null);
 
@@ -122,7 +128,22 @@ export function SuggestionsSetting({
             Get the morning list by email. Requires email to be configured on your server.
           </p>
         </div>
-        <DigestToggle enabled={digestEnabled} />
+        <PrefToggle enabled={digestEnabled} label="Daily email digest" />
+      </form>
+
+      <form
+        action={setConfirmationsDigestEnabledAction}
+        className="flex items-start justify-between gap-4 border-t border-seam pt-4"
+      >
+        <input type="hidden" name="enabled" value={confirmationsDigestEnabled ? "off" : "on"} />
+        <div>
+          <p className="text-sm font-medium text-paper">Confirmations digest</p>
+          <p className="mt-1 text-sm text-fog">
+            Email a summary of pending confirmations waiting for your review. Requires email to be
+            configured on your server.
+          </p>
+        </div>
+        <PrefToggle enabled={confirmationsDigestEnabled} label="Confirmations digest" />
       </form>
     </section>
   );

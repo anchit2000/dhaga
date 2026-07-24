@@ -17,6 +17,7 @@ import { companies, contacts } from "./schema/contacts";
 import { entities, nodeTypes, relationshipTypes } from "./schema/entities";
 import { eventContacts, events } from "./schema/events";
 import { edges, edgeSuggestions, facts, followUps, notes } from "./schema/notes";
+import { confirmations } from "./schema/confirmations";
 import { embeddings } from "./schema/embeddings";
 import { extractionJobs } from "./schema/jobs";
 import { signals } from "./schema/signals";
@@ -47,6 +48,7 @@ const schema = {
   edges,
   edgeSuggestions,
   followUps,
+  confirmations,
   embeddings,
   extractionJobs,
   signals,

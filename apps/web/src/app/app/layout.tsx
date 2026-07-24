@@ -1,5 +1,6 @@
 import { requireUserIdForPage } from "@/lib/auth/guard";
 import { getCachedAppConfig } from "@/lib/cache/app-navigation";
+import { countPendingConfirmations } from "@/lib/repo/confirmations";
 import { DataProvider } from "@/lib/data";
 import { AppNav } from "@/components/app/AppNav";
 import { NavigationFeedback } from "@/components/app/NavigationFeedback";
@@ -14,14 +15,21 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const userId = await requireUserIdForPage();
-  const { isAdmin, searchWeights, sttEngine } = await getCachedAppConfig(userId);
+  const [{ isAdmin, searchWeights, sttEngine }, confirmationsCount] = await Promise.all([
+    getCachedAppConfig(userId),
+    countPendingConfirmations(),
+  ]);
 
   return (
     <DataProvider>
       <SttEngineProvider engine={sttEngine}>
         <NavigationFeedback>
           <div className="min-h-dvh bg-ink text-paper">
-            <AppNav isAdmin={isAdmin} initialSearchWeights={searchWeights} />
+            <AppNav
+              isAdmin={isAdmin}
+              initialSearchWeights={searchWeights}
+              confirmationsCount={confirmationsCount}
+            />
             <main className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-8 sm:py-8">
               {children}
             </main>

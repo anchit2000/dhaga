@@ -107,6 +107,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Facts render on contact page with receipt ("from note, {date}")
 - [x] User can edit/delete a fact inline (M4 acceptance)
 - [x] Deleting a note tombstones its derived facts/edges
+- [x] Re-process a note: manual "re-run extraction" on an existing note (text/voice/capture_source) — after an edit or a missed fact — re-enqueues a `note_extraction` job for the same note; idempotent (worker's `clearNoteDerivations` replaces the note's prior facts/edges/follow-ups, never duplicates), AI budget still metered in the worker
 - [x] Voice notes on web (browser SpeechRecognition → transcript → extraction)
 - [ ] Voice notes on mobile (whisper.cpp / Apple Speech — mobile milestone) — built via `expo-speech-recognition` (wraps iOS `SFSpeechRecognizer`/Android `SpeechRecognizer`, forced on-device, no audio/transcript leaves the phone); tap mic → live interim transcript fills the same text-review box typed input uses (`e64b336`). Typecheck/lint pass; **package has no published SDK-57 tag yet** (installed cleanly, types check, but native linking in an EAS/dev-client build is unverified) — needs a real device build before this can be checked off, not pushed
 

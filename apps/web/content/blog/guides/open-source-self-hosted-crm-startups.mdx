@@ -1,0 +1,116 @@
+---
+title: "Best Open-Source & Self-Hosted CRM for Startups 2026"
+description: "Keep contact data on your own servers — compared on privacy, cost, and setup."
+date: "2026-07-24"
+author: "Anchit Shrivastava"
+tags: ["open-source", "self-hosted", "personal-crm", "privacy", "guide"]
+---
+
+<Callout title="The short version">
+A self-hosted CRM keeps your contact data on infrastructure you control — no third-party cloud, no vendor lock-in, no per-seat tax on your relationships. Monica is the mature open-source leader for personal relationship management (AGPL, self-hostable, and genuinely good). Dhaga is a newer AGPL open-core option that adds what Monica doesn't: AI-native capture, a knowledge graph, and natural-language recall. This guide compares them honestly and covers what self-hosting actually costs you in setup.
+</Callout>
+
+If you're a founder, your network is one of your most valuable assets, and right now it's probably sitting on someone else's servers. Every proprietary CRM you sign up for makes the same quiet trade: you hand over your contacts, your notes, the private context of who introduced you to whom — and in exchange you get a monthly bill and a data-export button you hope still works the day you want to leave.
+
+For most software that trade is fine. For your relationship data, it deserves a second look. Contact data is unusually sticky: it's *about third parties*, it accumulates for years, and it's exactly the kind of information a privacy regulation cares about. That's the case for a **self-hosted CRM** — one where the database runs on hardware you own or rent, and nobody else can read it.
+
+This guide is written for early-stage teams weighing an **open source personal CRM** against a proprietary SaaS one. We'll be honest about the trade-offs, give the incumbents real credit, and show where Dhaga fits.
+
+## Why a startup would self-host in the first place
+
+Self-hosting isn't ideology. For a startup it's four concrete things.
+
+**You own the data — literally.** When the CRM's Postgres lives in your own account, there's no ambiguity about who the data controller is. If you ever migrate, wind down, or get acquired, your contact graph goes with you as plain rows in a database you already have credentials to. Nobody can ransom your export.
+
+**Privacy is verifiable, not promised.** A proprietary CRM asks you to trust a privacy policy. An open-source, self-hosted one lets you read the code and watch the network traffic. For a **privacy-first CRM** self-host is the strongest possible guarantee: "run it yourself and see" beats any marketing claim.
+
+**Compliance gets simpler.** If you're subject to India's DPDP Act, GDPR, or a customer's data-residency clause, keeping contact data on infrastructure you control shrinks your processor list and your data-residency story to something you can actually explain in a security questionnaire. (This isn't legal advice — but fewer third parties is almost always fewer problems.)
+
+**No vendor lock-in, no seat tax.** Personal CRMs in the proprietary camp run roughly $8–18 per user per month, and the good features tend to live in the higher tier. Self-hosting trades that recurring cost for a fixed one: a small server and your own time.
+
+> The question isn't "is self-hosting cheaper on day one" — it's "who has your contacts on day 1,000, and what happens if you two disagree."
+
+## The honest open-source landscape
+
+The open-source relationship-software niche is small but real. Three options are worth knowing.
+
+**Monica** is the one to beat. It's a mature, well-loved **open source personal CRM** — AGPL-licensed, self-hostable, with a real community behind it. It's built around your personal life: people, how you know them, birthdays, reminders to stay in touch, journal entries. If you want a self-hosted address book with memory and you're happy entering everything by hand, Monica is an excellent, honest choice, and any **Monica CRM alternative** should have to earn its place against it. What Monica deliberately isn't: it has no AI, no knowledge graph, and no automated capture — no card scan, no voice notes. Data goes in the way you type it in.
+
+**Twenty** is a polished open-source CRM, but it's aimed at sales pipelines and teams — deals, stages, companies — not the private "who do I know" memory a founder keeps. Different job.
+
+**Everything else** in the personal-CRM space (Clay/Mesh, Dex, Covve, Folk) is proprietary SaaS. Some are genuinely good and some have AI features, but the data lives in their cloud on their terms.
+
+So the practical shortlist for an **open source CRM for a startup** that wants relationship memory is short: Monica, or Dhaga. Here's the honest comparison.
+
+<FeatureMatrix
+  caption="Self-hosted options vs. a typical proprietary personal-CRM SaaS. The OSS columns assume you self-host."
+  highlightColumn={1}
+  columns={["", "Dhaga", "Monica", "Proprietary SaaS"]}
+  rows={[
+    { feature: "Self-hostable", values: [true, true, false] },
+    { feature: "Open-source license", values: ["AGPL-3.0", "AGPL-3.0", false] },
+    { feature: "AI-native", values: [true, false, "Add-on"] },
+    { feature: "Knowledge graph", values: [true, false, false] },
+    { feature: "Voice + card capture", values: [true, false, "Varies"] },
+    { feature: "You own the data", values: [true, true, false] },
+  ]}
+/>
+
+None of these rows are a knock on Monica — a graph and AI simply aren't what it set out to build. And the relationship graph itself isn't unique to Dhaga; plenty of tools map connections. The combination that's genuinely rare is *private, self-hostable, AI-native, and graph-native at once.*
+
+## What "self-hosted" actually buys you
+
+The whole value of self-hosting is that the data path has no detour through anyone else. Every capture, every note, every extracted fact lands in a database you control and stops there.
+
+<FlowDiagram
+  caption="The self-hosted data path: your server, your database, your data — no third party in the middle."
+  stages={[
+    { label: "Your server", sub: "docker compose up" },
+    { label: "Your Postgres", sub: "Contacts, notes, graph" },
+    { label: "Your data", sub: "No third party" },
+  ]}
+/>
+
+With a proprietary SaaS CRM, that middle box is someone else's cloud, and the arrow out of it points wherever their business model does. With a self-hosted one, the arrows stay inside your perimeter. That's the entire point — and it's why **owning your contact data** is a self-hosting decision more than a feature checkbox.
+
+## Where Dhaga fits — and where it doesn't
+
+Dhaga is an AI-native personal CRM built open-core. Being straight about what that means matters more than a sales pitch, especially for a privacy product.
+
+**The open source is real.** Dhaga's core is **AGPL-3.0** and public on GitHub — the whole CRM: capture, notes, the knowledge graph, search, follow-up drafts, and full export. You can `docker compose up` and run all of it yourself, pointed at your own Postgres. This is the part that's built and verified today, and it's what an **AGPL CRM** self-host gets you.
+
+**The open-core split.** Cloud-only modules — multi-tenant isolation, billing, the admin panel — live in a separate `packages/ee` under a source-available, noncompete license (PolyForm Shield), not AGPL. You never need any of it to self-host; a single flag left unset keeps it entirely inert. This is the standard open-core boundary (the Cal.com / Supabase playbook): the core is free and self-hostable forever, and an optional hosted cloud tier is what funds the project. Self-hosters aren't lost revenue — they're the people who read the code and tell everyone else it's trustworthy.
+
+**What Dhaga adds over Monica.** Three things Monica doesn't do:
+
+- **Capture from anywhere.** Scan a business card, dictate a voice note in the browser, paste an email signature, clip a page with the extension — instead of typing every field by hand.
+- **A knowledge graph, not a list.** Notes get turned into structured facts and typed relationships (works-at, knows, met-at), so your contacts form a graph you can traverse — warm-intro paths, "who else did I meet at that event" — not rows in a table.
+- **Natural-language recall.** Ask "who do I know who invests in climate?" in plain English and get an answer built from *your own* notes, with a receipt pointing back to the note it came from.
+
+**The honest caveats — read these before you commit:**
+
+- **The self-hosted core is single-user by design.** Per-user data isolation lives in the cloud modules, so the open core enforces exactly one account. That's perfect for a founder keeping their own relationship memory; it is *not* a shared team CRM you stand up for the whole company today. Multi-user with real isolation is the hosted/cloud path.
+- **AI needs a key.** The on-device parts (heuristic parsing, embeddings) run for free, but the AI features — extraction, Ask-AI search, drafts — call a model. Self-hosting, you bring your own Anthropic API key; without one, capture falls back to heuristic parsing and the AI features stay off. A local-model adapter (Ollama / vLLM through the provider-agnostic gateway) is on the roadmap, not shipped yet.
+- **It's younger than Monica.** Monica has years of polish and a large community. Dhaga is newer. If maturity and a huge plugin ecosystem matter more to you than AI and a graph, that's a legitimate reason to pick Monica — and this guide would rather you pick the right tool than the newer one.
+
+If you're comparing hosted options too, our roundup of the [best personal CRM apps in India](/blog/guides/best-personal-crm-apps-india) covers the proprietary field, and [personal CRM vs LinkedIn](/blog/guides/personal-crm-vs-linkedin) explains why a public directory was never going to be your private memory.
+
+## Setup realities (the part nobody tells you)
+
+Self-hosting a CRM is more work than clicking "sign up." Here's the honest shape of it for Dhaga.
+
+**The happy path is one command.** The repo ships a `Dockerfile` and a `compose.yml` that run the web app plus a Postgres 16 + pgvector container. `docker compose up --build`, open the port, sign up. The app creates its own schema on first connection — there's no separate migration step to run.
+
+**Your database, your choice.** The bundled Postgres is a working reference, not a requirement. `DATABASE_URL` can point at any Postgres 15+ — a box in your rack, RDS, Neon, Supabase. For a zero-dependency local run, there's even an embedded mode that needs no external database at all.
+
+**What you're signing up to operate.** A server, backups, a TLS certificate, and the occasional update. For a founder or a technical early team this is an evening, not a project — but it *is* an evening, and it's recurring. Budget for it honestly. That ongoing cost is the real price of self-hosting; the software is free.
+
+For a startup that lands on the self-host side, this is the trade: a bit of ops work, in exchange for an **open source CRM** where your relationship data lives on your infrastructure and answers to nobody else.
+
+## The takeaway
+
+Your contacts are too valuable to rent. If you want relationship memory that you actually own, the two serious open-source choices are Monica — mature, manual, personal-life focused — and Dhaga — newer, AI-native, graph-native, with an honest single-user self-host core and an optional cloud tier. Pick Monica if you want a proven self-hosted address book with reminders. Pick Dhaga if you want capture, a graph, and natural-language recall, and you're comfortable being on the earlier side.
+
+Either way, the contact data stays yours. That's the whole reason to self-host in the first place.
+
+Want to see the AI-native side before you clone anything? Have a look at [Dhaga](/).

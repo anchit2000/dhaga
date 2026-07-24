@@ -213,6 +213,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] `docker compose up` — multi-stage `Dockerfile` (node:22-slim, standalone output via `DHAGA_STANDALONE=1`, non-root, 494MB) + `compose.yml` (pgvector/pgvector:pg16 db with healthcheck) verified end-to-end 2026-07-16: Postgres-backed and zero-config PGlite boots both serve with clean first-boot DDL self-heal (the earlier single-stage image was never actually runnable — missing workspace manifest)
 - [ ] Public roadmap + good-first-issues — `docs/ROADMAP.md` written 2026-07-07, now linked from `README.md`'s Status section (2026-07-12); good-first-issue candidates drafted but intentionally not posted as real GitHub issues yet (that's a public/outward action for the owner to approve)
 - [ ] Replace randomuser.me landing portraits with licensed photos before paid marketing
+- [ ] SEO content cluster — 10 pillar "Guides" posts (personal-CRM / networking, India + founder slant, high-CTR titles/metas) under a new `guides` blog category, plus reusable on-brand MDX visual components (`Figure`/`NodeGraph`/`FlowDiagram`/`Timeline`/`FeatureMatrix`/`StatStrip` in `apps/web/src/components/blog/visuals`, registered in `mdx-components.tsx`) — written 2026-07-24, builds clean (SSG); pending in-browser visual QA + merge
 
 ## 19. SaaS platform — accounts, multi-tenancy, billing, admin (Dhaga Cloud)
 
@@ -236,3 +237,23 @@ this is a stub, the only gap is the manual click-through + push.
 - [ ] First-admin bootstrap via `DHAGA_ADMIN_EMAILS` (see `SELF_HOSTING.md`)
 - [ ] Stripe billing: Checkout (Pro/Lifetime), billing portal, webhook (4 event types), AI-cap bypass for paid users
 - [ ] Billing UI cleanly absent (not broken) when `STRIPE_SECRET_KEY` is unset, even in hosted mode
+
+## 20. Considered features backlog (2026-07 review)
+
+New gaps from a July 2026 competitive review. All unbuilt — considered, not
+committed. Full rationale, dedup against existing scope, and the
+considered-and-declined items live in [BRD.md](BRD.md) §5.4. Gaps already
+tracked are **not** re-added here (relationship-strength score → §14; LinkedIn
+import + job-change detection + keep-in-touch nudges → §4/§14; WhatsApp capture
+→ §16); an external fundraising-discovery suite and iMessage/SMS capture were
+declined (BRD §5.4).
+
+- [ ] Personal MCP server — expose the user's own graph (read-only, user-scoped) to external AI clients (Claude Desktop/Code, Cursor)
+- [ ] Duplicate-contact detection & merge (entity resolution) across import sources — per-user, distinct from team cross-user dedup
+- [ ] AI-suggested connections — surface likely edges from shared company/school/city/event; suggested, never auto-linked
+- [ ] Relationship analytics dashboard — network stats (most-connected, longest-known, city clusters, network growth), own-graph only
+- [ ] Contact/profile completeness scoring + enrichment nudges (enrichment stays user-triggered)
+- [ ] Map view of contacts' locations ("who's nearby when I travel") — renders locations already on file, no live tracking
+- [ ] Personal-life logging modules (optional, off by default): gift tracking, journal/diary + mood, activity log, debt tracking, pets
+- [ ] Mail-merge / bulk personalized outreach + public API + Zapier app — extends the existing outbound webhooks (§16)
+- [ ] Two-way native phone address-book sync — extends the current one-way expo-contacts import (§12)

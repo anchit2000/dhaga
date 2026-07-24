@@ -3,6 +3,14 @@ import { Callout } from "fumadocs-ui/components/callout";
 import { Card, Cards } from "fumadocs-ui/components/card";
 import { Step, Steps } from "fumadocs-ui/components/steps";
 import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+import {
+  Figure,
+  NodeGraph,
+  FlowDiagram,
+  Timeline,
+  FeatureMatrix,
+  StatStrip,
+} from "@/components/blog/visuals";
 import type { MDXComponents } from "mdx/types";
 
 // Reusable component set every `/docs` page can use without importing:
@@ -19,6 +27,12 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     Steps,
     Tab,
     Tabs,
+    Figure,
+    NodeGraph,
+    FlowDiagram,
+    Timeline,
+    FeatureMatrix,
+    StatStrip,
     ...components,
   };
 }

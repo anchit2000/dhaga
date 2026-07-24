@@ -11,11 +11,11 @@
 
 ## 1. Executive Summary
 
-NetworkPro is an AI-native personal CRM that turns fleeting professional encounters into a living, searchable knowledge graph. Where legacy products (ABBYY BCR Pro, CamCard) stop at "scan a card → save a contact," NetworkPro treats the scan as the *ingestion point* of a compounding intelligence system: contacts are auto-grouped by context (event, time, place), enriched with public data, connected through voice-note-derived relationships, and made queryable in natural language.
+NetworkPro is an AI-native personal CRM that turns fleeting professional encounters into a living, searchable knowledge graph. Where legacy products (the incumbent card scanner, CamCard) stop at "scan a card → save a contact," NetworkPro treats the scan as the *ingestion point* of a compounding intelligence system: contacts are auto-grouped by context (event, time, place), enriched with public data, connected through voice-note-derived relationships, and made queryable in natural language.
 
 **One-line pitch:** *Your professional memory, augmented.*
 
-**Business model:** Open-core. The client apps and self-hostable core are open source (community trust, zero-cost adoption, contributor leverage); revenue comes from a hosted cloud tier (sync, enrichment, team graph) and a one-time "lifetime" purchase echoing the BCR Pro pricing model that validated this market.
+**Business model:** Open-core. The client apps and self-hostable core are open source (community trust, zero-cost adoption, contributor leverage); revenue comes from a hosted cloud tier (sync, enrichment, team graph) and a one-time "lifetime" purchase echoing the incumbent card scanner's pricing model that validated this market.
 
 ---
 
@@ -24,7 +24,7 @@ NetworkPro is an AI-native personal CRM that turns fleeting professional encount
 1. **Capture is easy; memory is not.** Existing card scanners digitize contacts but lose all context: *where* you met, *what* you discussed, *why* it mattered. Six months later the contact is a dead row in an address book.
 2. **Notes don't compound.** Even diligent networkers who take notes can't query across them ("who did I meet in logistics who mentioned an AI budget?").
 3. **Networks decay silently.** Job changes, funding events, and relationship staleness go unnoticed — precisely the moments when outreach is most valuable.
-4. **Incumbents are stagnant.** BCR Pro is functionally identical to its 2015 self; it validated willingness-to-pay (AUD $99.99 one-time) without ever adding intelligence. The category is ripe for an AI-native replacement.
+4. **Incumbents are stagnant.** The incumbent card scanner is functionally identical to its 2015 self; it validated willingness-to-pay (AUD $99.99 one-time) without ever adding intelligence. The category is ripe for an AI-native replacement.
 
 ## 3. Target Users
 
@@ -43,10 +43,10 @@ The market splits into five camps. Nobody occupies the intersection NetworkPro t
 
 | Product | Pricing | Strengths | Weaknesses vs NetworkPro |
 |---|---|---|---|
-| **ABBYY BCR Pro** | AUD $99.99 one-time | Best-in-class OCR (25 languages), Salesforce export, proven lifetime-price model | Frozen product; zero intelligence, no context, no notes, no search |
-| **Blinq** | Free / paid tiers | Top-rated digital card on G2 (8,800+ reviews); simple shareable profile; card + badge scanning | Their graph is *outbound* (share my card), not *inbound* (remember who I met); no notes/knowledge layer |
-| **HiHello** | Free / team tiers | Polished; enterprise-grade (SOC 2, SSO/SAML/SCIM); card + badge scanner, email signatures | Same — digital-identity tool, not memory tool |
-| **Popl** | Free / paid + NFC hardware | NFC tap-to-share; universal badge scanner with ~90% AI enrichment success; strong at events | Lead-capture for exhibitors, priced/designed for sales teams at booths, not attendees building a personal network |
+| **The incumbent card scanner** | AUD $99.99 one-time | Best-in-class OCR (25 languages), Salesforce export, proven lifetime-price model | Frozen product; zero intelligence, no context, no notes, no search |
+| **A digital business-card app** | Free / paid tiers | Top-rated digital card on G2 (8,800+ reviews); simple shareable profile; card + badge scanning | Their graph is *outbound* (share my card), not *inbound* (remember who I met); no notes/knowledge layer |
+| **An enterprise digital-card app** | Free / team tiers | Polished; enterprise-grade (SOC 2, SSO/SAML/SCIM); card + badge scanner, email signatures | Same — digital-identity tool, not memory tool |
+| **An NFC badge-scanner / lead-capture tool** | Free / paid + NFC hardware | NFC tap-to-share; universal badge scanner with ~90% AI enrichment success; strong at events | Lead-capture for exhibitors, priced/designed for sales teams at booths, not attendees building a personal network |
 
 **Takeaway:** this camp has nailed *capture UX* (badge scanning is now table stakes — we must match it earlier than planned) but treats the contact as the end product. None build a queryable memory on top.
 
@@ -54,10 +54,12 @@ The market splits into five camps. Nobody occupies the intersection NetworkPro t
 
 | Product | Pricing | Strengths | Weaknesses vs NetworkPro |
 |---|---|---|---|
-| **Clay.earth / Mesh** | Free ≤1,000 contacts; Pro ~$10/mo | Closest philosophical competitor: auto-ingests email/calendar/LinkedIn/Twitter, web-based enrichment, reconnect nudges; rebranded to Mesh (me.sh) | Desktop/inbox-centric — no card/badge/voice capture at events; enrichment-feed model, not a user-built knowledge graph; closed source; US-cloud privacy posture |
-| **Dex** | ~$12/mo (free tier very limited) | LinkedIn + email sync, reminders, cross-platform | Manual/import-centric capture; no event context; no NL search over notes |
-| **Covve** | ~$9.99/mo | Mobile-first, auto-enriches phone contacts, staying-in-touch nudges; strong security posture | Enrichment of the address book, not capture of new encounters; no graph, no voice notes |
-| **Folk** | From $18/user/mo | folkX Chrome extension (1-click LinkedIn capture), AI icebreakers, pipelines | Team sales CRM in personal clothing; per-seat pricing; no mobile event capture |
+| **An auto-enrichment inbox CRM** | Free ≤1,000 contacts; Pro ~$10/mo | Closest philosophical competitor: auto-ingests email/calendar/LinkedIn/Twitter, web-based enrichment, reconnect nudges | Desktop/inbox-centric — no card/badge/voice capture at events; enrichment-feed model, not a user-built knowledge graph; closed source; US-cloud privacy posture |
+| **A sync-based personal CRM** | ~$12/mo (free tier very limited) | LinkedIn + email sync, reminders, cross-platform | Manual/import-centric capture; no event context; no NL search over notes |
+| **A business-card-scanner contact app** | ~$9.99/mo | Mobile-first, auto-enriches phone contacts, staying-in-touch nudges; strong security posture | Enrichment of the address book, not capture of new encounters; no graph, no voice notes |
+| **A lightweight team CRM** | From $18/user/mo | LinkedIn Chrome extension (1-click capture), AI icebreakers, pipelines | Team sales CRM in personal clothing; per-seat pricing; no mobile event capture |
+
+> Named, detailed head-to-head comparisons live in the public comparison pages (see the blog: `/blog/guides/dhaga-vs-monica`, `dhaga-vs-dex`, `dhaga-vs-yourpond`, `dhaga-vs-openvc`, `dhaga-vs-louisa`, and the roundups).
 
 **Takeaway:** subscription fatigue is real in this camp ($10–18/mo for what users perceive as a contacts app), and every one of them is weak at *in-person event capture* — our wedge.
 
@@ -65,33 +67,33 @@ The market splits into five camps. Nobody occupies the intersection NetworkPro t
 
 | Product | Pricing | Notes |
 |---|---|---|
-| **Affinity** | $2,000–2,700/user/**year** (published) | VC/PE standard; email-mining based "who knows whom"; validates that relationship graphs command serious money |
-| **4Degrees** | ~$100–300/user/**month** | Same category, private markets focus |
+| **A VC/PE relationship-intelligence platform** | $2,000–2,700/user/**year** (published) | VC/PE standard; email-mining based "who knows whom"; validates that relationship graphs command serious money |
+| **A private-markets relationship-intelligence tool** | ~$100–300/user/**month** | Same category, private markets focus |
 
 **Takeaway:** these prove the *team graph* (our v2.0) is worth $1.8K–3.6K/user/year to relationship-driven firms. A bottoms-up, capture-first product that grows into a lightweight team graph at 1/10th the price is a classic disruption path.
 
 ### 4.4 Camp D — Capture extensions (sales tooling)
 
-**Add to CRM**, **folkX**, **Apollo**, **Seamless.AI** — one-click LinkedIn→CRM Chrome extensions with enrichment (20+ data points/contact). All are sales-prospecting tools feeding team CRMs. This validates the browser-extension capture pattern we're adopting, but none feed a *personal, private* graph — and their scrape-heavy enrichment posture is exactly the privacy stance we differentiate against.
+One-click LinkedIn→CRM enrichment extensions — Chrome extensions with enrichment (20+ data points/contact) — are all sales-prospecting tools feeding team CRMs. This validates the browser-extension capture pattern we're adopting, but none feed a *personal, private* graph — and their scrape-heavy enrichment posture is exactly the privacy stance we differentiate against.
 
 ### 4.5 Camp E — Open source
 
 | Product | Notes |
 |---|---|
-| **Monica** | The OSS personal-relationship manager (personal life focus: birthdays, family). No mobile app, no email/calendar/LinkedIn sync, fully manual entry, no AI. Popular repo, but a journal — not a networking tool |
-| **Twenty** | Well-designed OSS sales CRM (Attio-inspired). Team pipelines, not personal networks; no capture layer |
+| **The established open-source personal-relationship manager** | The OSS personal-relationship manager (personal life focus: birthdays, family). No mobile app, no email/calendar/LinkedIn sync, fully manual entry, no AI. Popular repo, but a journal — not a networking tool |
+| **A well-designed open-source sales CRM** | Well-designed OSS sales CRM (inspired by modern SaaS CRMs). Team pipelines, not personal networks; no capture layer |
 
-**Takeaway:** the open-source niche for an *AI-native, mobile-first, professional* network tool is **empty**. Monica's popularity despite its limitations shows the demand for self-hostable relationship software.
+**Takeaway:** the open-source niche for an *AI-native, mobile-first, professional* network tool is **empty**. The established open-source relationship manager's popularity despite its limitations shows the demand for self-hostable relationship software.
 
 ### 4.6 Positioning statement
 
 > For professionals who build their careers on in-person and online networking, NetworkPro is the only tool that captures a contact from anywhere — card, badge, QR, LinkedIn page, pasted email — in one action, and turns every note into a private, searchable knowledge graph with proactive intelligence. Unlike digital-card apps it remembers *who they are to you*; unlike personal CRMs it captures at the moment of meeting; unlike enterprise relationship platforms it is affordable, personal, and open source.
 
 **Strategic implications adopted into scope:**
-1. **Badge scanning moves up** to v1.1 (Blinq/HiHello/Popl made it table stakes).
-2. **Browser extension is a first-class capture surface** (validated by folkX/Add to CRM adoption) — promoted into v1.1.
-3. **Lifetime pricing stays** (BCR Pro anchor) alongside subscription — an explicit counter to Camp B's subscription fatigue.
-4. **Privacy/open source is the marketing spearhead** against Clay/Mesh and the sales-tooling camp.
+1. **Badge scanning moves up** to v1.1 (the digital-card and badge-scanner apps made it table stakes).
+2. **Browser extension is a first-class capture surface** (validated by adoption of the one-click LinkedIn-capture pattern) — promoted into v1.1.
+3. **Lifetime pricing stays** (the incumbent card scanner's anchor) alongside subscription — an explicit counter to Camp B's subscription fatigue.
+4. **Privacy/open source is the marketing spearhead** against the auto-enrichment / sync CRMs and the sales-tooling camp.
 
 ---
 
@@ -148,6 +150,34 @@ The MVP must prove one loop end-to-end:
 | Sync | Optional encrypted backup | Full multi-device sync (mobile ↔ web ↔ extension), team workspaces |
 | Monetization | Free beta | Free tier + Pro (lifetime or annual) + Teams (per-seat) |
 
+### 5.4 Considered features backlog (2026-07 review)
+
+A July 2026 competitive review surfaced feature gaps. The genuinely-additive ones (deduped against existing scope) are captured below as **backlog — considered, not committed, and unbuilt.** They inherit Dhaga's constraints: own-graph-first, no scraping, privacy by default (§6.7). Tracked as unchecked items in [checklist.md](checklist.md) §20.
+
+| Candidate | Notes |
+|---|---|
+| **Personal MCP server** — expose the user's own graph (read-only) to external AI clients (Claude Desktop/Code, Cursor) so any assistant can query their private network | Backlog. Self-host-friendly; read-only, user-scoped, nothing leaves the user's instance beyond the connected client |
+| **Duplicate-contact detection & merge (entity resolution)** across import sources | Backlog. Distinct from the team-graph cross-user dedup in §5.3 — this is per-user resolution across LinkedIn/vCard/Google/manual sources |
+| **AI-suggested connections** — surface likely graph edges from shared company/school/city/event | Backlog. Own-graph inference only; suggested, never auto-linked (mirrors the confirm-inbox pattern) |
+| **Relationship analytics dashboard** — most-connected, longest-known, city clusters, network growth | Backlog. Read-only stats over the user's own graph; no external data |
+| **Profile-completeness scoring + enrichment nudges** | Backlog. Nudge to fill gaps; enrichment stays user-triggered per §7.5 |
+| **Map view of contacts' locations** ("who's nearby when I travel") | Backlog. Renders locations the user already holds; no live tracking |
+| **Personal-life logging modules (optional)** — gift tracking, journal/diary + mood, activity log, debt tracking, pets | Backlog. Optional modules to reach broader personal-relationship breadth; off by default so the professional-networking core stays uncluttered |
+| **Mail-merge / bulk personalized outreach + public API + Zapier app** | Backlog. Extends the existing outbound webhooks (checklist §16) and the Zapier/webhooks line already in §5.2 v1.4; bulk outreach is the new delta |
+| **Two-way native phone address-book sync** | Backlog. Extends the current one-way expo-contacts import (§6.7) to write curated contacts back to the phone |
+
+**Already covered — not re-added:**
+
+- *Relationship-strength scoring* is already scoped: §6.7 "Relationship strength" row + checklist §14.
+- *LinkedIn import & job-change detection / reach-out nudges* are already scoped: LinkedIn Connections CSV + QR import (§6.7, checklist §4/§16), job-change detection + news watchlist + keep-in-touch cadence (§5.2 v1.2, checklist §14). Continuous *automatic* LinkedIn network sync is **not** on the roadmap — it requires scraping/session-piggybacking, a §6.7 hard line.
+- *WhatsApp capture* is already tracked (§5.2 v1.4, checklist §16).
+
+**Considered and declined (different product / against policy):**
+
+- **iMessage / SMS capture** — declined. SMS/call-log ingestion is a §6.7 hard line (blocked by iOS, disallowed by Play Store policy). WhatsApp share-to-capture (§5.2 v1.4) is the ToS-clean equivalent.
+- **External fundraising suite** — a curated *external* investor database, cold-outreach sequences, pitch-deck hosting/analytics, and an AI deck reviewer. Declined: that is a fundraising-discovery product, not a personal CRM. Dhaga records the investors *you* actually meet; it does not sell an external investor list or run outbound campaigns.
+- **Enterprise org graph** — a firm-*owned* relationship graph mined at bank/PE scale. Declined: Dhaga's team story is individual-first (§5.2 v2.0 / checklist §17 "who knows whom" across a small team), not an enterprise deal-intelligence platform whose graph the employer owns.
+
 ---
 
 ## 6. How It Will Be Achieved — Feature-by-Feature Mechanics
@@ -202,9 +232,9 @@ Single LLM call: contact + event context + extracted facts + user's writing-styl
 - **Pre-meeting briefs:** calendar webhook → assemble contact dossier from graph → one LLM call → push notification 30 min before the meeting.
 - **Warm paths:** pure graph traversal (BFS over `works_at`/`used_to_work_at`/`knows` edges) — no AI cost.
 
-### 6.7 Source legality — the Mesh-style auto-sync we can and can't do (researched 2026-07)
+### 6.7 Source legality — the enrichment-feed auto-sync we can and can't do (researched 2026-07)
 
-Mesh/Clay-class competitors claim continuous auto-recording from LinkedIn and Twitter. That runs on
+Auto-enrichment CRMs claim continuous auto-recording from LinkedIn and Twitter. That runs on
 user-session piggybacking or scraping: LinkedIn's API is partner-gated, closed to CRM/enrichment
 tools (the Connections API died in 2015; Proxycurl was shut down by LinkedIn legal in 2025), and
 X's API has no free read tier (pay-per-use $0.005/post read, Enterprise ~$42K/mo) — uneconomical
@@ -212,7 +242,7 @@ at our price point. Our channels, all user-initiated or opt-in:
 
 | Signal | Legal channel | Phase |
 |---|---|---|
-| LinkedIn profile capture | Extension reads the DOM the user is viewing — user-initiated, single profile, no automation (folkX pattern) | v1.1 |
+| LinkedIn profile capture | Extension reads the DOM the user is viewing — user-initiated, single profile, no automation (the one-click LinkedIn-capture pattern) | v1.1 |
 | LinkedIn network bulk import | User's own LinkedIn data export — Connections CSV (name, company, position, connected date, sometimes email) | v1.1 |
 | Device / phone contacts bulk import | User's own exported .vcf file (iPhone/iCloud, Android, Google Contacts all export vCard) — one file, parsed 100% in-browser, nothing scraped | v1.1 |
 | Google / Outlook contacts OAuth import | User connects their own Google or Microsoft account (People API `contacts.readonly` / Graph `Contacts.Read`, delegated, explicit consent) — reads only that user's own contacts, on demand, never automated. No Apple/iCloud equivalent (no contacts API) | v1.1 |
@@ -313,7 +343,7 @@ The graph is `edges`; the audit trail is `source_note_id` on facts/edges. Deleti
 
 ## 8. Open-Source & Sustainability Strategy
 
-### 8.1 Model: Open-core (the Cal.com / Twenty / Supabase playbook)
+### 8.1 Model: Open-core (the Cal.com / Supabase playbook)
 
 | Component | License | Why |
 |---|---|---|
@@ -352,7 +382,7 @@ Per-card pipeline (OCR parse ≈ 800 in / 200 out tokens on Haiku): **≈ $0.002
 
 ### 8.4 Revenue streams
 
-1. **Pro (individual):** hosted sync + unlimited AI actions + enrichment + alerts. Monthly, yearly, and a **lifetime tier** — deliberately echoing BCR Pro's proven one-time-purchase psychology.
+1. **Pro (individual):** hosted sync + unlimited AI actions + enrichment + alerts. Monthly, yearly, and a **lifetime tier** — deliberately echoing the incumbent card scanner's proven one-time-purchase psychology.
 2. **Teams:** per-seat, shared graph, SSO, admin. The defensible, expanding revenue line.
 3. **Self-host support** (later): paid support/SLA for companies running the AGPL stack internally.
 
@@ -395,10 +425,10 @@ Per-card pipeline (OCR parse ≈ 800 in / 200 out tokens on Haiku): **≈ $0.002
 
 ## 11. Open Questions
 
-1. Lifetime-tier pricing: $79 vs $99 vs $129? Needs willingness-to-pay testing against BCR Pro's AUD $99.99 anchor and Clay/Mesh's ~$10/mo.
+1. Lifetime-tier pricing: $79 vs $99 vs $129? Needs willingness-to-pay testing against the incumbent card scanner's AUD $99.99 anchor and the ~$10/mo enrichment-CRM anchor.
 2. Sync build-vs-adopt: PowerSync/ElectricSQL licensing fit with AGPL? Lead candidate as of 2026-07: **TanStack DB 0.6 + ElectricSQL** — SQLite-backed persistence incl. React Native/Expo, incremental Postgres sync, and we already ship Electric's PGlite (`docs/LIBRARIES.md` §5). Before any M8 sync code, run an evaluation covering: sync model vs the planned field-level LWW, offline semantics, RN/Expo maturity, AGPL/licensing fit, and lock-in vs the decided op-sqlite + sqlite-vec store. Ends in a decision doc + sign-off — not silent adoption.
-3. ~~Enrichment data sources: which are ToS-safe?~~ **Resolved 2026-07 — see §6.7.** LinkedIn API is partner-gated and closed to CRMs; X API reads are pay-per-use and uneconomical. Channels: user-triggered web search, LinkedIn Connections CSV import + re-import diff, opt-in news watchlist, extension DOM capture. Remaining sub-question: is this enrichment quality enough vs Popl's claimed 90%?
-4. ~~Browser extension and LinkedIn: confirm legal posture.~~ **Resolved 2026-07 — see §6.7.** User-initiated, single-profile DOM read of a page the user is viewing (folkX/Add to CRM pattern) is the posture; shipped in the extension. No automation, no bulk collection.
+3. ~~Enrichment data sources: which are ToS-safe?~~ **Resolved 2026-07 — see §6.7.** LinkedIn API is partner-gated and closed to CRMs; X API reads are pay-per-use and uneconomical. Channels: user-triggered web search, LinkedIn Connections CSV import + re-import diff, opt-in news watchlist, extension DOM capture. Remaining sub-question: is this enrichment quality enough vs the NFC badge-scanner's claimed 90%?
+4. ~~Browser extension and LinkedIn: confirm legal posture.~~ **Resolved 2026-07 — see §6.7.** User-initiated, single-profile DOM read of a page the user is viewing (the one-click LinkedIn-capture pattern) is the posture; shipped in the extension. No automation, no bulk collection.
 5. Brand/name: "NetworkPro" is a working title; trademark search needed.
 
 ---

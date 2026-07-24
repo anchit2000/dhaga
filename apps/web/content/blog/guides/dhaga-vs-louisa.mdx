@@ -1,0 +1,97 @@
+---
+title: "Dhaga vs Louisa AI: Personal vs Enterprise Graph"
+description: "Louisa AI vs Dhaga — enterprise, firm-owned relationship intelligence vs a private personal CRM you own. Different buyers, compared honestly."
+date: "2026-07-24"
+author: "Anchit Shrivastava"
+tags: ["relationship-intelligence", "louisa", "comparison", "guide"]
+---
+
+<Callout title="The short version">
+Dhaga vs Louisa isn't a feature fight — it's two different products for two different buyers. **Louisa AI** is enterprise relationship intelligence: a firm buys it so a whole team can mine its collective network, and the graph belongs to the firm. **Dhaga** is a personal CRM: you install it, the graph is *yours*, and it goes with you when you change jobs. If you're an individual, Louisa was never built for you. If you're a revenue team at a bank or fund, Dhaga isn't trying to be your rollout.
+</Callout>
+
+You probably landed here after searching for a **Louisa AI alternative**, or trying to figure out where Dhaga fits next to it. The honest answer up front: they overlap on the words — both say "**relationship intelligence**," both let you ask "**who knows whom**" in plain English — and diverge on almost everything that decides which one you should actually pay for.
+
+The single question that sorts it is *whose graph is it?* Louisa builds a graph that belongs to a firm. Dhaga builds a graph that belongs to a person. Get that straight and the rest of this comparison falls into place.
+
+## Two products wearing the same words
+
+"Relationship intelligence" has become a category label that hides more than it reveals. Both tools promise to turn scattered relationship data into something you can query. The difference is the *subject* of the graph.
+
+Louisa's subject is the firm. It pools every partner's, investor's, and associate's network into one org-wide graph, then answers questions like "which of my colleagues can get me to this CFO?" That's enormously valuable — and it only works because there are colleagues to pool. A single user with no team gets a fraction of the point.
+
+Dhaga's subject is you. It maps the people *you* know from your own notes and captures, and answers "who do I know who invests in climate?" from your private memory. There are no colleagues to borrow from — and for an individual, that's the feature, not the limitation. Your graph isn't diluted by, or dependent on, anyone else's.
+
+## What Louisa AI actually is
+
+Credit where due: Louisa (louisa.ai) is a serious enterprise product. It spun out of Goldman Sachs in 2023, founded by Rohan Doctor, on roughly a $5M seed. Its marketing cites "150,000+ users," though that figure isn't independently verified. It sells "deal intelligence for relationship-driven firms" — investment banks, private equity, law firms, consultancies — the places where knowing the right person before Tuesday is worth real money.
+
+The product is three parts:
+
+- **Louisa for CRM** — auto-cleaning, entity resolution, and dedupe on your existing CRM data.
+- **Louisa for Revenue** — daily briefs of cross-sell and origination opportunities, each with a warm path, supporting signals, and an estimated deal value.
+- **Louisa Connects** — auto-maps alumni and partner networks and surfaces connection paths across the firm.
+
+It auto-ingests from Salesforce, Dynamics, DealCloud, HubSpot, Affinity, and Backstop, plus Outlook/Gmail, calendars, LinkedIn, alumni databases, and Snowflake/Databricks. It monitors millions of news articles a day for signals, and deploys in about four weeks. On the AI side it ships an MCP connector into Claude Desktop, Claude Code, and Cursor — its own demo query is "Who at our firm can introduce me to Meridian's CFO before Tuesday?", returning ranked colleagues with interaction history.
+
+On privacy it's enterprise-grade: SOC 2 Type II, GDPR/CCPA, read-only ingestion, and a stated policy that your data never leaves your environment, is never shared, and is never used to train external models. But note the ownership nuance that matters most to an individual reader: that data is the *firm's*. Louisa is not open-source (there's a local-or-cloud MCP option, not a verified self-host product), it has no business-card scan or voice capture, and its iOS app is built for enterprise use. There's no India slant, and — critically — **the graph disappears when you leave the firm.** It's a company asset, not a personal one.
+
+There are no public prices; every call to action is "Book a conversation." A single third-party review *reports* — not confirmed by Louisa — figures around $50/user/mo for individuals, $800/team/mo at the SMB tier, and custom enterprise pricing, with no free tier. Treat those numbers as folklore until Louisa publishes its own.
+
+## Where they diverge
+
+<FeatureMatrix
+  caption="Dhaga vs Louisa — personal-and-owned vs enterprise-and-firm-owned. Louisa figures are as marketed; pricing is third-party reported, not confirmed."
+  highlightColumn={1}
+  columns={["", "Dhaga", "Louisa"]}
+  rows={[
+    { feature: "Individual-owned (graph is yours)", values: [true, false] },
+    { feature: "Org-wide / team relationship graph", values: ["Roadmap", true] },
+    { feature: "Natural-language AI recall", values: [true, true] },
+    { feature: "Automatic email / calendar / CRM ingestion", values: [false, true] },
+    { feature: "Self-host / open-source", values: [true, false] },
+    { feature: "Free tier + affordable Pro", values: [true, false] },
+    { feature: "Own your data personally (survives leaving a job)", values: ["Self-host", false] },
+  ]}
+/>
+
+A few of those cells need honest footnotes. Dhaga's **natural-language recall is a paid feature** — the free tier is manual capture and search; asking your graph questions in plain English sits on the paid Pro plan. A Dhaga **team/org graph is on the roadmap, not shipped** — today Dhaga knows *your* contacts, not your colleagues'. And "own your data personally" is a check for Dhaga specifically *because* it's self-hostable and open-source: keep the graph on your own machine and no employer, and no vendor, can take it away.
+
+## Where Louisa wins (honestly)
+
+If you're a team, Louisa does things Dhaga simply doesn't:
+
+- **An org-wide graph.** It pools every colleague's network into one map. Dhaga only knows the people *you* know. For a firm trying to find who among two hundred partners can reach a target, that pooling is the whole product.
+- **Zero-touch ingestion.** It pulls from email, calendar, CRM, and LinkedIn automatically, with entity resolution, so nobody has to manually capture anything. Dhaga is capture-first: you feed it.
+- **Proactive deal signals at scale.** Daily briefs backed by news monitoring across millions of articles, with estimated deal value attached. That's a revenue engine, not a memory aid.
+- **Deep enterprise integrations** into DealCloud, Backstop, Snowflake, Databricks, and the rest — the plumbing a large firm already runs on.
+- **Enterprise trust and scale.** SOC 2 Type II, GDPR, a Goldman Sachs pedigree, and an architecture built to hold millions of relationships across a whole organization.
+
+None of that is faint praise. If the job is *arm a revenue team*, Louisa is aimed squarely at it.
+
+## Where Dhaga wins
+
+For an individual, the ledger flips:
+
+- **It's built for one person.** Louisa needs a firm and colleagues to be useful; Dhaga is useful the moment you capture your second contact. No team required.
+- **You own the data — permanently.** Dhaga is open-source (AGPL core) and self-hostable. Your graph lives where you put it and survives every job change. Louisa's graph is the employer's and is gone when you walk out.
+- **A free tier and a ~$8/mo Pro plan** — versus no free tier and a reported per-seat price roughly 6x higher. You can start at zero and stay there if all you need is manual capture.
+- **No rollout, no IT, no sales cycle.** There's no four-week deployment and no "book a conversation." You sign up and go.
+- **Capture from anywhere.** Business-card scan, voice notes, web quick-add, a browser extension, and a Telegram bot — the messy, on-the-go ways an individual actually collects people. Louisa has none of these; it ingests from corporate systems instead.
+- **Receipts and clean deletion.** Every AI-derived fact keeps a link to the note it came from, and deleting a contact cascades fully through notes, facts, edges, and embeddings. Your data leaves as cleanly as it arrived.
+
+The one claim Dhaga *won't* make: that its relationship graph is unique. Plenty of tools, Louisa included, map connections. Dhaga's difference is that the map is private, built from your own notes, self-hostable, and yours.
+
+## Who should choose which
+
+This is the rare comparison where the right answer is almost never "it depends" — it's "who are you?"
+
+**Choose Louisa** if you're a revenue team at a relationship-driven firm — a bank, a PE shop, a consultancy, a law firm — with budget, a tolerance for a four-week rollout, and a real need to mine your colleagues' collective network for origination. That's exactly the buyer it was built for.
+
+**Choose Dhaga** if you're an individual — a founder, an operator, a solo VC, especially one living on warm intros in the India ecosystem — who wants a private, self-hostable **personal CRM** they actually own, with a free manual tier and cheap paid AI, and no employer, org, or procurement process in the loop.
+
+Different buyers, plainly. If you want to see how Dhaga stacks up against the *other* personal CRM most individuals consider, read [Dhaga vs Dex](/blog/guides/dhaga-vs-dex). And if what you're really after is finding the shortest path to someone specific, the mechanics are in [warm introductions and mutual connections](/blog/guides/warm-introductions-mutual-connections).
+
+## Takeaway
+
+Louisa AI and Dhaga both sell "relationship intelligence," but they answer to different masters. Louisa's graph belongs to a firm and pays off when a team mines it together; Dhaga's graph belongs to you and pays off the moment you need to remember who you know. If your network is a company asset, Louisa is the serious tool. If your network is *yours* — and you want it to stay yours through every job you'll ever have — that's the whole reason [Dhaga](/) exists.

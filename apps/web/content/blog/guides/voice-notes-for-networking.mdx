@@ -1,0 +1,119 @@
+---
+title: "Voice Notes for Networking: Capture Contacts Fast"
+description: "Turn a 20-second memo into an organized contact the moment you leave the room."
+date: "2026-07-24"
+author: "Anchit Shrivastava"
+tags: ["voice-notes", "networking", "personal-crm", "capture", "guide"]
+---
+
+<Callout title="The short version">
+The details that make a contact useful — where you met, what they do, what you promised to send — evaporate within hours. Typing them into a form at a noisy event is a non-starter. Speaking a 20-second memo is the fastest way to capture. The trick is making sure that memo doesn't die as an audio file: a voice-notes networking app should turn what you said into a structured contact you can actually search later.
+</Callout>
+
+You leave a good conversation carrying a small, perishable pile of context. She runs growth at a fintech in Bangalore. He's the second angel who's mentioned climate this month. The person by the coffee said, very specifically, "send me the deck, I'll forward it internally." All of it feels unforgettable in the moment.
+
+It is not unforgettable. Give it three hours and a few more conversations, and it's gone — not the person, the *context around* the person. You'll still have a name and maybe a company. You won't have the one line that was actually a door opening.
+
+The failure isn't your memory. It's that the moment you'd capture this is the worst possible moment to type. You're standing, holding a drink, mid-eye-contact with the next person. Pulling out your phone to tap through a contact form is both slow and rude. So you tell yourself you'll do it later, on the drive home or over the weekend, and later never arrives with the details intact.
+
+Voice fixes the capture problem. It's the one input you can use while walking to the next room, hands half-full, in under half a minute. This guide is about doing it well — and about the part most people skip, which is making sure the voice note becomes something more than a recording you never play back.
+
+## Why voice wins the capture race
+
+Capture has exactly one hard requirement: it has to be faster than the moment closes. Everything else is secondary. A perfect note you write next Tuesday is worth less than a rough one you speak in the corridor, because by Tuesday the specifics are already smeared.
+
+Voice clears the bar the way nothing else does:
+
+- **It's hands-free enough.** One button, then talk. No keyboard, no autocorrect fighting you over an unfamiliar name, no form to tab through. Hands-free contact capture means you can do it while you're still moving between conversations.
+- **It carries nuance.** You'll say "seemed lukewarm on the raise but very warm on hiring" out loud in a way you'd never bother to type. The throwaway phrasing is often the most valuable part.
+- **It respects the 20-second window.** The useful memo is short: who, where, what they do, what you agreed to do next. Speaking that takes twenty seconds. Typing the same thing well takes two minutes you don't have.
+
+> The best contact note is the one that exists. Voice wins because it's the only capture method fast enough to beat your own forgetting.
+
+The founder version of this is brutal because the volume is high. A demo day, a conference, an investor dinner — you might have fifteen conversations that each mattered, back to back. Nobody types fifteen contact records that night. But you can absolutely speak fifteen 20-second memos, one after each handshake, and record each contact right after the meeting while it's still sharp.
+
+## Where an ordinary voice memo goes to die
+
+Here's the trap. You already have a voice memo app on your phone, so you use it. You walk out, you record, you feel responsible. Good instinct — dead end.
+
+A raw voice memo has two failure modes, and it hits both. If it stays audio, you will never listen to it again; a folder of untitled 45-second clips is a graveyard, not a database. And if your phone transcribes it, you get a wall of unstructured text sitting in a notes app with a hundred other walls of text — not attached to a person, not searchable by company, not connected to a follow-up. Six weeks later, when you're trying to remember who offered to make the intro, there is no query that finds it. You'd have to already know which memo to open, which defeats the entire point.
+
+That's the real gap between a voice memo and voice note contact capture that works. Fast capture is only half the job. The other half is turning the spoken words into a contact with fields — a name, a company, the context, the thing you owe them — that lives somewhere you can search. A voice-note CRM does the second half. A voice memo app leaves it to future-you, and future-you is busy and has forgotten.
+
+## From spoken memo to a structured contact
+
+This is the wedge, and it's worth being concrete about the mechanics. A voice-to-contact app shouldn't hand you a transcript and call it done. It should take the twenty seconds you spoke and pull out the pieces that make a contact usable.
+
+<FlowDiagram
+  caption="A spoken memo becomes a structured contact — not just an audio file sitting in a folder."
+  stages={[
+    { label: "Speak", sub: "~20-second memo" },
+    { label: "Transcribe", sub: "Speech to text" },
+    { label: "Extract", sub: "Name, company, context, follow-up" },
+    { label: "Graph", sub: "Contact + facts, each with a receipt" },
+  ]}
+/>
+
+In Dhaga today, this runs in the web app: you dictate a note, the browser turns it into a transcript, and the transcript is handed to extraction, which pulls out structured facts — who they work for, how you met, what you agreed to do next — and files them against a contact. Each fact keeps a **receipt**: a link back to the exact note it came from, stamped with the date. So a claim on the contact page is never a floating assertion; it's traceable to something you actually said. On-device voice capture for the Dhaga mobile app — where transcription is built to happen on the phone so the audio never leaves it — is in progress and not yet released; treat that part as roadmap, not a promise.
+
+What you say, loosely:
+
+> "Met Ananya at the SaaSBoomi dinner, she leads growth at a payments startup, said she's hiring a founding designer and asked me to send names, follow up next week."
+
+What lands: a contact named Ananya, linked to her company, tagged to the event, with a captured fact about the founding-designer search and a follow-up to send names next week. You spoke one sentence. You got a filled-in record you can find later by searching for "who was hiring a designer" instead of scrubbing through audio.
+
+## What "structured" actually buys you
+
+The payoff isn't the tidy contact page. It's what happens weeks later, when the context you captured is exactly what you need and you'd otherwise have lost it.
+
+<Timeline
+  caption="Capture in the moment; recall when it actually matters."
+  items={[
+    { time: "0:00", label: "Walk out of the room", detail: "One button, talk for 20 seconds." },
+    { time: "2 min later", label: "Contact filed", detail: "Name, company, context, and a follow-up — extracted.", accent: true },
+    { time: "Week 6", label: "You need them", detail: "Search your own notes in plain English, not a folder of clips." },
+  ]}
+/>
+
+Because the memo became facts inside a personal CRM, three things are true that were never true of a voice memo:
+
+- **It's searchable by meaning, not filename.** You look for "who mentioned hiring" or "people I met at SaaSBoomi," not for a clip you'd have to already remember exists.
+- **It's connected.** The contact sits in a graph next to the company, the event, and the other people you met there — so recall pulls the whole cluster, not one orphaned record.
+- **It's honest.** Every extracted fact points back to the note that produced it. If the extraction misread something, you can see the source and fix it. No fact without a receipt.
+
+| | Phone voice memo | Voice note in a personal CRM |
+|---|---|---|
+| Time to capture | ~20 seconds | ~20 seconds |
+| Ends up as | An audio clip or loose transcript | A contact with structured facts |
+| Findable later | Only if you remember the clip | Searchable by who, what, where |
+| Linked to a follow-up | No | Yes, with a due reminder |
+| Traceable source | The recording, if you find it | A receipt on every fact |
+
+## A 20-second script that extracts cleanly
+
+You'll get better contacts out if you feed better memos in. You don't need to be precise or fluent — extraction handles messy speech — but hitting four beats reliably gives it the hooks it needs:
+
+1. **Name and where.** "Met Rohan at the founders' brunch." Anchors the person and the event.
+2. **What they do.** "He's building a logistics SaaS, ex-Flipkart." This is the company and context.
+3. **The signal.** "Said he angel invests a bit, mostly seed." The line that's actually a door.
+4. **The next action.** "Follow up with a warm intro to Priya." This becomes your follow-up.
+
+Do it in the corridor, right after the handshake, before the next conversation overwrites it. If you're at a multi-day event, one memo per person as you walk away beats a heroic hour of typing at midnight that you won't do.
+
+## Where Dhaga fits — honestly
+
+Dhaga is an AI-native personal CRM: capture contacts by voice, business-card scan, web quick-add, or the browser extension; every note turns into a private knowledge graph you can query in plain English; and it nudges you when a follow-up is due. It's privacy-first and open-core — the core is AGPL and self-hostable, so if you'd rather your relationship memory lived on your own infrastructure, it can.
+
+A few honest lines so you know exactly what you're getting:
+
+- **Voice capture is live on web today.** Dictate a note and it becomes a transcript attached to a contact. Mobile on-device voice capture is on the roadmap, not shipped — I'd rather say that plainly than imply more than is built.
+- **The AI extraction — turning your spoken memo into structured facts — is a paid feature.** On the free tier there's no cloud AI; you keep the transcript as a note and add the name, company, and follow-up yourself, by hand, which still beats a graveyard of audio clips. The extraction is what removes the typing.
+- **It's a personal CRM, not a sales pipeline.** If you want deal stages and quotas, use a sales CRM. Dhaga is relationship memory for the people you actually know.
+
+Once contacts are captured, the point is to act on them. Two sibling guides carry it forward: [how to follow up after a networking event](/blog/guides/how-to-follow-up-after-a-networking-event) turns those captured follow-ups into sent messages, and [AI tools for networking in India](/blog/guides/ai-tools-for-networking-india) covers the wider stack of capture-and-recall tools if you're comparing options.
+
+## The takeaway
+
+The reason your network feels smaller than it is has nothing to do with how many people you've met. It's that the useful context around each person expires in hours and your tools don't catch it. Voice is the fastest net you have — it's the only capture that fits the twenty-second window between one conversation and the next. Just don't let the memo die as an audio file. Speak it, let it become a structured contact with a name, a company, a reason, and a follow-up, and it'll be there in week six when the question you're asking has completely changed.
+
+Capture the way you actually move through a room. [Dhaga](/) keeps the thread.

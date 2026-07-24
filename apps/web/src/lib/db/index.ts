@@ -22,7 +22,7 @@ import { embeddings } from "./schema/embeddings";
 import { extractionJobs } from "./schema/jobs";
 import { signals } from "./schema/signals";
 import { calendarConnections } from "./schema/calendar";
-import { aiActions, settings } from "./schema/meta";
+import { aiActions, settings, voiceVocab } from "./schema/meta";
 import { graphLayouts } from "./schema/graph-layouts";
 import { cardImages } from "./schema/card-images";
 import {
@@ -54,6 +54,7 @@ const schema = {
   calendarConnections,
   aiActions,
   settings,
+  voiceVocab,
   graphLayouts,
   cardImages,
   user: authUser,

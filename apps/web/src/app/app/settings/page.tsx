@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { requireUserIdForPage } from "@/lib/auth/guard";
 import { ListSkeleton } from "@/components/app/skeletons";
 import { ImportPanel } from "@/components/app/import/ImportPanel";
+import { SettingsTabs } from "@/components/app/settings/SettingsTabs";
 import {
   ApiKeysSection,
   BillingSection,
@@ -11,6 +12,7 @@ import {
   SecuritySection,
   SuggestionsSection,
   VoiceInputSection,
+  VoiceTeachingSection,
 } from "./sections";
 
 export const metadata = { title: "Settings — Dhaga" };
@@ -23,6 +25,11 @@ export default async function SettingsPage({
   // Auth guard: the one lookup that must resolve before any card renders.
   // Memoized, so each section re-reading the session/user costs nothing more.
   await requireUserIdForPage();
+  // searchParams is a fast (non-DB) resolve; awaiting it here only decides which
+  // tab opens. The OAuth-callback flow returns to ?calendar=… and relies on the
+  // Calendar tab being selected. The promise is still passed to CalendarSection
+  // (unchanged) so its own listCalendarConnections() query keeps streaming.
+  const { calendar } = await searchParams;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -32,47 +39,67 @@ export default async function SettingsPage({
           Everything here is about what Dhaga keeps — and only for you.
         </p>
       </div>
-      <Suspense fallback={<ListSkeleton rows={2} />}>
-        <ProfileSection />
-      </Suspense>
-      <Suspense fallback={<ListSkeleton rows={2} />}>
-        <BillingSection />
-      </Suspense>
-      <Suspense fallback={<ListSkeleton rows={4} />}>
-        <SecuritySection />
-      </Suspense>
-      <Suspense fallback={<ListSkeleton rows={2} />}>
-        <CalendarSection searchParams={searchParams} />
-      </Suspense>
-      <Suspense fallback={<ListSkeleton rows={3} />}>
-        <SuggestionsSection />
-      </Suspense>
-      <Suspense fallback={<ListSkeleton rows={2} />}>
-        <CardPhotoSection />
-      </Suspense>
-      <Suspense fallback={<ListSkeleton rows={2} />}>
-        <VoiceInputSection />
-      </Suspense>
-      <Suspense fallback={<ListSkeleton rows={2} />}>
-        <ApiKeysSection />
-      </Suspense>
-      <section id="import" className="scroll-mt-20 space-y-4 rounded-2xl border border-seam bg-panel p-5">
-        <div>
-          <h2 className="font-display text-lg">Import contacts</h2>
-          <p className="mt-1 text-sm text-fog">
-            Bring in a Google Contacts or LinkedIn CSV. Parsing happens in your browser,
-            and existing people are skipped safely.
-          </p>
-        </div>
-        <ImportPanel />
-        <div className="border-t border-seam pt-4">
-          <p className="text-sm font-medium text-paper">Connected contacts</p>
-          <p className="mt-1 text-xs text-fog">
-            Direct Google and on-device contact sync are not connected yet. They will
-            require explicit account or device permission before Dhaga reads anything.
-          </p>
-        </div>
-      </section>
+      <SettingsTabs
+        calendarActive={Boolean(calendar)}
+        account={
+          <>
+            <Suspense fallback={<ListSkeleton rows={2} />}>
+              <ProfileSection />
+            </Suspense>
+            <Suspense fallback={<ListSkeleton rows={2} />}>
+              <BillingSection />
+            </Suspense>
+            <Suspense fallback={<ListSkeleton rows={4} />}>
+              <SecuritySection />
+            </Suspense>
+            <Suspense fallback={<ListSkeleton rows={2} />}>
+              <ApiKeysSection />
+            </Suspense>
+          </>
+        }
+        capture={
+          <>
+            <Suspense fallback={<ListSkeleton rows={2} />}>
+              <CardPhotoSection />
+            </Suspense>
+            <Suspense fallback={<ListSkeleton rows={2} />}>
+              <VoiceInputSection />
+            </Suspense>
+            <Suspense fallback={<ListSkeleton rows={2} />}>
+              <VoiceTeachingSection />
+            </Suspense>
+          </>
+        }
+        calendar={
+          <Suspense fallback={<ListSkeleton rows={2} />}>
+            <CalendarSection searchParams={searchParams} />
+          </Suspense>
+        }
+        suggestions={
+          <Suspense fallback={<ListSkeleton rows={3} />}>
+            <SuggestionsSection />
+          </Suspense>
+        }
+        importPanel={
+          <section id="import" className="scroll-mt-20 space-y-4 rounded-2xl border border-seam bg-panel p-5">
+            <div>
+              <h2 className="font-display text-lg">Import contacts</h2>
+              <p className="mt-1 text-sm text-fog">
+                Bring in a Google Contacts or LinkedIn CSV. Parsing happens in your browser,
+                and existing people are skipped safely.
+              </p>
+            </div>
+            <ImportPanel />
+            <div className="border-t border-seam pt-4">
+              <p className="text-sm font-medium text-paper">Connected contacts</p>
+              <p className="mt-1 text-xs text-fog">
+                Direct Google and on-device contact sync are not connected yet. They will
+                require explicit account or device permission before Dhaga reads anything.
+              </p>
+            </div>
+          </section>
+        }
+      />
     </div>
   );
 }

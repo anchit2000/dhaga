@@ -12,6 +12,7 @@ import {
   events,
   positions,
   signals,
+  voiceVocab,
   type ContactRow,
 } from "@/lib/db/schema";
 
@@ -44,6 +45,7 @@ export async function exportEverything(): Promise<Record<string, unknown>> {
     allFollowUps,
     allSignals,
     allCardImages,
+    allVoiceVocab,
   ] = await Promise.all([
     db.select().from(contacts),
     db.select().from(companies),
@@ -56,6 +58,7 @@ export async function exportEverything(): Promise<Record<string, unknown>> {
     db.select().from(followUps),
     db.select().from(signals),
     db.select().from(cardImages),
+    db.select().from(voiceVocab),
   ]);
   return {
     exported_at: new Date().toISOString(),
@@ -70,5 +73,6 @@ export async function exportEverything(): Promise<Record<string, unknown>> {
     follow_ups: allFollowUps,
     signals: allSignals,
     card_images: allCardImages,
+    voice_vocab: allVoiceVocab,
   };
 }

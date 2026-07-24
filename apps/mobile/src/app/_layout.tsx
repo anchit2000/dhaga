@@ -3,13 +3,16 @@ import { Stack, router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Pressable, StyleSheet, View } from "react-native";
 
-import { COLORS } from "@/utils/constants";
+import { COLORS, VOCAB_HREF, VOCAB_SCREEN } from "@/utils/constants";
 
 function HeaderActions() {
   return (
     <View style={styles.headerActions}>
       <Pressable onPress={() => router.push("/import")} hitSlop={12} accessibilityLabel="Import contacts">
         <Feather name="users" size={20} color={COLORS.paper} />
+      </Pressable>
+      <Pressable onPress={() => router.push(VOCAB_HREF)} hitSlop={12} accessibilityLabel="Voice vocabulary">
+        <Feather name="book-open" size={20} color={COLORS.paper} />
       </Pressable>
       <Pressable onPress={() => router.push("/setup")} hitSlop={12} accessibilityLabel="Settings">
         <Feather name="settings" size={20} color={COLORS.paper} />
@@ -34,6 +37,7 @@ export default function RootLayout() {
         <Stack.Screen name="index" options={{ title: "Dhaga", headerRight: HeaderActions }} />
         <Stack.Screen name="setup" options={{ title: "Connect to Dhaga" }} />
         <Stack.Screen name="import" options={{ title: "Import contacts" }} />
+        <Stack.Screen name={VOCAB_SCREEN} options={{ title: "Voice vocabulary" }} />
       </Stack>
     </>
   );

@@ -58,4 +58,33 @@ CREATE TABLE IF NOT EXISTS signals (
 
 -- The person page's signal list fetches a contact's signals newest-first.
 CREATE INDEX IF NOT EXISTS signals_contactId_idx ON signals (contact_id, created_at DESC);
+
+-- Taught dictation vocabulary (voice teaching). Synthetic text PK so there's no
+-- natural-key constraint to juggle across the self-host/EE-RLS split — per-user
+-- uniqueness of term_lc is enforced in the repo (lookup-then-upsert), not by a
+-- DB constraint. No user_id here; EE's rls-ddl adds user_id + RLS + the tenant
+-- default (packages/ee/src/db/rls-ddl.ts). keys are precomputed double-metaphone
+-- codes for term + aliases (see @dhaga/core/src/voice/teaching/phonetic).
+CREATE TABLE IF NOT EXISTS voice_vocab (
+  id text PRIMARY KEY,
+  term text NOT NULL,
+  term_lc text NOT NULL,
+  aliases jsonb NOT NULL DEFAULT '[]',
+  keys jsonb NOT NULL DEFAULT '[]',
+  boost integer NOT NULL DEFAULT 8,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- Self-heals a voice_vocab that pre-dates this primary key (CREATE TABLE IF NOT
+-- EXISTS above is a no-op against an existing table, so it can never add a
+-- missing constraint on its own). Same idempotent pattern as settings.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conrelid = 'voice_vocab'::regclass AND contype = 'p'
+  ) THEN
+    ALTER TABLE voice_vocab ADD PRIMARY KEY (id);
+  END IF;
+END $$;
 `;

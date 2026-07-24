@@ -111,6 +111,16 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Voice notes on web (browser SpeechRecognition → transcript → extraction)
 - [ ] Voice notes on mobile (whisper.cpp / Apple Speech — mobile milestone) — built via `expo-speech-recognition` (wraps iOS `SFSpeechRecognizer`/Android `SpeechRecognizer`, forced on-device, no audio/transcript leaves the phone); tap mic → live interim transcript fills the same text-review box typed input uses (`e64b336`). Typecheck/lint pass; **package has no published SDK-57 tag yet** (installed cleanly, types check, but native linking in an EAS/dev-client build is unverified) — needs a real device build before this can be checked off, not pushed
 
+### Voice STT + phonetic teaching (2026-07-24) — built, pending real verification
+
+- [x] **STT is now a pluggable engine gateway** — the `AsrEngine` contract lives in `@dhaga/core/src/voice/asr/types`; a contributor adds a better model by implementing it + one `useDictation` branch + one `EngineOption`. All existing whisper engines kept (browser / on-device Whisper / realtime).
+- [x] **"Dhaga Voice" (Moonshine tiny) engine, web** — on-device WebGPU streaming, the new **default when WebGPU is available**; degrades to the browser engine + an inline notice when it isn't (not slow WASM). `@huggingface/transformers` dynamic-import-only; COOP/COEP scoped to `/app/**`. *(typecheck + prod build pass; **pending real-browser mic/WebGPU verification**)*
+- [x] **Phonetic teaching (double-metaphone)** — shared pure-TS core (`@dhaga/core/src/voice/teaching`), **deep-import-only, Hermes-safe** (never the core barrel); web dictation applies taught spellings on finalize; **teaching/vocabulary manager in Settings** (Settings restructured into tabs — Account/Capture/Calendar/Suggestions/Import). *(pending real testing)*
+- [x] **Mobile phonetic teaching (parity)** — shared core wired into `expo-speech-recognition` dictation (`correct()` on the transcript, interim + final) + a `vocab` screen; JSON-file `VocabStore`. *(pending device build)*
+- [x] `voice_vocab` table (synthetic `id` PK, mirrors `settings`; EE `TENANT_TABLES` adds RLS) + `/api/voice/vocab` (GET/POST/DELETE) + `"use server"` actions + export coverage; AGPL-core path unaffected (no `apps/web`→`@dhaga/ee` import). LLM self-correction stays **PARKED** (§20 backlog — needs a GPU).
+- [x] Search dictation append-vs-replace bug fixed (multi-segment finals accumulate).
+- [ ] **Real-browser + device verification** (mic capture, WebGPU streaming accuracy, teaching round-trip) and **commit** (currently uncommitted on `main`).
+
 ## 7. Knowledge graph v0 (M5)
 
 - [x] Relationship edges written from extraction (`works_at`, `knows`, `used_to_work_at`, …)
@@ -258,3 +268,4 @@ declined (BRD §5.4).
 - [ ] Personal-life logging modules (optional, off by default): gift tracking, journal/diary + mood, activity log, debt tracking, pets
 - [ ] Mail-merge / bulk personalized outreach + public API + Zapier app — extends the existing outbound webhooks (§16)
 - [ ] Two-way native phone address-book sync — extends the current one-way expo-contacts import (§12)
+- [ ] Voice dictation self-correction ("schedule at 3, no make it 4") — semantic LLM edits + a deterministic number/time pass; **deferred pending a dedicated GPU host** for the correction model. The in-browser correction LLM is CPU-bound (~48 s/edit) on consumer GPUs, too slow to be "then and there". Prototyped in the browser-voice R&D (`llm-experiments` repo, `feat/voice-browser-jarvis`); real-time in-browser STT (Moonshine, WebGPU) is proven there and is the intended `whisper-base` replacement that ports independently — only the correction layer is parked. (BRD §5.4)

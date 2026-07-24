@@ -2,19 +2,21 @@
 
 import { useRef, useState, type RefObject } from "react";
 import { Camera, Loader2, Mic, Square, Upload, UserPlus } from "lucide-react";
-import { GlassSurface } from "@/components/ui/glass-surface";
-import { Dock, type DockItemData } from "@/components/ui/dock";
-import { PhotoCropper } from "../PhotoCropper";
-import { WebcamCapture } from "../WebcamCapture";
-import { downscalePhoto } from "../downscalePhoto";
-import { useDictation } from "../contact/useDictation";
-import { DictationProgress } from "../contact/DictationProgress";
+import { type DockItemData } from "@/components/ui/dock";
+import { PhotoCropper } from "../../PhotoCropper";
+import { WebcamCapture } from "../../WebcamCapture";
+import { downscalePhoto } from "../../downscalePhoto";
+import { useDictation } from "../../contact/useDictation";
+import { VoiceNoteReview } from "../../contact/VoiceNoteReview";
+import { useVoiceReview } from "../../contact/useVoiceReview";
+import { DockBar } from "./dock-bar";
 
 /**
  * Floating quick-add dock: voice dictation, live webcam capture, and file
  * upload all converge on the same review screen as the paste/photo forms —
  * voice and the file-upload photo path both call `onSubmitPhoto`/dictate into
- * the shared textarea rather than opening a separate flow.
+ * the shared textarea rather than opening a separate flow. On Dhaga Voice the
+ * dictated transcript also surfaces above the dock as tap-to-fix word-chips.
  */
 export function QuickAddDock({
   formAction,
@@ -38,6 +40,7 @@ export function QuickAddDock({
   const [showCamera, setShowCamera] = useState(false);
   const [photoToCrop, setPhotoToCrop] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const voiceReview = useVoiceReview(pasteTextareaRef);
   const {
     supported: dictationSupported,
     listening,
@@ -50,6 +53,7 @@ export function QuickAddDock({
     const el = pasteTextareaRef.current;
     if (!el) return;
     el.value = el.value ? `${el.value.replace(/\s+$/, "")} ${text}` : text;
+    voiceReview.onDictate(el.value);
   });
   const dictationBusy = transcribing || loadingProgress !== null;
 
@@ -124,28 +128,17 @@ export function QuickAddDock({
           }}
         />
       ) : null}
-      <div
-        className={
-          floating
-            ? "pointer-events-none fixed inset-x-0 bottom-6 z-30 flex flex-col items-center gap-2 px-4"
-            : "flex flex-col items-center gap-2"
-        }
-      >
-        {dictationBusy ? (
-          <div className={`rounded-full border border-seam bg-panel px-3 py-1 ${floating ? "pointer-events-auto" : ""}`}>
-            <DictationProgress loadingProgress={loadingProgress} transcribing={transcribing} partialText={partialText} />
-          </div>
-        ) : null}
-        <GlassSurface
-          width="fit-content"
-          height={88}
-          borderRadius={28}
-          backgroundOpacity={0.35}
-          className={`tour-quick-add px-1 ${floating ? "pointer-events-auto" : ""}`}
-        >
-          <Dock items={items} />
-        </GlassSurface>
-      </div>
+      {voiceReview.show ? (
+        <VoiceNoteReview text={voiceReview.text} onChange={voiceReview.onChange} onWordFix={voiceReview.onWordFix} />
+      ) : null}
+      <DockBar
+        floating={floating}
+        items={items}
+        dictationBusy={dictationBusy}
+        loadingProgress={loadingProgress}
+        transcribing={transcribing}
+        partialText={partialText}
+      />
     </>
   );
 }

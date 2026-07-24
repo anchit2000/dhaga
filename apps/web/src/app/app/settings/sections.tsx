@@ -5,6 +5,7 @@ import { getAuth } from "@/lib/auth/config";
 import { getBillingGate } from "@/lib/hosted/gate";
 import { aiActionsUsedThisMonth, effectiveMonthlyAiCap } from "@/lib/ai/metering";
 import { getSttEngine, shouldStoreCardPhotos } from "@/lib/repo/settings";
+import { listVocab } from "@/lib/repo/voice-vocab";
 import { listCalendarConnections } from "@/lib/repo/calendar";
 import {
   getDailySuggestionCount,
@@ -17,6 +18,7 @@ import { CalendarConnectionsSetting } from "@/components/app/settings/CalendarCo
 import { SuggestionsSetting } from "@/components/app/settings/SuggestionsSetting";
 import { CardPhotoSetting } from "@/components/app/settings/CardPhotoSetting";
 import { VoiceInputSetting } from "@/components/app/settings/VoiceInputSetting";
+import { VoiceTeaching } from "@/components/app/settings/VoiceTeaching";
 import { ApiKeysSetting } from "@/components/app/settings/ApiKeysSetting";
 import { BillingSetting } from "@/components/app/settings/BillingSetting";
 import { ProfileSetting } from "@/components/app/settings/ProfileSetting";
@@ -108,6 +110,11 @@ export async function CardPhotoSection() {
 export async function VoiceInputSection() {
   const engine = await getSttEngine();
   return <VoiceInputSetting engine={engine} />;
+}
+
+export async function VoiceTeachingSection() {
+  const terms = await listVocab();
+  return <VoiceTeaching terms={terms} />;
 }
 
 export async function ApiKeysSection() {

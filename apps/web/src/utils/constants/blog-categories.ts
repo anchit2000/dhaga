@@ -1,8 +1,9 @@
-// The three top-level blog categories. Each maps to a folder under
-// content/blog/ (engineering/, solutions/, general/) and to the auto-generated
-// category landing rendered by the /blog catch-all route. `slug` is the first
-// path segment; `label` is the sidebar/landing title (note "solutions" shows as
-// "By profession"). Keep in sync with the folders and their meta.json titles.
+// The top-level blog categories. Each maps to a folder under
+// content/blog/ (engineering/, solutions/, guides/, general/) and to the
+// auto-generated category landing rendered by the /blog catch-all route. `slug`
+// is the first path segment; `label` is the sidebar/landing title (note
+// "solutions" shows as "By profession"). Keep in sync with the folders and
+// their meta.json titles.
 export interface BlogCategory {
   slug: string;
   label: string;
@@ -21,6 +22,12 @@ export const BLOG_CATEGORIES: readonly BlogCategory[] = [
     label: "By profession",
     description:
       "How Dhaga fits specific lines of work — the daily relationship problems each one faces, and how capture, the knowledge graph, natural-language recall, and proactive intelligence map onto them.",
+  },
+  {
+    slug: "guides",
+    label: "Guides",
+    description:
+      "Practical, step-by-step guides to networking and running a personal CRM — how to capture people, keep relationships warm, follow up on time, and turn scattered notes into a knowledge graph you can actually query.",
   },
   {
     slug: "general",

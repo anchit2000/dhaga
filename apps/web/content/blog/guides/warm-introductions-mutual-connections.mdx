@@ -1,0 +1,134 @@
+---
+title: "Warm Introductions: Find Mutual Connections Fast"
+description: "Map mutual connections and find the shortest path to any investor you want to meet."
+date: "2026-07-24"
+author: "Anchit Shrivastava"
+tags: ["warm-intros", "networking", "founders", "personal-crm", "guide"]
+---
+
+<Callout title="The short version">
+A warm introduction is a message that arrives with borrowed trust — someone the target already respects vouching for you. The hard part isn't writing it; it's finding *who* can make it. That means mapping your mutual connections and spotting the shortest path to the person you want to reach. This is a practical playbook: why warm intros beat cold outreach, how to find mutual connections, how to ask with a double opt-in, and how to give intros well.
+</Callout>
+
+Every Indian founder eventually hits the same wall. The runway math stops being comfortable, you decide to raise, and your first honest thought is: *I don't actually know any VCs.* So you draft a cold email to a partner at a fund you admire, hit send, and it lands in a folder with four hundred other cold emails that will never be read.
+
+Here's the thing you already suspect: you were never as far from that investor as it felt. Somewhere in your phone, your WhatsApp, your old colleagues, and your last three events is a person who knows them — and would happily say a good word. You just can't see the path. This guide is about making that path visible, and then walking it well.
+
+## Why warm intros beat cold outreach
+
+Nobody needs convincing that a warm intro works better than a cold DM. Investors say it constantly, and it's commonly cited that most seed rounds start with a warm connection rather than a form submission. Treat the specific numbers you'll see floating around — "4x more likely," "X% of rounds start warm" — as folklore, not data. The mechanism, though, is real and easy to reason about.
+
+A cold email asks a busy stranger to spend trust they don't have on you yet. A warm introduction *borrows* trust that already exists between two people. When a founder the investor already backed says "you should meet this person," the investor isn't evaluating you from zero — they're extending an existing relationship. That's the whole trick. You're not skipping the evaluation; you're starting it from a warmer place.
+
+<FeatureMatrix
+  caption="Warm intro vs. cold outreach — the honest trade-off."
+  highlightColumn={1}
+  columns={["", "Warm intro", "Cold outreach"]}
+  rows={[
+    { feature: "Reaches the inbox", values: ["Usually", "Sometimes"] },
+    { feature: "Arrives with context", values: [true, false] },
+    { feature: "Borrows existing trust", values: [true, false] },
+    { feature: "Needs a mutual connection", values: [true, false] },
+    { feature: "Scales to high volume", values: [false, true] },
+  ]}
+/>
+
+The matrix is deliberately fair: cold outreach scales in a way warm intros never will. You can send a hundred cold emails in an afternoon and you cannot ask for a hundred warm intros without burning every relationship you have. The point isn't "never go cold." It's that for the handful of people who genuinely matter — a lead investor, a first enterprise customer, a key hire — a warm path is worth the effort to find.
+
+## Find mutual connections: the shortest-path idea
+
+Networks are graphs. You sit at the center, the people you know form your first degree, the people *they* know form your second degree, and the person you want to reach is a node somewhere out there. "Finding mutual connections" is really a graph question: **what is the shortest path from you to the target, and who's on it?**
+
+The shortest path matters because every hop costs trust. A two-hop path — you know Priya, Priya knows the investor — is a single, comfortable ask. A four-hop path, where the intro gets relayed through people who barely remember each other, dilutes to nothing by the time it arrives. Fewer intermediaries, stronger vouch.
+
+<NodeGraph
+  caption="One target investor, several ways in — but only the amber route is short enough to trust."
+  height={440}
+  nodes={[
+    { id: "you", label: "You", x: 64, y: 220, kind: "you" },
+    { id: "priya", label: "Priya", x: 222, y: 70, kind: "mutual" },
+    { id: "arjun", label: "Arjun", x: 222, y: 175, kind: "contact" },
+    { id: "neha", label: "Neha", x: 222, y: 280, kind: "contact" },
+    { id: "farida", label: "Farida", x: 222, y: 385, kind: "contact" },
+    { id: "dev", label: "Dev", x: 400, y: 108, kind: "contact" },
+    { id: "kabir", label: "Kabir", x: 400, y: 220, kind: "mutual" },
+    { id: "sana", label: "Sana", x: 400, y: 332, kind: "contact" },
+    { id: "meera", label: "Meera · VC", x: 568, y: 210, kind: "target" },
+  ]}
+  edges={[
+    { from: "you", to: "priya", strong: true },
+    { from: "priya", to: "meera", strong: true },
+    { from: "you", to: "arjun" },
+    { from: "arjun", to: "kabir" },
+    { from: "kabir", to: "meera" },
+    { from: "you", to: "neha" },
+    { from: "you", to: "farida" },
+    { from: "arjun", to: "dev" },
+    { from: "farida", to: "sana" },
+  ]}
+/>
+
+Read the map above. There are two real routes to Meera, the investor you want. The long one runs you → Arjun → Kabir → Meera: three hops, three favors, three chances for the thread to go cold. The amber route runs you → Priya → Meera: two hops, one ask. Priya is a *mutual connection* — she's in your first degree and she knows Meera directly. Everyone else (Neha, Farida, Dev, Sana) is a genuine part of your network with no useful path to this particular target. That's normal. A network is mostly dead ends for any given goal; the skill is finding the one short path that isn't.
+
+The catch: **most of us cannot see this map.** LinkedIn will show you a "2nd" badge next to Meera, but it won't tell you that Priya is the right asker and Kabir the wrong one — because it doesn't know that Priya and Meera actually *like* each other, or that Kabir owes Meera a favor he'd rather not spend on you. The signal that decides whether an intro works lives in your private context, not in a public directory.
+
+## Map your own network first
+
+Before you can find the shortest path, you need the map. For most founders the raw material is already there — it's just scattered:
+
+- **Your phone and WhatsApp** — the ex-colleague who moved to a fund, the acquaintance who "does a bit of angel stuff."
+- **Old event contacts** — the person from that demo day who offered to help and then fell out of your memory.
+- **Your LinkedIn connections** — useful as a roster, even if the graph it draws is public and context-free.
+
+The work is turning that pile into something you can query. A few honest ways to do it:
+
+1. **Write down context, not just names.** "Priya — founding team at [fund], warm, met twice, offered to intro" is worth more than a phone number. The context is what tells you she's the right asker.
+2. **Note who knows whom.** Every time someone mentions a connection — "oh, I used to work with Meera" — that's an edge in your graph. Capture it.
+3. **Ask the map, not your memory.** The reason the wall feels so tall at 1 a.m. is that you're doing graph traversal in your head, and human memory is terrible at it. A written, searchable graph does the traversal for you.
+
+> Your network is almost never too small. It just isn't written down — and a connection with no context is functionally a stranger.
+
+## The double opt-in intro: how to actually ask
+
+Once you've found your Priya, don't ask her to blast the investor blind. Use the **double opt-in** — the standard, respectful way to run a warm intro, and the one most investors quietly prefer.
+
+**Step one:** ask the connector for permission to be introduced, and hand them a forwardable blurb. The blurb is the whole game. Priya is busy; if you make her write the pitch, the intro dies in her drafts. Write it *for* her, in the third person, so she can forward it with one line:
+
+> *Sharing [Founder], who's building [one-sentence what]. They just [concrete proof point — a real number, a named customer, a milestone]. They're raising a [stage] round and I thought of you because [specific reason this investor, not a generic flattery]. Happy to intro if you're open to it — no pressure.*
+
+Keep it to four or five sentences. Make the "why you" specific — thesis fit, a portfolio company, a stage they lead. Generic blurbs read as spray-and-pray and the connector can feel it.
+
+**Step two:** Priya forwards your blurb to Meera and asks, "Want an intro?" This is the second opt-in. If Meera says yes, Priya connects you. If Meera's quiet, nothing happened — no one was put on the spot, and Priya's relationship with Meera is intact. That protection is exactly *why* connectors are willing to make intros at all. Respect it and you'll get asked again; violate it and you won't.
+
+A few rules that keep you welcome:
+
+- **Never CC the target without their opt-in.** Forcing a "surprise" intro burns the connector, not just you.
+- **Make the connector look good.** They're spending their credibility. Show up prepared, reply fast, and close the loop so they know it went well.
+- **One clear ask.** "Would you introduce me to Meera for our seed round?" beats "do you know anyone who invests?"
+
+For the longer game of turning that first intro into a funded round, see our guide on [investor relationship management for startups](/blog/guides/investor-relationship-management-startups).
+
+## How to give intros well
+
+The fastest way to earn warm intros is to give them. Connectors remember who made them look good and who wasted their time, and the founders with the deepest networks are almost always generous introducers themselves.
+
+Give intros the way you'd want to receive them: **always double opt-in.** Ask both sides before you connect them. Send a two-line "why you two should talk" that makes the value obvious. And be honest about strength — "I've worked with her, she's excellent" is a real vouch; "we're LinkedIn connections" is not, and pretending otherwise spends trust you'll want back later.
+
+The compounding effect is the point. Every good intro you make is a small deposit into a network that will, when you need it, produce a Priya of your own. If you're early in building that network, our playbook on [building a professional network in India](/blog/guides/how-to-build-professional-network-india) covers where those first connectors come from.
+
+## Where a personal CRM comes in
+
+You can run this whole playbook in a notes app and a spreadsheet — the founder story behind Dhaga started exactly there, with one long night of scrolling contacts by hand. The reason a **personal CRM** helps is narrow and specific: it holds the map so you don't have to hold it in your head.
+
+Dhaga is an AI-native personal CRM built around a **private knowledge graph** of the people you actually know. You capture contacts and context anywhere — a business-card scan, a voice note after a coffee, a web quick-add, your own LinkedIn connections export — and it stitches them into a graph you own. Two things make it a genuine mutual-connection finder rather than another address book:
+
+- **Warm-path finding is built in and runs locally.** Dhaga does plain graph traversal over your shared companies, events, and relationship edges to surface who connects you to a target — no AI cost, no data leaving for a third party. "Nearby in your network" second-degree suggestions come from the same local traversal. This is the free, private core, not a paid add-on.
+- **The graph is *yours*, with the context LinkedIn can't hold.** LinkedIn's 2nd-degree is a public directory that forgets why two people matter to each other. Your Dhaga graph remembers "Priya offered to intro," "worked with Meera," "warm, met twice" — the private signal that decides whether an intro actually lands. And because Dhaga is open-source and self-hostable, that map of who-you-know can stay entirely under your control.
+
+That's the honest pitch. Not that we invented the relationship graph — plenty of tools map connections. It's that the map is private, built from your own notes, aware of your context, and something you can host yourself.
+
+## Takeaway
+
+Warm introductions win because they borrow trust that already exists. The bottleneck is never the intro itself — it's finding the shortest path to the person you want to reach, and most of us can't see that path because it lives in scattered, un-written context. Write the map down, find your two-hop connector, ask with a clean double opt-in, and give as many good intros as you get. Do that consistently and the wall at 1 a.m. — *I don't know any VCs* — stops being true.
+
+If you'd rather the map keep itself, that's the thing we're building. [Dhaga](/) turns the people you already know into a private graph you can actually query.

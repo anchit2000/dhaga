@@ -208,6 +208,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] `docker compose up` — multi-stage `Dockerfile` (node:22-slim, standalone output via `DHAGA_STANDALONE=1`, non-root, 494MB) + `compose.yml` (pgvector/pgvector:pg16 db with healthcheck) verified end-to-end 2026-07-16: Postgres-backed and zero-config PGlite boots both serve with clean first-boot DDL self-heal (the earlier single-stage image was never actually runnable — missing workspace manifest)
 - [ ] Public roadmap + good-first-issues — `docs/ROADMAP.md` written 2026-07-07, now linked from `README.md`'s Status section (2026-07-12); good-first-issue candidates drafted but intentionally not posted as real GitHub issues yet (that's a public/outward action for the owner to approve)
 - [ ] Replace randomuser.me landing portraits with licensed photos before paid marketing
+- [ ] SEO content cluster — 10 pillar "Guides" posts (personal-CRM / networking, India + founder slant, high-CTR titles/metas) under a new `guides` blog category, plus reusable on-brand MDX visual components (`Figure`/`NodeGraph`/`FlowDiagram`/`Timeline`/`FeatureMatrix`/`StatStrip` in `apps/web/src/components/blog/visuals`, registered in `mdx-components.tsx`) — written 2026-07-24, builds clean (SSG); pending in-browser visual QA + merge
 
 ## 19. SaaS platform — accounts, multi-tenancy, billing, admin (Dhaga Cloud)
 

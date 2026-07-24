@@ -1,0 +1,124 @@
+---
+title: "AI Contact Manager: Networking on Autopilot (2026)"
+description: "Turns notes and cards into a searchable network — the best AI networking tools in India for 2026."
+date: "2026-07-24"
+author: "Anchit Shrivastava"
+tags: ["ai", "personal-crm", "networking", "india", "guide"]
+---
+
+<Callout title="The short version">
+An AI contact manager reads the notes and cards you already collect, pulls out the facts (who they are, what they do, what they said), and lets you ask your network questions in plain English. The one that matters is the kind that reads *your own private notes* — not the kind that scrapes strangers off the public web. This guide explains the difference and what to look for, with an India slant.
+</Callout>
+
+You come back from a conference in Bengaluru with forty business cards, three voice memos, and a phone full of "Rahul (fintech?)" contacts you'll never decode. Two months later a term sheet conversation turns to "do you know anyone in payments," and your brain returns a flat *nope* — even though the exact person is sitting in your address book, stripped of every detail that made them worth saving.
+
+That gap is the entire reason the category exists. An **AI contact manager** is a tool that closes it: instead of storing a name and a number, it remembers the context around a person and hands it back the moment you need it. Below is what these tools actually do, how to tell the good ones apart, and where the honest lines are.
+
+## What an "AI contact manager" actually is
+
+Strip away the marketing and it's three moves stitched together:
+
+1. **Capture** — you feed it a card scan, a voice note, a pasted email signature, or a quick line of text.
+2. **Extraction** — a model reads that raw input and pulls out structured facts: name, title, company, what they work on, any commitment they made ("said he angel-invests in climate").
+3. **Recall** — you ask a question in natural language and it answers from everything you've captured.
+
+A plain phone book does none of this. A sales CRM does a version of it, but bolted onto a deal pipeline you don't want. A **smart contact manager** — the personal-CRM kind — does it for *your* relationships, on your terms, and the "AI" part is what turns a pile of notes into something you can query instead of scroll.
+
+The useful mental model: it's less an address book and more a memory that got its act together.
+
+## The dividing line: whose data is the AI reading?
+
+This is the question that separates the whole market, and almost nobody asks it out loud. When a tool says "AI-powered," it's reading data from one of two places:
+
+- **The public web.** It looks up strangers, scrapes LinkedIn and company pages, and enriches your list with data points about people who never consented to be in your database. Great for cold sales prospecting. It's also the model behind most "20 data points per contact" extensions.
+- **Your own private notes.** It reads only what *you* captured — the voice memo after the dinner, the card you scanned, the line you typed. Nothing leaves your control, and every fact traces back to a note you made.
+
+| | Public-web AI | Private-notes AI |
+|---|---|---|
+| Data source | Scraped from the internet | Your own captures |
+| Knows the throwaway "call me when you raise" | No | Yes |
+| Privacy posture | Third parties, no consent | Your data about people you met |
+| Best for | Cold outbound at scale | Your real, warm network |
+
+> A contact with no context is functionally a stranger. The value was never in collecting people — it's in remembering the stuff *around* them.
+
+For anyone building a genuine network — founders living on warm intros, operators, angels — the private-notes model is the one that pays off. The scraped-web feed is impressive in a demo and useless when the question is "who did *I* actually connect with who'd take this call." This is the wedge [Dhaga](/) is built on, and the rest of this guide leans into it.
+
+## How a private AI contact manager works
+
+Here's the pipeline, end to end. Each stage below is built and running in Dhaga today unless noted otherwise.
+
+<FlowDiagram
+  caption="A card or a voice note becomes a question you can ask in plain English."
+  stages={[
+    { label: "Capture", sub: "Card, voice, quick-add" },
+    { label: "Extract", sub: "Structured facts" },
+    { label: "Graph", sub: "Private, receipted" },
+    { label: "Ask", sub: "Natural language" },
+  ]}
+/>
+
+**Capture — anywhere.** Scan a business card with your phone camera, dictate a voice note in the browser, paste an email signature, or grab a page with a browser extension. You can also bulk-import your own LinkedIn Connections export. The point is to capture in the two seconds after you meet someone, before the context evaporates.
+
+**Extract — into structured facts.** A small, cheap model (Claude Haiku, with a strict schema so it never free-text-rambles) reads the capture and pulls out the contact fields, any relationships mentioned, follow-up commitments, and tags. Every extracted fact keeps a receipt — a pointer back to the note it came from — so you can always see *why* the system believes something, and delete a note to make its derived facts disappear.
+
+**Graph — private and yours.** Contacts, companies, events, notes, facts, and the typed edges between them go into boring relational tables — a private knowledge graph. Not a graph database, not a public directory: your own memory of who you know and how they connect. It's self-hostable and open-core (AGPL), so you can run the whole thing yourself if you'd rather not trust anyone's cloud.
+
+**Ask — in natural language.** This is the payoff. You type "who did I meet at GITEX working in fintech?" or "who offered to help with hiring?" The tool understands the query, searches across your notes and facts (keyword plus local semantic embeddings), and — if you want the AI-written answer — hands back the right people *with the receipts* for why they matched. On the free tier that recall runs on keyword and structured search at zero cost; the AI-drafted answer is a paid, explicitly-triggered action.
+
+Two honest notes on the AI. First, cloud-AI features are opt-in and metered — the free tier runs no cloud AI at all, so you're never quietly billed or quietly sending data out. Second, **automatic contact enrichment** (pulling public web data about a contact) *does* exist here, but it's strictly user-triggered, always cited, and always deletable — never a silent background scrape. That's a deliberate privacy stance, not a missing feature.
+
+## Ask your network a question
+
+The reason a graph beats a list is that a single question can fan out across people you'd never think to connect yourself.
+
+<NodeGraph
+  caption="Ask 'who can get me to a climate fund?' and the answer is a path through people you already know."
+  height={360}
+  nodes={[
+    { id: "you", label: "You", x: 90, y: 180, kind: "you" },
+    { id: "c1", label: "Meera — angel", x: 310, y: 90, kind: "contact" },
+    { id: "c2", label: "Arjun — climate", x: 310, y: 180, kind: "mutual" },
+    { id: "c3", label: "Dev — SaaS", x: 310, y: 270, kind: "contact" },
+    { id: "t1", label: "Fund partner", x: 550, y: 180, kind: "target" },
+  ]}
+  edges={[
+    { from: "you", to: "c1" },
+    { from: "you", to: "c2", strong: true },
+    { from: "you", to: "c3" },
+    { from: "c2", to: "t1", strong: true },
+  ]}
+/>
+
+Because the relationships are stored as edges, the tool can also trace **warm paths** — the shortest route from you to someone you want to reach, through mutuals and shared events. That warm-path finding runs on your own graph with no AI cost. It's the difference between "I don't know anyone at that fund" and "Arjun does, and I helped him hire last year." (More on that in [warm introductions & mutual connections](/blog/guides/warm-introductions-mutual-connections).)
+
+## What to look for in an AI networking tool (India edition)
+
+If you're comparing an **AI networking tool** for India in 2026, here's the checklist that actually matters:
+
+- **Capture where you meet people.** Indian networking happens at conferences, demo days, founder dinners, and yes, weddings — offline and fast. A tool that only ingests your inbox and LinkedIn (the desktop-first model) misses the badge scan and the voice note, which is where most of your real connections start. Insist on card scan and [voice notes for networking](/blog/guides/voice-notes-for-networking).
+- **Natural-language recall, not just search filters.** The whole promise is asking a question, not remembering which tag you used.
+- **Privacy you can verify.** Contact data is *your* data about *third parties*. Prefer tools that are user-triggered for anything that touches the web, that let you export everything, and — ideally — that are open-source or self-hostable so you can check the claim yourself.
+- **Cost that fits.** Watch for per-contact enrichment fees that balloon at scale. A model where the base **AI address book** is free and cloud AI is a bounded, metered add-on is friendlier to a bootstrapped founder than a seat-priced sales CRM.
+- **An honest data source.** Re-read the section above. If the "intelligence" is scraped strangers, it's a prospecting tool wearing a networking costume.
+
+## The honest landscape
+
+No tool is the answer for everyone. A quick, fair map of the categories of **AI CRM for networking**:
+
+- **LinkedIn** is a public directory that forgets your private context. It knows a person's job title; it will never know they told you, over dessert, that they invest in climate. Use it to find people, not to remember them.
+- **Sales CRMs** (and the LinkedIn-to-CRM enrichment extensions) are deal pipelines built for teams. Powerful, and completely the wrong shape for keeping a personal network warm.
+- **Monica** is the excellent open-source personal-CRM twin — AGPL, self-hostable, well-loved. It's not AI-native or graph-native, though, so you're doing the remembering and the connecting by hand.
+- **Enrichment-feed apps** (Clay/Mesh, Covve) auto-ingest your inbox and enrich contacts from the web. Genuinely useful, but they're inbox-centric and enrichment-first — not built around capturing new encounters at an event or a user-built private graph.
+
+Dhaga's spot on that map: **AI-native + graph-native + capture-first + private-by-default + open-source.** It's the personal CRM for the person whose network lives in conference halls and WhatsApp threads, not in a Salesforce instance.
+
+## Where Dhaga fits
+
+I built this because I needed it. I once spent an evening convinced I knew no VCs, then found a folder full of people who'd literally offered to help — the context had just evaporated. A private **AI networking assistant** is the tool that keeps that context so you never rebuild it from memory at 1am.
+
+What's live today: card scan, web voice notes, quick-add and the browser extension for capture; Haiku-based extraction into a receipted graph; keyword and natural-language "Ask AI" search; one-tap follow-up drafts; keep-in-touch reminders; warm-path finding; and on-demand pre-meeting briefs built only from your own graph. On the roadmap: opt-in job-change and news watchlists, calendar-triggered briefs, and full mobile capture with on-device voice. I'd rather ship the honest version than the demo version.
+
+The through-line is simple: capture in two seconds, let the AI do the remembering, and ask your own network a question instead of scrolling it.
+
+Your network is already huge. The tool just has to stop forgetting it for you. That's the whole idea behind [Dhaga](/) — free to start, private by default, yours to self-host.

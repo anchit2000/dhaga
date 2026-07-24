@@ -94,13 +94,30 @@ handling, and overlay rendering. react-easy-crop (6.7 kB, maintained) covers
 drag/zoom/pinch with touch support. Swap next time the cropper needs a
 feature (rotation, aspect presets); no urgency while it works.
 
-### 8. cmdk
+### 8. Searchable combobox — Base UI `Combobox` (adopted 2026-07-24); cmdk still open for the palette
 
-The shadcn `Command` wrapper around cmdk (powers Linear/Raycast palettes)
-would replace SearchPalette's hand-rolled keyboard handling and list
-navigation. Ours has custom modes (search vs. metered Ask, dictation, weight
-tuner) that don't map 1:1 — evaluate when SearchPalette next grows; medium
-value.
+Two related but distinct needs here:
+
+- **Entity-reference dropdowns (adopted).** The "add to group" control, the
+  contact-form company field, and the relationship/warm-path pickers were bare
+  `<input>`s with a hand-rolled absolutely-positioned `<ul>`. These now use a
+  shared `EntityCombobox` (`components/app/EntityCombobox.tsx`) built on the
+  `components/ui/combobox.tsx` primitive, which wraps **Base UI's native
+  `Combobox`** (`@base-ui/react/combobox`). Base UI is already the repo's
+  primitive stack (Input, Menu/DropdownMenu, Select, Dialog all wrap it), so its
+  Combobox gives portal/positioning/keyboard/a11y that matches the rest of the
+  UI **without** pulling in a second primitive stack — cmdk depends on Radix
+  internals, so adopting it here would blend Radix into an all-Base-UI codebase
+  (Rule 7/Rule 11). Server-driven results plug in via `filter={null}` + the
+  shared `useTargetSearch` debounce hook (§10). Migrating the remaining
+  hand-rolled pickers (`AttachTargetSearch`, `relationships/*`) to it is a
+  low-risk follow-up.
+- **Command palette (still open).** The shadcn `Command` wrapper around **cmdk**
+  (Linear/Raycast palettes) would replace SearchPalette's hand-rolled keyboard
+  handling. SearchPalette has custom modes (search vs. metered Ask, dictation,
+  weight tuner) that don't map 1:1, and it would introduce the Radix stack — so
+  re-evaluate cmdk vs. Base UI Combobox when SearchPalette next grows; medium
+  value.
 
 ### 9. Rate limiting — `rate-limiter-flexible` (pluggable store)
 

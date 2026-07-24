@@ -5,7 +5,6 @@ import { setUserAdminAction } from "@/lib/actions/admin/users";
 import { requireAdminForPage } from "@/lib/hosted/gate";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FREE_TIER_AI_ACTIONS_PER_MONTH } from "@/utils/constants/app";
 
 export default async function AdminUserDetailPage({
   params,
@@ -32,7 +31,7 @@ export default async function AdminUserDetailPage({
       <div className="rounded-2xl border border-seam bg-panel p-5">
         <p className="text-sm font-medium text-paper">AI usage this month</p>
         <p className="mt-1 text-sm text-fog">
-          {aiActionsThisMonth} / {subscription ? "unlimited" : FREE_TIER_AI_ACTIONS_PER_MONTH}
+          {aiActionsThisMonth} / {subscription ? "unlimited" : "No AI (free tier)"}
         </p>
       </div>
 

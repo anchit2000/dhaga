@@ -29,8 +29,14 @@ export const APP_MORE_LINKS = [
 
 export const HOME_PREVIEW_LIMIT = 5;
 
-/** Free-tier cloud AI action cap per calendar month (BRD §8.3). */
-export const FREE_TIER_AI_ACTIONS_PER_MONTH = 25;
+/**
+ * Free-tier cloud AI action cap per calendar month (BRD §8.3). The free tier
+ * gets no cloud AI at all — AI actions are a paid feature (Pro and up). The
+ * app stays fully usable manually on the free tier. Self-hosters re-enable AI
+ * by raising the cap via the `DHAGA_AI_MONTHLY_CAP` env override (see
+ * lib/ai/metering.ts).
+ */
+export const FREE_TIER_AI_ACTIONS_PER_MONTH = 0;
 
 export const CONTACT_SOURCES = ["manual", "quick_add", "import"] as const;
 export type ContactSource = (typeof CONTACT_SOURCES)[number];

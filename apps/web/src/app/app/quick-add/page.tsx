@@ -1,6 +1,7 @@
 import { requireUserIdForPage } from "@/lib/auth/guard";
 import { getCachedAppConfig } from "@/lib/cache/app-navigation";
-import { aiActionsUsedThisMonth, monthlyAiCap } from "@/lib/ai/metering";
+import { aiActionsUsedThisMonth, aiUsageLabel, monthlyAiCap } from "@/lib/ai/metering";
+import { getBillingGate } from "@/lib/hosted/gate";
 import { listEvents } from "@/lib/repo/events";
 import { activeEventId } from "@/lib/active-event";
 import { QuickAddForm } from "@/components/app/QuickAddForm";
@@ -10,12 +11,14 @@ export const metadata = { title: "Quick add — Dhaga" };
 
 export default async function QuickAddPage() {
   const userId = await requireUserIdForPage();
-  const [events, used, appConfig] = await Promise.all([
+  const [events, used, unlimited, appConfig] = await Promise.all([
     listEvents(),
     hasLLM() ? aiActionsUsedThisMonth() : Promise.resolve(0),
+    hasLLM() ? getBillingGate().then((g) => g.hasUnlimitedAi(userId)) : Promise.resolve(false),
     getCachedAppConfig(userId),
   ]);
   const storeCardPhotos = appConfig.storeCardPhotos;
+  const usageLabel = hasLLM() ? aiUsageLabel({ used, cap: monthlyAiCap(), unlimited }) : null;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -25,9 +28,9 @@ export default async function QuickAddPage() {
           Paste an email signature, card text, or an intro — Dhaga extracts the
           person and keeps the original text as the receipt.
         </p>
-        {hasLLM() ? (
+        {usageLabel ? (
           <p className="mt-1 font-mono text-[11px] uppercase tracking-wider text-fog/60">
-            {used} of {monthlyAiCap()} AI actions used this month
+            {usageLabel}
           </p>
         ) : null}
       </div>

@@ -236,7 +236,7 @@ normally only an admin can approve. `DHAGA_ADMIN_EMAILS` breaks the circle:
       an "admin" badge if applicable); click a row → `/app/admin/users/[id]`.
 - [ ] **`/app/admin/users/[id]`** — AI usage this month vs. their cap
       (`N / unlimited` if they have an active paid subscription, else
-      `N / 25`), their subscription plan+status if any, and a
+      `N / No AI (free tier)`), their subscription plan+status if any, and a
       **Make admin** / **Revoke admin** toggle button.
 - [ ] **`/app/admin/subscriptions`** — table of every subscription
       (user link, plan, status, renewal date).
@@ -359,10 +359,13 @@ Singapore
 - [ ] On the new contact: the event chip appears, and the pasted text is
       stored as a **capture source** note — that's the receipt for the
       fields.
-- [ ] With a key: the "N of \{cap\} AI actions used this month" counter
-      (confirmed `apps/web/src/app/app/quick-add/page.tsx:37`, default cap
-      25 — `FREE_TIER_AI_ACTIONS_PER_MONTH`, `apps/web/src/utils/constants/
-      app.ts:21`) increased by one.
+- [ ] With a key **and AI enabled** (a paid subscription, or
+      `DHAGA_AI_MONTHLY_CAP` set on a self-host): the "N of \{cap\} AI actions
+      used" counter (confirmed `apps/web/src/app/app/quick-add/page.tsx`, cap
+      from `monthlyAiCap()` — default `0`, cloud AI is a paid feature,
+      `FREE_TIER_AI_ACTIONS_PER_MONTH`, `apps/web/src/utils/constants/app.ts`)
+      increased by one. On the free tier with no override the line instead
+      reads "Cloud AI is a paid feature".
 
 ### 7c. Card photo scan (needs `ANTHROPIC_API_KEY`)
 

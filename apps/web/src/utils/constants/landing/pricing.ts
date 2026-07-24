@@ -8,7 +8,7 @@ export const PRICING_PLANS: PricingPlan[] = [
     highlight: false,
     features: [
       "Unlimited capture & notes",
-      "25 cloud AI actions / month",
+      "Full CRM, manual capture — no cloud AI",
       "Full export, anytime",
       "Self-host everything",
     ],
@@ -70,7 +70,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   {
     question: "How does the AI pricing work?",
     answer:
-      "Most of Dhaga is free and unmetered — voice transcription runs on-device (no audio leaves your browser), and event grouping and keyword search over your graph never touch cloud AI. Cloud AI (card reads, note extraction, NL search, drafts, briefs, enrichment) is metered: 25 actions/month free, no monthly cap on Pro and Annual. The one place cost could compound — the job-change/news watchlist — stays capped at 25 contacts per plan regardless of tier. Power users can plug in their own API key or a local model and pay us nothing for AI.",
+      "Most of Dhaga is free and unmetered — voice transcription runs on-device (no audio leaves your browser), and event grouping and keyword search over your graph never touch cloud AI. The free tier is fully usable manually, but cloud AI (card reads, note extraction, NL search, drafts, briefs, enrichment) is a paid feature: it starts on Pro at $8/mo, with no monthly cap on Pro and Annual. The one place cost could compound — the job-change/news watchlist — stays capped at 25 contacts per plan regardless of tier. Power users can self-host and plug in their own API key or a local model and pay us nothing for AI.",
   },
   {
     question: "Why annual instead of monthly?",

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "@/lib/auth/guard";
-import { addContactToEvent, removeContactFromEvent } from "@/lib/repo/events";
+import { addContactToEvent, createEvent, removeContactFromEvent } from "@/lib/repo/events";
 
 export interface EventMembershipState {
   error?: string;
@@ -26,6 +26,22 @@ export async function attachContactToEventAction(
   await addContactToEvent(eventId, contactId);
   revalidateMembership(eventId, contactId);
   return {};
+}
+
+/** Create a new event (group) and attach this person to it in one step — the
+ *  "Create group" affordance in the contact-page picker. Returns the new id so
+ *  the caller can revalidate/navigate. */
+export async function createEventAndAttachAction(
+  name: string,
+  contactId: string,
+): Promise<EventMembershipState & { eventId?: string }> {
+  await requireUserId();
+  const trimmed = name.trim();
+  if (!trimmed || !contactId) return { error: "Give the group a name." };
+  const eventId = await createEvent(trimmed);
+  await addContactToEvent(eventId, contactId);
+  revalidateMembership(eventId, contactId);
+  return { eventId };
 }
 
 /** Detach a person from an event. */

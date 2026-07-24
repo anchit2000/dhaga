@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createContact } from "@/lib/repo/contacts";
 import { generateFollowUpDraft } from "@/lib/ai/draft";
 import { generateBrief } from "@/lib/ai/brief";
@@ -12,7 +12,7 @@ import type { LLMClient, LLMResult } from "@dhaga/core";
  * the exact same `complete()` shape and must fail the same way: without
  * this guard, a blank response is reported as `{ draft: "" }` / `{ brief: "" }`,
  * which both UIs (DraftSection/BriefSection) treat as "nothing generated
- * yet" — the user burns one of their 25 free monthly AI actions and sees no
+ * yet" — the user burns one of their paid monthly AI actions and sees no
  * error, indistinguishable from never having clicked the button.
  */
 vi.mock("@dhaga/core", async (importOriginal) => {
@@ -35,6 +35,17 @@ vi.mock("@dhaga/core", async (importOriginal) => {
 });
 
 const emptyFields = { emails: [], phones: [], links: [], location: null };
+
+// This suite is about blank-completion handling, not the free-tier AI gate.
+// Cloud AI is now a paid feature (free cap = 0), so grant budget via the same
+// DHAGA_AI_MONTHLY_CAP override a self-hoster/paid tier uses — otherwise
+// assertAiBudget throws before draft/brief ever run.
+beforeEach(() => {
+  vi.stubEnv("DHAGA_AI_MONTHLY_CAP", "1000");
+});
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 describe("blank LLM completions surface as errors, not empty successes", () => {
   it("generateFollowUpDraft errors instead of returning an empty draft", async () => {

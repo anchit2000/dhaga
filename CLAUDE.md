@@ -222,7 +222,7 @@ packages/ee/       Dhaga Cloud only: multi-tenant RLS, billing, admin, early
 - Extraction/parsing: `claude-haiku-4-5` — structured outputs with Zod-derived schema, never free text
 - Search reasoning / follow-up drafts: `claude-sonnet-5` — system prompts must be prompt-cache friendly (stable prefix, volatile content last)
 - Nightly/latency-insensitive jobs (enrichment, change detection, digests): Batch API
-- Every AI feature is metered per user from day one (free-tier cap: 25 cloud AI actions/month)
+- Every AI feature is metered per user from day one (free tier: no cloud AI; AI is a paid feature. Self-host override: `DHAGA_AI_MONTHLY_CAP`)
 - System prompts must include: "If the information is not in the user's notes or graph, say so — do not fabricate"
 - Every prompt builder that reasons about recency includes `todayLine()` (`packages/core/llm/prompts/today.ts`) — in the volatile user prompt, never the cached system prompt (see the search gateway/LLM gateway note above on cache-friendliness). Skip it only where there's no temporal judgment to make (e.g. card-scan OCR).
 

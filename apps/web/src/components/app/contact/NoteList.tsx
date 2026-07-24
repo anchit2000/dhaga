@@ -1,6 +1,12 @@
-import { deleteEntityNoteAction, deleteNoteAction } from "@/lib/actions/notes";
+import {
+  deleteEntityNoteAction,
+  deleteNoteAction,
+  reprocessNoteAction,
+} from "@/lib/actions/notes";
 import type { NoteRow } from "@/lib/db/schema";
+import { REPROCESSABLE_NOTE_KINDS } from "@/utils/constants/extraction-jobs";
 import { DeleteButton } from "./DeleteButton";
+import { ReprocessButton } from "./ReprocessButton";
 
 const KIND_LABELS: Record<string, string> = {
   text: "note",
@@ -35,21 +41,31 @@ export function NoteList({ contactId, entityId, notes }: NoteListProps) {
               {note.createdAt.toLocaleString()}
             </p>
           </div>
-          <form action={contactId ? deleteNoteAction : deleteEntityNoteAction}>
-            <input type="hidden" name="noteId" value={note.id} />
-            {contactId ? (
-              <input type="hidden" name="contactId" value={contactId} />
-            ) : (
-              <input type="hidden" name="entityId" value={entityId} />
-            )}
-            <DeleteButton
-              label={
-                contactId
-                  ? "Delete note (removes its derived facts too)"
-                  : "Delete note"
-              }
-            />
-          </form>
+          <div className="flex items-center gap-0.5">
+            {contactId &&
+              (REPROCESSABLE_NOTE_KINDS as readonly string[]).includes(note.kind) && (
+                <form action={reprocessNoteAction}>
+                  <input type="hidden" name="noteId" value={note.id} />
+                  <input type="hidden" name="contactId" value={contactId} />
+                  <ReprocessButton />
+                </form>
+              )}
+            <form action={contactId ? deleteNoteAction : deleteEntityNoteAction}>
+              <input type="hidden" name="noteId" value={note.id} />
+              {contactId ? (
+                <input type="hidden" name="contactId" value={contactId} />
+              ) : (
+                <input type="hidden" name="entityId" value={entityId} />
+              )}
+              <DeleteButton
+                label={
+                  contactId
+                    ? "Delete note (removes its derived facts too)"
+                    : "Delete note"
+                }
+              />
+            </form>
+          </div>
         </li>
       ))}
     </ul>

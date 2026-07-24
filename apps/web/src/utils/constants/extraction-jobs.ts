@@ -7,6 +7,16 @@
 
 export const EXTRACTION_JOB_KINDS = ["note_extraction", "enrichment"] as const;
 
+/**
+ * Note kinds a user may manually re-run through the note-extraction pipeline
+ * (trusted "note" mode — the user's own words / captures). Excludes
+ * "enrichment" (web findings must re-extract in unverified mode via an
+ * enrichment job, not as trusted facts) and "signal" (system-generated, not a
+ * user capture). Re-processing REPLACES the note's prior derivations rather
+ * than stacking duplicates — the worker clears them first (clearNoteDerivations).
+ */
+export const REPROCESSABLE_NOTE_KINDS = ["text", "voice", "capture_source"] as const;
+
 export const EXTRACTION_JOB_STATUSES = [
   "pending", // queued, worker not started
   "running", // worker is executing (see stage)

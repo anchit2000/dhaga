@@ -4,15 +4,7 @@ import { companies, contacts } from "@/lib/db/schema";
 import { semanticSearch, type SemanticHit } from "../embeddings";
 import { DEFAULT_SEARCH_WEIGHTS, type SearchWeights } from "@/utils/constants/search";
 import { queryWords } from "./tokenize";
-import {
-  contactAndCompanyHits,
-  factHits,
-  followUpHits,
-  noteHits,
-  eventHits,
-  signalHits,
-  type KeywordHit,
-} from "./keyword";
+import { combinedKeywordHits, type CombinedIdentity, type KeywordHit } from "./keyword";
 
 export interface SearchHit {
   contactId: string;
@@ -49,28 +41,23 @@ export async function hybridSearch(
   weights: SearchWeights = DEFAULT_SEARCH_WEIGHTS,
 ): Promise<SearchHit[]> {
   const words = queryWords(query);
+  // One connection for the whole request. The keyword phase is a single query
+  // (see keyword/combined) — NOT a Promise.all fan-out of six getDb() calls,
+  // which each checked out a separate pooled connection and exhausted the
+  // hosted tenant pool (HTTP 500). The semantic stage runs concurrently but is
+  // a no-op with embeddings off (it returns before touching the DB), so on the
+  // hosted keyword-only path this whole function makes exactly one round-trip.
   const db = await getDb();
   const hits: HitAccumulator = new Map();
 
-  // Run the semantic and keyword stages CONCURRENTLY. The semantic stage
-  // embeds the query with a local ONNX model (onnxruntime-node is unsupported
-  // on Vercel serverless — see lib/ai/embedder.ts), so it must never gate or
-  // break the keyword FTS results (already GIN-indexed): wrap it so any
-  // failure or absence degrades to keyword-only rather than delaying the whole
-  // search. Previously it ran first and was awaited, so every query paid the
-  // embedder's load time — and its failure — before keyword search even began.
-  const [semanticHits, keywordSources] = await Promise.all([
+  // The semantic stage embeds the query with a local ONNX model (unsupported on
+  // Vercel serverless — see lib/ai/embedder.ts) and must never gate or break
+  // keyword results: wrap it so any failure or absence degrades to keyword-only.
+  const [semanticHits, keyword] = await Promise.all([
     semanticSearch(query).catch((): SemanticHit[] => []),
     words.length > 0
-      ? Promise.all([
-          contactAndCompanyHits(words, weights),
-          noteHits(words, weights),
-          factHits(words, weights),
-          followUpHits(words, weights),
-          eventHits(words, weights),
-          signalHits(words, weights),
-        ])
-      : Promise.resolve<KeywordHit[][]>([]),
+      ? combinedKeywordHits(db, words, weights)
+      : Promise.resolve({ hits: [] as KeywordHit[], identities: new Map<string, CombinedIdentity>() }),
   ]);
 
   // Semantic first, then keyword — preserves the prior merged-ranking order
@@ -83,7 +70,7 @@ export async function hybridSearch(
     if (existing.matches.length < 4) existing.matches.push(`related ${hit.ownerType}: ${snippet}`);
     hits.set(hit.contactId, existing);
   }
-  for (const source of keywordSources) applyHits(hits, source, restrictTo);
+  applyHits(hits, keyword.hits, restrictTo);
 
   // Structured filters are a hard guarantee, not just a ranking hint: a
   // contact who matches the plan's event/company/tags must surface even if
@@ -97,26 +84,43 @@ export async function hybridSearch(
   }
 
   if (hits.size === 0) return [];
-  const identityRows = await db
-    .select({
-      id: contacts.id,
-      name: contacts.name,
-      title: contacts.title,
-      companyName: companies.name,
-    })
-    .from(contacts)
-    .leftJoin(companies, eq(contacts.companyId, companies.id))
-    .where(inArray(contacts.id, [...hits.keys()]));
 
-  return identityRows
-    .map((row) => ({
-      contactId: row.id,
-      name: row.name,
-      title: row.title,
-      companyName: row.companyName,
-      score: hits.get(row.id)?.score ?? 0,
-      matches: hits.get(row.id)?.matches ?? [],
-    }))
+  // Identity for keyword hits already rode along on the combined query. Only
+  // semantic-only hits and forced restrictTo ids (never keyword-matched) still
+  // need a lookup — empty on the hosted keyword path, so no extra round-trip.
+  const identities = new Map<string, CombinedIdentity>(keyword.identities);
+  const missing = [...hits.keys()].filter((id) => !identities.has(id));
+  if (missing.length > 0) {
+    const rows = await db
+      .select({
+        id: contacts.id,
+        name: contacts.name,
+        title: contacts.title,
+        companyName: companies.name,
+      })
+      .from(contacts)
+      .leftJoin(companies, eq(contacts.companyId, companies.id))
+      .where(inArray(contacts.id, missing));
+    for (const row of rows) {
+      identities.set(row.id, { name: row.name, title: row.title, companyName: row.companyName });
+    }
+  }
+
+  return [...hits.keys()]
+    .map((id) => {
+      const identity = identities.get(id);
+      return {
+        contactId: id,
+        name: identity?.name ?? "",
+        title: identity?.title ?? null,
+        companyName: identity?.companyName ?? null,
+        score: hits.get(id)?.score ?? 0,
+        matches: hits.get(id)?.matches ?? [],
+      };
+    })
+    // A forced/semantic id whose contact row vanished (mid-request delete)
+    // has no identity — drop it rather than surface a nameless card.
+    .filter((hit) => identities.has(hit.contactId))
     .sort((a, b) => b.score - a.score)
     .slice(0, 20);
 }

@@ -4,6 +4,7 @@ import {
   getLLMClient,
   hasLLM,
 } from "@dhaga/core";
+import { withUserDb } from "@/lib/db/request-scope";
 import { getContact } from "@/lib/repo/contacts";
 import { listFacts, listNotes } from "@/lib/repo/notes";
 import { listContactEvents } from "@/lib/repo/events";
@@ -22,13 +23,23 @@ export async function generateFollowUpDraft(
   if (!hasLLM()) {
     return { error: "Configure an LLM provider to generate follow-up drafts." };
   }
-  const detail = await getContact(contactId);
-  if (!detail) return { error: "Contact not found." };
-  const [contactFacts, contactNotes, contactEvents] = await Promise.all([
-    listFacts(contactId),
-    listNotes(contactId),
-    listContactEvents(contactId),
-  ]);
+  // One scoped connection for all four reads — without it, getContact plus the
+  // three-way Promise.all each check out a separate tenant-pool connection in
+  // this server-action context (four against a max-of-three pool → connect-
+  // timeout deadlock). Released before the LLM call, so nothing is held across
+  // that network round-trip (SCALING.md lever 2).
+  const bundle = await withUserDb(userId, async () => {
+    const detail = await getContact(contactId);
+    if (!detail) return null;
+    const [contactFacts, contactNotes, contactEvents] = await Promise.all([
+      listFacts(contactId),
+      listNotes(contactId),
+      listContactEvents(contactId),
+    ]);
+    return { detail, contactFacts, contactNotes, contactEvents };
+  });
+  if (!bundle) return { error: "Contact not found." };
+  const { detail, contactFacts, contactNotes, contactEvents } = bundle;
 
   try {
     await assertAiBudget(userId);

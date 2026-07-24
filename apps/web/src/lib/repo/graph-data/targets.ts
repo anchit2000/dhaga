@@ -1,6 +1,5 @@
-import { asc, eq, ilike, sql } from "drizzle-orm";
+import { sql, type SQL } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
-import { companies, contacts, entities, events, nodeTypes } from "@/lib/db/schema";
 import { RELATIONSHIP_ENDPOINT_KINDS } from "@/utils/constants/graph";
 import { formatDate } from "@/utils/format-date";
 import type { GraphTarget } from "./types";
@@ -9,12 +8,53 @@ const TARGET_LIMIT = 8;
 
 export type GraphTargetKind = GraphTarget["kind"];
 
+interface TargetRow {
+  kind: GraphTargetKind;
+  id: string;
+  label: string;
+  sublabel: string | null;
+  started_at: Date | string | null;
+}
+
+/** One kind's typeahead SELECT for the combined UNION. Every branch projects
+ *  the same columns (kind, id, label, sublabel, started_at) and ranks prefix
+ *  matches ahead of substrings; a per-branch row_number lets the outer query
+ *  cap each kind at TARGET_LIMIT and the caller round-robin fairly. */
+function branch(kind: GraphTargetKind, like: string, prefix: string): SQL {
+  const rank = (name: SQL) =>
+    sql`row_number() OVER (ORDER BY (${name} ILIKE ${prefix}) DESC, ${name} ASC) AS rn`;
+  switch (kind) {
+    case "contact":
+      return sql`SELECT 'contact' AS kind, c.id, c.name AS label,
+          nullif(concat_ws(' · ', c.title, co.name), '') AS sublabel,
+          NULL::timestamptz AS started_at, ${rank(sql`c.name`)}
+        FROM contacts c LEFT JOIN companies co ON c.company_id = co.id
+        WHERE c.name ILIKE ${like}`;
+    case "company":
+      return sql`SELECT 'company' AS kind, co.id, co.name AS label, co.sector AS sublabel,
+          NULL::timestamptz AS started_at, ${rank(sql`co.name`)}
+        FROM companies co WHERE co.name ILIKE ${like}`;
+    case "entity":
+      return sql`SELECT 'entity' AS kind, e.id, e.name AS label, nt.name AS sublabel,
+          NULL::timestamptz AS started_at, ${rank(sql`e.name`)}
+        FROM entities e LEFT JOIN node_types nt ON e.type_id = nt.id
+        WHERE e.name ILIKE ${like}`;
+    case "event":
+      return sql`SELECT 'event' AS kind, ev.id, ev.name AS label, NULL::text AS sublabel,
+          ev.started_at AS started_at, ${rank(sql`ev.name`)}
+        FROM events ev WHERE ev.name ILIKE ${like}`;
+  }
+}
+
 /**
  * Typeahead over graph nodes — WarmPathPanel's target search and the
- * add-relationship picker. Each kind is queried with its own limit (prefix
- * matches ranked first) and the results are interleaved round-robin up to the
- * total cap, so eight "Acme …" contacts can't starve the Acme company row out
- * of the list. `kinds` optionally restricts the search (default: all kinds).
+ * add-relationship picker. Every requested kind is searched in ONE round-trip
+ * (a UNION ALL, each branch capped at TARGET_LIMIT with prefix matches first),
+ * then the kinds are interleaved round-robin up to the total cap, so eight
+ * "Acme …" contacts can't starve the Acme company row out of the list. Folding
+ * the per-kind queries into a single statement matters most on a region-away
+ * hosted DB, where each separate query was another full network round-trip.
+ * `kinds` optionally restricts the search (default: all kinds).
  */
 export async function searchGraphTargets(
   query: string,
@@ -25,59 +65,35 @@ export async function searchGraphTargets(
   const db = await getDb();
   const like = `%${trimmed}%`;
   const prefix = `${trimmed}%`;
-  // Each row carries a sublabel disambiguator — duplicate names made the
-  // picker a guessing game (eight identical "PERSON" rows observed live).
-  const queryFor = (
-    kind: GraphTargetKind,
-  ): PromiseLike<{ id: string; name: string; sublabel: string | null }[]> => {
-    switch (kind) {
-      case "contact":
-        return db
-          .select({
-            id: contacts.id,
-            name: contacts.name,
-            sublabel: sql<string | null>`nullif(concat_ws(' · ', ${contacts.title}, ${companies.name}), '')`,
-          })
-          .from(contacts)
-          .leftJoin(companies, eq(contacts.companyId, companies.id))
-          .where(ilike(contacts.name, like))
-          .orderBy(sql`(${contacts.name} ILIKE ${prefix}) DESC`, asc(contacts.name))
-          .limit(TARGET_LIMIT);
-      case "company":
-        return db
-          .select({ id: companies.id, name: companies.name, sublabel: companies.sector })
-          .from(companies)
-          .where(ilike(companies.name, like))
-          .orderBy(sql`(${companies.name} ILIKE ${prefix}) DESC`, asc(companies.name))
-          .limit(TARGET_LIMIT);
-      case "entity":
-        return db
-          .select({ id: entities.id, name: entities.name, sublabel: nodeTypes.name })
-          .from(entities)
-          .leftJoin(nodeTypes, eq(entities.typeId, nodeTypes.id))
-          .where(ilike(entities.name, like))
-          .orderBy(sql`(${entities.name} ILIKE ${prefix}) DESC`, asc(entities.name))
-          .limit(TARGET_LIMIT);
-      case "event":
-        return db
-          .select({ id: events.id, name: events.name, startedAt: events.startedAt })
-          .from(events)
-          .where(ilike(events.name, like))
-          .orderBy(sql`(${events.name} ILIKE ${prefix}) DESC`, asc(events.name))
-          .limit(TARGET_LIMIT)
-          .then((rows) =>
-            rows.map(({ id, name, startedAt }) => ({
-              id,
-              name,
-              sublabel: startedAt ? formatDate(startedAt) : null,
-            })),
-          );
-    }
-  };
 
   // Stable kind order regardless of the order the caller listed them in.
   const requested = RELATIONSHIP_ENDPOINT_KINDS.filter((kind) => kinds.includes(kind));
-  const resultsByKind = await Promise.all(requested.map((kind) => queryFor(kind)));
+  const branches = requested.map((kind) => sql`(${branch(kind, like, prefix)})`);
+  const unioned = sql.join(branches, sql` UNION ALL `);
+
+  const result = (await db.execute(
+    sql`SELECT kind, id, label, sublabel, started_at
+        FROM (${unioned}) t
+        WHERE rn <= ${TARGET_LIMIT}
+        ORDER BY kind, rn`,
+  )) as unknown as { rows: TargetRow[] };
+
+  // Regroup per kind (each kind already prefix-ranked, ≤ TARGET_LIMIT).
+  const byKind = new Map<GraphTargetKind, TargetRow[]>();
+  for (const row of result.rows) {
+    (byKind.get(row.kind) ?? byKind.set(row.kind, []).get(row.kind)!).push(row);
+  }
+  const toTarget = (row: TargetRow): GraphTarget => ({
+    id: row.id,
+    label: row.label,
+    kind: row.kind,
+    sublabel:
+      row.kind === "event"
+        ? row.started_at
+          ? formatDate(new Date(row.started_at))
+          : null
+        : row.sublabel,
+  });
 
   // Fair round-robin across kinds up to the cap — rank i of every kind before
   // rank i+1 of any, so each kind's best matches survive.
@@ -85,10 +101,10 @@ export async function searchGraphTargets(
   for (let rank = 0; targets.length < TARGET_LIMIT; rank++) {
     let advanced = false;
     for (let k = 0; k < requested.length && targets.length < TARGET_LIMIT; k++) {
-      const row = resultsByKind[k][rank];
+      const row = byKind.get(requested[k])?.[rank];
       if (!row) continue;
       advanced = true;
-      targets.push({ id: row.id, label: row.name, kind: requested[k], sublabel: row.sublabel });
+      targets.push(toTarget(row));
     }
     if (!advanced) break;
   }

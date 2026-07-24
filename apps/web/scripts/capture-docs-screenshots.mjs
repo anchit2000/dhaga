@@ -191,6 +191,16 @@ await capture("settings.png", "/app/settings", "The Settings page (top).", async
   await page.evaluate(() => window.scrollTo(0, 0));
 });
 
+// 14b. import-contacts.png — the Import contacts panel (file dropzone + per-source steps)
+await capture("import-contacts.png", "/app/import", "The Import contacts screen: the .vcf/CSV file dropzone and the per-source export instructions (OAuth Connect buttons only render when provider env creds are configured).", async () => {
+  await page.goto(`${BASE}/app/import`, { waitUntil: "networkidle" });
+  await page.waitForURL("**/app/settings**", { timeout: 15_000 }).catch(() => {});
+  await sleep(900);
+  const section = page.locator("#import");
+  await section.scrollIntoViewIfNeeded();
+  await sleep(500);
+});
+
 // 15. search-palette.png — command palette (Ctrl+K) with a query + results
 await capture("search-palette.png", "/app (⌘K)", "The command palette opened with a 'founder' query showing search results.", async () => {
   await page.goto(`${BASE}/app`, { waitUntil: "networkidle" });

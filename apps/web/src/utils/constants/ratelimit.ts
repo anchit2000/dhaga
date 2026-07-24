@@ -9,6 +9,9 @@ export const RATE_LIMITS = {
   capture: { points: 30, durationSec: 60 },
   /** Burst guard on top of the monthly cap: blocks rapid-fire AI calls. */
   ai: { points: 20, durationSec: 60 },
+  /** Bulk contact import (OAuth provider fetch, mobile /api/import). One call
+   *  pulls/sends a whole batch, so a modest window is plenty. */
+  import: { points: 12, durationSec: 60 },
 } as const;
 
 export type RateLimitBucket = keyof typeof RATE_LIMITS;

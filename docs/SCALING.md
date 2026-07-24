@@ -104,6 +104,19 @@ cap makes it worse. Read → compute → write, no await-on-network mid-transact
   the LLM/search latency never sits on a DB connection.
 - PR #28 reuses tenant connections via `RESET ALL` rather than holding/destroying
   them, and indexed the person-page queries.
+- **One query, one connection on the read hot paths.** A repo read that fans out
+  several sub-queries with `Promise.all` and a per-source `getDb()` is a trap
+  against the tenant pool: those `getDb()` calls do **not** dedupe inside a
+  server action, so each checks out a *separate* pooled connection — N of them at
+  once from a max-of-`DB_POOL_MAX_TENANT` (default 3) pool. Search hit exactly
+  this: `hybridSearch`'s six keyword sources exhausted the pool and returned HTTP
+  500. Both search reads now issue a **single** statement on **one** connection —
+  `hybridSearch` a `UNION ALL` over all keyword sources with identity joined in
+  (`repo/search/keyword/combined`), and `searchGraphTargets` a `UNION ALL` over
+  its node kinds — which also collapses their per-source network round-trips
+  (~7→1 and 4→1) into one, ~6× faster at the query layer against a region-away
+  DB. Rule of thumb for a scoped read: resolve `getDb()` **once**, and prefer one
+  round-trip over a fan-out.
 
 Not yet done: a formal audit of all ~14 `db.transaction(...)` sites confirming
 none await network I/O mid-transaction. No known offender, but not verified

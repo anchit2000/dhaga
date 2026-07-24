@@ -1,28 +1,35 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { z } from "zod";
-import { extractedContactSchema } from "@dhaga/core";
+import { contactProfileSchema } from "@dhaga/core";
 import { requireUserId } from "@/lib/auth/guard";
+import { getAuth } from "@/lib/auth/config";
+import { socialProviderConfig } from "@/lib/auth/config/social";
+import { enforceRateLimit, RateLimitError } from "@/lib/ratelimit";
+import { getContactsProvider } from "@/lib/import/providers";
+import { CONTACT_IMPORT_PROVIDERS, type ContactImportProviderId } from "@/utils/constants/auth";
 import { importContacts, type ImportSummary } from "@/lib/repo/import";
 import {
   dismissCluster,
   linkClusterToCompany,
   tagCluster,
 } from "@/lib/repo/suggestions";
+import type { ImportCandidate } from "@/lib/import";
 
-/** Client sends batches (≤100) so big files dodge the action body limit. */
+/** Client sends batches (≤200) so big files dodge the action body limit. */
 const batchSchema = z.object({
-  format: z.enum(["google", "linkedin"]),
+  format: z.enum(["google", "linkedin", "vcard", "microsoft"]),
   candidates: z
     .array(
       z.object({
-        contact: extractedContactSchema,
+        contact: contactProfileSchema,
         receipt: z.string().max(2_000),
       }),
     )
     .min(1)
-    .max(100),
+    .max(200),
 });
 
 const clusterSchema = z.object({
@@ -41,6 +48,64 @@ export async function importCsvBatchAction(input: unknown): Promise<ImportBatchR
   revalidatePath("/app/import");
   revalidatePath("/app");
   return summary;
+}
+
+/** Which contacts providers are env-configured, so the UI gates buttons. */
+export async function getContactProviderAvailabilityAction(): Promise<ContactImportProviderId[]> {
+  await requireUserId();
+  const configured = socialProviderConfig();
+  return CONTACT_IMPORT_PROVIDERS.filter(({ id }) => id in configured).map(({ id }) => id);
+}
+
+type ProviderContactsResult =
+  | { ok: true; candidates: ImportCandidate[] }
+  | { ok: false; error: string; needsConnect?: boolean };
+
+/**
+ * Pull contacts from a connected OAuth provider via better-auth's
+ * (auto-refreshing) getAccessToken. Without a linked account carrying the
+ * contacts scope we signal `needsConnect` so the client runs linkSocial.
+ */
+export async function fetchProviderContactsAction(
+  provider: ContactImportProviderId,
+): Promise<ProviderContactsResult> {
+  const userId = await requireUserId();
+  const meta = CONTACT_IMPORT_PROVIDERS.find(({ id }) => id === provider);
+  if (!meta) return { ok: false, error: "Unsupported provider." };
+
+  try {
+    await enforceRateLimit(userId, "import");
+  } catch (error) {
+    if (error instanceof RateLimitError) return { ok: false, error: error.message };
+    throw error;
+  }
+
+  const needsConnect: ProviderContactsResult = {
+    ok: false,
+    needsConnect: true,
+    error: `Connect your ${meta.label} account to import contacts.`,
+  };
+  const auth = await getAuth();
+  let accessToken: string;
+  let scopes: string[];
+  try {
+    const token = await auth.api.getAccessToken({
+      body: { providerId: provider },
+      headers: await headers(),
+    });
+    accessToken = token.accessToken;
+    scopes = token.scopes;
+  } catch {
+    return needsConnect;
+  }
+  if (!accessToken || !scopes.includes(meta.scope)) return needsConnect;
+
+  try {
+    const candidates = await getContactsProvider(provider).fetchContacts(accessToken);
+    return { ok: true, candidates };
+  } catch {
+    return { ok: false, error: `Couldn't fetch contacts from ${meta.label}. Try again in a moment.` };
+  }
 }
 
 export async function confirmClusterTagAction(input: unknown): Promise<{ updated?: number; error?: string }> {

@@ -110,6 +110,10 @@ async function buildAuth() {
     },
     onAPIError: { errorURL: "/auth/error" },
     socialProviders: socialProviderConfig(),
+    // Privacy rule: provider OAuth tokens (access/refresh/id) must never sit in
+    // the DB as plaintext — better-auth AES-256-GCM-encrypts them at rest, the
+    // same posture as the calendar tokens.
+    account: { encryptOAuthTokens: true },
     user: {
       additionalFields: {
         isAdmin: { type: "boolean", defaultValue: false, input: false },

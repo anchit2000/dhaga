@@ -81,11 +81,12 @@ describe("addFactAction", () => {
 });
 
 describe("createFollowUpAction", () => {
-  it("creates an open follow-up with its timing hint, no receipt, and no extraction job", async () => {
+  it("creates an open follow-up with a real machine due date, no receipt, and no extraction job", async () => {
     const contactId = await newContact("FollowUp Manual");
+    const due = new Date("2026-08-15T00:00:00.000Z");
     const result = await createFollowUpAction(
       {},
-      form({ contactId, action: "Send the deck", dueHint: "next week" }),
+      form({ contactId, action: "Send the deck", dueDate: due.toISOString() }),
     );
 
     expect(result.error).toBeUndefined();
@@ -94,7 +95,14 @@ describe("createFollowUpAction", () => {
     // listOpenFollowUps filters status='open', so a hit proves the row is open.
     const open = await listOpenFollowUps(contactId);
     expect(open).toHaveLength(1);
-    expect(open[0]).toMatchObject({ action: "Send the deck", dueHint: "next week" });
+    expect(open[0].action).toBe("Send the deck");
+    // WHY: the manual path stores a machine date now, not prose — so it can drive
+    // real reminders/sorting. It must round-trip as a Date at the same instant.
+    expect(open[0].dueDate).toBeInstanceOf(Date);
+    expect(open[0].dueDate?.getTime()).toBe(due.getTime());
+    // WHY: dueHint is the LLM's free-text column; the manual path must never fill
+    // it — a hint value here would mean the picker leaked into the wrong field.
+    expect(open[0].dueHint).toBeNull();
     expect(open[0].sourceNoteId).toBeNull();
 
     const jobRows = await (await getDb())
@@ -104,14 +112,14 @@ describe("createFollowUpAction", () => {
     expect(jobRows).toHaveLength(0);
   });
 
-  it("stores a NULL dueHint when none is given, and rejects an empty action", async () => {
-    const contactId = await newContact("FollowUp NoHint");
+  it("stores a NULL dueDate when none is given, and rejects an empty action", async () => {
+    const contactId = await newContact("FollowUp NoDate");
     const empty = await createFollowUpAction({}, form({ contactId, action: "   " }));
     expect(empty.error).toBeTruthy();
 
     await createFollowUpAction({}, form({ contactId, action: "Ping them" }));
     const open = await listOpenFollowUps(contactId);
     expect(open).toHaveLength(1);
-    expect(open[0].dueHint).toBeNull();
+    expect(open[0].dueDate).toBeNull();
   });
 });

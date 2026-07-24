@@ -8,6 +8,8 @@ export const SIGNAL_DETECTION_BATCH_KEY = "signal_detection_pending_batch";
 export const SEARCH_WEIGHTS_KEY = "search_weights";
 export const STT_ENGINE_KEY = "stt_engine";
 export const ONBOARDING_TOUR_KEY = "onboarding_tour_seen";
+/** Per-user monthly cloud-AI action allowance ("credits") an admin can grant. */
+export const AI_MONTHLY_CAP_OVERRIDE_KEY = "ai_monthly_cap_override";
 
 export type SttEngine = "browser" | "local" | "realtime";
 

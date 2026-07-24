@@ -138,6 +138,24 @@ only an admin can approve. `DHAGA_ADMIN_EMAILS` breaks that circle:
 env-config, not a stored credential, and only your deployment operator
 controls it.
 
+## Managing a user's subscription and AI allowance (hosted/EE admin)
+
+From a user's detail page (`/app/admin/users/[id]`) an admin can, without
+Stripe, comp that user's access:
+
+- **Plan** — set `free`, `pro`, or `lifetime`. `free` removes the subscription
+  row (the account falls back to free tier); `pro`/`lifetime` grant unlimited
+  cloud AI.
+- **Expiry** — an optional date on a paid plan. Once it passes, unlimited AI
+  lapses automatically (leave it blank for no expiry).
+- **AI credits** — a per-user monthly cloud-AI-action allowance, stored as the
+  `ai_monthly_cap_override` setting. This overrides both the free-tier cap and
+  `DHAGA_AI_MONTHLY_CAP` for that one user; blank or `0` clears it.
+
+These controls live only in the EE admin panel — a core-only self-host raises
+the cap for *everyone* with `DHAGA_AI_MONTHLY_CAP` instead (see the env table
+below).
+
 ## Running with `docker compose up`
 
 The repo root has a [`Dockerfile`](../Dockerfile) and [`compose.yml`](../compose.yml)

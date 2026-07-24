@@ -252,7 +252,8 @@ None of the `packages/ee/.env.example` vars (`DHAGA_HOSTED_MODE`,
 | `BETTER_AUTH_URL` | Yes | Your instance's base URL |
 | `DATABASE_URL` | Only on serverless (Vercel) | Otherwise defaults to embedded PGlite |
 | `ANTHROPIC_API_KEY` | No | AI features degrade to heuristic parsing / disabled without it |
-| `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `DHAGA_OWNER_EMAIL` | No | Event digests only |
+| `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `DHAGA_OWNER_EMAIL` | No | Event digests, reach-out digest + morning follow-up reminder |
+| `MORNING_REMINDER_HOURLY` | No | Set `true` only if you drive `/api/jobs/daily` hourly — then the morning reminder lands at the recipient's local ~08:00; unset on the single Hobby cron |
 | `TELEGRAM_*` | No | Owner-only bot capture |
 | `DHAGA_WEBHOOK_URL` | No | Outbound automation |
 | `SEARCH_PROVIDER`, `FIRECRAWL_API_KEY` | No | Job-change detection + news watchlist |

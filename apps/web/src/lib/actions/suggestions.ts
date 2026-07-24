@@ -5,6 +5,7 @@ import { requireUserId } from "@/lib/auth/guard";
 import {
   setDailyDigestEnabled,
   setDailySuggestionCount,
+  setMorningReminderEnabled,
   setSchedulePrefs,
 } from "@/lib/repo/suggestion-settings";
 
@@ -46,5 +47,11 @@ export async function setSuggestionSettingsAction(formData: FormData): Promise<v
 export async function setDailyDigestEnabledAction(formData: FormData): Promise<void> {
   await requireUserId();
   await setDailyDigestEnabled(formData.get("enabled") === "on");
+  revalidatePath("/app/settings");
+}
+
+export async function setMorningReminderEnabledAction(formData: FormData): Promise<void> {
+  await requireUserId();
+  await setMorningReminderEnabled(formData.get("enabled") === "on");
   revalidatePath("/app/settings");
 }

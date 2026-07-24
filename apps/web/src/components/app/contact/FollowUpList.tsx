@@ -1,9 +1,18 @@
+"use client";
+
+import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
 import { completeFollowUpAction } from "@/lib/actions/notes";
+import { createFollowUpAction } from "@/lib/actions/manual-entries";
 import type { FollowUpRow } from "@/lib/db/schema";
+import { useOptimisticList } from "@/lib/hooks/useOptimisticList";
 import { formatDate } from "@/utils/format-date";
 import { AddFollowUpForm } from "./AddFollowUpForm";
 
+/** Open follow-ups plus a manual "Add" path. Adds show optimistically, then
+ *  the server write + revalidation reconcile them; a failed write rolls back
+ *  with Retry (useOptimisticList). "Mark done" stays a plain server-action
+ *  form — completing is out of the optimistic-add scope. */
 export function FollowUpList({
   contactId,
   followUps,
@@ -11,12 +20,41 @@ export function FollowUpList({
   contactId: string;
   followUps: FollowUpRow[];
 }) {
+  const router = useRouter();
+  const { items, add } = useOptimisticList<FollowUpRow>({
+    items: followUps,
+    errorMessage: "Couldn't add the follow-up — try again.",
+  });
+
+  function handleAdd(action: string, dueDate: Date | null): void {
+    const optimisticFollowUp: FollowUpRow = {
+      id: `optimistic-${crypto.randomUUID()}`,
+      contactId,
+      action,
+      dueHint: null,
+      dueDate,
+      status: "open",
+      sourceNoteId: null,
+      createdAt: new Date(),
+    };
+    add(optimisticFollowUp, async () => {
+      const data = new FormData();
+      data.set("contactId", contactId);
+      data.set("action", action);
+      if (dueDate) data.set("dueDate", dueDate.toISOString());
+      const result = await createFollowUpAction({}, data);
+      if (result.error) return result.error;
+      router.refresh();
+      return null;
+    });
+  }
+
   return (
     <div>
       <h2 className="mb-2 font-display text-lg">Follow-ups</h2>
-      {followUps.length > 0 ? (
+      {items.length > 0 ? (
         <ul className="mb-2 space-y-1.5">
-          {followUps.map((followUp) => (
+          {items.map((followUp) => (
             <li
               key={followUp.id}
               className="flex items-center gap-2.5 rounded-lg border border-seam bg-panel px-3 py-2"
@@ -45,7 +83,7 @@ export function FollowUpList({
           ))}
         </ul>
       ) : null}
-      <AddFollowUpForm contactId={contactId} />
+      <AddFollowUpForm onAdd={handleAdd} />
     </div>
   );
 }

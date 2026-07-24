@@ -1,31 +1,32 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { useState } from "react";
 import { Plus } from "lucide-react";
-import { createFollowUpAction } from "@/lib/actions/manual-entries";
-import type { NoteFormState } from "@/lib/actions/notes";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
 import { SubmitButton } from "../SubmitButton";
 
-/** Add a follow-up by hand — no note, no extraction. The "when" is a real date
- *  from the date picker, submitted via its hidden `dueDate` input and stored as
- *  a machine timestamp (the LLM's free-text `dueHint` prose is a separate path). */
-export function AddFollowUpForm({ contactId }: { contactId: string }) {
+/** Add a follow-up by hand — no note, no extraction. The typed action and the
+ *  picked date go up to the host (FollowUpList), which shows it optimistically
+ *  and runs the write. The "when" is a real Date (stored as a machine
+ *  timestamp; the LLM's free-text `dueHint` prose is a separate path). */
+export function AddFollowUpForm({
+  onAdd,
+}: {
+  onAdd: (action: string, dueDate: Date | null) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [dueDate, setDueDate] = useState<Date | null>(null);
-  const formRef = useRef<HTMLFormElement>(null);
-  const [state, formAction] = useActionState<NoteFormState, FormData>(
-    async (previous, formData) => {
-      const result = await createFollowUpAction(previous, formData);
-      if (!result.error) {
-        formRef.current?.reset();
-        setDueDate(null);
-      }
-      return result;
-    },
-    {},
-  );
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>): void {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const action = String(new FormData(form).get("action") ?? "").trim();
+    if (!action) return;
+    onAdd(action, dueDate);
+    form.reset();
+    setDueDate(null);
+  }
 
   if (!open) {
     return (
@@ -42,11 +43,9 @@ export function AddFollowUpForm({ contactId }: { contactId: string }) {
 
   return (
     <form
-      ref={formRef}
-      action={formAction}
+      onSubmit={handleSubmit}
       className="space-y-2 rounded-lg border border-seam bg-panel p-3"
     >
-      <input type="hidden" name="contactId" value={contactId} />
       <Input name="action" required autoFocus placeholder="What to do" className="text-sm" />
       <DatePicker
         name="dueDate"
@@ -64,11 +63,6 @@ export function AddFollowUpForm({ contactId }: { contactId: string }) {
           Cancel
         </button>
       </div>
-      {state.error ? (
-        <p className="text-sm text-red-400" role="alert">
-          {state.error}
-        </p>
-      ) : null}
     </form>
   );
 }

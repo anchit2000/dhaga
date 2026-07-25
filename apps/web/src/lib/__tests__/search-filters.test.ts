@@ -24,7 +24,7 @@ function planFor(tags: string[]): SearchQueryPlan {
 
 /**
  * M6 stage 1 filters gate what an AI search answer is even allowed to see
- * (apps/web/src/lib/ai/search.ts passes the result straight into restrictTo).
+ * (apps/web/src/lib/ai/search/answer.ts passes the result straight into restrictTo).
  * A false positive here isn't just noisy ranking — it lets an unrelated
  * contact's private facts into the candidate set for an answer.
  */

@@ -13,28 +13,16 @@ import { withUserDb } from "@/lib/db/request-scope";
 import { createEnrichmentMatchConfirmation } from "@/lib/repo/confirmations";
 import { applyExtraction } from "@/lib/repo/graph";
 import { listNodeTypes } from "@/lib/repo/node-types";
-import { EXTRACTION_BLOCKED_LABEL } from "@/utils/constants/extraction-jobs";
-import { AiBudgetError, assertAiBudget, recordAiAction } from "./metering";
+import { assertAiBudget, recordAiAction } from "../metering";
+import {
+  graphWriteFailedOutcome,
+  mapExtractionError,
+  noLlmOutcome,
+  type ExtractionMode,
+  type NoteExtractionOutcome,
+} from "./outcome";
 
-/** "note": the user's own words (trusted). "enrichment": public-web findings
- *  (extracted broadly, then written unverified for the user to confirm). */
-export type ExtractionMode = "note" | "enrichment";
-
-export interface NoteExtractionOutcome {
-  applied: boolean;
-  /** True only when extraction genuinely errored (AI call or graph write) —
-   *  distinct from "ran fine, found nothing" and from "no LLM configured".
-   *  The background worker marks the job errored (and retryable) on this. */
-  failed: boolean;
-  /** True when the monthly AI budget (cap) blocked extraction — a calm terminal
-   *  state, NOT an error. The note is saved; automatic extraction is a paid
-   *  feature. The worker marks the job "blocked" (non-retryable) on this, so it
-   *  is deliberately distinct from `failed` (which offers a Retry). */
-  blocked?: boolean;
-  factCount: number;
-  followUpCount: number;
-  notice?: string;
-}
+export type { ExtractionMode, NoteExtractionOutcome } from "./outcome";
 
 /**
  * Note → facts/edges/follow-ups, written with the note id as receipt.
@@ -50,14 +38,7 @@ export async function extractAndApplyNote(
   mode: ExtractionMode = "note",
 ): Promise<NoteExtractionOutcome> {
   if (!hasLLM()) {
-    return {
-      applied: false,
-      failed: false,
-      factCount: 0,
-      followUpCount: 0,
-      notice:
-        "Note saved. Configure an LLM provider to extract facts automatically.",
-    };
+    return noLlmOutcome();
   }
   const enrichment = mode === "enrichment";
   let extraction: NoteExtraction;
@@ -87,28 +68,7 @@ export async function extractAndApplyNote(
     model = result.model;
     usage = result.usage;
   } catch (error) {
-    // The monthly cap ("cap") is a budget wall, not a failure — return a
-    // non-retryable blocked outcome so the note is kept and the UI shows a calm
-    // paid-feature notice. Burst ("burst") and every other error stay retryable.
-    if (error instanceof AiBudgetError && error.kind === "cap") {
-      return {
-        applied: false,
-        failed: false,
-        blocked: true,
-        factCount: 0,
-        followUpCount: 0,
-        notice: EXTRACTION_BLOCKED_LABEL,
-      };
-    }
-    const reason =
-      error instanceof AiBudgetError ? error.message : "The AI call failed.";
-    return {
-      applied: false,
-      failed: true,
-      factCount: 0,
-      followUpCount: 0,
-      notice: `Facts were not extracted: ${reason}`,
-    };
+    return mapExtractionError(error);
   }
 
   // Apply phase (DB): a fresh short-lived scope records usage and writes the
@@ -153,13 +113,7 @@ export async function extractAndApplyNote(
       code: error instanceof Error ? (error as NodeJS.ErrnoException).code : undefined,
       stack: error instanceof Error ? error.stack : undefined,
     });
-    return {
-      applied: false,
-      failed: true,
-      factCount: 0,
-      followUpCount: 0,
-      notice: "Facts were extracted, but saving them to the graph failed.",
-    };
+    return graphWriteFailedOutcome();
   }
   return {
     applied: true,

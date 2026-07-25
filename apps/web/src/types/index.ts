@@ -82,4 +82,8 @@ export type ExtractionStreamEvent =
   | { type: "stage"; stage: ExtractionStage; count?: number }
   | { type: "done"; factCount: number; followUpCount: number }
   | { type: "blocked"; message: string }
-  | { type: "error"; message: string; retryable: boolean };
+  | { type: "error"; message: string; retryable: boolean }
+  // Another request (a second tab) already claimed this job, so this stream has
+  // no progress to drive — the client reconciles via the slow status-poll
+  // fallback instead of the stream ending silently.
+  | { type: "detached" };

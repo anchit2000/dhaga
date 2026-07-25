@@ -42,16 +42,24 @@ export function StatStripSkeleton() {
   );
 }
 
-/** Home's full bento grid as skeletons — one shape for the route loader and
- *  the dashboard's own Suspense fallback so the grid never reflows. */
+/** Home's adaptive dashboard as skeletons — mirrors the live two-zone layout
+ *  (Today hero + attention rail, then the auto-fit secondary grid) so the route
+ *  loader and the dashboard's own Suspense fallback never reflow on hydration. */
 export function HomeBentoSkeleton() {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-[1fr_1fr_1.4fr]">
-      <TileSkeleton rows={4} className="sm:col-span-2 xl:row-span-2" />
-      <TileSkeleton rows={2} />
-      <TileSkeleton rows={3} />
-      <TileSkeleton rows={3} />
-      <TileSkeleton rows={2} className="xl:col-span-2" />
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
+        <TileSkeleton rows={4} className="lg:col-span-2" />
+        <div className="flex flex-col gap-4">
+          <TileSkeleton rows={2} />
+          <TileSkeleton rows={2} />
+        </div>
+      </div>
+      <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))]">
+        <TileSkeleton rows={3} />
+        <TileSkeleton rows={3} />
+        <TileSkeleton rows={2} />
+      </div>
     </div>
   );
 }

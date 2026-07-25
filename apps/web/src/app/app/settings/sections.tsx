@@ -62,9 +62,11 @@ export async function SecuritySection() {
   // twoFactorEnabled is added to the user row by the twoFactor plugin — not part
   // of the base user type getCurrentUser() is statically typed with.
   const user = await getCurrentUser();
+  if (!user) return null;
   return (
     <SecuritySetting
-      twoFactorEnabled={Boolean((user as { twoFactorEnabled?: boolean } | null)?.twoFactorEnabled)}
+      email={user.email}
+      twoFactorEnabled={Boolean((user as { twoFactorEnabled?: boolean }).twoFactorEnabled)}
     />
   );
 }

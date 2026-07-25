@@ -16,6 +16,11 @@ const Combobox = ComboboxPrimitive.Root;
 const ComboboxTrigger = ComboboxPrimitive.Trigger;
 const ComboboxList = ComboboxPrimitive.List;
 
+// Base UI tags every input-value change with a `reason` (e.g. `input-change`,
+// `input-clear`) so callers can tell a real edit from an internal close-sync
+// reset. Re-exported so `EntityCombobox` can guard on it.
+type ComboboxChangeEventDetails = ComboboxPrimitive.Root.ChangeEventDetails;
+
 function ComboboxInput({ className, ...props }: ComboboxPrimitive.Input.Props) {
   return (
     <ComboboxPrimitive.Input
@@ -90,3 +95,4 @@ export {
   ComboboxItem,
   ComboboxEmpty,
 };
+export type { ComboboxChangeEventDetails };

@@ -11,6 +11,7 @@ import {
   ComboboxItem,
   ComboboxList,
   ComboboxTrigger,
+  type ComboboxChangeEventDetails,
 } from "@/components/ui/combobox";
 import { useTargetSearch } from "@/components/app/graph/use-target-search";
 import type { GraphTarget, GraphTargetKind } from "@/lib/repo/graph-data";
@@ -57,8 +58,13 @@ export function EntityCombobox({
   const [open, setOpen] = useState(false);
   const [internalQuery, setInternalQuery] = useState("");
   const query = inputValue ?? internalQuery;
-  const setQuery = (value: string): void =>
-    onInputValueChange ? onInputValueChange(value) : setInternalQuery(value);
+  const setQuery = (value: string, details?: ComboboxChangeEventDetails): void => {
+    // Inline free-text mode (input *is* the value: no trigger, no clear-on-select) drops
+    // Base UI's empty close-sync `input-clear` (close without a selection) that would wipe
+    // the just-typed/created name; real edits/clears arrive as `input-change`/`clear-press`.
+    if (!triggerLabel && !clearOnSelect && onInputValueChange && details?.reason === "input-clear") return;
+    return onInputValueChange ? onInputValueChange(value) : setInternalQuery(value);
+  };
 
   const results = useTargetSearch(query, { kinds, enabled: open }).filter(
     (target) => !excludeIds?.has(target.id),

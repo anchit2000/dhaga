@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
-import { BadgeCheck, Check, Loader2, Pencil } from "lucide-react";
+import { BadgeCheck, Loader2, Pencil } from "lucide-react";
 import {
   deleteFactAction,
   updateFactAction,
@@ -10,24 +10,7 @@ import {
 } from "@/lib/actions/notes";
 import { Input } from "@/components/ui/input";
 import { DeleteButton } from "./DeleteButton";
-
-function SaveButton() {
-  const { pending } = useFormStatus();
-  return (
-    <button
-      type="submit"
-      disabled={pending}
-      aria-label="Save fact"
-      className="rounded-full p-1 text-ember transition-colors hover:bg-amber/15 disabled:pointer-events-none"
-    >
-      {pending ? (
-        <Loader2 className="size-3.5 animate-spin" />
-      ) : (
-        <Check className="size-3.5" />
-      )}
-    </button>
-  );
-}
+import { SaveButton } from "./SaveButton";
 
 function VerifyButton() {
   const { pending } = useFormStatus();
@@ -87,7 +70,7 @@ export function FactItem({
           <input type="hidden" name="factId" value={factId} />
           <input type="hidden" name="contactId" value={contactId} />
           <Input name="text" defaultValue={text} required autoFocus className="h-8 text-sm" />
-          <SaveButton />
+          <SaveButton label="Save fact" />
           <button
             type="button"
             onClick={() => setEditing(false)}

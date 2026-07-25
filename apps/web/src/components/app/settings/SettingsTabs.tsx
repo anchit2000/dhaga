@@ -78,7 +78,7 @@ export function SettingsTabs({
     >
       <TabsList
         variant="line"
-        className="group-data-horizontal/tabs:h-auto w-full justify-start gap-1 overflow-x-auto rounded-none border-b border-seam"
+        className="group-data-horizontal/tabs:h-auto w-full justify-start gap-1 overflow-x-auto rounded-none border-b border-seam pb-1.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
       >
         {SETTINGS_TABS.map((tab) => (
           <TabsTrigger

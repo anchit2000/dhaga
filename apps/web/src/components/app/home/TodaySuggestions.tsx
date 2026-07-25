@@ -31,6 +31,7 @@ export function TodaySuggestions({
   meetingCountToday,
   moreDue,
   onSelectContact,
+  className,
 }: {
   suggestions: DailySuggestion[];
   calendarConnected: boolean;
@@ -39,6 +40,8 @@ export function TodaySuggestions({
   meetingCountToday: number;
   moreDue: number;
   onSelectContact: (id: string) => void;
+  /** Grid-span classes — HomeDashboard sizes Today's hero column. */
+  className?: string;
 }) {
   const [schedulingId, setSchedulingId] = useState<string | null>(null);
 
@@ -47,7 +50,7 @@ export function TodaySuggestions({
       title="Today"
       tone="amber"
       data-tour="updates"
-      className="sm:col-span-2 xl:row-span-2"
+      className={className}
       meta={
         <span className="font-mono text-[10px] uppercase tracking-widest text-fog">
           {suggestions.length} {suggestions.length === 1 ? "person" : "people"}

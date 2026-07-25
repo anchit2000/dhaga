@@ -11,6 +11,7 @@ import { ListSkeleton } from "@/components/app/skeletons";
 import { BriefSection } from "@/components/app/contact/BriefSection";
 import { KeepInTouch } from "@/components/app/contact/KeepInTouch";
 import { WatchToggle } from "@/components/app/contact/WatchToggle";
+import { StarButton } from "@/components/app/contact/StarButton";
 import { OnDemandNetwork } from "@/components/app/contact/OnDemandNetwork";
 import { ContactInfoCard } from "@/components/app/contact/ContactInfoCard";
 import { DraftSection } from "@/components/app/contact/DraftSection";
@@ -72,7 +73,8 @@ export default async function PersonPage({
             </Suspense>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <StarButton contactId={id} starred={contact.starred} />
           <Button
             render={<Link href={`/app/people/${id}/edit`} />}
             variant="outline"

@@ -7,7 +7,7 @@ import { SuggestionsPanel } from "@/components/app/import/SuggestionsPanel";
 import { Button } from "@/components/ui/button";
 import { getFreeBusy, hasCalendarConnection } from "@/lib/repo/calendar";
 import { listPendingConfirmations } from "@/lib/repo/confirmations";
-import { listContacts } from "@/lib/repo/contacts";
+import { listContacts, listContactsPage } from "@/lib/repo/contacts";
 import { buildDailySuggestions } from "@/lib/repo/daily-suggestions";
 import { listEvents } from "@/lib/repo/events";
 import { listAllOpenFollowUps, listDueReachOuts } from "@/lib/repo/reminders";
@@ -25,7 +25,7 @@ const WEEK_MS = 7 * 86_400_000;
 /**
  * Home's header (daily-briefing headline) plus the bento dashboard. These share
  * one Suspense boundary because the interactive tiles all live inside the single
- * `HomeDashboard` client component (one CSS grid + one shared ContactDetailSheet),
+ * `HomeDashboard` client component (one CSS masonry + one shared ContactDetailSheet),
  * and the headline is derived from the same serial suggestions chain the "Today"
  * tile needs — so they resolve together. The serial getFreeBusy → buildDailySuggestions
  * dependency stays here as one unit; it is a genuine data dependency, not parallelizable.
@@ -42,6 +42,7 @@ export async function DashboardSection(): Promise<ReactElement> {
     calendarConnected,
     prefs,
     pendingConfirmations,
+    starredFavourites,
   ] = await Promise.all([
     listContacts(undefined, undefined, HOME_PREVIEW_LIMIT),
     listEvents(HOME_PREVIEW_LIMIT),
@@ -53,6 +54,7 @@ export async function DashboardSection(): Promise<ReactElement> {
     hasCalendarConnection(),
     getSchedulePrefs(),
     listPendingConfirmations(),
+    listContactsPage({ page: 1, pageSize: HOME_PREVIEW_LIMIT, starred: true }),
   ]);
 
   const now = new Date();
@@ -116,6 +118,7 @@ export async function DashboardSection(): Promise<ReactElement> {
         openFollowUps={openFollowUps}
         quietContacts={quietContacts}
         newSignals={newSignals}
+        starred={starredFavourites.rows}
         hasConfirmations={pendingConfirmations.length > 0}
         inbox={<ConfirmationsPreview confirmations={pendingConfirmations} />}
         groups={suggestedClusters.length > 0 ? (

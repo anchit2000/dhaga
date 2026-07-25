@@ -49,6 +49,10 @@ ALTER TABLE contacts ADD COLUMN IF NOT EXISTS reach_out_every_days integer;
 ALTER TABLE contacts ADD COLUMN IF NOT EXISTS last_reached_out_at timestamptz;
 ALTER TABLE contacts ADD COLUMN IF NOT EXISTS watched_for_signals boolean NOT NULL DEFAULT false;
 ALTER TABLE contacts ADD COLUMN IF NOT EXISTS signals_scanned_at timestamptz;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS starred boolean NOT NULL DEFAULT false;
+-- Partial index: the Saved page's Starred tab lists only starred contacts,
+-- newest-first, so the index stays tiny (just the favourited rows).
+CREATE INDEX IF NOT EXISTS contacts_starred_idx ON contacts (created_at DESC) WHERE starred = true;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS geohash text;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS color text;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS emoji text;

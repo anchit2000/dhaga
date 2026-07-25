@@ -26,3 +26,4 @@ export {
   mergeMentionedContact,
   promoteMentionedContact,
 } from "./mutations";
+export { setStarred } from "./star";

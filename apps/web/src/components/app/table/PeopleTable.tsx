@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { StarButton } from "@/components/app/contact/StarButton";
 import { DataTable, type DataTableColumn } from "@/components/app/table/DataTable";
 import { formatDate } from "@/utils/format-date";
 
-interface PersonRow { id: string; name: string; title: string | null; companyName: string | null; tags: string[]; createdAt: Date; }
+interface PersonRow { id: string; name: string; title: string | null; companyName: string | null; tags: string[]; starred: boolean; createdAt: Date; }
 
 export function PeopleTable({ people, total, page, pageSize, filters, options }: {
   people: PersonRow[];
@@ -15,6 +16,7 @@ export function PeopleTable({ people, total, page, pageSize, filters, options }:
   options: { titles: string[]; companies: string[]; tags: string[] };
 }) {
   const columns: DataTableColumn<PersonRow>[] = [
+    { id: "star", label: "", value: () => "", filter: false, sortable: false, className: "w-10 pr-0", render: (row) => <StarButton contactId={row.id} starred={row.starred} /> },
     { id: "name", label: "Name", value: (row) => row.name, render: (row) => <Link href={`/app/people/${row.id}`} className="font-medium text-paper hover:text-ember">{row.name}</Link> },
     { id: "title", label: "Title", value: (row) => row.title ?? "", options: options.titles, render: (row) => row.title || "—", className: "text-fog" },
     { id: "company", label: "Company", value: (row) => row.companyName ?? "", options: options.companies, render: (row) => row.companyName || "—", className: "text-fog" },

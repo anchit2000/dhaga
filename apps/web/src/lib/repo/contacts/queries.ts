@@ -9,6 +9,7 @@ export interface ContactListItem {
   title: string | null;
   companyName: string | null;
   tags: string[];
+  starred: boolean;
   createdAt: Date;
 }
 
@@ -122,6 +123,7 @@ export async function listContacts(
       title: contacts.title,
       companyName: companies.name,
       tags: contacts.tags,
+      starred: contacts.starred,
       createdAt: contacts.createdAt,
     })
     .from(contacts)
@@ -132,13 +134,17 @@ export async function listContacts(
 }
 
 // TODO(search-index): route through getSearchIndex() (needs paginated list support)
-export async function listContactsPage({ page, pageSize, name, title, company, tag }: {
+export async function listContactsPage({ page, pageSize, name, title, company, tag, starred, watched }: {
   page: number;
   pageSize: number;
   name?: string;
   title?: string;
   company?: string;
   tag?: string;
+  // The Saved page filters to one collection at a time: starred favourites or
+  // watched (signal) contacts. Both reuse this one paginated query.
+  starred?: boolean;
+  watched?: boolean;
 }): Promise<{ rows: ContactListItem[]; total: number }> {
   const db = await getDb();
   const conditions = [
@@ -147,9 +153,11 @@ export async function listContactsPage({ page, pageSize, name, title, company, t
     title ? eq(contacts.title, title) : undefined,
     company ? eq(companies.name, company) : undefined,
     tag ? sql`${contacts.tags} @> ${JSON.stringify([tag])}::jsonb` : undefined,
+    starred ? eq(contacts.starred, true) : undefined,
+    watched ? eq(contacts.watchedForSignals, true) : undefined,
   ].filter((condition) => condition !== undefined);
   const where = conditions.length > 0 ? and(...conditions) : undefined;
-  const baseSelect = db.select({ id: contacts.id, name: contacts.name, title: contacts.title, companyName: companies.name, tags: contacts.tags, createdAt: contacts.createdAt }).from(contacts).leftJoin(companies, eq(contacts.companyId, companies.id)).where(where);
+  const baseSelect = db.select({ id: contacts.id, name: contacts.name, title: contacts.title, companyName: companies.name, tags: contacts.tags, starred: contacts.starred, createdAt: contacts.createdAt }).from(contacts).leftJoin(companies, eq(contacts.companyId, companies.id)).where(where);
   const [rows, [totalRow]] = await Promise.all([
     baseSelect.orderBy(desc(contacts.createdAt)).limit(pageSize).offset((page - 1) * pageSize),
     db.select({ value: count() }).from(contacts).leftJoin(companies, eq(contacts.companyId, companies.id)).where(where),

@@ -20,7 +20,18 @@ export async function openTenantConnection(userId: string) {
   // getPool().connect() through a retry that rides out a momentary
   // EMAXCONNSESSION/connect-timeout (see connectWithRetry) — this is the
   // hottest choke point: every authed request opens a tenant connection here.
+  const acquireStartedMs = performance.now();
   const client: PoolClient = await connectWithRetry(getPool());
+  // Opt-in prod diagnostic (set DB_TIMING_LOG=1): log how long acquiring a
+  // tenant connection takes, PII-free. A large value (seconds) means the cost is
+  // the physical connect/handshake — a cold, region-away, or saturated pool,
+  // which is an INFRA lever (co-locate / keep warm / raise pool_size), not query
+  // work. A small value alongside slow pages points at the queries or cold
+  // function start instead. This is the number that decides infra-vs-code for
+  // the ~10s floor.
+  if (process.env.DB_TIMING_LOG) {
+    console.log(`[db-timing] tenant connect acquire=${Math.round(performance.now() - acquireStartedMs)}ms`);
+  }
   try {
     await client.query("SELECT set_config('app.current_user_id', $1, false)", [userId]);
   } catch (error) {

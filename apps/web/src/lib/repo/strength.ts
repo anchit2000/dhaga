@@ -1,4 +1,4 @@
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull, ne, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { companies, contacts, notes, eventContacts } from "@/lib/db/schema";
 import {
@@ -92,7 +92,9 @@ export async function listQuietContacts(): Promise<QuietContact[]> {
       and(eq(notes.contactId, contacts.id), isNull(notes.deletedAt)),
     )
     .leftJoin(eventContacts, eq(eventContacts.contactId, contacts.id))
-    .where(isNull(contacts.reachOutEveryDays))
+    // Exclude note-mention stubs (source "mentioned") — a bare relationship stub
+    // with an old last-touch must not surface in the "going quiet" tile.
+    .where(and(isNull(contacts.reachOutEveryDays), ne(contacts.source, "mentioned")))
     .groupBy(contacts.id, companies.id)
     .having(sql`${lastTouch} < now() - make_interval(days => ${DECAY_AFTER_DAYS})`);
   return rows

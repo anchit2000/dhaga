@@ -153,10 +153,20 @@ export async function updateContact(id: string, input: ContactProfile): Promise<
   const resolved = await resolvePositions(input.positions);
   const values = contactValues(input, resolved);
   await db.transaction(async (tx) => {
+    if (resolved.length === 0) {
+      // Guard against silent data loss: an empty positions list is far more
+      // often the client filter dropping a half-typed row (blank title+company,
+      // e.g. the combobox input-clear bug) than a deliberate "remove every job".
+      // Never let it wipe a contact's saved employment or null the denormalised
+      // title/company — update the rest and leave positions untouched. (An
+      // explicit "remove all jobs" affordance can override this later.)
+      const { title: _title, companyId: _companyId, ...rest } = values;
+      await tx.update(contacts).set(rest).where(eq(contacts.id, id));
+      return;
+    }
     await tx.update(contacts).set(values).where(eq(contacts.id, id));
     await tx.delete(positions).where(eq(positions.contactId, id));
-    const rows = positionRows(id, resolved);
-    if (rows.length > 0) await tx.insert(positions).values(rows);
+    await tx.insert(positions).values(positionRows(id, resolved));
   });
   await emitWebhook("contact.updated", { id, name: values.name });
 }

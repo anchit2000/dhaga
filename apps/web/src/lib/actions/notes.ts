@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "@/lib/auth/guard";
+import { SAVE_RETRY_MESSAGE, logActionError } from "@/lib/actions/resilience";
 import { getContact } from "@/lib/repo/contacts";
 import { getEntity } from "@/lib/repo/entities";
 import { addEntityNote } from "@/lib/repo/entity-notes";
@@ -43,13 +44,21 @@ export async function addNoteAction(
   if (!detail) return { error: "Contact not found." };
 
   const kind = formData.get("kind") === "voice" ? "voice" : "text";
-  const noteId = await addNote(contactId, kind, body);
-  // Free tier (cap 0) / an exhausted paid month has no AI budget: skip enqueuing
-  // a job that would only fail, and surface a calm paid-feature notice instead
-  // of "extracting facts…". The note is still saved either way.
-  const budgeted = await hasMonthlyAiBudget(userId);
-  if (budgeted) {
-    await createExtractionJob({ contactId, kind: "note_extraction", noteId });
+  // Wrap the writes so a transient DB failure returns an inline error (the
+  // compose box keeps the user's typed note) instead of throwing to the boundary.
+  let budgeted = false;
+  try {
+    const noteId = await addNote(contactId, kind, body);
+    // Free tier (cap 0) / an exhausted paid month has no AI budget: skip enqueuing
+    // a job that would only fail, and surface a calm paid-feature notice instead
+    // of "extracting facts…". The note is still saved either way.
+    budgeted = await hasMonthlyAiBudget(userId);
+    if (budgeted) {
+      await createExtractionJob({ contactId, kind: "note_extraction", noteId });
+    }
+  } catch (error) {
+    logActionError("addNote", error);
+    return { error: SAVE_RETRY_MESSAGE };
   }
   revalidatePath(`/app/people/${contactId}`);
   return {
@@ -97,7 +106,12 @@ export async function addEntityNoteAction(
   if (!entityId) return { error: "Missing entity." };
   if (!body) return { error: "Write something first." };
   if (!(await getEntity(entityId))) return { error: "Entity not found." };
-  await addEntityNote(entityId, body);
+  try {
+    await addEntityNote(entityId, body);
+  } catch (error) {
+    logActionError("addEntityNote", error);
+    return { error: SAVE_RETRY_MESSAGE };
+  }
   revalidatePath(`/app/entities/${entityId}`);
   return {};
 }

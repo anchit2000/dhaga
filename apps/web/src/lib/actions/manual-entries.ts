@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { FACT_TYPES } from "@dhaga/core";
 import { requireUserId } from "@/lib/auth/guard";
+import { SAVE_RETRY_MESSAGE, logActionError } from "@/lib/actions/resilience";
 import { getContact } from "@/lib/repo/contacts";
 import { addFact, addFollowUp } from "@/lib/repo/manual-entries";
 import { upsertEmbedding } from "@/lib/repo/embeddings";
@@ -35,8 +36,13 @@ export async function addFactAction(
   if (!parsed.success) return { error: "Write the fact and pick a type." };
   const { contactId, type, text } = parsed.data;
   if (!(await getContact(contactId))) return { error: "Contact not found." };
-  const factId = await addFact(contactId, type, text);
-  await upsertEmbedding("fact", factId, contactId, text);
+  try {
+    const factId = await addFact(contactId, type, text);
+    await upsertEmbedding("fact", factId, contactId, text);
+  } catch (error) {
+    logActionError("addFact", error);
+    return { error: SAVE_RETRY_MESSAGE };
+  }
   revalidatePath(`/app/people/${contactId}`);
   return { notice: "Fact added." };
 }
@@ -55,7 +61,12 @@ export async function createFollowUpAction(
   if (!contactId) return { error: "Missing contact." };
   if (!action) return { error: "Describe the follow-up first." };
   if (!(await getContact(contactId))) return { error: "Contact not found." };
-  await addFollowUp(contactId, action, dueDate);
+  try {
+    await addFollowUp(contactId, action, dueDate);
+  } catch (error) {
+    logActionError("createFollowUp", error);
+    return { error: SAVE_RETRY_MESSAGE };
+  }
   revalidatePath(`/app/people/${contactId}`);
   revalidatePath("/app");
   return { notice: "Follow-up added." };

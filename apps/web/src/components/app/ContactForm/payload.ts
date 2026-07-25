@@ -25,7 +25,15 @@ export function buildProfilePayload(profile: ContactProfile): string {
     name: profile.name.trim(),
     nickname: nullIfBlank(profile.nickname),
     positions: profile.positions
-      .filter((p) => (p.title ?? "").trim() || (p.company ?? "").trim())
+      // Keep any row the user has meaningfully touched (not just title/company)
+      // so a job carrying dates/department/note isn't silently dropped — and,
+      // with the server-side empty-list guard, a momentarily-blanked row can't
+      // wipe saved employment.
+      .filter((p) =>
+        [p.title, p.company, p.department, p.startedAt, p.endedAt, p.note].some(
+          (value) => (value ?? "").trim(),
+        ),
+      )
       .map((p) => ({
         title: nullIfBlank(p.title),
         company: nullIfBlank(p.company),

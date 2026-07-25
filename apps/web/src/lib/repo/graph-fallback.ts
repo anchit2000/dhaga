@@ -1,4 +1,4 @@
-import { and, eq, isNull, notInArray, or, sql } from "drizzle-orm";
+import { and, eq, isNull, ne, notInArray, or, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { companies, contacts, edges } from "@/lib/db/schema";
 
@@ -40,7 +40,14 @@ export async function listGraphFallbackCandidates(
     .from(contacts)
     .leftJoin(companies, eq(companies.id, contacts.companyId))
     .leftJoin(edges, and(isNull(edges.deletedAt), touchesContact))
-    .where(excludeIds.length > 0 ? notInArray(contacts.id, excludeIds) : undefined)
+    // Exclude note-mention stubs (source "mentioned") the same way every other
+    // real-contacts query does — a stub with one relationship edge (e.g.
+    // "Prashant's son") must not surface as a "who else to reach out to?".
+    .where(
+      excludeIds.length > 0
+        ? and(ne(contacts.source, "mentioned"), notInArray(contacts.id, excludeIds))
+        : ne(contacts.source, "mentioned"),
+    )
     .groupBy(contacts.id, companies.id)
     .having(sql`count(${edges.id}) > 0`)
     .orderBy(sql`count(${edges.id}) desc`, contacts.createdAt)

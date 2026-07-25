@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { hasLLM } from "@dhaga/core";
 import { requireUserId } from "@/lib/auth/guard";
+import { SAVE_RETRY_MESSAGE, logActionError } from "@/lib/actions/resilience";
 import { getContact } from "@/lib/repo/contacts";
 import { createExtractionJob } from "@/lib/repo/extraction-jobs";
 import { AiBudgetError, assertAiBudget } from "@/lib/ai/metering";
@@ -38,10 +39,16 @@ export async function enrichContactAction(
     if (error instanceof FeatureNotEntitledError) {
       return { error: "Enrichment requires a Pro or Lifetime plan." };
     }
-    throw error;
+    logActionError("enrich", error);
+    return { error: SAVE_RETRY_MESSAGE };
   }
 
-  await createExtractionJob({ contactId, kind: "enrichment" });
+  try {
+    await createExtractionJob({ contactId, kind: "enrichment" });
+  } catch (error) {
+    logActionError("enrich", error);
+    return { error: SAVE_RETRY_MESSAGE };
+  }
   revalidatePath(`/app/people/${contactId}`);
   return { noticed: "Searching the public web — findings will appear here shortly." };
 }

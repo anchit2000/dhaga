@@ -143,7 +143,7 @@ The MVP must prove one loop end-to-end:
 
 | Dimension | MVP | Full Product |
 |---|---|---|
-| Capture | Card scan (single or multi-image), vCard QR, voice notes (mobile) | + badges, web quick-add (paste email/article/URL), browser extension one-click add, LinkedIn Connections CSV import, email forwarding, LinkedIn QR, call-log prompts |
+| Capture | Card scan (single or multi-image), vCard QR, voice notes (mobile) | + badges, web quick-add (paste email/article/URL), browser extension one-click add, LinkedIn Connections CSV import, vCard import, Google Contacts CSV import, Google/Outlook OAuth connectors, mobile device import, email forwarding, LinkedIn QR, call-log prompts |
 | Intelligence | Extraction + NL search + follow-up drafts | + enrichment, change detection, decay alerts, pre-meeting briefs, warm paths |
 | Graph | Per-user, on-device, basic edges | Rich ontology, article-to-contact links, team-shared graph, cross-user dedup |
 | Platform | iOS + Android (one RN codebase) | + web app + browser extension + watch/widgets |

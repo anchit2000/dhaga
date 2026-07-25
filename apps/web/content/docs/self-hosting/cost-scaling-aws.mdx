@@ -177,7 +177,12 @@ Claude — API · Platform on AWS · Bedrock
    the primary.
 4. **Short transactions.** Never hold a connection across an LLM or network
    call — the principle already applied to the extraction worker generalizes
-   everywhere.
+   everywhere. Resolve `getDb()` **once** per scoped read, too: concurrent
+   `getDb()` calls fanned out under `Promise.all` do *not* dedupe onto a single
+   pooled connection — each checks out a separate one, and a handful at once can
+   exhaust the small tenant pool (this is what 500'd hosted search). Collapse
+   the fan-out into one `UNION ALL` statement on one connection, the pattern the
+   search reads now follow.
 5. **Queue the heavy work.** Extraction, enrichment, embeddings → SQS +
    Fargate workers, off the request path.
 

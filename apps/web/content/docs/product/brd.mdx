@@ -142,7 +142,7 @@ The MVP must prove one loop end-to-end:
 
 | Phase | Feature cluster | Contents |
 |---|---|---|
-| **v1.1 — Capture everywhere** | New surfaces + enrichment | **Web app quick-add** (paste email/article/LinkedIn URL → extract → link to contact); **browser extension** (one-click add from LinkedIn/articles, "save this article to Sarah"); **LinkedIn Connections CSV import** (user's own LinkedIn data export — ToS-safe bulk import, see §6.7); **badge scanning** (table stakes per competitor analysis); user-triggered public-web enrichment; email-forwarding ingestion |
+| **v1.1 — Capture everywhere** | New surfaces + enrichment | **Web app quick-add** (paste email/article/LinkedIn URL → extract → link to contact); **browser extension** (one-click add from LinkedIn/articles, "save this article to Sarah"); **LinkedIn Connections CSV import** (user's own LinkedIn data export — ToS-safe bulk import, see §6.7); **vCard (.vcf) / device-contacts import** (user's own exported .vcf from iPhone/iCloud, Android, or Google Contacts — one file, parsed in-browser, nothing scraped, see §6.7); **one-click Google / Outlook-Hotmail contacts connectors** (OAuth, user connects their own account — no Apple/iCloud API exists, see §6.7); **mobile on-device contacts import** (expo-contacts, permission-gated); **badge scanning** (table stakes per competitor analysis); user-triggered public-web enrichment; email-forwarding ingestion |
 | **v1.2 — Proactive intelligence** | Alerts & digests | Keep-in-touch cadence reminders (recurring, dismissed only on "reached out"), job-change detection (LinkedIn-export re-import diff + watchlist hits, see §6.7), **opt-in news watchlist** (starred contacts, nightly Batch web search, per-tier cap), relationship-decay alerts ("no contact in 8 months"), post-event digest email, pre-meeting briefs via calendar integration |
 | **v1.3 — Graph power** | Deep graph | Warm-path finding ("who can intro me to Airbus?"), second-degree suggestions, sector/tag ontology, timeline view of the relationship, watch/widgets |
 | **v1.4 — Ecosystem** | Integrations | Salesforce/HubSpot/Notion sync, Zapier/webhooks, LinkedIn QR formats, WhatsApp share-to-capture, **email/calendar interaction sync** (Gmail/Outlook OAuth, opt-in — the one ToS-clean ambient-capture channel, see §6.7) |
@@ -152,12 +152,41 @@ The MVP must prove one loop end-to-end:
 
 | Dimension | MVP | Full Product |
 |---|---|---|
-| Capture | Card scan, vCard QR, voice notes (mobile) | + badges, web quick-add (paste email/article/URL), browser extension one-click add, LinkedIn Connections CSV import, email forwarding, LinkedIn QR, call-log prompts |
+| Capture | Card scan (single or multi-image), vCard QR, voice notes (mobile) | + badges, web quick-add (paste email/article/URL), browser extension one-click add, LinkedIn Connections CSV import, vCard import, Google Contacts CSV import, Google/Outlook OAuth connectors, mobile device import, email forwarding, LinkedIn QR, call-log prompts |
 | Intelligence | Extraction + NL search + follow-up drafts | + enrichment, change detection, decay alerts, pre-meeting briefs, warm paths |
 | Graph | Per-user, on-device, basic edges | Rich ontology, article-to-contact links, team-shared graph, cross-user dedup |
 | Platform | iOS + Android (one RN codebase) | + web app + browser extension + watch/widgets |
 | Sync | Optional encrypted backup | Full multi-device sync (mobile ↔ web ↔ extension), team workspaces |
 | Monetization | Free beta | Free tier + Pro (lifetime or annual) + Teams (per-seat) |
+
+### 5.4 Considered features backlog (2026-07 review)
+
+A July 2026 competitive review surfaced feature gaps. The genuinely-additive ones (deduped against existing scope) are captured below as **backlog — considered, not committed, and unbuilt.** They inherit Dhaga's constraints: own-graph-first, no scraping, privacy by default (§6.7). Tracked as unchecked items in [checklist.md](/docs/roadmap/checklist) §20.
+
+| Candidate | Notes |
+|---|---|
+| **Personal MCP server** — expose the user's own graph (read-only) to external AI clients (Claude Desktop/Code, Cursor) so any assistant can query their private network | Backlog. Self-host-friendly; read-only, user-scoped, nothing leaves the user's instance beyond the connected client |
+| **Duplicate-contact detection & merge (entity resolution)** across import sources | Backlog. Distinct from the team-graph cross-user dedup in §5.3 — this is per-user resolution across LinkedIn/vCard/Google/manual sources |
+| **AI-suggested connections** — surface likely graph edges from shared company/school/city/event | Backlog. Own-graph inference only; suggested, never auto-linked (mirrors the confirm-inbox pattern) |
+| **Relationship analytics dashboard** — most-connected, longest-known, city clusters, network growth | Backlog. Read-only stats over the user's own graph; no external data |
+| **Profile-completeness scoring + enrichment nudges** | Backlog. Nudge to fill gaps; enrichment stays user-triggered per §7.5 |
+| **Map view of contacts' locations** ("who's nearby when I travel") | Backlog. Renders locations the user already holds; no live tracking |
+| **Personal-life logging modules (optional)** — gift tracking, journal/diary + mood, activity log, debt tracking, pets | Backlog. Optional modules to reach broader personal-relationship breadth; off by default so the professional-networking core stays uncluttered |
+| **Mail-merge / bulk personalized outreach + public API + Zapier app** | Backlog. Extends the existing outbound webhooks (checklist §16) and the Zapier/webhooks line already in §5.2 v1.4; bulk outreach is the new delta |
+| **Two-way native phone address-book sync** | Backlog. Extends the current one-way expo-contacts import (§6.7) to write curated contacts back to the phone |
+| **Voice dictation self-correction** — spoken self-edits ("schedule at 3, no make it 4") folded into the transcript, both a semantic LLM pass and a deterministic number/time pass | Backlog — **deferred pending a dedicated GPU host** for the correction model. The real-time in-browser STT (Moonshine, WebGPU) is proven and is the intended `whisper-base` replacement — it ports independently and now. But the in-browser correction LLM is **CPU-bound (~48 s/edit) on consumer GPUs** where WebGPU falls back to CPU — too slow to be the "then and there" correction the product needs. Ships when a dedicated 24 GB-class GPU can host the correction model server-side (aligns with the §7.2 Phase-2 server tier). The STT-side layers (phonetic teaching, deterministic cleanup) are **not** part of this deferral — they ship with the STT |
+
+**Already covered — not re-added:**
+
+- *Relationship-strength scoring* is already scoped: §6.7 "Relationship strength" row + checklist §14.
+- *LinkedIn import & job-change detection / reach-out nudges* are already scoped: LinkedIn Connections CSV + QR import (§6.7, checklist §4/§16), job-change detection + news watchlist + keep-in-touch cadence (§5.2 v1.2, checklist §14). Continuous *automatic* LinkedIn network sync is **not** on the roadmap — it requires scraping/session-piggybacking, a §6.7 hard line.
+- *WhatsApp capture* is already tracked (§5.2 v1.4, checklist §16).
+
+**Considered and declined (different product / against policy):**
+
+- **iMessage / SMS capture** — declined. SMS/call-log ingestion is a §6.7 hard line (blocked by iOS, disallowed by Play Store policy). WhatsApp share-to-capture (§5.2 v1.4) is the ToS-clean equivalent.
+- **External fundraising suite** — a curated *external* investor database, cold-outreach sequences, pitch-deck hosting/analytics, and an AI deck reviewer. Declined: that is a fundraising-discovery product, not a personal CRM. Dhaga records the investors *you* actually meet; it does not sell an external investor list or run outbound campaigns.
+- **Enterprise org graph** — a firm-*owned* relationship graph mined at bank/PE scale. Declined: Dhaga's team story is individual-first (§5.2 v2.0 / checklist §17 "who knows whom" across a small team), not an enterprise deal-intelligence platform whose graph the employer owns.
 
 ---
 
@@ -168,6 +197,7 @@ The MVP must prove one loop end-to-end:
 - **OCR is free and on-device.** iOS: Apple Vision framework (`VNRecognizeTextRequest`) — excellent accuracy, zero cost, zero latency, zero privacy exposure. Android: Google ML Kit Text Recognition (also free, on-device).
 - OCR yields raw text lines + bounding boxes. A **small LLM call** (or on-device model) converts raw OCR text → structured contact JSON (name/title/company/email/phone/address), handling layout ambiguity that regex can't ("is this line a company or a title?").
 - Fallback for degraded/multilingual cards: server-side pass with a vision-capable model (send the image, get structured JSON directly). This is the premium path, used only when on-device confidence is low.
+- **One card, one or many photos.** A single capture can bundle multiple images of the same card (front + back) or a multi-page leaflet — via multi-shot camera, desktop live webcam, or multi-file upload on web and mobile; the server vision pass merges them into one contact and keeps every image as a receipt. (Extracting *several* contacts from one leaflet is not yet in scope — a multi-image capture always yields a single contact.)
 
 ### 6.2 Auto-grouping (M2)
 
@@ -225,6 +255,9 @@ at our price point. Our channels, all user-initiated or opt-in:
 |---|---|---|
 | LinkedIn profile capture | Extension reads the DOM the user is viewing — user-initiated, single profile, no automation (the one-click LinkedIn-capture pattern) | v1.1 |
 | LinkedIn network bulk import | User's own LinkedIn data export — Connections CSV (name, company, position, connected date, sometimes email) | v1.1 |
+| Device / phone contacts bulk import | User's own exported .vcf file (iPhone/iCloud, Android, Google Contacts all export vCard) — one file, parsed 100% in-browser, nothing scraped | v1.1 |
+| Google / Outlook contacts OAuth import | User connects their own Google or Microsoft account (People API `contacts.readonly` / Graph `Contacts.Read`, delegated, explicit consent) — reads only that user's own contacts, on demand, never automated. No Apple/iCloud equivalent (no contacts API) | v1.1 |
+| On-device contacts import (mobile) | expo-contacts, OS permission-gated, user selects which to import — the phone's own address book | v1.1 |
 | Job-change detection | Diff of re-imported Connections CSV + news-watchlist hits; email-signature changes once email sync exists. Days-to-weeks latency, partial coverage — accepted trade-off | v1.2 |
 | "In the news" alerts | Opt-in per-contact watchlist (user stars contacts), nightly/weekly Batch API web search, capped per tier | v1.2 |
 | X/Twitter capture | Extension capture of the viewed profile + user-triggered enrichment (web search reaches public X presence); no API monitoring | v1.1 |
@@ -368,6 +401,27 @@ Per-card pipeline (OCR parse ≈ 800 in / 200 out tokens on Haiku): **≈ $0.002
 - Public roadmap + good-first-issues on capture parsers and language support.
 - Prompt/eval library in the open: contributors improve extraction quality measurably (eval suite gates PRs).
 - Plugin interface for capture sources (badge formats, email parsers) and export targets (CRMs) — the integrations surface area becomes community-maintained.
+
+### 8.6 Viral growth loops (built 2026-07)
+
+A private CRM has no inherent network effect — nobody else sees your graph — so
+distribution is engineered as three deliberate, privacy-safe loops (build detail
+in [checklist.md](/docs/roadmap/checklist) §21):
+
+- **Network Wrapped** — a contact-free, proud-to-post share card ("47 people met
+  this month", "12 at this event", "strongest cluster: fintech"), computed
+  deterministically from the user's own graph (no LLM, no metered cost). Every
+  share is a faceless ad; it exposes aggregate counts + category superlatives
+  only, never a third party's name. Server-rendered in feed/story/unfurl formats
+  and free to all users — it's a growth surface, not a paywalled one.
+- **Public graph sandbox** — the landing lets anyone drag/zoom a real-scale
+  (21k-node) but entirely synthetic network, loaded only on demand. It turns the
+  product's hardest-to-explain value (a living knowledge graph) into a
+  screenshot-worthy toy with zero signup friction, reusing the same sigma.js
+  renderer the app ships.
+- **Two-sided referral** — a free month of Pro for both advocate and referee
+  (hosted tier); a valid invite also admits the referee past the early-access
+  wall. The one loop that directly compounds paid conversion.
 
 ---
 

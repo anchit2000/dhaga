@@ -71,6 +71,13 @@ hardening, and correctness items. Grouped by area.
   fan-out sites rides with that change. Rule of thumb (now in
   [`SCALING.md`](SCALING.md) lever 2): resolve `getDb()` **once** per request and
   thread the handle; prefer one round-trip over a fan-out.
+- **Connect-retry doesn't cover the EE `drizzle(getPool())` reads.** The
+  transient-acquisition retry (`connect-retry.ts`, both the EE tenant pool and
+  the core pool) wraps `openTenantConnection`/`openAdminConnection` and
+  better-auth's session read, but not the admin/access-request/billing repos,
+  which issue `pool.query()` directly. Low-frequency paths, so not urgent — an
+  enhancement to bring them under the same backoff+jitter wrapper (see
+  [`SCALING.md`](SCALING.md) lever 2).
 
 ## Self-hosting / packaging
 

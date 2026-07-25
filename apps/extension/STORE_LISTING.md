@@ -152,11 +152,12 @@ The same zip uploads unchanged to the
 (free registration). Reuse the copy above; Edge's privacy form asks the same
 questions.
 
-## When the cloud domain is final
+## Adding the production domain to host_permissions
 
-Once Dhaga Cloud has its permanent domain (a custom domain, not the
-`dhaga-web.vercel.app` preview address), ship a minor version that adds it to
-`host_permissions` so cloud users skip the runtime grant. That's a new zip +
-resubmission (version bump required); the optional-permission flow keeps
-working for self-hosters. Until then, users on the Vercel address just approve
-the one-time access prompt in the options page.
+The cloud domain is final (`https://www.dhaga.app`), but `manifest.json`'s
+`host_permissions` still lists only `http://localhost:3000/*` — the pending
+action is adding the production origin there so cloud users skip the runtime
+grant. That's a new zip + resubmission (version bump required); the
+optional-permission flow keeps working for self-hosters either way. Until
+that ships, cloud users just approve the one-time access prompt in the
+options page.

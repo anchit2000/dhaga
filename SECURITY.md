@@ -11,8 +11,8 @@ afterthought.
   central Dhaga server that reads your graph.
 - **Hosted (Dhaga Cloud) tenant isolation** is enforced by Postgres row-level
   security, keyed to the authenticated user via a session-scoped setting, on a
-  non-privileged database role (no `BYPASSRLS`) with `FORCE ROW LEVEL SECURITY`
-  on every tenant table.
+  non-privileged database role (no `BYPASSRLS` or `SUPERUSER`) with
+  `FORCE ROW LEVEL SECURITY` on every tenant table.
 - **Receipts and deletion.** Every AI-derived fact links back to its source
   note. Deleting data cascades and tombstones across notes, facts, edges, and
   embeddings — transactionally, so nothing is left half-deleted.
@@ -39,3 +39,13 @@ reasonable window to fix before any disclosure. We aim to acknowledge within
   corrected so the table is tenant-isolated exactly like every other, and the
   surrounding tenant-isolation surface was reviewed at the same time. No user
   data was known to have been accessed.
+- **2026-07 — superuser RLS bypass and pooler-detection gap.** The same audit
+  found the boot-time role check tested only `rolbypassrls`, missing that a
+  `SUPERUSER` role also bypasses row-level security unconditionally, and that
+  transaction-mode pooler detection (which breaks the session-scoped setting
+  tenant isolation relies on) only recognized Supabase's `:6543` port. Both are
+  closed: the boot guard now rejects a connecting role with `BYPASSRLS` **or**
+  `SUPERUSER`, and pooler detection was broadened to PgBouncer/Supavisor/
+  Neon-pooler hostnames, with a `DHAGA_ALLOW_TRANSACTION_POOLER` escape hatch
+  for a pooler confirmed session-scoped. No user data was known to have been
+  accessed.

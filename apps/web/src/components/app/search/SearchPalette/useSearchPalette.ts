@@ -1,16 +1,14 @@
 import { startTransition, useActionState, useEffect, useId, useState } from "react";
 import { useDictation } from "@/components/app/contact/useDictation";
 import {
-  askAiAction,
   saveSearchWeightsAction,
   searchAction,
-  type AskAiState,
   type SearchState,
 } from "@/lib/actions/search";
 import type { SearchWeights } from "@/utils/constants/search";
+import { useAskStream } from "./useAskStream";
 
 const EMPTY_SEARCH: SearchState = { query: "", hits: [], unindexed: 0 };
-const EMPTY_ASK: AskAiState = {};
 const SEARCH_DEBOUNCE_MS = 300;
 
 export type SearchMode = "search" | "ask";
@@ -33,7 +31,7 @@ export function useSearchPalette(initialWeights: SearchWeights) {
     searchAction,
     EMPTY_SEARCH,
   );
-  const [askState, askDispatch, askPending] = useActionState(askAiAction, EMPTY_ASK);
+  const askStream = useAskStream();
   const formId = useId();
   // Dictation must APPEND, not replace: engines fire onFinalText once per
   // finalized segment (the browser engine with continuous=true emits several
@@ -76,6 +74,13 @@ export function useSearchPalette(initialWeights: SearchWeights) {
     void saveSearchWeightsAction(next);
   }
 
+  /** Ask-Dhaga is metered streaming, not a server action: submitting the form
+   *  in "ask" mode routes the query into the stream hook instead of dispatching
+   *  askAiAction. The Search-mode form action (searchDispatch) is untouched. */
+  function askFormAction(formData: FormData): void {
+    askStream.submit(String(formData.get("q") ?? ""));
+  }
+
   return {
     open,
     setOpen,
@@ -89,14 +94,14 @@ export function useSearchPalette(initialWeights: SearchWeights) {
     showTuner,
     setShowTuner,
     formId,
-    dispatch: mode === "search" ? searchDispatch : askDispatch,
+    dispatch: mode === "search" ? searchDispatch : askFormAction,
     // Stale the instant the query outruns the last dispatched search, not just
     // while the request is in flight — otherwise the 300ms debounce window
     // shows the previous query's results at full opacity with no cue that a
     // newer search is queued, which reads as "search stopped working" until
     // results suddenly swap in.
     search: { state: searchState, pending: searchPending || query.trim() !== searchState.query },
-    ask: { state: askState, pending: askPending },
+    ask: { state: askStream.state, pending: askStream.state.pending },
     dictation,
   };
 }

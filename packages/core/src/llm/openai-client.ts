@@ -5,6 +5,8 @@ import type {
   ExtractOptions,
   LLMClient,
   LLMResult,
+  LLMStream,
+  LLMUsage,
   ModelTier,
 } from "./types";
 
@@ -79,6 +81,46 @@ export class OpenAILLMClient implements LLMClient {
         outputTokens: response.usage?.completion_tokens ?? 0,
       },
     };
+  }
+
+  async streamComplete(options: CompleteOptions): Promise<LLMStream> {
+    const model = this.models[options.tier];
+    const stream = await this.client.chat.completions.create({
+      model,
+      max_completion_tokens: options.maxTokens ?? 1024,
+      messages: [
+        { role: "system", content: options.system },
+        { role: "user", content: options.prompt },
+      ],
+      stream: true,
+      stream_options: { include_usage: true },
+    });
+    let resolveUsage!: (usage: LLMUsage) => void;
+    let rejectUsage!: (reason: unknown) => void;
+    const usage = new Promise<LLMUsage>((resolve, reject) => {
+      resolveUsage = resolve;
+      rejectUsage = reject;
+    });
+    async function* textStream(): AsyncGenerator<string> {
+      let finalUsage: LLMUsage = { inputTokens: 0, outputTokens: 0 };
+      try {
+        for await (const chunk of stream) {
+          if (chunk.usage) {
+            finalUsage = {
+              inputTokens: chunk.usage.prompt_tokens,
+              outputTokens: chunk.usage.completion_tokens,
+            };
+          }
+          const content = chunk.choices[0]?.delta?.content;
+          if (content) yield content;
+        }
+        resolveUsage(finalUsage);
+      } catch (error) {
+        rejectUsage(error);
+        throw error;
+      }
+    }
+    return { textStream: textStream(), usage, model };
   }
 
   private async completeWithWebSearch(

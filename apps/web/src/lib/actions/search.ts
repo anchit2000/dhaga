@@ -4,25 +4,16 @@ import { after } from "next/server";
 import type { SearchIndexResult } from "@dhaga/core";
 import { requireUserId } from "@/lib/auth/guard";
 import { invalidateAppNavigation } from "@/lib/cache/app-navigation";
-import { answerSearchQuery, type AiAnswerResult } from "@/lib/ai/search";
+import type { AiAnswerResult } from "@/lib/ai/search";
 import { getSearchIndex } from "@/lib/repo/search-index";
 import { embeddingsEnabled } from "@/lib/ai/embedder";
 import { setSearchWeights } from "@/lib/repo/settings";
 import { parseSearchWeights, type SearchWeights } from "@/utils/constants/search";
 
-/** The Ask-Dhaga tab's action state — the answer, or a styled notice with the
- *  discriminant and any cap-fallback keyword hits threaded through. */
+/** The styled-notice shape AskNotice renders — a notice with its discriminant
+ *  and any cap-fallback keyword hits. (Was the Ask-Dhaga server-action state;
+ *  the tab now streams via /api/search/ask, but the notice shape is unchanged.) */
 export type AskAiState = AiAnswerResult;
-
-export async function askAiAction(
-  _previous: AskAiState,
-  formData: FormData,
-): Promise<AskAiState> {
-  const userId = await requireUserId();
-  const query = String(formData.get("q") ?? "").trim();
-  if (!query) return { notice: "Type a question first." };
-  return answerSearchQuery(userId, query);
-}
 
 export interface SearchState {
   query: string;

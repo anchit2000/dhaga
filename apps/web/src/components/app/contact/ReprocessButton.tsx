@@ -4,7 +4,7 @@ import { useFormStatus } from "react-dom";
 import { Loader2, RotateCw } from "lucide-react";
 
 /** Small inline submit that re-runs fact extraction on an existing note. Shows
- *  a spinner while the enqueue is in flight; the ExtractionStatus poller then
+ *  a spinner while the enqueue is in flight; the ExtractionStatus stream then
  *  takes over and surfaces the running job's progress. */
 export function ReprocessButton(): React.ReactElement {
   const { pending } = useFormStatus();

@@ -39,6 +39,9 @@ vi.mock("@dhaga/core", async (importOriginal) => {
         usage: { inputTokens: 5, outputTokens: 5 },
       };
     },
+    streamComplete: async () => {
+      throw new Error("streamComplete is not exercised by this test");
+    },
   };
   return { ...actual, hasLLM: () => true, getLLMClient: () => client };
 });

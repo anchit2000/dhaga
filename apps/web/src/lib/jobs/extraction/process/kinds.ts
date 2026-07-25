@@ -1,9 +1,5 @@
 import {
   attachExtractionJobNote,
-  blockedExtractionJob,
-  claimExtractionJob,
-  completeExtractionJob,
-  failExtractionJob,
   setExtractionJobStage,
 } from "@/lib/repo/extraction-jobs";
 import { getContact } from "@/lib/repo/contacts";
@@ -15,8 +11,8 @@ import {
   extractAndApplyNote,
   type NoteExtractionOutcome,
 } from "@/lib/ai/note-extraction";
-import { AiBudgetError } from "@/lib/ai/metering";
 import type { ExtractionJobRow } from "@/lib/db/schema";
+import type { ExtractionEventSink } from "./index";
 
 /**
  * Connection lifecycle: every DB touch below runs inside a SHORT withUserDb
@@ -47,51 +43,10 @@ async function indexNote(
   }
 }
 
-function errorMessage(error: unknown): string {
-  if (error instanceof AiBudgetError) return error.message;
-  if (error instanceof Error && error.message) return error.message;
-  return "Extraction failed.";
-}
-
-/**
- * Drain one extraction job. Called from the worker route (a normal user-scoped
- * request, so every repo write lands with the right tenant) and safe to call
- * twice — claimExtractionJob only lets the first caller past the pending gate.
- */
-export async function processExtractionJob(jobId: string, userId: string): Promise<void> {
-  const job = await withUserDb(userId, () => claimExtractionJob(jobId));
-  if (!job) return; // not pending — already running/done, or lost the race
-  try {
-    const outcome =
-      job.kind === "enrichment"
-        ? await processEnrichment(job, userId)
-        : await processNote(job, userId);
-    if (outcome.blocked) {
-      // No AI budget: a terminal, non-retryable state (not a failure). The
-      // poller treats "blocked" as terminal and the UI shows a calm notice.
-      await withUserDb(userId, () =>
-        blockedExtractionJob(jobId, outcome.notice ?? "Automatic fact extraction is a paid feature."),
-      );
-    } else if (outcome.failed) {
-      await withUserDb(userId, () =>
-        failExtractionJob(jobId, outcome.notice ?? "Extraction failed."),
-      );
-    } else {
-      await withUserDb(userId, () =>
-        completeExtractionJob(jobId, {
-          factCount: outcome.factCount,
-          followUpCount: outcome.followUpCount,
-        }),
-      );
-    }
-  } catch (error) {
-    await withUserDb(userId, () => failExtractionJob(jobId, errorMessage(error)));
-  }
-}
-
-async function processNote(
+export async function processNote(
   job: ExtractionJobRow,
   userId: string,
+  emit: ExtractionEventSink,
 ): Promise<NoteExtractionOutcome> {
   if (!job.noteId) throw new Error("This note-extraction job has no note.");
   const noteId = job.noteId;
@@ -104,14 +59,16 @@ async function processNote(
     await clearNoteDerivations(note.id); // idempotent re-run on retry
     return { contactName: detail.contact.name, noteBody: note.body };
   });
+  emit({ type: "stage", stage: "extracting" });
   await indexNote(userId, noteId, job.contactId, noteBody);
   // extractAndApplyNote self-scopes its DB phases around the LLM call.
   return extractAndApplyNote(userId, job.contactId, noteId, contactName, noteBody, "note");
 }
 
-async function processEnrichment(
+export async function processEnrichment(
   job: ExtractionJobRow,
   userId: string,
+  emit: ExtractionEventSink,
 ): Promise<NoteExtractionOutcome> {
   // A retry that already saved its findings note skips the costly web search
   // (which would also stack a second note) and just re-extracts.
@@ -134,6 +91,7 @@ async function processEnrichment(
     text = loaded.text;
   } else {
     await withUserDb(userId, () => setExtractionJobStage(job.id, "searching"));
+    emit({ type: "stage", stage: "searching" });
     // runEnrichmentSearch self-scopes its DB phases around the web-search call.
     const findings = await runEnrichmentSearch(userId, job.contactId);
     noteId = findings.noteId;
@@ -145,6 +103,7 @@ async function processEnrichment(
     await setExtractionJobStage(job.id, "extracting");
     await clearNoteDerivations(noteId);
   });
+  emit({ type: "stage", stage: "extracting" });
   await indexNote(userId, noteId, job.contactId, text);
   // extractAndApplyNote self-scopes its DB phases around the LLM call.
   return extractAndApplyNote(userId, job.contactId, noteId, contactName, text, "enrichment");

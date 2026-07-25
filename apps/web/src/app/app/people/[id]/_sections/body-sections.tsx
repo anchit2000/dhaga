@@ -6,12 +6,11 @@ import {
 import { listContactRelationships } from "@/lib/repo/relationships";
 import { AddNoteForm } from "@/components/app/contact/AddNoteForm";
 import { EnrichButton } from "@/components/app/contact/EnrichButton";
-import { ExtractionStatus } from "@/components/app/contact/ExtractionStatus";
-import { FactList } from "@/components/app/contact/FactList";
 import { FollowUpList } from "@/components/app/contact/FollowUpList";
 import { NoteList } from "@/components/app/contact/NoteList";
 import { RelationshipSection } from "@/components/app/relationships/RelationshipSection";
 import { Timeline } from "@/components/app/contact/Timeline";
+import { FactsPanel } from "./FactsPanel";
 import { loadContactEvents, loadContactNotes } from "./loaders";
 
 export async function RelationshipsSection({
@@ -48,8 +47,9 @@ export async function FollowUpsSection({
   return <FollowUpList contactId={contactId} followUps={followUps} />;
 }
 
-// FactList imports FACT_TYPES (a runtime value) server-side — this wrapper must
-// stay a Server Component so that import never reaches the client bundle.
+// Stays a Server Component to run the DB reads (facts + recent jobs) and seed
+// the client FactsPanel, which renders FactList and refetches facts as the
+// extraction stream reports them landing.
 export async function FactsSection({
   contactId,
 }: {
@@ -63,8 +63,7 @@ export async function FactsSection({
   return (
     <section className="space-y-3">
       <h2 className="font-display text-lg">Facts</h2>
-      <ExtractionStatus contactId={contactId} initialJobs={extractionJobs} />
-      <FactList contactId={contactId} facts={facts} />
+      <FactsPanel contactId={contactId} initialJobs={extractionJobs} initialFacts={facts} />
       <EnrichButton contactId={contactId} />
     </section>
   );

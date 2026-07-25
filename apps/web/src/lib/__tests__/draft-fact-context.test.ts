@@ -23,6 +23,9 @@ vi.mock("@dhaga/core", async (importOriginal) => {
       throw new Error("extract() is not exercised by this test");
     },
     complete,
+    streamComplete: async () => {
+      throw new Error("streamComplete is not exercised by this test");
+    },
   };
   return {
     ...actual,

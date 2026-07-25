@@ -48,7 +48,8 @@ export interface ProfileFact {
   source: string;
 }
 
-/** Background extraction job, as the status endpoint reports it to the poller. */
+/** Background extraction job, as the person page server-renders it (the
+ *  extraction stream then updates the active label live — see useExtractionStream). */
 export type ExtractionJobKind =
   (typeof import("@/utils/constants/extraction-jobs").EXTRACTION_JOB_KINDS)[number];
 export type ExtractionJobStatus =
@@ -66,6 +67,19 @@ export interface ExtractionJobView {
   stalled: boolean;
 }
 
-export interface ExtractionStatusResponse {
-  jobs: ExtractionJobView[];
-}
+/** Worker progress stages the extraction stream reports. "searching" and
+ *  "extracting" are also persisted as the job's DB stage; "writing" is
+ *  stream-only, emitted with the final fact count right before the job completes. */
+export type ExtractionStage = "searching" | "extracting" | "writing";
+
+/**
+ * One NDJSON line the extraction worker streams to the person page
+ * (POST /api/jobs/extraction/run). `stage` drives the active-job label; the
+ * terminal events end the stream — `done` additionally tells the page to
+ * refetch this contact's facts, `blocked`/`error` flip the job's notice.
+ */
+export type ExtractionStreamEvent =
+  | { type: "stage"; stage: ExtractionStage; count?: number }
+  | { type: "done"; factCount: number; followUpCount: number }
+  | { type: "blocked"; message: string }
+  | { type: "error"; message: string; retryable: boolean };

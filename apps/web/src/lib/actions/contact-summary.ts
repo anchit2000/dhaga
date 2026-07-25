@@ -13,7 +13,7 @@ import type { ContactMethod } from "@dhaga/core";
  * Focused snapshot for the Home feed's contact detail Sheet — not the full
  * /app/people/[id] page. Dispatched on row click (per contact), not
  * prefetched for every feed row, so this lives behind a server action the
- * Sheet calls on demand (same on-demand-fetch shape as search's askAiAction).
+ * Sheet calls on demand.
  */
 
 export interface ContactSummary {

@@ -35,7 +35,14 @@ export async function processExtractionJob(
 ): Promise<void> {
   const emit: ExtractionEventSink = onEvent ?? (() => {});
   const job = await withUserDb(userId, () => claimExtractionJob(jobId));
-  if (!job) return; // not pending — already running/done, or lost the race
+  if (!job) {
+    // Not pending — another request (a second tab) already claimed it, or it's
+    // already terminal. This stream can't drive the job, so tell the client to
+    // reconcile via the slow status-poll fallback instead of ending silently
+    // (which would leave that tab spinning until a manual reload).
+    emit({ type: "detached" });
+    return;
+  }
   try {
     const outcome =
       job.kind === "enrichment"

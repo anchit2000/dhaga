@@ -5,7 +5,7 @@ import { getAuth } from "@/lib/auth/config";
 import { getBillingGate } from "@/lib/hosted/gate";
 import { getDb } from "@/lib/db/request-scope";
 import { aiActionsUsedThisMonth, effectiveMonthlyAiCap } from "@/lib/ai/metering";
-import { getSttEngine, shouldStoreCardPhotos } from "@/lib/repo/settings";
+import { shouldStoreCardPhotos } from "@/lib/repo/settings";
 import { listVocab } from "@/lib/repo/voice-vocab";
 import { listCalendarConnections } from "@/lib/repo/calendar";
 import {
@@ -19,7 +19,6 @@ import { countCardImages } from "@/lib/repo/card-images";
 import { CalendarConnectionsSetting } from "@/components/app/settings/CalendarConnectionsSetting";
 import { SuggestionsSetting } from "@/components/app/settings/SuggestionsSetting";
 import { CardPhotoSetting } from "@/components/app/settings/CardPhotoSetting";
-import { VoiceInputSetting } from "@/components/app/settings/VoiceInputSetting";
 import { VoiceTeaching } from "@/components/app/settings/VoiceTeaching";
 import { ApiKeysSetting } from "@/components/app/settings/ApiKeysSetting";
 import { BillingSetting } from "@/components/app/settings/BillingSetting";
@@ -111,11 +110,6 @@ export async function SuggestionsSection() {
 export async function CardPhotoSection() {
   const [enabled, count] = await Promise.all([shouldStoreCardPhotos(), countCardImages()]);
   return <CardPhotoSetting enabled={enabled} count={count} />;
-}
-
-export async function VoiceInputSection() {
-  const engine = await getSttEngine();
-  return <VoiceInputSetting engine={engine} />;
 }
 
 export async function VoiceTeachingSection() {

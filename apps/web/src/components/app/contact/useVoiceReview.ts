@@ -2,7 +2,6 @@
 
 import { useEffect, useState, type RefObject } from "react";
 import { teachVocab, useWebGpuAvailable } from "@/lib/voice/use-voice-session";
-import { useSttEngine } from "./SttEngineContext";
 
 /**
  * Shared wiring for the tap-to-fix voice-note review, used by both the contact
@@ -31,10 +30,8 @@ export interface VoiceReview {
 }
 
 export function useVoiceReview(fieldRef: RefObject<HTMLTextAreaElement | null>): VoiceReview {
-  // Both hooks run unconditionally (rules-of-hooks) before the && short-circuits.
-  const sttEngine = useSttEngine();
   const webGpuAvailable = useWebGpuAvailable();
-  const active = sttEngine === "moonshine" && webGpuAvailable !== false;
+  const active = webGpuAvailable !== false;
   const [text, setText] = useState("");
   const [dictated, setDictated] = useState(false);
 

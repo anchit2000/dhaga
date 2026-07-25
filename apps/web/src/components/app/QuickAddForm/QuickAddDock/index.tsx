@@ -6,28 +6,37 @@ import { type DockItemData } from "@/components/ui/dock";
 import { PhotoCropper } from "../../PhotoCropper";
 import { WebcamCapture } from "../../WebcamCapture";
 import { downscalePhoto } from "../../downscalePhoto";
-import { useDictation } from "../../contact/useDictation";
-import { VoiceNoteReview } from "../../contact/VoiceNoteReview";
-import { useVoiceReview } from "../../contact/useVoiceReview";
 import { DockBar } from "./dock-bar";
 
 /**
  * Floating quick-add dock: voice dictation, live webcam capture, and file
- * upload all converge on the same review screen as the paste/photo forms —
- * voice and the file-upload photo path both call `onSubmitPhoto`/dictate into
- * the shared textarea rather than opening a separate flow. On Dhaga Voice the
- * dictated transcript also surfaces above the dock as tap-to-fix word-chips.
+ * upload all converge on the same review screen as the paste/photo forms. Voice
+ * is driven by the optional `voice` prop, owned by CaptureForm — it streams the
+ * transcript live into the shared textarea and renders the tap-to-fix review
+ * directly under it. Without a `voice` prop (the collapsed floating dock) the
+ * Voice button just opens the capture dialog via `onVoiceStart`; it owns no mic.
  */
 export function QuickAddDock({
   formAction,
   onVoiceStart,
+  voice,
   pasteTextareaRef,
   captureOpen = false,
   onCaptureToggle,
   floating = true,
 }: {
   formAction: (formData: FormData) => void;
-  onVoiceStart: () => void;
+  /** Opens the capture dialog when the dock owns no dictation (no `voice`). */
+  onVoiceStart?: () => void;
+  /** Dictation controls, owned by CaptureForm. Absent on the collapsed dock. */
+  voice?: {
+    supported: boolean;
+    listening: boolean;
+    transcribing: boolean;
+    loadingProgress: number | null;
+    start: () => void;
+    stop: () => void;
+  };
   pasteTextareaRef: RefObject<HTMLTextAreaElement | null>;
   captureOpen?: boolean;
   onCaptureToggle?: () => void;
@@ -40,22 +49,9 @@ export function QuickAddDock({
   const [showCamera, setShowCamera] = useState(false);
   const [photoToCrop, setPhotoToCrop] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const voiceReview = useVoiceReview(pasteTextareaRef);
-  const {
-    supported: dictationSupported,
-    listening,
-    transcribing,
-    loadingProgress,
-    partialText,
-    start,
-    stop,
-  } = useDictation((text) => {
-    const el = pasteTextareaRef.current;
-    if (!el) return;
-    el.value = el.value ? `${el.value.replace(/\s+$/, "")} ${text}` : text;
-    voiceReview.onDictate(el.value);
-  });
-  const dictationBusy = transcribing || loadingProgress !== null;
+  const voiceBusy = voice ? voice.transcribing || voice.loadingProgress !== null : false;
+  const voiceListening = voice?.listening ?? false;
+  const showVoice = !voice || voice.supported;
 
   function submitPhoto(file: File): void {
     void downscalePhoto(file).then((downscaled) => {
@@ -66,26 +62,30 @@ export function QuickAddDock({
   }
 
   const items: DockItemData[] = [
-    ...(dictationSupported
+    ...(showVoice
       ? [
           {
-            icon: dictationBusy ? (
+            icon: voiceBusy ? (
               <Loader2 className="size-4 animate-spin" />
-            ) : listening ? (
+            ) : voiceListening ? (
               <Square className="size-4" />
             ) : (
               <Mic className="size-4" />
             ),
-            label: dictationBusy ? "Loading" : listening ? "Stop" : "Voice",
-            active: listening,
+            label: voiceBusy ? "Loading" : voiceListening ? "Stop" : "Voice",
+            active: voiceListening,
             onClick: () => {
-              if (dictationBusy) return;
-              if (listening) {
-                stop();
+              // Collapsed dock owns no dictation — just open the dialog.
+              if (!voice) {
+                onVoiceStart?.();
                 return;
               }
-              onVoiceStart();
-              start();
+              if (voiceBusy) return;
+              if (voiceListening) {
+                voice.stop();
+                return;
+              }
+              voice.start();
               requestAnimationFrame(() => pasteTextareaRef.current?.focus());
             },
           },
@@ -128,16 +128,13 @@ export function QuickAddDock({
           }}
         />
       ) : null}
-      {voiceReview.show ? (
-        <VoiceNoteReview text={voiceReview.text} onChange={voiceReview.onChange} onWordFix={voiceReview.onWordFix} />
-      ) : null}
       <DockBar
         floating={floating}
         items={items}
-        dictationBusy={dictationBusy}
-        loadingProgress={loadingProgress}
-        transcribing={transcribing}
-        partialText={partialText}
+        dictationBusy={voiceBusy}
+        loadingProgress={voice?.loadingProgress ?? null}
+        transcribing={voice?.transcribing ?? false}
+        partialText={null}
       />
     </>
   );

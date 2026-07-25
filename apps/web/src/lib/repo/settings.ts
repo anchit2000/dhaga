@@ -6,12 +6,9 @@ import { parseSearchWeights, type SearchWeights } from "@/utils/constants/search
 export const STORE_CARD_PHOTOS_KEY = "store_card_photos";
 export const SIGNAL_DETECTION_BATCH_KEY = "signal_detection_pending_batch";
 export const SEARCH_WEIGHTS_KEY = "search_weights";
-export const STT_ENGINE_KEY = "stt_engine";
 export const ONBOARDING_TOUR_KEY = "onboarding_tour_seen";
 /** Per-user monthly cloud-AI action allowance ("credits") an admin can grant. */
 export const AI_MONTHLY_CAP_OVERRIDE_KEY = "ai_monthly_cap_override";
-
-export type SttEngine = "browser" | "local" | "realtime" | "moonshine";
 
 export async function getSetting(key: string): Promise<string | null> {
   const db = await getDb();
@@ -73,28 +70,6 @@ export async function getSearchWeights(): Promise<SearchWeights> {
 
 export async function setSearchWeights(weights: SearchWeights): Promise<void> {
   await setSetting(SEARCH_WEIGHTS_KEY, JSON.stringify(weights));
-}
-
-/**
- * Voice dictation engine. Default is "moonshine" — Dhaga Voice: on-device
- * Moonshine ASR (transformers.js) with deterministic phonetic teaching,
- * streaming live while you talk on WebGPU; useDictation degrades it to the
- * browser engine where WebGPU is unavailable. The others: "browser" (Web Speech
- * API — free, but unsupported on Firefox and silently broken on Brave/vanilla
- * Chromium), "local" (on-device Whisper, record-then-transcribe — works
- * everywhere, first use downloads the model), and "realtime" (the Whisper model
- * re-transcribing continuously while speaking — WebGPU browsers only).
- *
- * Only an explicitly-stored recognized value is honored; anything else (unset,
- * or a legacy/unknown value) falls back to the "moonshine" default.
- */
-export async function getSttEngine(): Promise<SttEngine> {
-  const value = await getSetting(STT_ENGINE_KEY);
-  return value === "browser" || value === "local" || value === "realtime" ? value : "moonshine";
-}
-
-export async function setSttEngine(engine: SttEngine): Promise<void> {
-  await setSetting(STT_ENGINE_KEY, engine);
 }
 
 /** Whether the first-run product walkthrough has already run for this user. */

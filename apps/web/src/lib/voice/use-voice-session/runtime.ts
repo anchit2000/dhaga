@@ -4,9 +4,9 @@
  * files under the 150-line rule; index.ts re-exports so `@/lib/voice/use-voice-
  * session` stays one import path.
  *
- * The engine + VoiceSession are a MODULE-LEVEL singleton (like whisper-model-
- * loader) so the model loads once and every surface shares one WebGPU context;
- * a single active-sink slot routes events to whichever surface is recording.
+ * The engine + VoiceSession are a MODULE-LEVEL singleton so the model loads
+ * once and every surface shares one WebGPU context; a single active-sink slot
+ * routes events to whichever surface is recording.
  */
 import { VoiceSession } from "@dhaga/core/src/voice/session";
 import { DoubleMetaphoneDictionary } from "@dhaga/core/src/voice/teaching/phonetic";
@@ -41,6 +41,10 @@ export function ensureRuntime(): { engine: MoonshineAsrEngine; session: VoiceSes
 
 /** Route the singleton's events to a specific surface's handler. */
 export function setActiveSink(sink: (event: SessionEvent) => void): void {
+  // Hand-off guard: a different surface was recording and never stopped its mic
+  // (e.g. its dialog closed without Stop). Stop the shared mic before switching
+  // so the new surface builds a fresh pipeline instead of inheriting a stale one.
+  if (activeSink && activeSink !== sink && sharedMic?.active) sharedMic.stop();
   activeSink = sink;
 }
 

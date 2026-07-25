@@ -6,8 +6,8 @@ import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import {
-  DB_POOL_CONNECTION_TIMEOUT_MS,
-  DB_POOL_IDLE_TIMEOUT_MS,
+  DB_POOL_CONNECTION_TIMEOUT_MS_DEFAULT,
+  DB_POOL_IDLE_TIMEOUT_MS_DEFAULT,
   DB_POOL_MAX_CORE_DEFAULT,
   poolMaxFromEnv,
 } from "@/utils/constants/db";
@@ -83,25 +83,25 @@ const store = globalThis as unknown as {
 
 /** Hosted Postgres (Neon/Supabase/self-hosted) — required on serverless hosts. */
 async function initHosted(connectionString: string): Promise<DhagaDb> {
-  // Supabase's session pooler shares a fixed pool_size of 15 backends across
-  // ALL warm Vercel instances. This core pool plus the EE tenant pool
-  // (packages/ee/src/db/pool.ts, default 3) is the per-instance draw, so keep
-  // core + tenant small enough that several instances fit under 15 — default
-  // 2 + 3 = 5/instance. connectionTimeoutMillis makes a saturated pool fail
-  // fast instead of hanging. See @/utils/constants/db for the full math.
-  // withConnectRetry makes the pool ride out a momentary EMAXCONNSESSION /
-  // connect-timeout (a slot frees within ms) instead of 500ing — better-auth's
-  // per-request session read runs through this pool via drizzle, so the retry
-  // has to live on the pool object. See ./connect-retry.
+  // Supabase's session pooler shares a fixed pool_size across ALL warm Vercel
+  // instances (~48; see @/utils/constants/db for the full math). This core pool
+  // plus the EE tenant pool (packages/ee/src/db/pool.ts, default 3) is the
+  // per-instance draw, so keep core + tenant small enough that several instances
+  // fit under it — default 2 + 3 = 5/instance. withConnectRetry makes the pool
+  // ride out a momentary EMAXCONNSESSION / connect-timeout (a slot frees within
+  // ms) instead of 500ing — better-auth's per-request session read runs through
+  // this pool via drizzle, so the retry has to live on the pool object. See
+  // ./connect-retry.
   store.__dhagaPool ??= withConnectRetry(
     new Pool({
       connectionString,
       max: poolMaxFromEnv(process.env.DB_POOL_MAX_CORE, DB_POOL_MAX_CORE_DEFAULT),
       // No warm floor: let idle backends drain fully so this instance never
-      // holds a slot it isn't actively using against the shared pool_size of 15.
+      // holds a slot it isn't actively using against the shared pool.
       min: 0,
-      connectionTimeoutMillis: DB_POOL_CONNECTION_TIMEOUT_MS,
-      idleTimeoutMillis: DB_POOL_IDLE_TIMEOUT_MS,
+      connectionTimeoutMillis: poolMaxFromEnv(process.env.DB_POOL_CONNECTION_TIMEOUT_MS, DB_POOL_CONNECTION_TIMEOUT_MS_DEFAULT),
+      idleTimeoutMillis: poolMaxFromEnv(process.env.DB_POOL_IDLE_TIMEOUT_MS, DB_POOL_IDLE_TIMEOUT_MS_DEFAULT),
+      keepAlive: true, // hold the socket open vs NAT/LB idle reaping (longer idleTimeout)
     }),
   );
   // Re-executing the full idempotent DDL on every cold start costs seconds

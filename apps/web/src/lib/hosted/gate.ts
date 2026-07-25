@@ -60,7 +60,11 @@ export interface BillingGate {
 }
 
 export interface AdminGate {
-  isAdmin(userId: string): Promise<boolean>;
+  /** Pass the request's already-scoped connection so the isAdmin read reuses it
+   *  instead of opening a second checkout from the small tenant pool (the
+   *  app-shell nav-cache path — see lib/cache/app-navigation.ts). Optional:
+   *  callers off that path (e.g. requireAdminForPage) may omit it. */
+  isAdmin(userId: string, db?: DhagaDb): Promise<boolean>;
 }
 
 /** Advocate-facing summary of a user's referral standing (hosted only). */

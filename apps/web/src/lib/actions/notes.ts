@@ -10,7 +10,6 @@ import {
   deleteFact,
   deleteNote,
   getNote,
-  setFollowUpStatus,
   updateFactText,
   verifyFact,
 } from "@/lib/repo/notes";
@@ -149,14 +148,4 @@ export async function verifyFactAction(formData: FormData): Promise<void> {
   if (!factId) return;
   await verifyFact(factId);
   revalidatePath(`/app/people/${contactId}`);
-}
-
-export async function completeFollowUpAction(formData: FormData): Promise<void> {
-  await requireUserId();
-  const followUpId = String(formData.get("followUpId") ?? "");
-  const contactId = String(formData.get("contactId") ?? "");
-  if (!followUpId) return;
-  await setFollowUpStatus(followUpId, "done");
-  revalidatePath(`/app/people/${contactId}`);
-  revalidatePath("/app");
 }

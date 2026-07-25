@@ -1,3 +1,4 @@
+import { formatDate } from "@/utils/format-date";
 import type { NoteRow } from "@/lib/db/schema";
 
 interface TimelineEvent {
@@ -52,7 +53,7 @@ export function Timeline({
             <p className="text-sm text-paper">
               {event.label}
               <span className="ml-2 font-mono text-[10px] uppercase tracking-wider text-fog/60">
-                {event.at.toLocaleDateString()}
+                {formatDate(event.at)}
               </span>
             </p>
             {event.detail ? (

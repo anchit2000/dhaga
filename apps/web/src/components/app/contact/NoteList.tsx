@@ -5,6 +5,7 @@ import {
 } from "@/lib/actions/notes";
 import type { NoteRow } from "@/lib/db/schema";
 import { REPROCESSABLE_NOTE_KINDS } from "@/utils/constants/extraction-jobs";
+import { formatDateTime } from "@/utils/format-date";
 import { DeleteButton } from "./DeleteButton";
 import { ReprocessButton } from "./ReprocessButton";
 
@@ -38,7 +39,7 @@ export function NoteList({ contactId, entityId, notes }: NoteListProps) {
             </p>
             <p className="mt-1.5 font-mono text-[10px] uppercase tracking-wider text-fog/60">
               {KIND_LABELS[note.kind] ?? note.kind} ·{" "}
-              {note.createdAt.toLocaleString()}
+              {formatDateTime(note.createdAt)}
             </p>
           </div>
           <div className="flex items-center gap-0.5">

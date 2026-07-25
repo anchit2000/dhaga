@@ -29,16 +29,31 @@ export function ConfirmationsPreview({
       }
     >
       <ul className="space-y-2.5">
-        {preview.map((item) => (
-          <li key={item.id} className="flex flex-col gap-0.5">
-            {item.contactName ? (
-              <span className="font-mono text-[10px] uppercase tracking-wider text-fog">
-                {item.contactName}
-              </span>
-            ) : null}
-            <span className="line-clamp-2 text-sm text-paper">{item.payload.question}</span>
-          </li>
-        ))}
+        {preview.map((item) => {
+          // The web-sourced claim lives in `options` (label = the fact/claim,
+          // sublabel = its type); show it so the user can actually judge it.
+          // Legacy rows with no options fall back to the generic question.
+          const claim = item.payload.options[0];
+          return (
+            <li key={item.id} className="flex flex-col gap-0.5">
+              {item.contactName ? (
+                <span className="font-mono text-[10px] uppercase tracking-wider text-fog">
+                  {item.contactName}
+                </span>
+              ) : null}
+              {claim ? (
+                <span className="line-clamp-2 text-sm text-paper">
+                  {claim.label}
+                  {claim.sublabel ? (
+                    <span className="text-xs text-fog"> · {claim.sublabel}</span>
+                  ) : null}
+                </span>
+              ) : (
+                <span className="line-clamp-2 text-sm text-paper">{item.payload.question}</span>
+              )}
+            </li>
+          );
+        })}
       </ul>
       <Link
         href="/app/confirmations"

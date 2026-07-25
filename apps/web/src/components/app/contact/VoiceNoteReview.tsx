@@ -89,7 +89,7 @@ export function VoiceNoteReview({ text, onChange, onWordFix }: VoiceNoteReviewPr
               type="button"
               onClick={() => open(index, token)}
               title="Tap to fix & teach"
-              className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md border border-transparent px-2 py-1.5 text-sm text-paper transition-colors hover:border-seam hover:bg-ink/40 focus-visible:border-amber/50 focus-visible:outline-none"
+              className="inline-flex min-h-[32px] items-center rounded-md border border-transparent px-2 py-1 text-sm text-paper transition-colors hover:border-amber/40 hover:bg-amber/10 hover:text-amber focus-visible:border-amber/50 focus-visible:bg-amber/10 focus-visible:text-amber focus-visible:outline-none"
             >
               {token}
             </button>

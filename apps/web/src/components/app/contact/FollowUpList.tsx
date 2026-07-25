@@ -1,13 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Check } from "lucide-react";
-import { completeFollowUpAction } from "@/lib/actions/notes";
 import { createFollowUpAction } from "@/lib/actions/manual-entries";
 import type { FollowUpRow } from "@/lib/db/schema";
 import { useOptimisticList } from "@/lib/hooks/useOptimisticList";
-import { formatDate } from "@/utils/format-date";
 import { AddFollowUpForm } from "./AddFollowUpForm";
+import { FollowUpItem } from "./FollowUpItem";
 
 /** Open follow-ups plus a manual "Add" path. Adds show optimistically, then
  *  the server write + revalidation reconcile them; a failed write rolls back
@@ -55,31 +53,7 @@ export function FollowUpList({
       {items.length > 0 ? (
         <ul className="mb-2 space-y-1.5">
           {items.map((followUp) => (
-            <li
-              key={followUp.id}
-              className="flex items-center gap-2.5 rounded-lg border border-seam bg-panel px-3 py-2"
-            >
-              <form action={completeFollowUpAction} className="shrink-0">
-                <input type="hidden" name="followUpId" value={followUp.id} />
-                <input type="hidden" name="contactId" value={contactId} />
-                <button
-                  type="submit"
-                  aria-label="Mark done"
-                  title="Mark done"
-                  className="flex size-5 items-center justify-center rounded-full border border-amber/50 text-ember transition-colors hover:bg-amber/15"
-                >
-                  <Check className="size-3" />
-                </button>
-              </form>
-              <p className="min-w-0 flex-1 text-sm text-paper">
-                {followUp.action}
-                {followUp.dueDate ? (
-                  <span className="text-fog"> — {formatDate(followUp.dueDate)}</span>
-                ) : followUp.dueHint ? (
-                  <span className="text-fog"> — {followUp.dueHint}</span>
-                ) : null}
-              </p>
-            </li>
+            <FollowUpItem key={followUp.id} contactId={contactId} followUp={followUp} />
           ))}
         </ul>
       ) : null}

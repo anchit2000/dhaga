@@ -1,0 +1,118 @@
+"use client";
+
+import { useState } from "react";
+import { Check, Pencil } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
+import {
+  completeFollowUpAction,
+  dismissFollowUpAction,
+  updateFollowUpAction,
+} from "@/lib/actions/follow-ups";
+import { formatDate } from "@/utils/format-date";
+import { DeleteButton } from "./DeleteButton";
+import { SaveButton } from "./SaveButton";
+import type { FollowUpRow } from "@/lib/db/schema";
+
+/**
+ * One follow-up row: complete it, edit it in place (action text + due date), or
+ * dismiss it. Mirrors FactItem's edit/delete UX; "delete" soft-dismisses
+ * (status='dismissed') so the row leaves every open list with no schema change.
+ */
+export function FollowUpItem({
+  contactId,
+  followUp,
+}: {
+  contactId: string;
+  followUp: FollowUpRow;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [dueDate, setDueDate] = useState<Date | null>(followUp.dueDate);
+
+  if (editing) {
+    return (
+      <li className="rounded-lg border border-seam bg-panel px-3 py-2">
+        <form
+          action={async (formData) => {
+            await updateFollowUpAction(formData);
+            setEditing(false);
+          }}
+          className="flex flex-col gap-2 sm:flex-row sm:items-center"
+        >
+          <input type="hidden" name="followUpId" value={followUp.id} />
+          <input type="hidden" name="contactId" value={contactId} />
+          <Input
+            name="action"
+            defaultValue={followUp.action}
+            required
+            autoFocus
+            className="h-9 flex-1 text-sm"
+          />
+          <div className="sm:w-44">
+            <DatePicker
+              name="dueDate"
+              value={dueDate}
+              onChange={setDueDate}
+              placeholder="When — optional"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <SaveButton label="Save follow-up" />
+            <button
+              type="button"
+              onClick={() => {
+                setEditing(false);
+                setDueDate(followUp.dueDate);
+              }}
+              className="text-xs text-fog transition-colors hover:text-paper"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </li>
+    );
+  }
+
+  return (
+    <li className="flex items-center gap-2.5 rounded-lg border border-seam bg-panel px-3 py-2">
+      <form action={completeFollowUpAction} className="shrink-0">
+        <input type="hidden" name="followUpId" value={followUp.id} />
+        <input type="hidden" name="contactId" value={contactId} />
+        <button
+          type="submit"
+          aria-label="Mark done"
+          title="Mark done"
+          className="flex size-5 items-center justify-center rounded-full border border-amber/50 text-ember transition-colors hover:bg-amber/15"
+        >
+          <Check className="size-3" />
+        </button>
+      </form>
+      <p className="min-w-0 flex-1 text-sm text-paper">
+        {followUp.action}
+        {followUp.dueDate ? (
+          <span className="text-fog"> — {formatDate(followUp.dueDate)}</span>
+        ) : followUp.dueHint ? (
+          <span className="text-fog"> — {followUp.dueHint}</span>
+        ) : null}
+      </p>
+      <button
+        type="button"
+        aria-label="Edit follow-up"
+        title="Edit follow-up"
+        onClick={() => {
+          setDueDate(followUp.dueDate);
+          setEditing(true);
+        }}
+        className="shrink-0 rounded-full p-1 text-fog/60 transition-colors hover:bg-wash/[0.06] hover:text-paper"
+      >
+        <Pencil className="size-3.5" />
+      </button>
+      <form action={dismissFollowUpAction} className="shrink-0">
+        <input type="hidden" name="followUpId" value={followUp.id} />
+        <input type="hidden" name="contactId" value={contactId} />
+        <DeleteButton label="Delete follow-up" />
+      </form>
+    </li>
+  );
+}

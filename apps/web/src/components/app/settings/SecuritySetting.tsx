@@ -7,15 +7,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChangePassword } from "./ChangePassword";
 import { PasskeySection } from "./PasskeySection";
 import { PhoneNumberSection } from "./PhoneNumberSection";
 
 interface SecuritySettingProps {
+  email: string;
   twoFactorEnabled: boolean;
 }
 
-/** 2FA, passkeys, and phone verification — all optional, all self-serve. */
-export function SecuritySetting({ twoFactorEnabled: initialEnabled }: SecuritySettingProps) {
+/** Password, 2FA, passkeys, and phone verification — all optional, all self-serve. */
+export function SecuritySetting({ email, twoFactorEnabled: initialEnabled }: SecuritySettingProps) {
   const [enabled, setEnabled] = useState(initialEnabled);
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
@@ -56,6 +58,8 @@ export function SecuritySetting({ twoFactorEnabled: initialEnabled }: SecuritySe
         <CardTitle className="text-base">Security</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        <ChangePassword email={email} />
+
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-sm text-paper">
             {enabled ? (

@@ -68,6 +68,17 @@ export async function aiFailureResult(
     // Burst guard: the message already reads "wait a few seconds and try again".
     return { kind: "retry", notice: error.message };
   }
+  // Past the budget cases → a real infra/LLM fault behind the opaque "busy" /
+  // "trouble" notices. Log it PII-free (error class / HTTP status / code /
+  // transient flag only — never the message body, which could echo content) so
+  // the failure is diagnosable instead of a black box. This is how the prod
+  // Ask-Dhaga outage was traced to a DB connection held across the answer stream.
+  console.error("[ask-dhaga] answer failure", {
+    name: error instanceof Error ? error.name : typeof error,
+    code: (error as { code?: unknown } | null)?.code,
+    status: (error as { status?: unknown } | null)?.status,
+    transient: isTransientConnectionError(error),
+  });
   if (isTransientConnectionError(error)) {
     return { kind: "retry", notice: "Dhaga is busy right now — please try again in a moment." };
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { useState } from "react";
 import { ContactDetailSheet } from "./ContactDetailSheet";
 import { GoingQuiet } from "./GoingQuiet";
 import { HomeActions } from "./HomeActions";
@@ -8,6 +8,7 @@ import { HomeEmptyState } from "./HomeEmptyState";
 import { HomeOverview } from "./HomeOverview";
 import { RecentEventsTile } from "./RecentEventsTile";
 import { SignalsFeed } from "./SignalsFeed";
+import { StarredTile } from "./StarredTile";
 import { TodaySuggestions, type MeetingSlot } from "./TodaySuggestions";
 import type { ReactElement, ReactNode } from "react";
 import type { ContactListItem } from "@/lib/repo/contacts";
@@ -18,14 +19,15 @@ import type { SignalItem } from "@/lib/repo/signals";
 import type { QuietContact } from "@/lib/repo/strength";
 
 /**
- * Home's adaptive dashboard plus the one contact detail Sheet all tiles share.
- * A brand-new account (no people) gets a calm welcome instead of an empty grid.
- * Otherwise two zones auto-size to how much a user has:
- *  - Zone 1 — "Today" (the canonical reach-out hero) beside an attention rail
- *    (confirmations, signals, going-quiet). The rail is built from the data
- *    props so an all-empty rail lets Today span the full width — no dead column.
- *  - Zone 2 — an auto-fit grid of the standing tiles (follow-ups, recent people,
- *    recent events, suggested groups); empty tiles drop out and the rest re-fill.
+ * Home's adaptive dashboard plus the one contact detail Sheet the action tiles
+ * share. A brand-new account (no people) gets a calm welcome instead of an empty
+ * grid. Otherwise every tile flows into a single masonry (CSS columns): each
+ * keeps its natural height and packs top-to-bottom per column, so a short tile
+ * never leaves a tall gap beside a taller neighbour — no dead space at any width
+ * (an `items-start` grid can't do this; its row still sizes to the tallest tile).
+ * Data-less tiles (confirmations, signals, going-quiet, starred, suggested
+ * groups) are omitted entirely and the rest re-flow to close the layout. Order
+ * is priority-first: Today, attention alerts, then the standing tiles.
  */
 export function HomeDashboard({
   people,
@@ -39,6 +41,7 @@ export function HomeDashboard({
   openFollowUps,
   quietContacts,
   newSignals,
+  starred,
   hasConfirmations,
   inbox,
   groups,
@@ -54,6 +57,7 @@ export function HomeDashboard({
   openFollowUps: Awaited<ReturnType<typeof listAllOpenFollowUps>>;
   quietContacts: QuietContact[];
   newSignals: SignalItem[];
+  starred: ContactListItem[];
   hasConfirmations: boolean;
   inbox?: ReactNode;
   groups?: ReactNode;
@@ -64,40 +68,46 @@ export function HomeDashboard({
     return <HomeEmptyState />;
   }
 
-  // Attention rail, priority order. Each tile renders null when its data is
-  // empty, so presence is derived from the data props (not rendered children):
-  // an empty rail lets Today take the full width with no empty column.
-  const rail: ReactNode[] = [];
-  if (hasConfirmations && inbox) rail.push(<Fragment key="inbox">{inbox}</Fragment>);
+  // Ordered, priority-first tile list. Alert/preview tiles are included only
+  // when they have data, so no empty tile — and therefore no empty masonry
+  // cell — is ever rendered.
+  const tiles: Array<{ key: string; node: ReactNode }> = [
+    {
+      key: "today",
+      node: (
+        <TodaySuggestions
+          suggestions={suggestions}
+          calendarConnected={calendarConnected}
+          slots={slots}
+          overloaded={overloaded}
+          meetingCountToday={meetingCountToday}
+          moreDue={moreDue}
+          onSelectContact={setSelectedContactId}
+        />
+      ),
+    },
+  ];
+  if (hasConfirmations && inbox) tiles.push({ key: "inbox", node: inbox });
   if (newSignals.length > 0) {
-    rail.push(<SignalsFeed key="signals" signals={newSignals} onSelectContact={setSelectedContactId} />);
+    tiles.push({ key: "signals", node: <SignalsFeed signals={newSignals} onSelectContact={setSelectedContactId} /> });
   }
   if (quietContacts.length > 0) {
-    rail.push(<GoingQuiet key="quiet" contacts={quietContacts} onSelectContact={setSelectedContactId} />);
+    tiles.push({ key: "quiet", node: <GoingQuiet contacts={quietContacts} onSelectContact={setSelectedContactId} /> });
   }
+  tiles.push({ key: "followups", node: <HomeActions openFollowUps={openFollowUps} onSelectContact={setSelectedContactId} /> });
+  if (starred.length > 0) tiles.push({ key: "starred", node: <StarredTile rows={starred} /> });
+  tiles.push({ key: "people", node: <HomeOverview people={people} /> });
+  tiles.push({ key: "events", node: <RecentEventsTile events={events} /> });
+  if (groups) tiles.push({ key: "groups", node: groups });
 
   return (
     <>
-      <div className="space-y-4">
-        <div className="dhaga-bento grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
-          <TodaySuggestions
-            suggestions={suggestions}
-            calendarConnected={calendarConnected}
-            slots={slots}
-            overloaded={overloaded}
-            meetingCountToday={meetingCountToday}
-            moreDue={moreDue}
-            onSelectContact={setSelectedContactId}
-            className={rail.length > 0 ? "lg:col-span-2" : "lg:col-span-3"}
-          />
-          {rail.length > 0 ? <div className="flex flex-col gap-4">{rail}</div> : null}
-        </div>
-        <div className="dhaga-bento grid items-start gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))]">
-          <HomeActions openFollowUps={openFollowUps} onSelectContact={setSelectedContactId} />
-          <HomeOverview people={people} onSelectContact={setSelectedContactId} />
-          <RecentEventsTile events={events} />
-          {groups}
-        </div>
+      <div className="dhaga-bento columns-1 gap-4 sm:columns-2 xl:columns-3">
+        {tiles.map(({ key, node }) => (
+          <div key={key} className="mb-4 break-inside-avoid">
+            {node}
+          </div>
+        ))}
       </div>
       <ContactDetailSheet
         contactId={selectedContactId}

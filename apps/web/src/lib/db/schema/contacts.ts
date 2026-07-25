@@ -45,6 +45,9 @@ export const contacts = pgTable("contacts", {
   // web-search only — never automatic mass lookup.
   watchedForSignals: boolean("watched_for_signals").notNull().default(false),
   signalsScannedAt: timestamp("signals_scanned_at", { withTimezone: true }),
+  // Explicit user favourite — distinct from watchedForSignals (which drives the
+  // proactive signal scans). Powers the Saved page's Starred tab + home tile.
+  starred: boolean("starred").notNull().default(false),
   source: text("source").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),

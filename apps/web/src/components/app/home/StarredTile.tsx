@@ -4,18 +4,19 @@ import { HomeTile } from "@/components/app/home/HomeTile";
 import { HOME_PREVIEW_LIMIT } from "@/utils/constants/app";
 import type { ContactListItem } from "@/lib/repo/contacts";
 
-/** Home's "Recent people" bento tile. Each row links through to the person's
- *  full detail page. */
-export function HomeOverview({ people }: { people: ContactListItem[] }): React.ReactElement {
+/**
+ * Home's "Starred" preview tile — the user's pinned favourites, each row a link
+ * through to the person's full detail page. Renders nothing when nothing is
+ * starred (this is a favourites tile, not a fixture), so the bento backfills
+ * instead of showing an empty card.
+ */
+export function StarredTile({ rows }: { rows: ContactListItem[] }): React.ReactElement | null {
+  if (rows.length === 0) return null;
+
   return (
-    <HomeTile title="Recent people">
+    <HomeTile title="Starred">
       <div className="space-y-1">
-        {people.length === 0 ? (
-          <div className="py-4">
-            <p className="text-sm text-paper">No one captured yet.</p>
-            <p className="mt-1 text-xs text-fog">Scan a card, paste an intro, or speak a note — people you capture land here.</p>
-          </div>
-        ) : people.slice(0, HOME_PREVIEW_LIMIT).map((person) => (
+        {rows.slice(0, HOME_PREVIEW_LIMIT).map((person) => (
           <Link
             key={person.id}
             href={`/app/people/${person.id}`}
@@ -29,7 +30,9 @@ export function HomeOverview({ people }: { people: ContactListItem[] }): React.R
           </Link>
         ))}
       </div>
-      <Link href="/app/people" className="mt-auto inline-flex min-h-11 items-center text-xs text-ember hover:underline">View all people</Link>
+      <Link href="/app/saved" className="mt-auto inline-flex min-h-11 items-center text-xs text-ember hover:underline">
+        View all →
+      </Link>
     </HomeTile>
   );
 }

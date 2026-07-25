@@ -6,8 +6,8 @@ import { HOME_PREVIEW_LIMIT } from "@/utils/constants/app";
 import { formatDate } from "@/utils/format-date";
 import type { EventListItem } from "@/lib/repo/events";
 
-/** Home's "Recent events" tile — paired with "Suggested groups" in its own row
- *  below the bento (side-by-side on wide screens, stacked on mobile). */
+/** Home's "Recent events" bento tile. Each row links through to the event's
+ *  full detail page. */
 export function RecentEventsTile({
   events,
   className,

@@ -9,8 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SocialButtons } from "@/components/app/auth/SocialButtons";
 import { AuthDivider } from "@/components/app/auth/AuthDivider";
+import { PasswordFields } from "@/components/app/auth/PasswordFields";
 import { SignupNotice } from "@/components/app/SignupNotice";
-import type { SocialProviderOption } from "@/utils/constants/auth";
+import { MIN_PASSWORD_LENGTH, type SocialProviderOption } from "@/utils/constants/auth";
 
 interface SignupFormProps {
   socialProviders: SocialProviderOption[];
@@ -19,6 +20,8 @@ interface SignupFormProps {
 
 export function SignupForm({ socialProviders, defaultEmail }: SignupFormProps) {
   const router = useRouter();
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | undefined>();
   const [requested, setRequested] = useState<string | undefined>();
@@ -26,9 +29,14 @@ export function SignupForm({ socialProviders, defaultEmail }: SignupFormProps) {
   const [magicLinkMode, setMagicLinkMode] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
 
+  const passwordInvalid = password.length < MIN_PASSWORD_LENGTH || password !== confirmPassword;
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
+    const name = String(formData.get("name") ?? "");
+    const email = String(formData.get("email") ?? "");
+    if (!magicLinkMode && passwordInvalid) return;
     setPending(true);
     setError(undefined);
 
@@ -37,11 +45,7 @@ export function SignupForm({ socialProviders, defaultEmail }: SignupFormProps) {
       // link (the verify step runs the signup access gate then) — so the send
       // itself never returns the 403 access-request response. Keep the copy
       // honest: tell them to check their email, don't claim the account exists.
-      const { error: linkError } = await authClient.signIn.magicLink({
-        email: String(formData.get("email") ?? ""),
-        name: String(formData.get("name") ?? ""),
-        callbackURL: "/app",
-      });
+      const { error: linkError } = await authClient.signIn.magicLink({ email, name, callbackURL: "/app" });
       setPending(false);
       if (linkError) {
         setError(linkError.message ?? "Couldn't send the sign-in link.");
@@ -51,11 +55,7 @@ export function SignupForm({ socialProviders, defaultEmail }: SignupFormProps) {
       return;
     }
 
-    const { error: signUpError } = await authClient.signUp.email({
-      name: String(formData.get("name") ?? ""),
-      email: String(formData.get("email") ?? ""),
-      password: String(formData.get("password") ?? ""),
-    });
+    const { error: signUpError } = await authClient.signUp.email({ name, email, password });
     setPending(false);
     if (signUpError) {
       // Signup gate blocks unapproved emails with a 403 and files an access
@@ -106,27 +106,26 @@ export function SignupForm({ socialProviders, defaultEmail }: SignupFormProps) {
           />
         </div>
         {magicLinkMode ? null : (
-          <div className="space-y-2">
-            <Label htmlFor="password" className="text-fog">
-              Password
-            </Label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              required
-              minLength={8}
-              autoComplete="new-password"
-              className="h-11"
-            />
-          </div>
+          <PasswordFields
+            password={password}
+            confirmPassword={confirmPassword}
+            onPasswordChange={setPassword}
+            onConfirmChange={setConfirmPassword}
+            passwordLabel="Password"
+            passwordId="password"
+            confirmId="confirm-password"
+          />
         )}
         {error ? (
           <p className="text-sm text-red-400" role="alert">
             {error}
           </p>
         ) : null}
-        <Button type="submit" disabled={pending} className="w-full">
+        <Button
+          type="submit"
+          disabled={pending || (!magicLinkMode && passwordInvalid)}
+          className="w-full"
+        >
           {pending ? <Loader2 className="size-4 animate-spin" /> : null}
           {magicLinkMode
             ? pending ? "Sending link…" : "Email me a sign-in link"

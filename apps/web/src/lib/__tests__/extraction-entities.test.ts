@@ -22,6 +22,7 @@ describe("extraction schema carries custom-entity objects", () => {
       predicate: "trains_at",
       object: "Iron Temple",
       object_type: "entity",
+      object_is_named: null,
       entity_type_hint: "gym",
     });
     expect(parsed.object_type).toBe("entity");
@@ -34,9 +35,14 @@ describe("extraction schema carries custom-entity objects", () => {
       predicate: "knows",
       object: "Ajay",
       object_type: "person",
+      object_is_named: true,
       entity_type_hint: null,
     });
     expect(parsed.entity_type_hint).toBeNull();
+    // WHY: object_is_named is the named-vs-bare discriminator; like
+    // entity_type_hint it is required-but-nullable so strict-mode structured
+    // outputs accept it — a named person carries an explicit true.
+    expect(parsed.object_is_named).toBe(true);
   });
 
   it("rejects object types outside company/person/entity", () => {
@@ -46,6 +52,7 @@ describe("extraction schema carries custom-entity objects", () => {
         predicate: "orbits",
         object: "Mars",
         object_type: "planet",
+        object_is_named: null,
         entity_type_hint: null,
       }),
     ).toThrow();

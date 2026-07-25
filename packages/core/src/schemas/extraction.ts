@@ -51,6 +51,18 @@ export const relationshipSchema = z.object({
     .describe(
       'When object_type is "entity": the slug of the user\'s node type it matches (e.g. "gym"). Otherwise null.',
     ),
+  // Required-but-nullable, same reason as entity_type_hint. Discriminates a real
+  // name from a bare relative/role reference so the graph can relabel a bare
+  // reference off the note's subject ("his son" on a note about Prashant ⇒
+  // "Prashant's son") instead of minting a phantom literally named "his son".
+  // Null = the model didn't decide; resolveObject's possessive-prefix backstop
+  // then decides. An explicit true is never overridden — a named person stays named.
+  object_is_named: z
+    .boolean()
+    .nullable()
+    .describe(
+      'true when `object` is a specific person\'s name (e.g. "Ajay Kumar"); false when it is a bare relative or role reference with no name, like "his son" or "her manager".',
+    ),
 });
 
 export const followUpSchema = z.object({

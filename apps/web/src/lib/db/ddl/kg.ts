@@ -54,6 +54,43 @@ BEGIN
   PERFORM set_config('app.bypass_rls', '', true);
 END $$;
 
+-- Bare relative/role references ("his son", "her manager") captured before the
+-- object_is_named discriminator existed were minted as "mentioned" stubs named
+-- literally after the phrase. Relabel each UNAMBIGUOUS one off its owner
+-- ("his son" ⇒ "Prashant's son"), matching the new resolveObject behavior,
+-- WITHOUT dropping the stub or its edge — the placeholder stays renameable. To
+-- avoid corrupting anything with real history, only a stub that is clearly a
+-- bare reference AND has a single, unambiguous real owner qualifies: it must have
+-- no notes, no facts, exactly one inbound live edge, and never be an edge src —
+-- and that one inbound edge's src must be a non-mentioned contact. Same RLS-bypass
+-- guard as the block above (a bare UPDATE would no-op under EE's forced RLS).
+-- Idempotent: a renamed stub no longer starts with a possessive, so a re-run
+-- matches nothing. \\s / \\w survive the JS template as literal \\s / \\w for Postgres.
+DO $$
+BEGIN
+  PERFORM set_config('app.bypass_rls', 'true', true);
+  UPDATE contacts AS stub
+  SET name = split_part(owner.name, ' ', 1) || '''s ' ||
+             regexp_replace(stub.name, '^(his|her|their|hers)\\s+', '', 'i')
+  FROM edges AS e
+  JOIN contacts AS owner
+    ON owner.id = e.src_id
+   AND owner.source <> 'mentioned'
+  WHERE stub.source = 'mentioned'
+    AND stub.name ~* '^(his|her|their|hers)\\s+\\w'
+    AND e.dst_type = 'contact'
+    AND e.dst_id = stub.id
+    AND e.src_type = 'contact'
+    AND e.deleted_at IS NULL
+    AND (SELECT count(*) FROM edges d
+           WHERE d.dst_type = 'contact' AND d.dst_id = stub.id AND d.deleted_at IS NULL) = 1
+    AND NOT EXISTS (SELECT 1 FROM edges s
+           WHERE s.src_type = 'contact' AND s.src_id = stub.id AND s.deleted_at IS NULL)
+    AND NOT EXISTS (SELECT 1 FROM notes n WHERE n.contact_id = stub.id)
+    AND NOT EXISTS (SELECT 1 FROM facts f WHERE f.contact_id = stub.id);
+  PERFORM set_config('app.bypass_rls', '', true);
+END $$;
+
 -- Extraction can now propose custom-entity relationships (object_type
 -- 'entity'); the suggestion carries the extractor's node-type guess so the
 -- inbox's "create new entity" path can preselect a type.

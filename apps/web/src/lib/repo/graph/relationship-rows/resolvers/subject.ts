@@ -1,33 +1,18 @@
 import { eq } from "drizzle-orm";
-import type { ConfirmationOption, Relationship } from "@dhaga/core";
+import type { ConfirmationOption } from "@dhaga/core";
 import { getDb } from "@/lib/db/request-scope";
 import { contacts } from "@/lib/db/schema";
 import { SUBJECT_PRONOUNS } from "@/utils/constants/relationships";
-import { findOrCreateCompany } from "../../contacts";
 import {
-  findEntityCandidates,
   findRelationshipCandidates,
-  resolveEntityObject,
-  resolvePersonObject,
   type RelationshipCandidate,
-} from "../../edge-suggestions";
+} from "../../../edge-suggestions";
 
 /** The relationship's subject: a single confident contact, or an ambiguous one
  *  the user must disambiguate (a pronoun, or a name matching ≠1 contact). */
 export type SubjectResolution =
   | { kind: "confident"; contactId: string }
   | { kind: "ambiguous"; candidates: RelationshipCandidate[] };
-
-/** The relationship's object: a concrete destination to link now, or an
- *  ambiguous one carrying render-ready candidate options for a confirmation. */
-export type ObjectResolution =
-  | { kind: "concrete"; dstType: "company" | "contact" | "entity"; dstId: string }
-  | {
-      kind: "ambiguous";
-      objectType: "person" | "entity";
-      entityTypeHint: string | null;
-      options: ConfirmationOption[];
-    };
 
 /**
  * Resolve the relationship SUBJECT. The extractor emits the literal "contact"
@@ -54,47 +39,6 @@ export async function resolveSubject(
     return { kind: "confident", contactId: candidates[0].id };
   }
   return { kind: "ambiguous", candidates };
-}
-
-/**
- * Resolve the relationship OBJECT. Concrete when unambiguous (company:
- * find-or-create; person/entity: unique exact match auto-links, exactly as
- * today), otherwise ambiguous — carrying the candidate options an entity_link
- * confirmation renders. Reuses the existing cardinality gates; the ambiguous
- * branch re-reads the candidates only to attach display labels.
- */
-export async function resolveObject(rel: Relationship): Promise<ObjectResolution> {
-  if (rel.object_type === "company") {
-    return {
-      kind: "concrete",
-      dstType: "company",
-      dstId: await findOrCreateCompany(rel.object),
-    };
-  }
-  if (rel.object_type === "entity") {
-    const resolution = await resolveEntityObject(rel.object);
-    if (resolution.kind === "edge") {
-      return { kind: "concrete", dstType: "entity", dstId: resolution.dstId };
-    }
-    const candidates = await findEntityCandidates(rel.object);
-    return {
-      kind: "ambiguous",
-      objectType: "entity",
-      entityTypeHint: rel.entity_type_hint,
-      options: candidates.map((c) => ({ id: c.id, label: c.name, sublabel: c.typeName })),
-    };
-  }
-  const resolution = await resolvePersonObject(rel.object);
-  if (resolution.kind === "edge") {
-    return { kind: "concrete", dstType: "contact", dstId: resolution.dstId };
-  }
-  const candidates = await findRelationshipCandidates(rel.object);
-  return {
-    kind: "ambiguous",
-    objectType: "person",
-    entityTypeHint: null,
-    options: candidates.map((c) => ({ id: c.id, label: c.name, sublabel: c.title })),
-  };
 }
 
 /**

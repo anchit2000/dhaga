@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
+import { eq } from "drizzle-orm";
 import type { Relationship } from "@dhaga/core";
-import { edges, edgeSuggestions } from "@/lib/db/schema";
+import { getDb } from "@/lib/db/request-scope";
+import { contacts, edges, edgeSuggestions } from "@/lib/db/schema";
 // Deep import (the leaf create module, not the barrel) so graph doesn't pull
 // confirmations' apply.ts back into itself — mirrors how confirmations/apply.ts
 // deep-imports graph/apply-extraction to avoid the same cycle.
@@ -37,9 +39,20 @@ export async function buildRelationshipRows(
   const edgeRows: RelationshipRows["edgeRows"] = [];
   const suggestionRows: RelationshipRows["suggestionRows"] = [];
 
+  // The note's subject owns any bare relative/role reference ("his son"), so
+  // resolveObject can relabel it as "<owner first name>'s son". Read once here
+  // rather than per-relationship.
+  const db = await getDb();
+  const [owner] = await db
+    .select({ name: contacts.name })
+    .from(contacts)
+    .where(eq(contacts.id, contactId))
+    .limit(1);
+  const ownerName = owner?.name ?? null;
+
   for (const rel of relationships) {
     const subject = await resolveSubject(rel.subject, contactId);
-    const object = await resolveObject(rel);
+    const object = await resolveObject(rel, ownerName);
 
     if (subject.kind === "confident") {
       if (object.kind === "concrete") {

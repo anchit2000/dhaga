@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { HomeTile } from "./HomeTile";
+import { ActionForm } from "@/components/app/ActionForm";
 import { Button } from "@/components/ui/button";
 import { markReachedOutAction } from "@/lib/actions/reminders";
 import { QUIET_FEED_LIMIT } from "@/utils/constants/app";
@@ -61,7 +62,11 @@ export function GoingQuiet({
             <span className="shrink-0 rounded-full border border-seam px-2 py-0.5 text-[11px] text-fog">
               {person.strength.label} · {person.strength.score}
             </span>
-            <form action={markReachedOutAction} className="shrink-0">
+            <ActionForm
+              action={markReachedOutAction}
+              errorMessage="Couldn't mark that as reached out."
+              className="shrink-0"
+            >
               <input type="hidden" name="contactId" value={person.id} />
               <button
                 type="submit"
@@ -69,7 +74,7 @@ export function GoingQuiet({
               >
                 I reached out ✓
               </button>
-            </form>
+            </ActionForm>
           </li>
         ))}
       </ul>

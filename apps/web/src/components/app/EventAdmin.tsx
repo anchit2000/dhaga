@@ -3,6 +3,7 @@
 import { useFormStatus } from "react-dom";
 import { Loader2 } from "lucide-react";
 import { mergeEventAction, renameEventAction, updateEventMetaAction } from "@/lib/actions/events";
+import { ActionForm } from "@/components/app/ActionForm";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { EventStyleFields } from "./EventStyleFields";
@@ -44,7 +45,11 @@ export function EventAdmin({
   return (
     <div className="space-y-4 rounded-2xl border border-seam bg-panel p-4">
       <div className="flex flex-wrap gap-3">
-        <form action={renameEventAction} className="flex min-w-0 flex-1 items-center gap-2">
+        <ActionForm
+          action={renameEventAction}
+          errorMessage="Couldn't rename the event."
+          className="flex min-w-0 flex-1 items-center gap-2"
+        >
           <input type="hidden" name="eventId" value={eventId} />
           <Input
             name="name"
@@ -54,9 +59,13 @@ export function EventAdmin({
             className="h-8 max-w-60 text-sm"
           />
           <ChipSubmit label="Rename" />
-        </form>
+        </ActionForm>
         {otherEvents.length > 0 ? (
-          <form action={mergeEventAction} className="flex items-center gap-2">
+          <ActionForm
+            action={mergeEventAction}
+            errorMessage="Couldn't merge the event."
+            className="flex items-center gap-2"
+          >
             <input type="hidden" name="fromId" value={eventId} />
             <Select
               name="intoId"
@@ -78,11 +87,15 @@ export function EventAdmin({
               label="Merge"
               confirmText={`Merge "${name}" into the selected event? Everyone moves over and "${name}" is deleted.`}
             />
-          </form>
+          </ActionForm>
         ) : null}
       </div>
 
-      <form action={updateEventMetaAction} className="space-y-3 border-t border-seam pt-4">
+      <ActionForm
+        action={updateEventMetaAction}
+        errorMessage="Couldn't save the event appearance."
+        className="space-y-3 border-t border-seam pt-4"
+      >
         <input type="hidden" name="eventId" value={eventId} />
         <div>
           <p className="mb-2 font-mono text-[10px] uppercase tracking-wider text-fog/60">Colour &amp; emoji</p>
@@ -93,7 +106,7 @@ export function EventAdmin({
           <EventTagInput defaultTags={tags} />
         </div>
         <ChipSubmit label="Save appearance" />
-      </form>
+      </ActionForm>
     </div>
   );
 }

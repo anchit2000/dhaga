@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useFormStatus } from "react-dom";
 import { Loader2, RotateCw, Sparkles, TriangleAlert } from "lucide-react";
+import { ActionForm } from "@/components/app/ActionForm";
 import {
   EXTRACTION_BLOCKED_LABEL,
   EXTRACTION_STAGE_LABELS,
@@ -88,11 +89,14 @@ export function ExtractionStatus({
                 {job.kind === "enrichment" ? "Enrichment" : "Fact extraction"} didn’t finish
                 {job.error ? ` — ${job.error}` : "."}
               </span>
-              <form action={retryExtractionJobAction}>
+              <ActionForm
+                action={retryExtractionJobAction}
+                errorMessage="Couldn't retry extraction — try again."
+              >
                 <input type="hidden" name="jobId" value={job.id} />
                 <input type="hidden" name="contactId" value={contactId} />
                 <RetryButton />
-              </form>
+              </ActionForm>
             </div>
           );
         }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
 import { BadgeCheck, Loader2, Pencil } from "lucide-react";
+import { ActionForm } from "@/components/app/ActionForm";
 import {
   deleteFactAction,
   updateFactAction,
@@ -96,11 +97,14 @@ export function FactItem({
             </p>
           </div>
           {unverified ? (
-            <form action={verifyFactAction}>
+            <ActionForm
+              action={verifyFactAction}
+              errorMessage="Couldn't confirm that fact — try again."
+            >
               <input type="hidden" name="factId" value={factId} />
               <input type="hidden" name="contactId" value={contactId} />
               <VerifyButton />
-            </form>
+            </ActionForm>
           ) : null}
           <button
             type="button"
@@ -111,11 +115,14 @@ export function FactItem({
           >
             <Pencil className="size-3.5" />
           </button>
-          <form action={deleteFactAction}>
+          <ActionForm
+            action={deleteFactAction}
+            errorMessage="Couldn't delete that fact."
+          >
             <input type="hidden" name="factId" value={factId} />
             <input type="hidden" name="contactId" value={contactId} />
             <DeleteButton label="Delete fact" />
-          </form>
+          </ActionForm>
         </>
       )}
     </li>

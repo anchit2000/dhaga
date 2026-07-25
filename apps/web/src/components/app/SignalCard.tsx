@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ActionForm } from "@/components/app/ActionForm";
 import { Button } from "@/components/ui/button";
 import { addSignalAsNoteAction, dismissSignalAction } from "@/lib/actions/signals";
 
@@ -76,7 +77,10 @@ export function SignalCard({
           ) : null}
         </div>
         <div className="flex shrink-0 flex-col gap-1.5">
-          <form action={addSignalAsNoteAction}>
+          <ActionForm
+            action={addSignalAsNoteAction}
+            errorMessage="Couldn't add the signal as a note."
+          >
             <input type="hidden" name="signalId" value={signal.id} />
             <input type="hidden" name="contactId" value={signal.contactId} />
             <input type="hidden" name="contactName" value={signal.contactName} />
@@ -86,8 +90,11 @@ export function SignalCard({
             >
               Add as note
             </button>
-          </form>
-          <form action={dismissSignalAction}>
+          </ActionForm>
+          <ActionForm
+            action={dismissSignalAction}
+            errorMessage="Couldn't dismiss the signal."
+          >
             <input type="hidden" name="signalId" value={signal.id} />
             <input type="hidden" name="contactId" value={signal.contactId} />
             <button
@@ -96,7 +103,7 @@ export function SignalCard({
             >
               Dismiss
             </button>
-          </form>
+          </ActionForm>
         </div>
       </div>
     </li>

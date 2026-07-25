@@ -5,6 +5,7 @@ import type { AccessRequestRow } from "@dhaga/ee/access-requests";
 import { DataTable, type DataTableColumn } from "@/components/app/table/DataTable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ActionForm } from "@/components/app/ActionForm";
 import { approveAccessRequestAction, rejectAccessRequestAction } from "@/lib/actions/admin/access-requests";
 import { ACCESS_REQUEST_STATUS_OPTIONS, SUBSCRIPTION_PLAN_OPTIONS, SUBSCRIPTION_STATUS_OPTIONS, USER_ROLE_OPTIONS } from "@/utils/constants/table";
 import { formatDate } from "@/utils/format-date";
@@ -39,7 +40,7 @@ export function RequestsTable({ rows, total, page, pageSize, filters }: { rows: 
     { id: "email", label: "Email", value: (row) => row.email },
     { id: "requested", label: "Requested", value: (row) => formatDate(row.requestedAt) },
     { id: "status", label: "Status", value: (row) => row.status, options: ACCESS_REQUEST_STATUS_OPTIONS, render: (row) => <Badge variant={row.status === "approved" ? "default" : "secondary"}>{row.status}</Badge> },
-    { id: "actions", label: "Actions", filter: false, value: () => "", className: "text-right", render: (row) => row.status !== "approved" ? <div className="flex justify-end gap-2"><form action={approveAccessRequestAction}><input type="hidden" name="email" value={row.email} /><Button size="sm" type="submit">{row.status === "rejected" ? "Reverse and approve" : "Approve"}</Button></form>{row.status === "pending" ? <form action={rejectAccessRequestAction}><input type="hidden" name="email" value={row.email} /><Button size="sm" variant="outline" type="submit">Reject</Button></form> : null}</div> : null },
+    { id: "actions", label: "Actions", filter: false, value: () => "", className: "text-right", render: (row) => row.status !== "approved" ? <div className="flex justify-end gap-2"><ActionForm action={approveAccessRequestAction} errorMessage="Couldn't approve the request."><input type="hidden" name="email" value={row.email} /><Button size="sm" type="submit">{row.status === "rejected" ? "Reverse and approve" : "Approve"}</Button></ActionForm>{row.status === "pending" ? <ActionForm action={rejectAccessRequestAction} errorMessage="Couldn't reject the request."><input type="hidden" name="email" value={row.email} /><Button size="sm" variant="outline" type="submit">Reject</Button></ActionForm> : null}</div> : null },
   ];
   return <DataTable key={`${page}:${pageSize}:${JSON.stringify(filters)}`} rows={rows} columns={columns} rowKey={(row) => row.email} emptyMessage="Nothing here." initialFilters={filters} server={{ total, page, pageSize }} />;
 }

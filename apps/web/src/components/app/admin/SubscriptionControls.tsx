@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { setSubscriptionAction, setAiCreditsAction } from "@/lib/actions/admin/subscriptions";
+import { ActionForm } from "@/components/app/ActionForm";
 import { SubmitButton } from "@/components/app/SubmitButton";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
@@ -31,7 +32,11 @@ export function SubscriptionControls({
 
   return (
     <div className="space-y-6">
-      <form action={setSubscriptionAction} className="rounded-2xl border border-seam bg-panel p-5 space-y-4">
+      <ActionForm
+        action={setSubscriptionAction}
+        errorMessage="Couldn't update the subscription."
+        className="rounded-2xl border border-seam bg-panel p-5 space-y-4"
+      >
         <input type="hidden" name="userId" value={userId} />
         <div>
           <p className="text-sm font-medium text-paper">Manage subscription</p>
@@ -60,9 +65,13 @@ export function SubscriptionControls({
         </div>
 
         <SubmitButton className="w-full sm:w-auto">Save subscription</SubmitButton>
-      </form>
+      </ActionForm>
 
-      <form action={setAiCreditsAction} className="rounded-2xl border border-seam bg-panel p-5 space-y-4">
+      <ActionForm
+        action={setAiCreditsAction}
+        errorMessage="Couldn't set AI credits."
+        className="rounded-2xl border border-seam bg-panel p-5 space-y-4"
+      >
         <input type="hidden" name="userId" value={userId} />
         <div>
           <p className="text-sm font-medium text-paper">AI credits</p>
@@ -87,7 +96,7 @@ export function SubscriptionControls({
         </div>
 
         <SubmitButton className="w-full sm:w-auto">Save credits</SubmitButton>
-      </form>
+      </ActionForm>
     </div>
   );
 }

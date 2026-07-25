@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CalendarClock } from "lucide-react";
 import { AddToCalendar } from "./AddToCalendar";
 import { HomeTile } from "./HomeTile";
+import { ActionForm } from "@/components/app/ActionForm";
 import { ThreadMark } from "@/components/brand/ThreadMark";
 import { Button } from "@/components/ui/button";
 import { markReachedOutAction } from "@/lib/actions/reminders";
@@ -96,12 +97,15 @@ export function TodaySuggestions({
                     · {person.reason}
                   </span>
                 </Button>
-                <form action={markReachedOutAction}>
+                <ActionForm
+                  action={markReachedOutAction}
+                  errorMessage="Couldn't mark that as reached out."
+                >
                   <input type="hidden" name="contactId" value={person.contactId} />
                   <Button type="submit" variant="outline" size="sm">
                     Reached out
                   </Button>
-                </form>
+                </ActionForm>
               </div>
               {calendarConnected && slots.length > 0 ? (
                 <div className="mt-1.5">

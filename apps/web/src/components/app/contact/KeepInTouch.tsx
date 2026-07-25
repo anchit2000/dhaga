@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useFormStatus } from "react-dom";
 import { Loader2 } from "lucide-react";
 import { markReachedOutAction, setCadenceAction } from "@/lib/actions/reminders";
+import { ActionForm } from "@/components/app/ActionForm";
 import { Select } from "@/components/ui/select";
 import { CADENCE_OPTIONS } from "@/utils/constants/app";
 
@@ -59,7 +60,11 @@ export function KeepInTouch({
             : "No reminder set."}
         </p>
       </div>
-      <form action={setCadenceAction} className="flex items-center gap-2">
+      <ActionForm
+        action={setCadenceAction}
+        errorMessage="Couldn't update the reminder — try again."
+        className="flex items-center gap-2"
+      >
         <input type="hidden" name="contactId" value={contactId} />
         <Select
           name="days"
@@ -76,12 +81,15 @@ export function KeepInTouch({
           ))}
         </Select>
         <SmallSubmit label="Save" />
-      </form>
+      </ActionForm>
       {everyDays ? (
-        <form action={markReachedOutAction}>
+        <ActionForm
+          action={markReachedOutAction}
+          errorMessage="Couldn't update the reminder — try again."
+        >
           <input type="hidden" name="contactId" value={contactId} />
           <SmallSubmit label="I reached out ✓" />
-        </form>
+        </ActionForm>
       ) : null}
     </div>
   );

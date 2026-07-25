@@ -4,6 +4,7 @@ import { getUser, getSubscription, aiActionsThisMonthFor, getAiCapOverrideFor } 
 import { isUnlimitedAiSub } from "@dhaga/ee/billing";
 import { setUserAdminAction } from "@/lib/actions/admin/users";
 import { requireAdminForPage } from "@/lib/hosted/gate";
+import { ActionForm } from "@/components/app/ActionForm";
 import { SubscriptionControls } from "@/components/app/admin/SubscriptionControls";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -67,7 +68,11 @@ export default async function AdminUserDetailPage({
         currentCredits={aiCapOverride}
       />
 
-      <form action={setUserAdminAction} className="rounded-2xl border border-seam bg-panel p-5">
+      <ActionForm
+        action={setUserAdminAction}
+        errorMessage="Couldn't update admin access."
+        className="rounded-2xl border border-seam bg-panel p-5"
+      >
         <input type="hidden" name="userId" value={user.id} />
         <input type="hidden" name="isAdmin" value={String(!user.isAdmin)} />
         <p className="text-sm font-medium text-paper">Admin access</p>
@@ -77,7 +82,7 @@ export default async function AdminUserDetailPage({
         <Button type="submit" variant="outline" size="sm" className="mt-3">
           {user.isAdmin ? "Revoke admin" : "Make admin"}
         </Button>
-      </form>
+      </ActionForm>
     </div>
   );
 }

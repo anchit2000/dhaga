@@ -54,6 +54,9 @@ describe("LLM gateway provider selection", () => {
         model: "plugin-model",
         usage: { inputTokens: 0, outputTokens: 0 },
       }),
+      streamComplete: async () => {
+        throw new Error("streamComplete is not exercised by this test");
+      },
     };
     const unregister = registerLLMProvider({
       id: "test-plugin",

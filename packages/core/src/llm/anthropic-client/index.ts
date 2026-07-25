@@ -8,9 +8,10 @@ import type {
   ExtractOptions,
   LLMClient,
   LLMResult,
+  LLMStream,
 } from "../types";
 import { runGetBatchResults, runIsBatchDone, runSubmitExtractBatch } from "./batch";
-import { runComplete, runExtract } from "./sync";
+import { runComplete, runExtract, runStreamComplete } from "./sync";
 
 /**
  * Split per the 150-line rule: request-building and response-parsing live
@@ -33,6 +34,10 @@ export class AnthropicLLMClient implements LLMClient, BatchLLMClient {
 
   complete(options: CompleteOptions): Promise<LLMResult<string>> {
     return runComplete(this.client, options);
+  }
+
+  streamComplete(options: CompleteOptions): Promise<LLMStream> {
+    return runStreamComplete(this.client, options);
   }
 
   submitExtractBatch<T>(items: BatchExtractItem<T>[]): Promise<string> {

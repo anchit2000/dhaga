@@ -11,6 +11,7 @@ export type {
   LLMClient,
   LLMImage,
   LLMResult,
+  LLMStream,
   LLMUsage,
   LLMProvider,
   LLMProviderCapabilities,

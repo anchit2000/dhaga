@@ -31,6 +31,9 @@ vi.mock("@dhaga/core", async (importOriginal) => {
     complete: async () => {
       throw new Error("complete() is not exercised by this test");
     },
+    streamComplete: async () => {
+      throw new Error("streamComplete is not exercised by this test");
+    },
   };
   return { ...actual, hasLLM: () => true, getLLMClient: () => client };
 });

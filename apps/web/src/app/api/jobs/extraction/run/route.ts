@@ -1,10 +1,12 @@
 import { requireUserIdFromRequest } from "@/lib/auth/guard";
 import { processExtractionJob } from "@/lib/jobs/extraction/process";
+import type { ExtractionStreamEvent } from "@/types";
 
 /** Worker for background note-extraction and enrichment jobs. The page fires
- *  this fire-and-forget after enqueuing; the function runs to completion even
- *  if the browser navigates away. 60s covers a Sonnet web search + Haiku
- *  extraction on Vercel Hobby; anything slower is caught by the daily reaper. */
+ *  this after enqueuing and reads the streamed NDJSON progress; the function
+ *  runs to completion even if the browser navigates away (keepalive fetch). 60s
+ *  covers a Sonnet web search + Haiku extraction on Vercel Hobby; anything
+ *  slower is caught by the daily reaper. */
 export const maxDuration = 60;
 
 export async function POST(request: Request): Promise<Response> {
@@ -20,7 +22,27 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: "Missing jobId." }, { status: 400 });
   }
 
-  // RLS scopes the job to this user; an id they don't own simply no-ops.
-  await processExtractionJob(jobId, userId);
-  return Response.json({ ok: true });
+  // NDJSON: one ExtractionStreamEvent JSON object per line. RLS scopes the job
+  // to this user; an id they don't own simply no-ops (the claim returns null,
+  // so the stream closes with no events).
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const onEvent = (event: ExtractionStreamEvent): void => {
+        controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
+      };
+      try {
+        await processExtractionJob(jobId, userId, onEvent);
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "content-type": "application/x-ndjson",
+      "cache-control": "no-store",
+    },
+  });
 }

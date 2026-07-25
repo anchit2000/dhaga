@@ -9,9 +9,13 @@ import {
 } from "@/utils/constants/extraction-jobs";
 import { retryExtractionJobAction } from "@/lib/actions/extraction-jobs";
 import type { ExtractionJobView } from "@/types";
-import { isActive, useExtractionPoller } from "./useExtractionPoller";
+import { isActive, useExtractionStream } from "./useExtractionStream";
 
 function activeLabel(job: ExtractionJobView): string {
+  // "writing" is a stream-only stage carrying the final fact count.
+  if (job.stage === "writing") {
+    return `Writing ${job.factCount} ${job.factCount === 1 ? "fact" : "facts"}…`;
+  }
   if (job.stage && EXTRACTION_STAGE_LABELS[job.stage]) {
     return EXTRACTION_STAGE_LABELS[job.stage];
   }
@@ -35,11 +39,15 @@ function RetryButton() {
 export function ExtractionStatus({
   contactId,
   initialJobs,
+  onFacts,
 }: {
   contactId: string;
   initialJobs: ExtractionJobView[];
+  /** Called when the stream reports a job wrote new facts — the Facts panel
+   *  refetches instead of the whole page refreshing. */
+  onFacts: () => void;
 }) {
-  const jobs = useExtractionPoller(contactId, initialJobs);
+  const jobs = useExtractionStream(initialJobs, onFacts);
   const visible = jobs.filter(
     (j) => isActive(j) || j.status === "error" || j.status === "blocked",
   );

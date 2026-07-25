@@ -26,6 +26,9 @@ vi.mock("@dhaga/core", async (importOriginal) => {
       model: "test-stub",
       usage: { inputTokens: 12, outputTokens: 3 },
     }),
+    streamComplete: async () => {
+      throw new Error("streamComplete is not exercised by this test");
+    },
   };
   return {
     ...actual,

@@ -17,11 +17,11 @@ verified via web research the same day.
 
 **Replaces:** every hand-rolled client fetch/poll loop.
 
-- `components/app/contact/ExtractionStatus/useExtractionPoller.ts` — 128 lines
-  of manual `setTimeout` scheduling, retry counting, and failure caps. TanStack
-  Query expresses this as `refetchInterval` (a function returning `false` stops
-  polling when no job is active) + `retry` — and fixes lifecycle edge cases we
-  currently manage with five refs.
+- `components/app/contact/ExtractionStatus/useExtractionStream.ts` — reads a
+  single NDJSON progress stream from the extraction worker (no poll loop). This
+  replaced the former 2s `setTimeout` poller + whole-page `router.refresh()`;
+  because it consumes a streamed response rather than re-fetching on an interval,
+  TanStack Query's `refetchInterval` does not apply here.
 - `components/app/contact/OnDemandNetwork.tsx` (12 state hooks),
   `components/app/graph/WarmPathPanel/`, and
   `components/app/relationships/AddRelationshipDialog/TargetPicker.tsx` —

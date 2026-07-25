@@ -116,16 +116,18 @@ cap makes it worse. Read → compute → write, no await-on-network mid-transact
   its node kinds — which also collapses their per-source network round-trips
   (~7→1 and 4→1) into one, ~6× faster at the query layer against a region-away
   DB. Rule of thumb for a scoped read: resolve `getDb()` **once**, and prefer one
-  round-trip over a fan-out. (A cold app-config cache is a lingering instance of
-  the same trap: `getCachedAppConfig` can briefly open up to 3 concurrent tenant
-  connections — its `withUserDb` plus an `isAdmin` check — leaving zero headroom
-  against the tenant pool's `max:3`. Routing `isAdmin` through the request-scoped
-  connection is a known secondary hardening follow-up, **not** done in this
-  change.)
+  round-trip over a fan-out. (A cold app-config cache used to be a lingering
+  instance of the same trap: `getCachedAppConfig` could briefly open up to 3
+  concurrent tenant connections — its `withUserDb` plus an `isAdmin` check —
+  leaving zero headroom against the tenant pool's `max:3`. `isAdmin` now reuses
+  the request-scoped connection instead of opening its own, so a cold app-config
+  cache no longer draws a third concurrent tenant connection — **done**.)
 
 - **Transient acquisition rejections are retried, not surfaced as 500s.**
-  Supabase's session pooler exposes a fixed `pool_size` of 15 backends shared
-  across every warm instance (see `@/utils/constants/db`). When several
+  Supabase's session pooler exposes a `pool_size` of ~48 backends (80% of the
+  instance's 60 max_connections) shared across every warm instance (see
+  `@/utils/constants/db`). Per-instance draw is core 2 + tenant 3 = 5, so ~9 warm
+  instances fit under the pool. When several
   instances briefly overshoot it, Supavisor rejects a new backend with
   `EMAXCONNSESSION`/`XX000 max clients reached in session mode`, and
   node-postgres can throw `timeout exceeded when trying to connect` — both
@@ -148,24 +150,29 @@ cap makes it worse. Read → compute → write, no await-on-network mid-transact
   handshake (TCP + TLS + SCRAM). node-postgres counts that whole handshake inside
   `connectionTimeoutMillis`, so the old 3s bound timed out on nearly every cold
   connect and surfaced as `Connection terminated due to connection timeout` 500s.
-  Three code-side changes to both the core pool (`@/utils/constants/db` +
-  `lib/db`) and the tenant pool (`packages/ee/src/db/pool.ts`):
-  - **`connectionTimeoutMillis` 3s → 10s** — it must *exceed* the cross-region
-    cold-handshake time. This is distinct from and additional to raising Supabase
-    `pool_size` (the durable lever above): the timeout bounds how long a caller
-    waits for a connection, not how many slots exist, so it does **not** change
-    the shared 15.
-  - **`idleTimeoutMillis` 2s → 30s** — high enough to keep a warm connection
-    alive across a user's click/action burst; at 2s the pool drained between
-    clicks and forced a fresh cold handshake per request. `min` stays `0`, so the
-    pool still drains fully between visits — no permanent slot hoarding.
+  These settings apply to both the core pool (`@/utils/constants/db` + `lib/db`)
+  and the tenant pool (`packages/ee/src/db/pool.ts`); the two timeouts are
+  env-overridable at runtime — `DB_POOL_CONNECTION_TIMEOUT_MS` and
+  `DB_POOL_IDLE_TIMEOUT_MS` (alongside the existing `DB_POOL_MAX_CORE` /
+  `DB_POOL_MAX_TENANT`), no redeploy needed:
+  - **`connectionTimeoutMillis` 10s** — it must *exceed* the cross-region
+    cold-handshake time, so it stays 10s as headroom for a region-away
+    `DATABASE_URL` (intra-region a cold handshake is ~ms). This is distinct from
+    and additional to raising Supabase `pool_size` (the durable lever above): the
+    timeout bounds how long a caller waits for a connection, not how many slots
+    exist, so it does **not** change the shared ~48.
+  - **`idleTimeoutMillis` 30s → 10s** — lowered now that compute and DB are
+    co-located: reconnect is cheap, so there's no need to hoard idle slots. 10s
+    still reuses a warm connection across a user's click/action burst, and `min`
+    stays `0`, so the pool still drains fully between visits — no permanent slot
+    hoarding.
   - **`keepAlive: true`** — guards the now longer-lived idle sockets against
     NAT/load-balancer idle reaping.
   `max` (core 2 / tenant 3) and `min` (0) are unchanged, so the shared-`pool_size`
-  math is untouched. The ultimate fix is infra, not code: co-locate compute and
-  DB in one region (e.g. Vercel `syd1` against a Sydney DB) and the handshake
-  drops to ~ms — but the timeout/idle tuning is the correct code-side mitigation
-  regardless of region.
+  math is untouched. Compute and DB are now co-located in one region (e.g. Vercel
+  `syd1` against a Sydney DB), which drops the cold handshake to ~ms — this is the
+  recommended setup and why the idle timeout can be short; the connection timeout
+  keeps its 10s headroom for a region-away `DATABASE_URL`.
 
 Not yet done: a formal audit of all ~14 `db.transaction(...)` sites confirming
 none await network I/O mid-transaction. No known offender, but not verified

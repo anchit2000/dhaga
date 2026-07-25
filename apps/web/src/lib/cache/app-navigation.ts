@@ -1,4 +1,5 @@
 import { cachePerUser, invalidatePerUser, perUserTag } from "./per-user";
+import { getDb } from "@/lib/db/request-scope";
 import { getAdminGate } from "@/lib/hosted/gate";
 import { getSearchWeights, getSttEngine, shouldStoreCardPhotos } from "@/lib/repo/settings";
 import { APP_NAVIGATION_CACHE_KEY } from "@/utils/constants/cache";
@@ -25,8 +26,12 @@ export function appNavigationTag(userId: string): string {
 
 export function getCachedAppConfig(userId: string): Promise<AppConfig> {
   return cachePerUser(APP_NAVIGATION_CACHE_KEY, userId, async () => {
+    // Inside cachePerUser the read runs within withUserDb, so getDb() resolves
+    // to that one scoped connection; hand it to isAdmin so the whole config
+    // read shares a single tenant checkout instead of opening a second one.
+    const db = await getDb();
     const [isAdmin, searchWeights, sttEngine, storeCardPhotos] = await Promise.all([
-      (await getAdminGate()).isAdmin(userId),
+      (await getAdminGate()).isAdmin(userId, db),
       getSearchWeights(),
       getSttEngine(),
       shouldStoreCardPhotos(),

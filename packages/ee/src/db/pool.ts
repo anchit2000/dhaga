@@ -11,27 +11,29 @@ import type { PoolClient } from "pg";
 
 /** Default max for this tenant pool; override with DB_POOL_MAX_TENANT. */
 const TENANT_POOL_MAX_DEFAULT = 3;
-/** Reject an acquire after this long. node-postgres counts the FULL acquisition
- *  here — including establishing a brand-new physical connection (TCP+TLS+SCRAM).
- *  Against a region-away pooler (e.g. Supabase Sydney from a US function) a COLD
- *  handshake alone is ~6–7s, so the old 3s guaranteed a "timeout exceeded when
- *  trying to connect" on every cold connect — the /app 500s. 10s covers the
- *  cross-region cold handshake with margin while still eventually failing a dead
- *  pool. It bounds how long we WAIT, not how many slots we hold, so it has zero
- *  effect on the shared pool_size of 15. */
-const POOL_CONNECTION_TIMEOUT_MS = 10_000;
-/** Keep an idle backend around this long so a burst of requests (a user's click
- *  sequence, an action + its revalidate) reuses ONE warm connection instead of
- *  re-paying the multi-second cross-region cold handshake each time. 2s was
- *  pathological for a region-away DB — the warm window closed between clicks.
- *  30s still drains fully between visits (min:0), so a warm instance is not
- *  permanently hoarding a slot against the shared 15. */
-const POOL_IDLE_TIMEOUT_MS = 30_000;
+/** Default acquire timeout; override with DB_POOL_CONNECTION_TIMEOUT_MS.
+ *  node-postgres counts the FULL acquisition here — including establishing a
+ *  brand-new physical connection (TCP+TLS+SCRAM). Intra-region (compute + DB
+ *  co-located) a cold handshake is ~ms and 3s would suffice; kept at 10s as
+ *  headroom so a region-away DATABASE_URL (cold handshake several seconds) still
+ *  connects rather than 500ing. Bounds how long we WAIT, not how many slots we
+ *  hold — no effect on the shared pool_size. */
+const POOL_CONNECTION_TIMEOUT_MS_DEFAULT = 10_000;
+/** Default idle timeout; override with DB_POOL_IDLE_TIMEOUT_MS. Keeps an idle
+ *  backend this long so a burst (a click sequence, an action + its revalidate)
+ *  reuses one warm connection. Lowered to 10s now that compute + DB are
+ *  co-located (cheap reconnect ⇒ no reason to hoard idle slots against the
+ *  shared pool); min:0 still drains fully between visits. */
+const POOL_IDLE_TIMEOUT_MS_DEFAULT = 10_000;
 
-/** Parse a positive-integer pool size from env, falling back on missing/NaN. */
+/** Parse a positive-integer env value, falling back on missing/NaN/non-positive. */
+function posIntEnv(raw: string | undefined, fallback: number): number {
+  const value = Number(raw);
+  return Number.isFinite(value) && value > 0 ? Math.floor(value) : fallback;
+}
+
 function tenantPoolMax(): number {
-  const value = Number(process.env.DB_POOL_MAX_TENANT);
-  return Number.isFinite(value) && value > 0 ? Math.floor(value) : TENANT_POOL_MAX_DEFAULT;
+  return posIntEnv(process.env.DB_POOL_MAX_TENANT, TENANT_POOL_MAX_DEFAULT);
 }
 
 let pool: Pool | undefined;
@@ -43,22 +45,23 @@ export function getPool(): Pool {
       "DATABASE_URL is required for DHAGA_HOSTED_MODE (packages/ee needs real Postgres — PGlite has no RLS).",
     );
   }
-  // Supabase's session pooler shares a fixed pool_size of 15 backends across
-  // ALL warm Vercel instances. This tenant pool plus core's pool
+  // Supabase's session pooler shares a fixed pool_size across ALL warm Vercel
+  // instances (~48 = 80% of the instance's 60 max_connections; verify in the
+  // Supabase dashboard). This tenant pool plus core's pool
   // (apps/web/src/lib/db/index.ts, default 2) is the per-instance draw, so keep
-  // tenant + core small enough that several instances fit under 15 — default
-  // 3 + 2 = 5/instance. Do not raise blindly: one instance hoarding all 15 is
-  // the EMAXCONNSESSION outage this guards against.
+  // tenant + core small enough that several instances fit under it — default
+  // 3 + 2 = 5/instance ⇒ ~9 warm instances. Do not raise blindly: one instance
+  // hoarding the whole pool is the EMAXCONNSESSION outage this guards against.
   pool ??= new Pool({
     connectionString,
     max: tenantPoolMax(),
     // No warm floor: idle backends drain fully so this instance never holds a
-    // tenant slot it isn't using against the shared pool_size of 15.
+    // tenant slot it isn't using against the shared pool.
     min: 0,
-    connectionTimeoutMillis: POOL_CONNECTION_TIMEOUT_MS,
-    idleTimeoutMillis: POOL_IDLE_TIMEOUT_MS,
-    // Longer-lived idle connections (idleTimeoutMillis above) can be silently
-    // dropped by NAT/load-balancer idle reaping; keepAlive holds the socket open.
+    connectionTimeoutMillis: posIntEnv(process.env.DB_POOL_CONNECTION_TIMEOUT_MS, POOL_CONNECTION_TIMEOUT_MS_DEFAULT),
+    idleTimeoutMillis: posIntEnv(process.env.DB_POOL_IDLE_TIMEOUT_MS, POOL_IDLE_TIMEOUT_MS_DEFAULT),
+    // Longer-lived idle connections can be silently dropped by NAT/LB idle
+    // reaping; keepAlive holds the socket open.
     keepAlive: true,
   });
   return pool;

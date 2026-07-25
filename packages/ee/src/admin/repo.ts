@@ -1,5 +1,5 @@
 import { and, count, desc, eq, ilike } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/node-postgres";
+import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { getPool } from "../db/pool";
 import { ensureEeSchema } from "../db/bootstrap";
 import { accessRequests, eeUser, subscriptions, type SubscriptionRow } from "../db/schema";
@@ -11,12 +11,15 @@ async function db() {
   return drizzle(getPool());
 }
 
-export async function isUserAdmin(userId: string): Promise<boolean> {
+export async function isUserAdmin(userId: string, scopedDb?: NodePgDatabase): Promise<boolean> {
   const adminEmails = (process.env.DHAGA_ADMIN_EMAILS ?? "")
     .split(",")
     .map((email) => email.trim().toLowerCase())
     .filter(Boolean);
-  const [row] = await (await db())
+  // `user` carries no RLS, so the caller's already-scoped connection (when
+  // passed) is fine to reuse — and reusing it avoids a second concurrent
+  // checkout from the small tenant pool on the app-shell nav-cache path.
+  const [row] = await (scopedDb ?? (await db()))
     .select({ isAdmin: eeUser.isAdmin, email: eeUser.email })
     .from(eeUser)
     .where(eq(eeUser.id, userId));

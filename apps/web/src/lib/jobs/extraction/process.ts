@@ -1,5 +1,6 @@
 import {
   attachExtractionJobNote,
+  blockedExtractionJob,
   claimExtractionJob,
   completeExtractionJob,
   failExtractionJob,
@@ -65,7 +66,13 @@ export async function processExtractionJob(jobId: string, userId: string): Promi
       job.kind === "enrichment"
         ? await processEnrichment(job, userId)
         : await processNote(job, userId);
-    if (outcome.failed) {
+    if (outcome.blocked) {
+      // No AI budget: a terminal, non-retryable state (not a failure). The
+      // poller treats "blocked" as terminal and the UI shows a calm notice.
+      await withUserDb(userId, () =>
+        blockedExtractionJob(jobId, outcome.notice ?? "Automatic fact extraction is a paid feature."),
+      );
+    } else if (outcome.failed) {
       await withUserDb(userId, () =>
         failExtractionJob(jobId, outcome.notice ?? "Extraction failed."),
       );

@@ -11,11 +11,20 @@ import {
 } from "@dhaga/core";
 import { getSearchIndex } from "@/lib/repo/search-index";
 import { contactIdsForPlan } from "@/lib/repo/search-filters";
+import { isTransientConnectionError } from "@/utils/constants/db";
 import { AiBudgetError, assertAiBudget, recordAiAction } from "./metering";
+
+/** How the client should present a `notice`: an amber upgrade nudge, an amber
+ *  retry cue, a red genuine-failure, or (absent) neutral info. */
+export type AiAnswerKind = "upgrade" | "retry" | "error" | "info";
 
 export interface AiAnswerResult {
   answer?: string;
   notice?: string;
+  kind?: AiAnswerKind;
+  /** Keyword/semantic matches surfaced when the reasoned answer is unavailable
+   *  because the monthly AI cap is reached (local search is free/unmetered). */
+  hits?: SearchIndexResult[];
 }
 
 function candidateBlocks(hits: SearchIndexResult[]): string {
@@ -49,6 +58,37 @@ async function planQuery(query: string): Promise<SearchQueryPlan | null> {
 }
 
 /**
+ * Turn an Ask-Dhaga failure into an honest, styled result instead of a flat
+ * "the AI call failed". A reached monthly cap degrades to the free
+ * keyword/semantic matches (local, unmetered) with an upgrade nudge; the burst
+ * guard and transient connection blips get a retry cue; anything else is a
+ * genuine AI failure — the only case the client paints red.
+ */
+async function aiFailureResult(
+  error: unknown,
+  query: string,
+  hits: SearchIndexResult[] | null,
+): Promise<AiAnswerResult> {
+  if (error instanceof AiBudgetError && error.kind === "cap") {
+    const fallbackHits =
+      hits ?? (await getSearchIndex().search({ text: query, kinds: ["contact"] }));
+    return {
+      kind: "upgrade",
+      notice: "Showing keyword matches — upgrade for a reasoned answer with receipts.",
+      hits: fallbackHits,
+    };
+  }
+  if (error instanceof AiBudgetError) {
+    // Burst guard: the message already reads "wait a few seconds and try again".
+    return { kind: "retry", notice: error.message };
+  }
+  if (isTransientConnectionError(error)) {
+    return { kind: "retry", notice: "Dhaga is busy right now — please try again in a moment." };
+  }
+  return { kind: "error", notice: "The AI had trouble answering. Please retry." };
+}
+
+/**
  * M6 full pipeline: understand the query (Haiku) → retrieve (structured
  * filters + hybrid keyword/semantic, all local) → answer with receipts
  * (Sonnet). Stage 1 failing degrades to unfiltered retrieval, never to
@@ -64,9 +104,8 @@ export async function answerSearchQuery(
   try {
     await assertAiBudget(userId);
   } catch (error) {
-    return {
-      notice: error instanceof AiBudgetError ? error.message : "The AI call failed.",
-    };
+    // Hits aren't retrieved yet here; the cap fallback pulls its own.
+    return aiFailureResult(error, query, null);
   }
 
   const plan = await planQuery(query);
@@ -94,9 +133,6 @@ export async function answerSearchQuery(
     await recordAiAction("search", result.model, result.usage);
     return { answer: result.data };
   } catch (error) {
-    return {
-      notice:
-        error instanceof AiBudgetError ? error.message : "The AI call failed.",
-    };
+    return aiFailureResult(error, query, hits);
   }
 }

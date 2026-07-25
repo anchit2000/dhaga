@@ -91,6 +91,18 @@ export async function failExtractionJob(id: string, message: string): Promise<vo
     .where(eq(extractionJobs.id, id));
 }
 
+/** Terminal-but-not-failed: the AI budget (free tier / monthly cap) blocked
+ *  extraction. Mirrors failExtractionJob but writes the "blocked" status, which
+ *  the ACTIVE set excludes — so the poller stops and the UI shows a calm
+ *  paid-feature notice with no Retry, instead of a red retryable error. */
+export async function blockedExtractionJob(id: string, message: string): Promise<void> {
+  const db = await getDb();
+  await db
+    .update(extractionJobs)
+    .set({ status: "blocked", stage: null, error: message, updatedAt: new Date() })
+    .where(eq(extractionJobs.id, id));
+}
+
 /** Re-queue an errored or stalled job. Only the owner's rows are visible (RLS),
  *  so no explicit ownership check is needed beyond the caller's auth. */
 export async function retryExtractionJob(id: string): Promise<ExtractionJobRow | null> {

@@ -22,7 +22,13 @@ export const EXTRACTION_JOB_STATUSES = [
   "running", // worker is executing (see stage)
   "done", // finished; fact/follow-up counts are final
   "error", // failed; surfaced to the user with a Retry
+  "blocked", // terminal: no AI budget — a calm paid-feature notice, NOT retryable
 ] as const;
+
+/** Copy shown for a "blocked" job (free tier / monthly cap reached): the note
+ *  is saved, automatic extraction is a paid feature. Calm, never an error. */
+export const EXTRACTION_BLOCKED_LABEL =
+  "Automatic fact extraction is a paid feature. Your note is saved.";
 
 /** Human-readable label per worker stage, shown in the status pill. */
 export const EXTRACTION_STAGE_LABELS: Record<string, string> = {

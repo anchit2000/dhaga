@@ -4,16 +4,15 @@ import { after } from "next/server";
 import type { SearchIndexResult } from "@dhaga/core";
 import { requireUserId } from "@/lib/auth/guard";
 import { invalidateAppNavigation } from "@/lib/cache/app-navigation";
-import { answerSearchQuery } from "@/lib/ai/search";
+import { answerSearchQuery, type AiAnswerResult } from "@/lib/ai/search";
 import { getSearchIndex } from "@/lib/repo/search-index";
 import { embeddingsEnabled } from "@/lib/ai/embedder";
 import { setSearchWeights } from "@/lib/repo/settings";
 import { parseSearchWeights, type SearchWeights } from "@/utils/constants/search";
 
-export interface AskAiState {
-  answer?: string;
-  notice?: string;
-}
+/** The Ask-Dhaga tab's action state — the answer, or a styled notice with the
+ *  discriminant and any cap-fallback keyword hits threaded through. */
+export type AskAiState = AiAnswerResult;
 
 export async function askAiAction(
   _previous: AskAiState,

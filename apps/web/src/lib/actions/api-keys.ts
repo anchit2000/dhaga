@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "@/lib/auth/guard";
+import { SAVE_RETRY_MESSAGE, logActionError } from "@/lib/actions/resilience";
 import { getAuth } from "@/lib/auth/config";
 
 export interface CreateApiKeyState {
@@ -18,11 +19,16 @@ export async function createApiKeyAction(
   await requireUserId();
   const name = String(formData.get("name") ?? "").trim() || "Untitled token";
   const auth = await getAuth();
-  const result = await auth.api.createApiKey({
-    body: { name },
-    headers: await headers(),
-  });
-  return { key: result.key };
+  try {
+    const result = await auth.api.createApiKey({
+      body: { name },
+      headers: await headers(),
+    });
+    return { key: result.key };
+  } catch (error) {
+    logActionError("createApiKey", error);
+    return { error: SAVE_RETRY_MESSAGE };
+  }
 }
 
 export async function deleteApiKeyAction(formData: FormData): Promise<void> {

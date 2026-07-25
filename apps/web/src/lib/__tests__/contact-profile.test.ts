@@ -85,6 +85,29 @@ describe("rich contact profile", () => {
     expect(rows).toHaveLength(2);
   });
 
+  it("does not wipe saved jobs when an edit submits an empty position list", async () => {
+    const id = await createContactProfile(
+      profile({
+        name: "Priya Nair",
+        positions: [{ title: "Director", company: "VMware", department: null, current: true, startedAt: null, endedAt: null, note: null }],
+      }),
+      "manual",
+    );
+
+    // An empty list is far more often the client filter dropping a momentarily
+    // blank row (the combobox input-clear bug) than a deliberate "remove every
+    // job". It must NOT annihilate saved employment or null the denormalised
+    // title/company — that was a silent, unrecoverable data-loss path.
+    await updateContact(id, profile({ name: "Priya Nair", positions: [] }));
+
+    const detail = await getContact(id);
+    expect(detail?.contact.title).toBe("Director");
+    expect(detail?.companyName).toBe("VMware");
+    const db = await getDb();
+    const rows = await db.select().from(positions).where(eq(positions.contactId, id));
+    expect(rows).toHaveLength(1);
+  });
+
   it("persists addresses / dates / custom fields and cascades positions on forget", async () => {
     const id = await createContactProfile(
       profile({

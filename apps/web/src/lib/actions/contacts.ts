@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUserId } from "@/lib/auth/guard";
+import { SAVE_RETRY_MESSAGE, logActionError } from "@/lib/actions/resilience";
 import {
   createContactProfile,
   forgetContact,
@@ -85,36 +86,46 @@ export async function createContactAction(
   if (!parsed.ok) return { error: parsed.error };
 
   const source = field(formData, "source") === "quick_add" ? "quick_add" : "manual";
-  const id = await createContactProfile(parsed.profile, source);
+  // Wrap the writes so a transient DB/connection failure returns an inline error
+  // (the form stays mounted with everything the user typed) instead of throwing
+  // to the error boundary. redirect() stays OUTSIDE the try — it works by
+  // throwing NEXT_REDIRECT, which the catch must not swallow.
+  let id = "";
+  try {
+    id = await createContactProfile(parsed.profile, source);
 
-  // Quick-add receipts: the pasted text becomes the contact's first note.
-  const sourceText = field(formData, "sourceText");
-  let noteId: string | null = null;
-  if (sourceText) {
-    noteId = await addNote(id, "capture_source", sourceText);
-    await upsertEmbedding("note", noteId, id, sourceText);
+    // Quick-add receipts: the pasted text becomes the contact's first note.
+    const sourceText = field(formData, "sourceText");
+    let noteId: string | null = null;
+    if (sourceText) {
+      noteId = await addNote(id, "capture_source", sourceText);
+      await upsertEmbedding("note", noteId, id, sourceText);
+    }
+
+    // Card scans carry every photo through the review form; store each as a
+    // visual receipt (re-check the setting — it may have changed since scan).
+    const capturedImages = parseCapturedImages(formData);
+    if (capturedImages.length > 0 && (await shouldStoreCardPhotos())) {
+      await saveCardImages(
+        id,
+        noteId,
+        capturedImages.map((image) => ({
+          mediaType: image.imageType,
+          dataBase64: image.imageBase64,
+        })),
+      );
+    }
+
+    const newEventName = field(formData, "newEventName");
+    const eventId =
+      newEventName != null
+        ? await createEvent(newEventName)
+        : field(formData, "eventId");
+    if (eventId) await addContactToEvent(eventId, id);
+  } catch (error) {
+    logActionError("createContact", error);
+    return { error: SAVE_RETRY_MESSAGE };
   }
-
-  // Card scans carry every photo through the review form; store each as a
-  // visual receipt (re-check the setting — it may have changed since scan).
-  const capturedImages = parseCapturedImages(formData);
-  if (capturedImages.length > 0 && (await shouldStoreCardPhotos())) {
-    await saveCardImages(
-      id,
-      noteId,
-      capturedImages.map((image) => ({
-        mediaType: image.imageType,
-        dataBase64: image.imageBase64,
-      })),
-    );
-  }
-
-  const newEventName = field(formData, "newEventName");
-  const eventId =
-    newEventName != null
-      ? await createEvent(newEventName)
-      : field(formData, "eventId");
-  if (eventId) await addContactToEvent(eventId, id);
 
   redirect(`/app/people/${id}`);
 }
@@ -130,7 +141,12 @@ export async function updateContactAction(
   const parsed = parseProfilePayload(formData);
   if (!parsed.ok) return { error: parsed.error };
 
-  await updateContact(contactId, parsed.profile);
+  try {
+    await updateContact(contactId, parsed.profile);
+  } catch (error) {
+    logActionError("updateContact", error);
+    return { error: SAVE_RETRY_MESSAGE };
+  }
   revalidatePath(`/app/people/${contactId}`);
   revalidatePath("/app/people");
   redirect(`/app/people/${contactId}`);

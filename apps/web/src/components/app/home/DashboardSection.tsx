@@ -58,7 +58,7 @@ export async function DashboardSection(): Promise<ReactElement> {
   const now = new Date();
   const weekAhead = new Date(now.getTime() + WEEK_MS);
   const busy = calendarConnected ? await getFreeBusy({ from: now, to: weekAhead }) : [];
-  const { suggestions } = await buildDailySuggestions({ date: now, prefs, busy });
+  const { suggestions } = await buildDailySuggestions({ date: now, prefs, busy, due: dueReachOuts });
   const slots = calendarConnected
     ? findOpenSlots({
         range: { from: now, to: weekAhead },

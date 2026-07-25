@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUserId } from "@/lib/auth/guard";
+import { SAVE_RETRY_MESSAGE, logActionError } from "@/lib/actions/resilience";
 import { createEvent, mergeEvents, renameEvent, getEvent, updateEventMeta } from "@/lib/repo/events";
 import { eventDigestData } from "@/lib/repo/digest";
 import { eventDigestHtml } from "@/lib/email/digest";
@@ -51,10 +52,16 @@ export async function createEventAction(
   await requireUserId();
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return { error: "Give the event a name." };
-  const id = await createEvent(name, {
-    emoji: parseEmoji(formData.get("emoji")),
-    color: parseColor(formData.get("color")),
-  });
+  let id = "";
+  try {
+    id = await createEvent(name, {
+      emoji: parseEmoji(formData.get("emoji")),
+      color: parseColor(formData.get("color")),
+    });
+  } catch (error) {
+    logActionError("createEvent", error);
+    return { error: SAVE_RETRY_MESSAGE };
+  }
   redirect(`/app/events/${id}`);
 }
 

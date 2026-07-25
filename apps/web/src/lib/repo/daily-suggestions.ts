@@ -58,14 +58,17 @@ function fromCadence(due: DueReachOut, bucket: SuggestionBucket): DailySuggestio
 }
 
 export async function buildDailySuggestions(
-  options: { date?: Date; count?: number; prefs?: SchedulePrefs; busy?: BusyInterval[] } = {},
+  options: { date?: Date; count?: number; prefs?: SchedulePrefs; busy?: BusyInterval[]; due?: DueReachOut[] } = {},
 ): Promise<DailySuggestionResult> {
   const now = options.date ?? new Date();
   const count = options.count ?? (await getDailySuggestionCount());
   const prefs = options.prefs ?? (await getSchedulePrefs());
   const busy = options.busy ?? [];
 
-  const due = await listDueReachOuts();
+  // Reuse the caller's already-fetched due list when provided (Home fetches it
+  // once for both the suggestions and the "N more due" count) instead of
+  // re-running the same query on the single serialized request connection.
+  const due = options.due ?? (await listDueReachOuts());
   const picked: DailySuggestion[] = [];
   const seen = new Set<string>();
 

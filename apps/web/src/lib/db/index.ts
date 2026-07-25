@@ -102,6 +102,7 @@ async function initHosted(connectionString: string): Promise<DhagaDb> {
       min: 0,
       connectionTimeoutMillis: DB_POOL_CONNECTION_TIMEOUT_MS,
       idleTimeoutMillis: DB_POOL_IDLE_TIMEOUT_MS,
+      keepAlive: true, // hold the socket open vs NAT/LB idle reaping (longer idleTimeout)
     }),
   );
   // Re-executing the full idempotent DDL on every cold start costs seconds

@@ -11,11 +11,22 @@ import type { PoolClient } from "pg";
 
 /** Default max for this tenant pool; override with DB_POOL_MAX_TENANT. */
 const TENANT_POOL_MAX_DEFAULT = 3;
-/** Fail fast on a saturated pool instead of hanging forever — short so a doomed
- *  acquire fails in ~3s rather than pinning a request for ~10s per retry. */
-const POOL_CONNECTION_TIMEOUT_MS = 3_000;
-/** Close idle backends quickly so a warm instance stops hoarding slots. */
-const POOL_IDLE_TIMEOUT_MS = 2_000;
+/** Reject an acquire after this long. node-postgres counts the FULL acquisition
+ *  here — including establishing a brand-new physical connection (TCP+TLS+SCRAM).
+ *  Against a region-away pooler (e.g. Supabase Sydney from a US function) a COLD
+ *  handshake alone is ~6–7s, so the old 3s guaranteed a "timeout exceeded when
+ *  trying to connect" on every cold connect — the /app 500s. 10s covers the
+ *  cross-region cold handshake with margin while still eventually failing a dead
+ *  pool. It bounds how long we WAIT, not how many slots we hold, so it has zero
+ *  effect on the shared pool_size of 15. */
+const POOL_CONNECTION_TIMEOUT_MS = 10_000;
+/** Keep an idle backend around this long so a burst of requests (a user's click
+ *  sequence, an action + its revalidate) reuses ONE warm connection instead of
+ *  re-paying the multi-second cross-region cold handshake each time. 2s was
+ *  pathological for a region-away DB — the warm window closed between clicks.
+ *  30s still drains fully between visits (min:0), so a warm instance is not
+ *  permanently hoarding a slot against the shared 15. */
+const POOL_IDLE_TIMEOUT_MS = 30_000;
 
 /** Parse a positive-integer pool size from env, falling back on missing/NaN. */
 function tenantPoolMax(): number {
@@ -46,6 +57,9 @@ export function getPool(): Pool {
     min: 0,
     connectionTimeoutMillis: POOL_CONNECTION_TIMEOUT_MS,
     idleTimeoutMillis: POOL_IDLE_TIMEOUT_MS,
+    // Longer-lived idle connections (idleTimeoutMillis above) can be silently
+    // dropped by NAT/load-balancer idle reaping; keepAlive holds the socket open.
+    keepAlive: true,
   });
   return pool;
 }

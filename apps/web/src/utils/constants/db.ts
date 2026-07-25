@@ -18,13 +18,22 @@
 /** Default max connections for the core pool; override with DB_POOL_MAX_CORE. */
 export const DB_POOL_MAX_CORE_DEFAULT = 2;
 
-/** Reject a connection request after this long instead of hanging forever on a
- *  saturated pool — a fast, clear failure beats a silent stall. Kept short so a
- *  doomed acquire fails fast rather than pinning a request for ~10s per retry. */
-export const DB_POOL_CONNECTION_TIMEOUT_MS = 3_000;
+/** Reject a connection request after this long. node-postgres counts the FULL
+ *  acquisition here — including establishing a brand-new physical connection
+ *  (TCP+TLS+SCRAM). Against a region-away pooler (e.g. Supabase Sydney from a US
+ *  function) a COLD handshake alone is ~6–7s, so the old 3s guaranteed a "timeout
+ *  exceeded when trying to connect" on every cold connect — the /app 500s. This
+ *  pool serves better-auth's per-request session read (the FIRST DB touch on every
+ *  request), so it hit the wall independently of the tenant pool. 10s covers the
+ *  cross-region cold handshake while still failing a genuinely dead pool. Bounds
+ *  how long we WAIT, not how many slots we hold — no effect on the shared 15. */
+export const DB_POOL_CONNECTION_TIMEOUT_MS = 10_000;
 
-/** Close idle backends quickly so a warm instance stops hoarding the shared 15. */
-export const DB_POOL_IDLE_TIMEOUT_MS = 2_000;
+/** Keep an idle backend around this long so a request burst reuses ONE warm
+ *  connection instead of re-paying the multi-second cross-region cold handshake.
+ *  2s was pathological region-away; 30s still drains fully between visits (min:0)
+ *  so a warm instance is not permanently hoarding a slot against the shared 15. */
+export const DB_POOL_IDLE_TIMEOUT_MS = 30_000;
 
 /**
  * Transient-rejection retry (see lib/db/connect-retry.ts). When several warm

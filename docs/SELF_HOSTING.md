@@ -233,7 +233,9 @@ app needs from the database:
   `pgbouncer=true`, or Supabase's `:6543`). If that heuristic false-positives
   on a pooler you have confirmed is session-scoped, set
   `DHAGA_ALLOW_TRANSACTION_POOLER=true` to downgrade the fail-loud throw to a
-  one-time warning.
+  one-time warning. A DB co-located with the app won't hit this, but a
+  cross-region `DATABASE_URL` needs a larger `connectionTimeoutMillis` (the
+  default is now 10s) to absorb the cold connection handshake.
 - **A role without `BYPASSRLS` or `SUPERUSER`** (hosted mode only) — either
   attribute makes the role ignore RLS (a superuser bypasses it unconditionally
   even while `rolbypassrls` reads false), and the boot guard rejects both. Run

@@ -1,13 +1,21 @@
 "use client";
 
+import Link from "next/link";
 import { useFormStatus } from "react-dom";
-import { Loader2, RotateCw, TriangleAlert } from "lucide-react";
-import { EXTRACTION_STAGE_LABELS } from "@/utils/constants/extraction-jobs";
+import { Loader2, RotateCw, Sparkles, TriangleAlert } from "lucide-react";
+import {
+  EXTRACTION_BLOCKED_LABEL,
+  EXTRACTION_STAGE_LABELS,
+} from "@/utils/constants/extraction-jobs";
 import { retryExtractionJobAction } from "@/lib/actions/extraction-jobs";
 import type { ExtractionJobView } from "@/types";
-import { isActive, useExtractionPoller } from "./useExtractionPoller";
+import { isActive, useExtractionStream } from "./useExtractionStream";
 
 function activeLabel(job: ExtractionJobView): string {
+  // "writing" is a stream-only stage carrying the final fact count.
+  if (job.stage === "writing") {
+    return `Writing ${job.factCount} ${job.factCount === 1 ? "fact" : "facts"}…`;
+  }
   if (job.stage && EXTRACTION_STAGE_LABELS[job.stage]) {
     return EXTRACTION_STAGE_LABELS[job.stage];
   }
@@ -31,17 +39,43 @@ function RetryButton() {
 export function ExtractionStatus({
   contactId,
   initialJobs,
+  onFacts,
 }: {
   contactId: string;
   initialJobs: ExtractionJobView[];
+  /** Called when the stream reports a job wrote new facts — the Facts panel
+   *  refetches instead of the whole page refreshing. */
+  onFacts: () => void;
 }) {
-  const jobs = useExtractionPoller(contactId, initialJobs);
-  const visible = jobs.filter((j) => isActive(j) || j.status === "error");
+  const jobs = useExtractionStream(initialJobs, onFacts);
+  const visible = jobs.filter(
+    (j) => isActive(j) || j.status === "error" || j.status === "blocked",
+  );
   if (visible.length === 0) return null;
 
   return (
     <div className="space-y-1.5" aria-live="polite">
       {visible.map((job) => {
+        // No AI budget: a calm, non-retryable paid-feature notice — never the
+        // red error styling, and no Retry (retrying can't succeed without a
+        // plan). The poller already treats "blocked" as terminal and stops.
+        if (job.status === "blocked") {
+          return (
+            <div
+              key={job.id}
+              className="flex flex-wrap items-center gap-2 rounded-lg border border-amber/25 bg-amber/[0.05] px-3 py-2 text-xs text-fog"
+            >
+              <Sparkles className="size-3.5 shrink-0 text-amber" />
+              <span className="min-w-0 flex-1">{EXTRACTION_BLOCKED_LABEL}</span>
+              <Link
+                href="/app/settings"
+                className="shrink-0 font-medium text-amber transition-colors hover:underline"
+              >
+                Upgrade
+              </Link>
+            </div>
+          );
+        }
         const stuck = job.status === "error" || job.stalled;
         if (stuck) {
           return (

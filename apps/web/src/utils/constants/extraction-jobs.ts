@@ -1,8 +1,8 @@
 /**
  * Background extraction jobs: adding a note or enriching a contact no longer
  * blocks the request on the LLM calls. The submit persists a job row and
- * returns immediately; a fire-and-forget worker route runs the LLM pipeline;
- * the person page polls for status and shows facts/follow-ups as they land.
+ * returns immediately; a fire-and-forget worker route runs the LLM pipeline and
+ * streams its progress; the person page shows facts/follow-ups as they land.
  */
 
 export const EXTRACTION_JOB_KINDS = ["note_extraction", "enrichment"] as const;
@@ -22,7 +22,13 @@ export const EXTRACTION_JOB_STATUSES = [
   "running", // worker is executing (see stage)
   "done", // finished; fact/follow-up counts are final
   "error", // failed; surfaced to the user with a Retry
+  "blocked", // terminal: no AI budget — a calm paid-feature notice, NOT retryable
 ] as const;
+
+/** Copy shown for a "blocked" job (free tier / monthly cap reached): the note
+ *  is saved, automatic extraction is a paid feature. Calm, never an error. */
+export const EXTRACTION_BLOCKED_LABEL =
+  "Automatic fact extraction is a paid feature. Your note is saved.";
 
 /** Human-readable label per worker stage, shown in the status pill. */
 export const EXTRACTION_STAGE_LABELS: Record<string, string> = {
@@ -34,11 +40,8 @@ export const EXTRACTION_STAGE_LABELS: Record<string, string> = {
  *  offered for retry (a crashed worker or a function that hit its timeout). */
 export const EXTRACTION_STALLED_AFTER_MS = 90_000;
 
-/** How often the person page polls the status endpoint while work is active. */
-export const EXTRACTION_POLL_INTERVAL_MS = 2_000;
-
-/** Terminal jobs older than this drop out of the status endpoint's response so
- *  a finished job's summary shows briefly, then disappears. */
+/** Terminal jobs older than this drop out of the person page's recent-jobs
+ *  render (listRecentExtractionJobs) so a finished job shows briefly, then goes. */
 export const EXTRACTION_JOB_RECENT_WINDOW_MS = 5 * 60_000;
 
 /** The daily cron marks jobs stuck longer than this as errored (retryable). */

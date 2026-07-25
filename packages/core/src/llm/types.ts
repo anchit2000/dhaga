@@ -43,11 +43,22 @@ export interface CompleteOptions {
   webSearch?: boolean;
 }
 
+export interface LLMStream {
+  /** async iterable of text deltas as they arrive */
+  textStream: AsyncIterable<string>;
+  /** resolves once the stream completes, with final token usage */
+  usage: Promise<LLMUsage>;
+  /** the model id that served the request */
+  model: string;
+}
+
 export interface LLMClient {
   /** Structured extraction — output is guaranteed to match the Zod schema. */
   extract<T>(options: ExtractOptions<T>): Promise<LLMResult<T>>;
   /** Free-text completion (drafts, search answers). */
   complete(options: CompleteOptions): Promise<LLMResult<string>>;
+  /** Streaming free-text completion — yields text deltas, meters usage once at the end. */
+  streamComplete(options: CompleteOptions): Promise<LLMStream>;
 }
 
 export interface BatchExtractItem<T> extends Omit<ExtractOptions<T>, "images"> {

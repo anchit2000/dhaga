@@ -13,6 +13,7 @@ import { withUserDb } from "@/lib/db/request-scope";
 import { createEnrichmentMatchConfirmation } from "@/lib/repo/confirmations";
 import { applyExtraction } from "@/lib/repo/graph";
 import { listNodeTypes } from "@/lib/repo/node-types";
+import { EXTRACTION_BLOCKED_LABEL } from "@/utils/constants/extraction-jobs";
 import { AiBudgetError, assertAiBudget, recordAiAction } from "./metering";
 
 /** "note": the user's own words (trusted). "enrichment": public-web findings
@@ -25,6 +26,11 @@ export interface NoteExtractionOutcome {
    *  distinct from "ran fine, found nothing" and from "no LLM configured".
    *  The background worker marks the job errored (and retryable) on this. */
   failed: boolean;
+  /** True when the monthly AI budget (cap) blocked extraction — a calm terminal
+   *  state, NOT an error. The note is saved; automatic extraction is a paid
+   *  feature. The worker marks the job "blocked" (non-retryable) on this, so it
+   *  is deliberately distinct from `failed` (which offers a Retry). */
+  blocked?: boolean;
   factCount: number;
   followUpCount: number;
   notice?: string;
@@ -81,6 +87,19 @@ export async function extractAndApplyNote(
     model = result.model;
     usage = result.usage;
   } catch (error) {
+    // The monthly cap ("cap") is a budget wall, not a failure — return a
+    // non-retryable blocked outcome so the note is kept and the UI shows a calm
+    // paid-feature notice. Burst ("burst") and every other error stay retryable.
+    if (error instanceof AiBudgetError && error.kind === "cap") {
+      return {
+        applied: false,
+        failed: false,
+        blocked: true,
+        factCount: 0,
+        followUpCount: 0,
+        notice: EXTRACTION_BLOCKED_LABEL,
+      };
+    }
     const reason =
       error instanceof AiBudgetError ? error.message : "The AI call failed.";
     return {
@@ -106,12 +125,19 @@ export async function extractAndApplyNote(
       // enrichment_match confirmation per fact — web findings can be the wrong
       // person, so each stays badged until the user confirms or deletes it
       // (dismiss deletes the fact). Note facts are trusted and never gated.
+      // The user triggered enrichment on THIS contact, so identity is known —
+      // the question asks about the detail's correctness and the detail itself
+      // rides in `options` (factIds is 1:1, same order as extraction.facts —
+      // see applyExtraction) so the card shows what it's asking about.
       if (enrichment) {
-        for (const factId of factIds) {
+        for (let i = 0; i < factIds.length; i++) {
+          const factId = factIds[i];
+          const fact = extraction.facts[i];
           await createEnrichmentMatchConfirmation({
             factId,
             contactId,
-            question: `Is this web-sourced detail about ${contactName} correct?`,
+            question: `Does this detail check out for ${contactName}?`,
+            options: [{ id: factId, label: fact.text, sublabel: fact.type }],
             sourceNoteId: noteId,
           });
         }

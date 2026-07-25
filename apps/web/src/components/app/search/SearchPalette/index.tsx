@@ -1,7 +1,7 @@
 "use client";
 
-import { Mic, Search, SlidersHorizontal, Sparkles, Square } from "lucide-react";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Mic, Search, SlidersHorizontal, Sparkles, Square, X } from "lucide-react";
+import { Dialog, DialogClose, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DEFAULT_SEARCH_WEIGHTS, type SearchWeights } from "@/utils/constants/search";
@@ -40,7 +40,7 @@ export function SearchPalette({
       </button>
 
       <Dialog open={p.open} onOpenChange={p.setOpen}>
-        <DialogContent className="max-w-lg gap-0 p-0 sm:max-w-lg">
+        <DialogContent showCloseButton={false} className="max-w-lg gap-0 p-0 sm:max-w-lg">
           <DialogTitle className="sr-only">Search</DialogTitle>
 
           <div className="space-y-2 border-b border-seam p-3">
@@ -70,7 +70,7 @@ export function SearchPalette({
                   onClick={p.dictation.listening ? p.dictation.stop : p.dictation.start}
                   disabled={p.dictation.transcribing || p.dictation.loadingProgress !== null}
                   aria-label={p.dictation.listening ? "Stop dictation" : "Search by voice"}
-                  className={`flex size-8 shrink-0 items-center justify-center rounded-full border transition-colors disabled:opacity-60 ${
+                  className={`flex size-11 shrink-0 items-center justify-center rounded-full border transition-colors disabled:opacity-60 ${
                     p.dictation.listening
                       ? "border-red-400/50 text-red-400"
                       : "border-seam text-fog hover:text-paper"
@@ -79,6 +79,12 @@ export function SearchPalette({
                   {p.dictation.listening ? <Square className="size-4" /> : <Mic className="size-4" />}
                 </button>
               ) : null}
+              <DialogClose
+                aria-label="Close"
+                className="flex size-11 shrink-0 items-center justify-center rounded-full border border-seam text-fog transition-colors hover:text-paper"
+              >
+                <X className="size-4" />
+              </DialogClose>
             </form>
             <DictationProgress
               loadingProgress={p.dictation.loadingProgress}
@@ -138,6 +144,7 @@ export function SearchPalette({
                 pending={p.ask.pending}
                 hasQuery={p.query.trim().length > 0}
                 formId={p.formId}
+                onNavigate={() => p.setOpen(false)}
               />
             )}
           </div>

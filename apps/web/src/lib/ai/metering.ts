@@ -75,6 +75,21 @@ export async function aiActionsUsedThisMonth(): Promise<number> {
   return row?.n ?? 0;
 }
 
+/**
+ * Whether the acting user has any monthly AI budget left. The pre-flight check
+ * for "should we even enqueue a background AI job?" — a 0-cap free-tier user (or
+ * an exhausted paid month) has none, so callers can skip queuing a job that
+ * would only fail. Composes the same unlimited/cap/usage accessors
+ * assertAiBudget enforces with (minus the burst guard, which is about rate, not
+ * budget), so there is one definition of "is there budget". Uses the
+ * request-scoped getDb().
+ */
+export async function hasMonthlyAiBudget(userId: string): Promise<boolean> {
+  if (await (await getBillingGate()).hasUnlimitedAi(userId, await getDb())) return true;
+  const cap = await effectiveMonthlyAiCap();
+  return (await aiActionsUsedThisMonth()) < cap;
+}
+
 export class AiBudgetError extends Error {
   constructor(
     message: string,

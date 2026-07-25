@@ -27,11 +27,16 @@ export function EnrichmentMatchCard({
   return (
     <ConfirmationCardShell question={payload.question} contactName={contactName}>
       {payload.options.length > 0 ? (
-        <ul className="space-y-1">
+        <ul className="space-y-1.5">
           {payload.options.map((option) => (
-            <li key={option.id} className="text-xs text-fog">
+            <li
+              key={option.id}
+              className="border-l-2 border-ember/60 pl-2.5 text-sm text-paper"
+            >
               {option.label}
-              {option.sublabel ? ` · ${option.sublabel}` : null}
+              {option.sublabel ? (
+                <span className="ml-1 text-xs text-fog">· {option.sublabel}</span>
+              ) : null}
             </li>
           ))}
         </ul>

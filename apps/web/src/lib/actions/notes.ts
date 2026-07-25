@@ -16,6 +16,7 @@ import {
 } from "@/lib/repo/notes";
 import { createExtractionJob } from "@/lib/repo/extraction-jobs";
 import { upsertEmbedding } from "@/lib/repo/embeddings";
+import { hasMonthlyAiBudget } from "@/lib/ai/metering";
 import { REPROCESSABLE_NOTE_KINDS } from "@/utils/constants/extraction-jobs";
 
 export interface NoteFormState {
@@ -33,7 +34,7 @@ export async function addNoteAction(
   _previous: NoteFormState,
   formData: FormData,
 ): Promise<NoteFormState> {
-  await requireUserId();
+  const userId = await requireUserId();
   const contactId = String(formData.get("contactId") ?? "");
   const body = String(formData.get("body") ?? "").trim();
   if (!contactId) return { error: "Missing contact." };
@@ -44,9 +45,19 @@ export async function addNoteAction(
 
   const kind = formData.get("kind") === "voice" ? "voice" : "text";
   const noteId = await addNote(contactId, kind, body);
-  await createExtractionJob({ contactId, kind: "note_extraction", noteId });
+  // Free tier (cap 0) / an exhausted paid month has no AI budget: skip enqueuing
+  // a job that would only fail, and surface a calm paid-feature notice instead
+  // of "extracting facts…". The note is still saved either way.
+  const budgeted = await hasMonthlyAiBudget(userId);
+  if (budgeted) {
+    await createExtractionJob({ contactId, kind: "note_extraction", noteId });
+  }
   revalidatePath(`/app/people/${contactId}`);
-  return { notice: "Note saved — extracting facts…" };
+  return {
+    notice: budgeted
+      ? "Note saved — extracting facts…"
+      : "Note saved. Automatic fact extraction is a paid feature.",
+  };
 }
 
 /**
@@ -61,7 +72,7 @@ export async function addNoteAction(
  * metering.
  */
 export async function reprocessNoteAction(formData: FormData): Promise<void> {
-  await requireUserId();
+  const userId = await requireUserId();
   const noteId = String(formData.get("noteId") ?? "");
   const contactId = String(formData.get("contactId") ?? "");
   if (!noteId || !contactId) return;
@@ -70,6 +81,8 @@ export async function reprocessNoteAction(formData: FormData): Promise<void> {
   if (!note || note.contactId !== contactId) return;
   // Only trusted user captures re-extract in "note" mode (see REPROCESSABLE_NOTE_KINDS).
   if (!(REPROCESSABLE_NOTE_KINDS as readonly string[]).includes(note.kind)) return;
+  // No AI budget → don't enqueue a doomed re-extraction (same guard as addNote).
+  if (!(await hasMonthlyAiBudget(userId))) return;
   await createExtractionJob({ contactId, kind: "note_extraction", noteId });
   revalidatePath(`/app/people/${contactId}`);
 }

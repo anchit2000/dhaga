@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HomeTile } from "./HomeTile";
@@ -11,9 +12,8 @@ import type { listAllOpenFollowUps } from "@/lib/repo/reminders";
  * Home's follow-ups bento tile. The old unbounded "Reach out" list is
  * retired in favor of "Today", which is now the canonical reach-out surface.
  * Capped to a short preview so this tile never towers over its bento neighbors;
- * the header meta carries the full count and a "+N more" footer notes the rest.
- * There is no standalone follow-ups page — they live per-contact — so the
- * overflow is a caption, not a link.
+ * the header meta carries the full count and the footer links to the full
+ * /app/follow-ups list ("+N more" is the click target).
  */
 export function HomeActions({ openFollowUps, onSelectContact }: {
   openFollowUps: Awaited<ReturnType<typeof listAllOpenFollowUps>>;
@@ -56,9 +56,12 @@ export function HomeActions({ openFollowUps, onSelectContact }: {
               </div>
             ))}
           </div>
-          {overflow > 0 ? (
-            <p className="mt-auto pt-1 text-xs text-fog">+{overflow} more</p>
-          ) : null}
+          <Link
+            href="/app/follow-ups"
+            className="mt-auto inline-flex min-h-11 items-center pt-1 text-xs text-ember hover:underline"
+          >
+            {overflow > 0 ? `+${overflow} more` : "View all"} →
+          </Link>
         </>
       )}
     </HomeTile>

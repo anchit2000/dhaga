@@ -25,6 +25,10 @@ export default async function HomePage() {
         <OnboardingGate />
       </Suspense>
 
+      <Suspense fallback={<StatStripSkeleton />}>
+        <StatStrip />
+      </Suspense>
+
       <Suspense
         fallback={
           <>
@@ -34,10 +38,6 @@ export default async function HomePage() {
         }
       >
         <DashboardSection />
-      </Suspense>
-
-      <Suspense fallback={<StatStripSkeleton />}>
-        <StatStrip />
       </Suspense>
 
       <Suspense fallback={null}>

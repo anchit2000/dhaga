@@ -21,6 +21,14 @@ export const OVERLAP = SAMPLE_RATE * OVERLAP_S; // 8000 @ 16 kHz
 export const OVERLAP_DEDUP_WORDS = 6;
 
 /**
+ * Peak absolute amplitude below which a decode window is treated as silence and
+ * skipped (Moonshine hallucinates words on dead air). Deliberately CONSERVATIVE:
+ * real speech peaks ~0.1–1.0, digital silence sits at ~0, so this only catches
+ * the exact zeros a broken/muted mic feeds — never quiet-but-real speech.
+ */
+export const SILENCE_PEAK_THRESHOLD = 0.01;
+
+/**
  * Precision follows the transformers.js `moonshine-web` example: an fp32 encoder
  * plus a quantized decoder (q4 on WebGPU, q8 on WASM) to keep the autoregressive
  * decode loop fast.

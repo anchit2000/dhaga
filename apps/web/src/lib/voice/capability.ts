@@ -4,9 +4,8 @@
  * isn't enough — we require an adapter to actually come back. SSR-guarded:
  * returns false on the server, where there is no `navigator`.
  *
- * Typed without the @webgpu/types lib (not a dependency): the rest of the app
- * probes `navigator.gpu` the same structural way (see useRealtimeWhisper /
- * VoiceInputSetting), so we mirror that rather than add a global-augmentation.
+ * Typed without the @webgpu/types lib (not a dependency): we probe
+ * `navigator.gpu` structurally rather than add a global augmentation.
  */
 
 /** The one method we call — enough to avoid `any` without @webgpu/types. */

@@ -3,8 +3,10 @@
 import type { Dispatch, RefObject, SetStateAction } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { SubmitButton } from "../SubmitButton";
+import { VoiceNoteReview } from "../contact/VoiceNoteReview";
 import { CardPhotoCapture } from "./CardPhotoCapture";
 import { QuickAddDock } from "./QuickAddDock";
+import { useCaptureVoice } from "./useCaptureVoice";
 
 type Mode = "paste" | "photo";
 
@@ -43,6 +45,21 @@ export function CaptureForm({
    *  in-flow instead of floating (see QuickAddDock's `floating` prop). */
   inDialog?: boolean;
 }) {
+  const voice = useCaptureVoice(pasteTextareaRef);
+  // Composed so tapping Voice also switches to the paste form (where the note
+  // textarea and its tap-to-fix review live).
+  const dockVoice = {
+    supported: voice.supported,
+    listening: voice.listening,
+    transcribing: voice.transcribing,
+    loadingProgress: voice.loadingProgress,
+    start: () => {
+      setMode("paste");
+      voice.start();
+    },
+    stop: voice.stop,
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex gap-1.5">
@@ -74,6 +91,13 @@ export function CaptureForm({
             }
             className="font-mono text-sm"
           />
+          {voice.review.show ? (
+            <VoiceNoteReview
+              text={voice.review.text}
+              onChange={voice.review.onChange}
+              onWordFix={voice.review.onWordFix}
+            />
+          ) : null}
           <SubmitButton>Extract contact</SubmitButton>
         </form>
       ) : (
@@ -95,7 +119,7 @@ export function CaptureForm({
 
       <QuickAddDock
         formAction={formAction}
-        onVoiceStart={() => setMode("paste")}
+        voice={dockVoice}
         pasteTextareaRef={pasteTextareaRef}
         captureOpen={captureOpen}
         onCaptureToggle={onCaptureToggle}

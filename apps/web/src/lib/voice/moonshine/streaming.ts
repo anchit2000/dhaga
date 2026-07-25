@@ -101,6 +101,20 @@ export function appendWithOverlapDedup(prev: string, next: string): string {
 }
 
 /**
+ * True when the window's peak absolute amplitude is below `threshold` — i.e. it
+ * carries no signal loud enough to be speech. An empty window is silent. Used to
+ * gate the decoder so it never transcribes (and hallucinates on) dead air.
+ */
+export function isSilent(samples: Float32Array, threshold: number): boolean {
+  let peak = 0;
+  for (let i = 0; i < samples.length; i++) {
+    const amp = Math.abs(samples[i]);
+    if (amp > peak) peak = amp;
+  }
+  return peak < threshold;
+}
+
+/**
  * Copy the half-open sample range `[from, to)` out of the frame buffer without
  * concatenating the whole thing — only the requested window is materialized.
  */

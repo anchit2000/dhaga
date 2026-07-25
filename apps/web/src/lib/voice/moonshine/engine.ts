@@ -1,18 +1,19 @@
 /**
- * MoonshineAsrEngine — the AsrEngine implementation. Bounded-latency chunked
- * streaming: audio is committed to text in fixed CHUNKs as it arrives (folded
- * via a word-level seam dedup), so per-call decode time stays roughly constant
- * regardless of utterance length. TINY-ONLY hot path (see constants.ts). Model
- * loading (dynamic import + WebGPU→WASM fallback) lives in loader.ts; the pure
- * streaming helpers in streaming.ts. CLIENT-ONLY — only import from "use client".
+ * MoonshineAsrEngine — bounded-latency chunked streaming ASR (AsrEngine impl).
+ * Audio commits to text in fixed CHUNKs as it arrives (word-level seam dedup), so
+ * decode time stays ~constant regardless of length. TINY-ONLY (constants.ts).
+ * Loading → loader.ts, pure stream helpers → streaming.ts, rolling PCM window +
+ * offset math → frame-buffer.ts. Silence-gated so a dead mic can't hallucinate.
+ * CLIENT-ONLY — only import from "use client".
  */
 import type { AutomaticSpeechRecognitionPipeline } from "@huggingface/transformers";
 import type { AsrEngine } from "@dhaga/core/src/voice/asr/types";
 import type { LoadProgress, PcmFrame } from "@dhaga/core/src/voice/types";
 import type { Backend } from "./constants";
-import { CHUNK, OVERLAP } from "./constants";
+import { CHUNK, OVERLAP, SILENCE_PEAK_THRESHOLD } from "./constants";
+import { FrameBuffer } from "./frame-buffer";
 import { loadTiny } from "./loader";
-import { appendWithOverlapDedup, extractText, sliceRange } from "./streaming";
+import { appendWithOverlapDedup, extractText, isSilent } from "./streaming";
 
 export class MoonshineAsrEngine implements AsrEngine {
   readonly name = "moonshine";
@@ -21,8 +22,7 @@ export class MoonshineAsrEngine implements AsrEngine {
   private tiny: AutomaticSpeechRecognitionPipeline | null = null;
   private ready = false;
 
-  private chunks: Float32Array[] = [];
-  private totalLen = 0;
+  private readonly buffer = new FrameBuffer();
   /** Accurate text for audio already folded in, and how many samples that covers. */
   private committedText = "";
   private committedSamples = 0;
@@ -48,14 +48,12 @@ export class MoonshineAsrEngine implements AsrEngine {
   }
 
   pushFrame(frame: PcmFrame): void {
-    if (frame.length === 0) return;
-    this.chunks.push(frame);
-    this.totalLen += frame.length;
+    this.buffer.push(frame);
   }
 
   async transcribePartial(): Promise<string> {
     // Never run two Moonshine decodes at once — the reference serializes inference.
-    if (!this.tiny || this.busy || this.totalLen === 0) return "";
+    if (!this.tiny || this.busy || this.buffer.totalLen === 0) return "";
     const job = this.runPartial();
     this.inflight = job;
     try {
@@ -72,16 +70,23 @@ export class MoonshineAsrEngine implements AsrEngine {
     if (!tiny) return "";
     this.busy = true;
     try {
-      while (this.totalLen - this.committedSamples >= CHUNK + OVERLAP) {
+      while (this.buffer.totalLen - this.committedSamples >= CHUNK + OVERLAP) {
         const from = Math.max(0, this.committedSamples - OVERLAP);
-        const to = this.committedSamples + CHUNK;
-        const chunkText = extractText(await tiny(sliceRange(this.chunks, from, to)));
-        this.committedText = appendWithOverlapDedup(this.committedText, chunkText);
+        const window = this.buffer.window(from, this.committedSamples + CHUNK);
+        // Consume a silent chunk (advance the commit cursor) but decode nothing:
+        // a dead/muted mic feeds zeros and Moonshine would hallucinate on them.
+        if (!isSilent(window, SILENCE_PEAK_THRESHOLD)) {
+          const chunkText = extractText(await tiny(window));
+          this.committedText = appendWithOverlapDedup(this.committedText, chunkText);
+        }
         this.committedSamples += CHUNK;
+        this.buffer.prune(this.committedSamples - OVERLAP);
       }
       const tailFrom = Math.max(0, this.committedSamples - OVERLAP);
-      if (this.totalLen <= tailFrom) return this.committedText.trim();
-      const tailText = extractText(await tiny(sliceRange(this.chunks, tailFrom, this.totalLen)));
+      if (this.buffer.totalLen <= tailFrom) return this.committedText.trim();
+      const tail = this.buffer.window(tailFrom, this.buffer.totalLen);
+      if (isSilent(tail, SILENCE_PEAK_THRESHOLD)) return this.committedText.trim();
+      const tailText = extractText(await tiny(tail));
       return appendWithOverlapDedup(this.committedText, tailText).trim();
     } finally {
       this.busy = false;
@@ -89,9 +94,8 @@ export class MoonshineAsrEngine implements AsrEngine {
   }
 
   async finalize(_boosts?: string[]): Promise<string> {
-    // Let any in-flight partial finish so committed state is settled, then
-    // snapshot + clear synchronously (before any await) so frames from a NEW
-    // utterance started during the flush land in a fresh buffer, not this one.
+    // Let any in-flight partial settle, then detach the audio + clear committed
+    // state synchronously (before any await) so a NEW utterance's frames land fresh.
     if (this.inflight) {
       try {
         await this.inflight;
@@ -99,21 +103,26 @@ export class MoonshineAsrEngine implements AsrEngine {
         /* a failed partial must not block the final decode */
       }
     }
-    const chunks = this.chunks;
-    const totalLen = this.totalLen;
     const committedText = this.committedText;
     const committedSamples = this.committedSamples;
-    this.reset();
+    const totalLen = this.buffer.totalLen;
+    const snapshot = this.buffer.take();
+    this.committedText = "";
+    this.committedSamples = 0;
 
-    // Moonshine has no hotword/boost API; `boosts` is ignored (the phonetic
-    // teaching layer applies term biasing downstream).
+    // Moonshine has no hotword API; `boosts` is ignored (teaching biases downstream).
     const tiny = this.tiny;
     if (!tiny) return committedText.trim();
     const from = Math.max(0, committedSamples - OVERLAP);
     if (totalLen <= from) return committedText.trim();
 
+    const tail = snapshot.window(from, totalLen);
+    // A silent final tail (dead-air trailer) must not be decoded — return what's
+    // already committed rather than let the model hallucinate a closing phrase.
+    if (isSilent(tail, SILENCE_PEAK_THRESHOLD)) return committedText.trim();
+
     this.busy = true;
-    const job = tiny(sliceRange(chunks, from, totalLen));
+    const job = tiny(tail);
     this.inflight = job;
     try {
       return appendWithOverlapDedup(committedText, extractText(await job)).trim();
@@ -124,8 +133,7 @@ export class MoonshineAsrEngine implements AsrEngine {
   }
 
   reset(): void {
-    this.chunks = [];
-    this.totalLen = 0;
+    this.buffer.reset();
     this.committedText = "";
     this.committedSamples = 0;
   }

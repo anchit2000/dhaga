@@ -3,12 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "@/lib/auth/guard";
 import { invalidateAppNavigation } from "@/lib/cache/app-navigation";
-import {
-  setOnboardingTourSeen,
-  setStoreCardPhotos,
-  setSttEngine,
-  type SttEngine,
-} from "@/lib/repo/settings";
+import { setOnboardingTourSeen, setStoreCardPhotos } from "@/lib/repo/settings";
 import { deleteAllCardImages } from "@/lib/repo/card-images";
 
 export async function setStoreCardPhotosAction(
@@ -24,16 +19,6 @@ export async function setStoreCardPhotosAction(
 export async function purgeCardPhotosAction(): Promise<void> {
   await requireUserId();
   await deleteAllCardImages();
-  revalidatePath("/app/settings");
-}
-
-export async function setSttEngineAction(formData: FormData): Promise<void> {
-  const userId = await requireUserId();
-  const raw = formData.get("engine");
-  const engine: SttEngine =
-    raw === "local" || raw === "realtime" || raw === "moonshine" ? raw : "browser";
-  await setSttEngine(engine);
-  invalidateAppNavigation(userId);
   revalidatePath("/app/settings");
 }
 

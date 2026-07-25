@@ -11,7 +11,6 @@ import {
   ProfileSection,
   SecuritySection,
   SuggestionsSection,
-  VoiceInputSection,
   VoiceTeachingSection,
 } from "./sections";
 
@@ -61,9 +60,6 @@ export default async function SettingsPage({
           <>
             <Suspense fallback={<ListSkeleton rows={2} />}>
               <CardPhotoSection />
-            </Suspense>
-            <Suspense fallback={<ListSkeleton rows={2} />}>
-              <VoiceInputSection />
             </Suspense>
             <Suspense fallback={<ListSkeleton rows={2} />}>
               <VoiceTeachingSection />

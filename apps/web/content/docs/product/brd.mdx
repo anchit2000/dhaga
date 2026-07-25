@@ -209,7 +209,7 @@ Pure client-side logic — no AI needed for v0:
 
 ### 6.3 Notes → Knowledge Graph (M3–M5)
 
-- **Transcription:** whisper.cpp (or Apple's on-device speech APIs on iOS 17+) — free, private, offline.
+- **Transcription:** on-device, free, private. **Web:** *Dhaga Voice* (Moonshine tiny) streams the transcript live in the browser — **WebGPU-required, with no fallback** (voice is unavailable when WebGPU is absent). **Mobile:** whisper.cpp (or Apple's on-device speech APIs on iOS 17+).
 - **Extraction:** one structured-output LLM call per note. Schema (enforced via the API's `output_config.format` JSON schema, so output is guaranteed parseable):
 
 ```json
@@ -315,7 +315,7 @@ scraped behind your back," not "automatic."
 | Cloud DB | **Postgres + pgvector** | One database for relational graph + vectors; Supabase/Neon for hosted, `docker compose` for self-host |
 | Backend | **TypeScript (Next.js API routes or Fastify)** | Shares types with the app; deploys to Vercel or a single container |
 | Sync | Field-level LWW with per-device vector clocks (or adopt PowerSync/ElectricSQL) | Adopt before building; sync is a rabbit hole |
-| Transcription | **whisper.cpp / Apple Speech** | Free, on-device, private |
+| Transcription | **Dhaga Voice (Moonshine tiny, on-device WebGPU) on web; whisper.cpp / Apple Speech on mobile** | Free, on-device, private (web: WebGPU-required, no fallback) |
 | Embeddings | **nomic-embed-text / bge-small** (on-device or self-hosted) | Free at our scale; no per-call vendor cost |
 | LLM | **Claude Haiku 4.5** for extraction/parsing; **Claude Sonnet 5** for search reasoning & drafts; Batch API for nightly jobs | See cost model §9; structured outputs guarantee parseable JSON |
 | Self-host inference option | **Ollama / vLLM adapter** (Qwen/Gemma-class models) | The LLM gateway is provider-agnostic; self-hosters and privacy-maximalists plug in local models |

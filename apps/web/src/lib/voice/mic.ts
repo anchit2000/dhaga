@@ -5,8 +5,12 @@
  * context rate to 16 kHz mono, posts Float32 frames) → onFrame. The worklet is
  * registered from an inline Blob URL so nothing needs a separately served .js
  * file (COEP: credentialless-safe). The AudioContext + worklet module are
- * created once and reused across push-to-talk presses; each start() re-acquires
- * the stream and rebuilds the source/worklet nodes, stop() tears them down.
+ * created once and reused across push-to-talk presses, but start() never trusts
+ * that reuse: it first tears down any leftover pipeline, then rebuilds the
+ * source/worklet nodes, resumes the context, and verifies it is actually
+ * running (throwing if not) — so it can never keep a stale or suspended pipeline
+ * that would feed Moonshine silence (which it hallucinates fluent nonsense on).
+ * stop() tears the nodes down; both share one teardown helper.
  *
  * Client-only: touches AudioContext / navigator.mediaDevices, so it must only
  * ever be imported from a "use client" module.
@@ -36,8 +40,15 @@ export function createMic(onFrame: (frame: PcmFrame) => void): Mic {
   let source: MediaStreamAudioSourceNode | null = null;
   let worklet: AudioWorkletNode | null = null;
   let active = false;
+  // In-flight start(), so two rapid presses don't build two pipelines.
+  let starting: Promise<void> | null = null;
 
   async function ensureContext(): Promise<AudioContext> {
+    // A closed context can't be resumed — drop it (and its module) and rebuild.
+    if (ctx && ctx.state === "closed") {
+      ctx = null;
+      moduleAdded = false;
+    }
     if (!ctx) ctx = new AudioContext();
     if (!moduleAdded) {
       const url = URL.createObjectURL(
@@ -62,46 +73,73 @@ export function createMic(onFrame: (frame: PcmFrame) => void): Mic {
     }
   }
 
+  /** Disconnect nodes + release the stream. Idempotent; shared by start() and stop(). */
+  function teardown(): void {
+    active = false;
+    if (worklet) {
+      worklet.port.onmessage = null;
+      worklet.disconnect();
+      worklet = null;
+    }
+    if (source) {
+      source.disconnect();
+      source = null;
+    }
+    if (stream) {
+      for (const track of stream.getTracks()) track.stop();
+      stream = null;
+    }
+  }
+
+  /** Build a fresh, running pipeline. Serialized behind `starting` by start(). */
+  async function startPipeline(): Promise<void> {
+    // Never reuse a stale/suspended pipeline: clean-slate any leftover nodes first.
+    if (active || worklet || source || stream) teardown();
+
+    const context = await ensureContext();
+    stream = await acquireStream();
+
+    source = context.createMediaStreamSource(stream);
+    worklet = new AudioWorkletNode(context, PROCESSOR_NAME, {
+      numberOfInputs: 1,
+      numberOfOutputs: 1,
+      outputChannelCount: [1],
+      processorOptions: { targetSampleRate: SAMPLE_RATE, frameSize: FRAME_SIZE },
+    });
+    worklet.port.onmessage = (ev): void => {
+      onFrame(ev.data as PcmFrame);
+    };
+
+    source.connect(worklet);
+    // Keep the worklet in the rendering graph so process() keeps being pulled;
+    // it writes no output, so nothing audible reaches the speakers.
+    worklet.connect(context.destination);
+
+    // A suspended context would silently feed the worklet zeros → hallucinated text.
+    await context.resume();
+    if (context.state !== "running") {
+      const state = context.state;
+      teardown();
+      throw new Error(
+        `Microphone audio context could not start (state: ${state}). Try again.`,
+      );
+    }
+    active = true;
+  }
+
   return {
-    async start(): Promise<void> {
-      if (active) return;
-      const context = await ensureContext();
-      stream = await acquireStream();
-      await context.resume();
-
-      source = context.createMediaStreamSource(stream);
-      worklet = new AudioWorkletNode(context, PROCESSOR_NAME, {
-        numberOfInputs: 1,
-        numberOfOutputs: 1,
-        outputChannelCount: [1],
-        processorOptions: { targetSampleRate: SAMPLE_RATE, frameSize: FRAME_SIZE },
-      });
-      worklet.port.onmessage = (ev): void => {
-        onFrame(ev.data as PcmFrame);
-      };
-
-      source.connect(worklet);
-      // Keep the worklet in the rendering graph so process() keeps being pulled;
-      // it writes no output, so nothing audible reaches the speakers.
-      worklet.connect(context.destination);
-      active = true;
+    start(): Promise<void> {
+      // Coalesce concurrent presses onto one build; reset the latch when it settles.
+      if (!starting) {
+        starting = startPipeline().finally(() => {
+          starting = null;
+        });
+      }
+      return starting;
     },
 
     stop(): void {
-      active = false;
-      if (worklet) {
-        worklet.port.onmessage = null;
-        worklet.disconnect();
-        worklet = null;
-      }
-      if (source) {
-        source.disconnect();
-        source = null;
-      }
-      if (stream) {
-        for (const track of stream.getTracks()) track.stop();
-        stream = null;
-      }
+      teardown();
     },
 
     get active(): boolean {

@@ -30,6 +30,7 @@ Rules:
 - Extract only what the note states or directly implies. If the information is not in the note, return empty arrays — do not fabricate.
 - "facts" are short standalone sentences about the contact (their role, what they want, personal details, preferences). Set confidence lower for hedged or implied statements.
 - "relationships" connect the contact (subject "contact") or named third parties to companies/people. Use a concise, reusable snake_case predicate such as parent_of, interviewed_with, worked_with, advised, or attended_with. Preserve unusual but meaningful context instead of forcing it into a generic "knows" edge.
+- Set "object_is_named" true when a relationship's "object" is a specific person's name (e.g. "Ajay Kumar"); set it false when the object is only a bare relative or role reference with no name, such as "his son" or "her manager".
 - When the request lists the user's custom node types and the note names a specific organization, place, or group that fits one of them (and is not an employer), set that relationship's object_type to "entity" and entity_type_hint to the matching type's slug. People always stay "person" and employers stay "company". Without such a list, never use object_type "entity".
 - "follow_ups" are concrete actions the note implies the user should take; copy timing hints verbatim into due_hint.
 - "tags" are 1–4 lowercase topical labels useful for later filtering (sector, seniority, intent).`;
@@ -57,6 +58,7 @@ Rules:
 - The findings may describe more than one person who shares the contact's name. Do NOT return empty because of this. Extract the facts anyway; when a fact plainly belongs to one specific candidate, add a short distinguishing detail in the text (e.g. "(the ACME co-founder)") so the user can tell candidates apart and delete the wrong ones.
 - "facts" are short standalone sentences. Set confidence to reflect how directly the findings support each one.
 - "relationships" connect the contact (subject "contact") or named third parties to companies/people, using a concise snake_case predicate.
+- Set "object_is_named" true when a relationship's "object" is a specific person's name (e.g. "Ajay Kumar"); set it false when the object is only a bare relative or role reference with no name, such as "his son" or "her manager".
 - When the request lists the user's custom node types and the findings name a specific organization, place, or group that fits one of them (and is not an employer), set that relationship's object_type to "entity" and entity_type_hint to the matching type's slug. People always stay "person" and employers stay "company". Without such a list, never use object_type "entity".
 - "follow_ups" are concrete actions the findings imply; copy any timing hints verbatim into due_hint.
 - "tags" are 1–4 lowercase topical labels (sector, seniority, intent).`;

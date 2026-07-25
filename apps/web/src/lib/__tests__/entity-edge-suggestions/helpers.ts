@@ -17,6 +17,7 @@ export function entityRel(objectName: string, hint: string | null): NoteExtracti
         predicate: "trains_at",
         object: objectName,
         object_type: "entity",
+        object_is_named: null,
         entity_type_hint: hint,
       },
     ],

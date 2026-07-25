@@ -1,5 +1,6 @@
 // Split per the 150-line rule; import paths unchanged (@/lib/repo/edge-suggestions).
 export {
+  createMentionedContact,
   findRelationshipCandidates,
   resolvePersonObject,
   type RelationshipCandidate,

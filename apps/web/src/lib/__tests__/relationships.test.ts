@@ -17,7 +17,7 @@ function personRelationship(objectName: string): NoteExtraction {
   return {
     facts: [],
     relationships: [
-      { subject: "contact", predicate: "parent_of", object: objectName, object_type: "person", entity_type_hint: null },
+      { subject: "contact", predicate: "parent_of", object: objectName, object_type: "person", object_is_named: true, entity_type_hint: null },
     ],
     follow_ups: [],
     tags: [],

@@ -203,6 +203,7 @@ function buildConfirmations({ contacts, note, fact, entities }) {
         predicate: "works_at",
         object: "Northwind Labs",
         object_type: "company",
+        object_is_named: null,
         entity_type_hint: null,
       },
     ],

@@ -48,12 +48,22 @@ export async function findRelationshipCandidates(
   });
 }
 
-export async function createMentionedContact(name: string): Promise<string> {
+/**
+ * Mint a note-scoped "mentioned" placeholder contact. `objectName` is the raw
+ * phrase from the extraction (kept for callers that pass nothing else);
+ * `displayName`, when given, is the name actually stored — used to relabel a
+ * bare reference off its owner ("his son" ⇒ "Prashant's son") while every other
+ * caller keeps minting the stub under the raw object.
+ */
+export async function createMentionedContact(
+  objectName: string,
+  displayName?: string,
+): Promise<string> {
   const db = await getDb();
   const id = randomUUID();
   await db.insert(contacts).values({
     id,
-    name: name.trim(),
+    name: (displayName ?? objectName).trim(),
     title: null,
     companyId: null,
     emails: [],

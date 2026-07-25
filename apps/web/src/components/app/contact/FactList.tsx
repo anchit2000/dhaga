@@ -1,4 +1,5 @@
 import { FACT_TYPES } from "@dhaga/core";
+import { formatDate } from "@/utils/format-date";
 import type { FactWithReceipt } from "@/lib/repo/notes";
 import { FactItem } from "./FactItem";
 import { AddFactForm } from "./AddFactForm";
@@ -30,7 +31,7 @@ export function FactList({
               unverified={fact.unverified}
               receipt={
                 fact.noteCreatedAt
-                  ? `from note, ${fact.noteCreatedAt.toLocaleDateString()}`
+                  ? `from note, ${formatDate(fact.noteCreatedAt)}`
                   : null
               }
             />

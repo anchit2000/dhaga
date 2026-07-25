@@ -23,6 +23,20 @@ export function formatDate(date: Date): string {
   return DATE_FORMAT.format(date);
 }
 
+const DATE_TIME_FORMAT = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+/** "16 Jul 2026, 14:30" — use instead of `date.toLocaleString()` in client
+ *  components that show a date + time (e.g. a note's timestamp). */
+export function formatDateTime(date: Date): string {
+  return DATE_TIME_FORMAT.format(date);
+}
+
 /** "Thu 14:30" — use instead of `date.toLocaleString()`/`toLocaleTimeString()`
  *  in client components that need a weekday + time (e.g. meeting-slot pickers). */
 export function formatWeekdayTime(date: Date): string {

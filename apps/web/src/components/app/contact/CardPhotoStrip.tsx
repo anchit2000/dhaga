@@ -1,3 +1,4 @@
+import { formatDate } from "@/utils/format-date";
 import type { CardImageRef } from "@/lib/repo/card-images";
 
 /** Stored card photos — the visual receipts behind a scanned contact.
@@ -15,7 +16,7 @@ export function CardPhotoStrip({ images }: { images: CardImageRef[] }) {
             target="_blank"
             rel="noreferrer"
             className="shrink-0"
-            title={`Scanned ${image.createdAt.toLocaleDateString()}`}
+            title={`Scanned ${formatDate(image.createdAt)}`}
           >
             {/* eslint-disable-next-line @next/next/no-img-element -- auth-gated
                 dynamic route; the Next image optimizer can't fetch it */}

@@ -48,12 +48,13 @@ export function AppNav({
             <NavLinks confirmationsCount={confirmationsCount} />
           </div>
 
-          <div className="ml-auto flex shrink-0 items-center gap-1">
-            <div className="pointer-events-none flex items-center justify-center sm:absolute sm:inset-0">
-              <div className="pointer-events-auto w-9 sm:w-full sm:max-w-xl" data-tour="search">
-                <SearchPalette initialWeights={initialSearchWeights} />
-              </div>
+          <div className="flex min-w-0 flex-1 justify-center">
+            <div className="w-9 sm:w-full sm:max-w-xl" data-tour="search">
+              <SearchPalette initialWeights={initialSearchWeights} />
             </div>
+          </div>
+
+          <div className="flex shrink-0 items-center gap-1">
             <ModeToggle />
             <MoreMenu />
             <ProfileMenu isAdmin={isAdmin} />

@@ -3,6 +3,7 @@ import { hasLLM, listConnectableCalendarProviders } from "@dhaga/core";
 import { getCurrentUser, requireUserIdForPage } from "@/lib/auth/guard";
 import { getAuth } from "@/lib/auth/config";
 import { getBillingGate } from "@/lib/hosted/gate";
+import { getDb } from "@/lib/db/request-scope";
 import { aiActionsUsedThisMonth, effectiveMonthlyAiCap } from "@/lib/ai/metering";
 import { getSttEngine, shouldStoreCardPhotos } from "@/lib/repo/settings";
 import { listVocab } from "@/lib/repo/voice-vocab";
@@ -50,7 +51,7 @@ export async function BillingSection() {
   if (!planSummary) return null;
   const [used, unlimited] = await Promise.all([
     hasLLM() ? aiActionsUsedThisMonth() : Promise.resolve(0),
-    hasLLM() ? gate.hasUnlimitedAi(userId) : Promise.resolve(false),
+    hasLLM() ? gate.hasUnlimitedAi(userId, await getDb()) : Promise.resolve(false),
   ]);
   const aiUsage = hasLLM() ? { used, cap: await effectiveMonthlyAiCap(), unlimited } : null;
   return <BillingSetting summary={planSummary} aiUsage={aiUsage} />;

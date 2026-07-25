@@ -8,9 +8,9 @@ import {
   loadPositionCache,
   savePositionCache,
 } from "../logic/position-cache";
+import { runWorker } from "./worker-runner";
 import type { GraphIndexes } from "../logic/indexes";
 import type { FullGraphPayload, PositionMap } from "../types";
-import type { LayoutRequest, WorkerReply } from "./messages";
 
 export interface LayoutResult {
   positions: PositionMap;
@@ -86,57 +86,4 @@ export function runLayout(
       worker?.terminate();
     },
   };
-}
-
-function runWorker(
-  payload: FullGraphPayload,
-  nodeIds: readonly string[],
-  seed: PositionMap,
-  iterations: number,
-  onProgress: (share: number) => void,
-  onWorker: (worker: Worker) => void,
-): Promise<PositionMap> {
-  const indexOf = new Map(nodeIds.map((id, index) => [id, index]));
-  const flat = new Float64Array(nodeIds.length * 2);
-  nodeIds.forEach((id, i) => {
-    const pos = seed.get(id) ?? { x: 0, y: 0 };
-    flat[i * 2] = pos.x;
-    flat[i * 2 + 1] = pos.y;
-  });
-  const pairs: number[] = [];
-  for (const edge of payload.edges) {
-    const src = indexOf.get(edge.source);
-    const dst = indexOf.get(edge.target);
-    if (src === undefined || dst === undefined) continue;
-    pairs.push(src, dst);
-  }
-
-  return new Promise<PositionMap>((resolve, reject) => {
-    const worker = new Worker(new URL("./fa2.worker.ts", import.meta.url), { type: "module" });
-    onWorker(worker);
-    worker.onmessage = (event: MessageEvent<WorkerReply>) => {
-      const reply = event.data;
-      if (reply.type === "progress") {
-        onProgress(reply.done);
-        return;
-      }
-      const result: PositionMap = new Map();
-      nodeIds.forEach((id, i) => {
-        result.set(id, { x: reply.positions[i * 2], y: reply.positions[i * 2 + 1] });
-      });
-      worker.terminate();
-      resolve(result);
-    };
-    worker.onerror = (event) => {
-      worker.terminate();
-      reject(new Error(event.message || "Layout worker failed"));
-    };
-    const request: LayoutRequest = {
-      type: "layout",
-      positions: flat,
-      edges: Uint32Array.from(pairs),
-      iterations,
-    };
-    worker.postMessage(request, [request.positions.buffer, request.edges.buffer]);
-  });
 }

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/node-postgres";
+import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { getPool } from "../db/pool";
 import { ensureEeSchema } from "../db/bootstrap";
 import { eeUser, subscriptions, type SubscriptionRow, type SubscriptionPlan, type SubscriptionStatus } from "../db/schema";
@@ -10,8 +10,19 @@ async function db() {
   return drizzle(getPool());
 }
 
-export async function getSubscriptionForUser(userId: string): Promise<SubscriptionRow | null> {
-  const [row] = await (await db()).select().from(subscriptions).where(eq(subscriptions.userId, userId));
+export async function getSubscriptionForUser(
+  userId: string,
+  scopedDb?: NodePgDatabase,
+): Promise<SubscriptionRow | null> {
+  // Reuse the request's already-checked-out scoped connection when the caller
+  // passes one (the AI-metering hot path) instead of opening a second checkout
+  // from the small tenant pool — that second acquire is what times out under
+  // load. `subscriptions` has NO RLS (tables-ddl.ts) and filters by explicit
+  // userId, so a scoped connection reads it exactly like the global one. Falls
+  // back to db() (which ensures the EE schema) when no connection is passed
+  // (e.g. getPlanSummary).
+  const conn = scopedDb ?? (await db());
+  const [row] = await conn.select().from(subscriptions).where(eq(subscriptions.userId, userId));
   return row ?? null;
 }
 

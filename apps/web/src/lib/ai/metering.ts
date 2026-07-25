@@ -76,7 +76,12 @@ export async function aiActionsUsedThisMonth(): Promise<number> {
 }
 
 export class AiBudgetError extends Error {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    /** Which budget tripped: the monthly billing cap, or the in-memory burst
+     *  guard. Lets callers branch on the two cases (same message unchanged). */
+    public readonly kind: "cap" | "burst",
+  ) {
     super(message);
     this.name = "AiBudgetError";
   }
@@ -94,14 +99,14 @@ export async function assertAiBudget(userId: string): Promise<void> {
     await enforceRateLimit(userId, "ai");
   } catch (error) {
     if (error instanceof RateLimitError) {
-      throw new AiBudgetError("You're doing that a lot — wait a few seconds and try again.");
+      throw new AiBudgetError("You're doing that a lot — wait a few seconds and try again.", "burst");
     }
     throw error;
   }
-  if (await (await getBillingGate()).hasUnlimitedAi(userId)) return;
+  if (await (await getBillingGate()).hasUnlimitedAi(userId, await getDb())) return;
   const cap = await effectiveMonthlyAiCap();
   if ((await aiActionsUsedThisMonth()) >= cap) {
-    throw new AiBudgetError(`Monthly AI action cap reached (${cap}).`);
+    throw new AiBudgetError(`Monthly AI action cap reached (${cap}).`, "cap");
   }
 }
 

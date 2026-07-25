@@ -1,3 +1,4 @@
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { getSubscriptionForUser } from "./repo";
 import { createCheckoutUrl, createPortalUrl } from "./checkout";
 import type { SubscriptionRow } from "../db/schema";
@@ -17,8 +18,8 @@ export function isUnlimitedAiSub(sub: SubscriptionRow | null, now: Date = new Da
   return sub.currentPeriodEnd === null || sub.currentPeriodEnd > now;
 }
 
-export async function hasUnlimitedAi(userId: string): Promise<boolean> {
-  return isUnlimitedAiSub(await getSubscriptionForUser(userId));
+export async function hasUnlimitedAi(userId: string, db?: NodePgDatabase): Promise<boolean> {
+  return isUnlimitedAiSub(await getSubscriptionForUser(userId, db));
 }
 
 export async function getPlanSummary(userId: string) {

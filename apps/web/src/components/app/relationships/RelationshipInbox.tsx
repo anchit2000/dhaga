@@ -3,6 +3,7 @@ import {
   confirmEdgeSuggestionAction,
   dismissEdgeSuggestionAction,
 } from "@/lib/actions/edge-suggestions";
+import { ActionForm } from "@/components/app/ActionForm";
 import type { EdgeSuggestionView } from "@/lib/repo/edge-suggestions";
 import { EntityChoices, type NodeTypeOption } from "./EntityChoices";
 import { PendingChoice } from "./PendingChoice";
@@ -11,7 +12,11 @@ function PersonChoices({ suggestion }: { suggestion: EdgeSuggestionView }) {
   return (
     <div className="flex flex-wrap gap-2">
       {suggestion.candidates.map((candidate) => (
-        <form key={candidate.id} action={confirmEdgeSuggestionAction}>
+        <ActionForm
+          key={candidate.id}
+          action={confirmEdgeSuggestionAction}
+          errorMessage="Couldn't confirm the relationship."
+        >
           <input type="hidden" name="suggestionId" value={suggestion.id} />
           <input type="hidden" name="contactId" value={candidate.id} />
           <PendingChoice>
@@ -20,18 +25,24 @@ function PersonChoices({ suggestion }: { suggestion: EdgeSuggestionView }) {
               <span className="text-fog"> · {candidate.title}</span>
             ) : null}
           </PendingChoice>
-        </form>
+        </ActionForm>
       ))}
-      <form action={confirmEdgeSuggestionAction}>
+      <ActionForm
+        action={confirmEdgeSuggestionAction}
+        errorMessage="Couldn't confirm the relationship."
+      >
         <input type="hidden" name="suggestionId" value={suggestion.id} />
         <PendingChoice variant="ghost">
           + New “{suggestion.objectName}”
         </PendingChoice>
-      </form>
-      <form action={dismissEdgeSuggestionAction}>
+      </ActionForm>
+      <ActionForm
+        action={dismissEdgeSuggestionAction}
+        errorMessage="Couldn't dismiss the suggestion."
+      >
         <input type="hidden" name="suggestionId" value={suggestion.id} />
         <PendingChoice variant="ghost">Dismiss</PendingChoice>
-      </form>
+      </ActionForm>
     </div>
   );
 }

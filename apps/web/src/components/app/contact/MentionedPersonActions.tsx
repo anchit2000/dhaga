@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ActionForm } from "@/components/app/ActionForm";
 import {
   mergeMentionedContactAction,
   promoteMentionedContactAction,
@@ -24,12 +25,15 @@ export function MentionedPersonActions({
         {name} was extracted from a note and is not in your People list yet.
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
-        <form action={promoteMentionedContactAction}>
+        <ActionForm
+          action={promoteMentionedContactAction}
+          errorMessage="Couldn't add them to People — try again."
+        >
           <input type="hidden" name="contactId" value={contactId} />
           <button className="h-8 rounded-full bg-amber px-3 text-xs font-semibold text-ink">
             Add to People
           </button>
-        </form>
+        </ActionForm>
         {candidates.length > 0 ? (
           <button
             type="button"
@@ -41,7 +45,11 @@ export function MentionedPersonActions({
         ) : null}
       </div>
       {mergeOpen ? (
-        <form action={mergeMentionedContactAction} className="mt-3 flex flex-wrap gap-2">
+        <ActionForm
+          action={mergeMentionedContactAction}
+          errorMessage="Couldn't merge — try again."
+          className="mt-3 flex flex-wrap gap-2"
+        >
           <input type="hidden" name="mentionId" value={contactId} />
           <select
             name="targetId"
@@ -62,7 +70,7 @@ export function MentionedPersonActions({
           <button className="h-9 rounded-full border border-amber/40 px-3 text-xs text-ember">
             Merge relationships
           </button>
-        </form>
+        </ActionForm>
       ) : null}
     </section>
   );

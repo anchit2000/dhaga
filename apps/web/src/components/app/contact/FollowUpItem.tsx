@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Check, Pencil } from "lucide-react";
+import { ActionForm } from "@/components/app/ActionForm";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
 import {
@@ -76,7 +77,11 @@ export function FollowUpItem({
 
   return (
     <li className="flex items-center gap-2.5 rounded-lg border border-seam bg-panel px-3 py-2">
-      <form action={completeFollowUpAction} className="shrink-0">
+      <ActionForm
+        action={completeFollowUpAction}
+        errorMessage="Couldn't complete the follow-up — try again."
+        className="shrink-0"
+      >
         <input type="hidden" name="followUpId" value={followUp.id} />
         <input type="hidden" name="contactId" value={contactId} />
         <button
@@ -87,7 +92,7 @@ export function FollowUpItem({
         >
           <Check className="size-3" />
         </button>
-      </form>
+      </ActionForm>
       <p className="min-w-0 flex-1 text-sm text-paper">
         {followUp.action}
         {followUp.dueDate ? (
@@ -108,11 +113,15 @@ export function FollowUpItem({
       >
         <Pencil className="size-3.5" />
       </button>
-      <form action={dismissFollowUpAction} className="shrink-0">
+      <ActionForm
+        action={dismissFollowUpAction}
+        errorMessage="Couldn't delete that follow-up."
+        className="shrink-0"
+      >
         <input type="hidden" name="followUpId" value={followUp.id} />
         <input type="hidden" name="contactId" value={contactId} />
         <DeleteButton label="Delete follow-up" />
-      </form>
+      </ActionForm>
     </li>
   );
 }

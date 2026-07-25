@@ -2,6 +2,7 @@
 
 import { useFormStatus } from "react-dom";
 import { Loader2 } from "lucide-react";
+import { ActionForm } from "@/components/app/ActionForm";
 import { forgetContactAction } from "@/lib/actions/contacts";
 
 function ForgetSubmit({ name }: { name: string }) {
@@ -35,9 +36,12 @@ export function ForgetButton({
   name: string;
 }) {
   return (
-    <form action={forgetContactAction}>
+    <ActionForm
+      action={forgetContactAction}
+      errorMessage="Couldn't forget this contact — try again."
+    >
       <input type="hidden" name="contactId" value={contactId} />
       <ForgetSubmit name={name} />
-    </form>
+    </ActionForm>
   );
 }

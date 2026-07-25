@@ -1,3 +1,4 @@
+import { ActionForm } from "@/components/app/ActionForm";
 import {
   deleteEntityNoteAction,
   deleteNoteAction,
@@ -45,13 +46,19 @@ export function NoteList({ contactId, entityId, notes }: NoteListProps) {
           <div className="flex items-center gap-0.5">
             {contactId &&
               (REPROCESSABLE_NOTE_KINDS as readonly string[]).includes(note.kind) && (
-                <form action={reprocessNoteAction}>
+                <ActionForm
+                  action={reprocessNoteAction}
+                  errorMessage="Couldn't reprocess that note — try again."
+                >
                   <input type="hidden" name="noteId" value={note.id} />
                   <input type="hidden" name="contactId" value={contactId} />
                   <ReprocessButton />
-                </form>
+                </ActionForm>
               )}
-            <form action={contactId ? deleteNoteAction : deleteEntityNoteAction}>
+            <ActionForm
+              action={contactId ? deleteNoteAction : deleteEntityNoteAction}
+              errorMessage="Couldn't delete that note."
+            >
               <input type="hidden" name="noteId" value={note.id} />
               {contactId ? (
                 <input type="hidden" name="contactId" value={contactId} />
@@ -65,7 +72,7 @@ export function NoteList({ contactId, entityId, notes }: NoteListProps) {
                     : "Delete note"
                 }
               />
-            </form>
+            </ActionForm>
           </div>
         </li>
       ))}

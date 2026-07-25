@@ -2,6 +2,7 @@ import {
   confirmEdgeSuggestionAction,
   dismissEdgeSuggestionAction,
 } from "@/lib/actions/edge-suggestions";
+import { ActionForm } from "@/components/app/ActionForm";
 import { Select } from "@/components/ui/select";
 import { PendingChoice } from "./PendingChoice";
 import type { EdgeSuggestionView } from "@/lib/repo/edge-suggestions";
@@ -42,7 +43,7 @@ export function EntityChoices({
   return (
     <div className="flex flex-wrap items-center gap-2">
       {suggestion.candidates.map((candidate) => (
-        <form key={candidate.id} action={confirmEdgeSuggestionAction}>
+        <ActionForm key={candidate.id} action={confirmEdgeSuggestionAction} errorMessage="Couldn't link that entity.">
           <input type="hidden" name="suggestionId" value={suggestion.id} />
           <input type="hidden" name="entityId" value={candidate.id} />
           <PendingChoice>
@@ -51,11 +52,12 @@ export function EntityChoices({
               <span className="text-fog"> · {candidate.title}</span>
             ) : null}
           </PendingChoice>
-        </form>
+        </ActionForm>
       ))}
       {nodeTypes.length > 0 ? (
-        <form
+        <ActionForm
           action={confirmEdgeSuggestionAction}
+          errorMessage="Couldn't create that entity."
           className="flex flex-wrap items-center gap-2"
         >
           <input type="hidden" name="suggestionId" value={suggestion.id} />
@@ -74,12 +76,15 @@ export function EntityChoices({
           <PendingChoice variant="ghost">
             + New “{suggestion.objectName}”
           </PendingChoice>
-        </form>
+        </ActionForm>
       ) : null}
-      <form action={dismissEdgeSuggestionAction}>
+      <ActionForm
+        action={dismissEdgeSuggestionAction}
+        errorMessage="Couldn't dismiss the suggestion."
+      >
         <input type="hidden" name="suggestionId" value={suggestion.id} />
         <PendingChoice variant="ghost">Dismiss</PendingChoice>
-      </form>
+      </ActionForm>
     </div>
   );
 }

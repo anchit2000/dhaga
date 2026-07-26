@@ -3,9 +3,9 @@
 import { useRef, useState, type RefObject } from "react";
 import { Camera, Loader2, Mic, Square, Upload, UserPlus } from "lucide-react";
 import { type DockItemData } from "@/components/ui/dock";
+import { MAX_CARD_IMAGES } from "@/utils/constants/app";
 import { PhotoCropper } from "../../PhotoCropper";
-import { WebcamCapture } from "../../WebcamCapture";
-import { downscalePhoto } from "../../downscalePhoto";
+import { WebcamCapture } from "../WebcamCapture";
 import { DockBar } from "./dock-bar";
 
 /**
@@ -47,18 +47,21 @@ export function QuickAddDock({
   floating?: boolean;
 }) {
   const [showCamera, setShowCamera] = useState(false);
+  const [capturedPhotos, setCapturedPhotos] = useState<File[]>([]);
   const [photoToCrop, setPhotoToCrop] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const voiceBusy = voice ? voice.transcribing || voice.loadingProgress !== null : false;
   const voiceListening = voice?.listening ?? false;
   const showVoice = !voice || voice.supported;
 
-  function submitPhoto(file: File): void {
-    void downscalePhoto(file).then((downscaled) => {
-      const formData = new FormData();
-      formData.set("photo", downscaled);
-      formAction(formData);
-    });
+  function submitPhotos(files: File[]): void {
+    if (files.length === 0) return;
+    // One FormData entry per image, all named `photo`; QuickAddForm's action
+    // reducer downscales each before the request and the server merges them
+    // into ONE contact — the same contract the Card-photo tab uses.
+    const formData = new FormData();
+    for (const file of files) formData.append("photo", file);
+    formAction(formData);
   }
 
   const items: DockItemData[] = [
@@ -110,12 +113,23 @@ export function QuickAddDock({
         }}
       />
       {showCamera ? (
+        // Shoot several frames (front, back, extra pages) into a local tray,
+        // then "Done" scans them together into ONE contact. ✕ discards.
         <WebcamCapture
-          onCapture={(file) => {
+          count={capturedPhotos.length}
+          max={MAX_CARD_IMAGES}
+          onCapture={(file) =>
+            setCapturedPhotos((prev) => [...prev, file].slice(0, MAX_CARD_IMAGES))
+          }
+          onDone={() => {
             setShowCamera(false);
-            setPhotoToCrop(file);
+            submitPhotos(capturedPhotos);
+            setCapturedPhotos([]);
           }}
-          onClose={() => setShowCamera(false)}
+          onClose={() => {
+            setShowCamera(false);
+            setCapturedPhotos([]);
+          }}
         />
       ) : null}
       {photoToCrop ? (
@@ -124,7 +138,7 @@ export function QuickAddDock({
           onCancel={() => setPhotoToCrop(null)}
           onConfirm={(cropped) => {
             setPhotoToCrop(null);
-            submitPhoto(cropped);
+            submitPhotos([cropped]);
           }}
         />
       ) : null}

@@ -18,11 +18,16 @@ export function WebcamCapture({
   onClose,
   count,
   max,
+  onDone,
 }: {
   /** Called once per captured frame; the caller appends it to the image tray. */
   onCapture: (file: File) => void;
-  /** Close the camera (Done, cancel, or the file-upload fallback). */
+  /** Cancel/close the camera (top-right ✕ or the file-upload fallback). */
   onClose: () => void;
+  /** Confirm the captured frames (the "Done" button). Falls back to onClose
+   *  when absent — callers with a persistent tray (CardPhotoCapture) just close;
+   *  the dock passes this to submit the frames it accumulated. */
+  onDone?: () => void;
   /** Current tray size — drives the live n/max badge and the full state. */
   count: number;
   /** MAX_CARD_IMAGES — capture is disabled once the tray is full. */
@@ -126,7 +131,7 @@ export function WebcamCapture({
               <Camera className="size-5" />
               {full ? "Tray full" : "Capture"}
             </Button>
-            <Button type="button" variant="outline" size="lg" onClick={onClose}>
+            <Button type="button" variant="outline" size="lg" onClick={onDone ?? onClose}>
               <Check className="size-5" />
               {count > 0 ? `Done (${count})` : "Done"}
             </Button>

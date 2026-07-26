@@ -18,6 +18,9 @@
 /test-results/
 /playwright-report/
 
+# playwright E2E: saved auth session (contains cookies — never commit)
+/e2e/.auth/
+
 # next.js
 /.next/
 /out/

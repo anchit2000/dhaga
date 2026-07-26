@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { authClient } from "@/lib/auth/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { PasswordFields } from "@/components/app/auth/PasswordFields";
+import { MIN_PASSWORD_LENGTH } from "@/utils/constants/auth";
 
 interface ResetPasswordFormProps {
   token: string;
@@ -14,12 +14,16 @@ interface ResetPasswordFormProps {
 
 export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
   const router = useRouter();
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | undefined>();
 
+  const invalid = newPassword.length < MIN_PASSWORD_LENGTH || newPassword !== confirmPassword;
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
-    const newPassword = String(new FormData(event.currentTarget).get("newPassword") ?? "");
+    if (invalid) return;
     setPending(true);
     setError(undefined);
     const { error: resetError } = await authClient.resetPassword({ newPassword, token });
@@ -33,27 +37,20 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="newPassword" className="text-fog">
-          New password
-        </Label>
-        <Input
-          id="newPassword"
-          name="newPassword"
-          type="password"
-          required
-          minLength={8}
-          autoFocus
-          autoComplete="new-password"
-          className="h-11"
-        />
-      </div>
+      <PasswordFields
+        password={newPassword}
+        confirmPassword={confirmPassword}
+        onPasswordChange={setNewPassword}
+        onConfirmChange={setConfirmPassword}
+        confirmLabel="Confirm new password"
+        autoFocus
+      />
       {error ? (
         <p className="text-sm text-red-400" role="alert">
           {error}
         </p>
       ) : null}
-      <Button type="submit" disabled={pending} className="w-full">
+      <Button type="submit" disabled={pending || invalid} className="w-full">
         {pending ? <Loader2 className="size-4 animate-spin" /> : null}
         Set new password
       </Button>

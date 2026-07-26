@@ -15,6 +15,13 @@ export const SOCIAL_PROVIDERS = [
 
 export type SocialProviderId = (typeof SOCIAL_PROVIDERS)[number]["id"];
 
+/**
+ * Minimum sign-in password length. Matches better-auth's default `minPasswordLength`
+ * (enforced server-side) — the single source of truth for every password-choosing
+ * surface (reset, signup, in-app change) and the strength meter's floor.
+ */
+export const MIN_PASSWORD_LENGTH = 8;
+
 export interface SocialProviderOption {
   id: SocialProviderId;
   label: string;

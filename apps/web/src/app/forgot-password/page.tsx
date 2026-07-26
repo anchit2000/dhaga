@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/guard";
 import { ForgotPasswordForm } from "@/components/app/auth/ForgotPasswordForm";
+import { ModeToggle } from "@/components/brand/ModeToggle";
 import { ThreadMark } from "@/components/brand/ThreadMark";
 
 export const metadata = { title: "Reset your password — Dhaga" };
@@ -10,7 +11,10 @@ export default async function ForgotPasswordPage() {
   if (await getCurrentUser()) redirect("/app");
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-ink px-4">
+    <main className="relative flex min-h-dvh items-center justify-center bg-ink px-4">
+      <div className="absolute right-4 top-4">
+        <ModeToggle />
+      </div>
       <div className="w-full max-w-sm">
         <p className="mb-8 flex items-center justify-center gap-2.5 font-display text-3xl tracking-tight text-paper">
           <ThreadMark size={32} />

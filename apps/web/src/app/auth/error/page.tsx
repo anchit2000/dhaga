@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ModeToggle } from "@/components/brand/ModeToggle";
 import { ThreadMark } from "@/components/brand/ThreadMark";
 
 interface AuthErrorPageProps {
@@ -12,7 +13,10 @@ export default async function AuthErrorPage({ searchParams }: AuthErrorPageProps
   const accessRequested = error ? ACCESS_REQUEST_ERRORS.has(error.toLowerCase()) : false;
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-ink px-4">
+    <main className="relative flex min-h-dvh items-center justify-center bg-ink px-4">
+      <div className="absolute right-4 top-4">
+        <ModeToggle />
+      </div>
       <div className="w-full max-w-sm rounded-2xl border border-seam bg-panel p-6 text-center">
         <p className="mb-6 flex items-center justify-center gap-2.5 font-display text-3xl tracking-tight text-paper">
           <ThreadMark size={32} />

@@ -7,13 +7,12 @@ import { authClient } from "@/lib/auth/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordFields } from "@/components/app/auth/PasswordFields";
+import { MIN_PASSWORD_LENGTH } from "@/utils/constants/auth";
 
 interface ChangePasswordProps {
   email: string;
 }
-
-// Matches the minimum enforced by ResetPasswordForm (better-auth's default).
-const MIN_PASSWORD_LENGTH = 8;
 
 /**
  * Change the sign-in password from inside the app. Uses better-auth's
@@ -31,17 +30,13 @@ export function ChangePassword({ email }: ChangePasswordProps) {
   const [sendingReset, setSendingReset] = useState(false);
   const [error, setError] = useState<string | undefined>();
 
+  const passwordInvalid =
+    newPassword.length < MIN_PASSWORD_LENGTH || newPassword !== confirmPassword;
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     setError(undefined);
-    if (newPassword.length < MIN_PASSWORD_LENGTH) {
-      setError(`New password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setError("New passwords don't match.");
-      return;
-    }
+    if (passwordInvalid) return;
     setPending(true);
     const { error: changeError } = await authClient.changePassword({
       currentPassword,
@@ -93,36 +88,15 @@ export function ChangePassword({ email }: ChangePasswordProps) {
             className="h-10"
           />
         </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="space-y-1">
-            <Label htmlFor="new-password" className="text-fog">
-              New password
-            </Label>
-            <Input
-              id="new-password"
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              minLength={MIN_PASSWORD_LENGTH}
-              autoComplete="new-password"
-              className="h-10"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="confirm-password" className="text-fog">
-              Confirm new password
-            </Label>
-            <Input
-              id="confirm-password"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              minLength={MIN_PASSWORD_LENGTH}
-              autoComplete="new-password"
-              className="h-10"
-            />
-          </div>
-        </div>
+        <PasswordFields
+          password={newPassword}
+          confirmPassword={confirmPassword}
+          onPasswordChange={setNewPassword}
+          onConfirmChange={setConfirmPassword}
+          passwordLabel="New password"
+          confirmLabel="Confirm new password"
+          inputClassName="h-10"
+        />
         {error ? (
           <p className="text-sm text-red-400" role="alert">
             {error}
@@ -130,7 +104,7 @@ export function ChangePassword({ email }: ChangePasswordProps) {
         ) : null}
         <Button
           type="submit"
-          disabled={pending || !currentPassword || !newPassword || !confirmPassword}
+          disabled={pending || !currentPassword || !newPassword || !confirmPassword || passwordInvalid}
         >
           {pending ? <Loader2 className="size-4 animate-spin" /> : null}
           Change password

@@ -8,11 +8,15 @@ import {
   RELATIONSHIP_KIND_LABELS,
 } from "@/utils/constants/graph";
 import type { GraphTarget } from "@/lib/repo/graph-data";
+import { CreatePersonPanel } from "./CreatePersonPanel";
 
 /**
  * Debounced typeahead over /api/graph/targets (contacts, companies, entities,
  * events) — same shared hook as WarmPathPanel's target search. The fixed
- * source node is excluded so a node can't relate to itself.
+ * source node is excluded so a node can't relate to itself. When the person
+ * isn't in the graph yet, "Add a new person…" creates one inline (mirroring
+ * PredicateField's "Create new type…" flow) and selects it, so the add takes
+ * over without leaving the dialog.
  */
 export function TargetPicker({
   sourceId,
@@ -25,7 +29,8 @@ export function TargetPicker({
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
-  const targets = useTargetSearch(query, { enabled: open && !value });
+  const [creating, setCreating] = useState(false);
+  const targets = useTargetSearch(query, { enabled: open && !value && !creating });
   const results = targets.filter((target) => target.id !== sourceId);
 
   return (
@@ -37,6 +42,7 @@ export function TargetPicker({
           setQuery(event.target.value);
           setOpen(true);
         }}
+        onFocus={() => setOpen(true)}
         onBlur={() =>
           setTimeout(() => setOpen(false), GRAPH_TARGET_RESULTS_DISMISS_MS)
         }
@@ -44,8 +50,8 @@ export function TargetPicker({
         aria-label="Relationship target"
         className="h-10"
       />
-      {results.length > 0 ? (
-        <ul className="absolute z-10 mt-1 w-full rounded-lg border border-seam bg-panel py-1 shadow-lg">
+      {open && !value && !creating ? (
+        <ul className="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border border-seam bg-panel py-1 shadow-lg">
           {results.map((target) => (
             <li key={`${target.kind}:${target.id}`}>
               <button
@@ -68,7 +74,28 @@ export function TargetPicker({
               </button>
             </li>
           ))}
+          <li className={results.length > 0 ? "border-t border-seam" : undefined}>
+            <button
+              type="button"
+              onClick={() => setCreating(true)}
+              className="w-full px-2.5 py-1.5 text-left text-sm text-amber hover:bg-wash/[0.05]"
+            >
+              Add a new person…
+            </button>
+          </li>
         </ul>
+      ) : null}
+
+      {creating ? (
+        <CreatePersonPanel
+          initialName={query.trim()}
+          onCreated={(target) => {
+            onSelect(target);
+            setCreating(false);
+            setOpen(false);
+          }}
+          onCancel={() => setCreating(false)}
+        />
       ) : null}
     </div>
   );

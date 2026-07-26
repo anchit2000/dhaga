@@ -1,33 +1,35 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { useState } from "react";
 import { Plus } from "lucide-react";
-import { addFactAction } from "@/lib/actions/manual-entries";
-import type { NoteFormState } from "@/lib/actions/notes";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { SubmitButton } from "../SubmitButton";
 
-/** Add a fact by hand — no note, no extraction. The fact types come from the
- *  server (FactList) so this client component never imports @dhaga/core's
- *  runtime (which would pull server-only LLM code into the bundle). */
+/** Add a fact by hand — no note, no extraction. The typed text and picked type
+ *  go up to the host (FactListClient), which shows the fact optimistically and
+ *  runs the write. The fact types come from the server (as a prop) so this
+ *  client component never imports @dhaga/core's runtime (which would pull
+ *  server-only LLM code into the bundle). */
 export function AddFactForm({
-  contactId,
   factTypes,
+  onAdd,
 }: {
-  contactId: string;
   factTypes: readonly string[];
+  onAdd: (text: string, type: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const formRef = useRef<HTMLFormElement>(null);
-  const [state, formAction] = useActionState<NoteFormState, FormData>(
-    async (previous, formData) => {
-      const result = await addFactAction(previous, formData);
-      if (!result.error) formRef.current?.reset();
-      return result;
-    },
-    {},
-  );
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>): void {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const text = String(data.get("text") ?? "").trim();
+    const type = String(data.get("type") ?? "").trim();
+    if (!text || !type) return;
+    onAdd(text, type);
+    form.reset();
+  }
 
   if (!open) {
     return (
@@ -44,11 +46,9 @@ export function AddFactForm({
 
   return (
     <form
-      ref={formRef}
-      action={formAction}
+      onSubmit={handleSubmit}
       className="space-y-2 rounded-lg border border-seam bg-panel p-3"
     >
-      <input type="hidden" name="contactId" value={contactId} />
       <Input name="text" required autoFocus placeholder="A fact about them" className="text-sm" />
       <div className="flex flex-wrap items-center gap-2">
         <Select
@@ -72,11 +72,6 @@ export function AddFactForm({
           Cancel
         </button>
       </div>
-      {state.error ? (
-        <p className="text-sm text-red-400" role="alert">
-          {state.error}
-        </p>
-      ) : null}
     </form>
   );
 }

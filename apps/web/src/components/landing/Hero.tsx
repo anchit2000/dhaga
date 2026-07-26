@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { GITHUB_URL, HERO } from "@/utils/constants/landing";
+import { HeroFlow } from "./HeroFlow";
+import { HeroSubline } from "./HeroSubline";
 import { ThreadCanvas } from "./ThreadCanvas";
 import { AppWindow } from "./AppWindow";
 import { CaptureOrbit } from "./CaptureOrbit";
@@ -27,6 +29,10 @@ export function Hero() {
           The best contact you made this year — what was their{" "}
           <em className="text-ember italic">name</em> again?
         </h1>
+        <HeroSubline
+          className={`mx-auto mt-5 max-w-2xl text-balance font-display text-xl leading-snug font-medium text-paper/90 sm:text-2xl ${RISE}`}
+          style={{ animationDelay: "0.2s" }}
+        />
         <p
           className={`mx-auto mt-6 max-w-2xl text-pretty text-lg text-fog ${RISE}`}
           style={{ animationDelay: "0.26s" }}
@@ -50,9 +56,15 @@ export function Hero() {
             {HERO.secondaryCta}
           </Button>
         </div>
-        <p
-          className={`mt-5 text-sm ${RISE}`}
+        <div
+          className={`mt-9 ${RISE}`}
           style={{ animationDelay: "0.46s" }}
+        >
+          <HeroFlow />
+        </div>
+        <p
+          className={`mt-6 text-sm ${RISE}`}
+          style={{ animationDelay: "0.52s" }}
         >
           <Link
             href="/blog/general/why-i-built-dhaga"
@@ -63,13 +75,13 @@ export function Hero() {
         </p>
         <p
           className={`mt-4 text-sm text-fog ${RISE}`}
-          style={{ animationDelay: "0.52s" }}
+          style={{ animationDelay: "0.58s" }}
         >
           Free to start · Self-hostable & private · AGPL-3.0
         </p>
         <p
           className={`mt-6 text-sm text-fog/70 ${RISE}`}
-          style={{ animationDelay: "0.62s" }}
+          style={{ animationDelay: "0.64s" }}
         >
           <span className="text-paper/80">{HERO.tagline}</span>{" "}
           {HERO.taglineNote}

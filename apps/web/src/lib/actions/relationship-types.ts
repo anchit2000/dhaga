@@ -7,6 +7,7 @@ import {
   deleteRelationshipType,
   listRelationshipTypes,
 } from "@/lib/repo/relationship-types";
+import { PreconditionError } from "@/lib/repo/errors";
 import { MutationError, mutation } from "@/lib/actions/mutation";
 import { PREDICATE_SLUG_PATTERN } from "@/utils/constants/graph";
 import { toSlug } from "@/utils/slug";
@@ -56,12 +57,12 @@ export async function createRelationshipTypeAction(input: {
     try {
       return await createRelationshipType({ slug, forwardLabel, inverseLabel });
     } catch (error) {
-      // createRelationshipType throws a hand-written, user-safe Error on a
-      // duplicate slug. Surface that as a specific outcome, not the generic
-      // transient retry copy.
-      throw new MutationError(
-        error instanceof Error ? error.message : "Could not create the type.",
-      );
+      // A PreconditionError is a hand-written, user-safe message (duplicate
+      // slug) — surface it as a specific outcome. Any other throw is a real
+      // infra failure: re-throw so mutation() logs it and returns the generic
+      // transient retry copy rather than a raw SQL/timeout string.
+      if (error instanceof PreconditionError) throw new MutationError(error.message);
+      throw error;
     }
   });
   if (!r.ok) return { error: r.error };

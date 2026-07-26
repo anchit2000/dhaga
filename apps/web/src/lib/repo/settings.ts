@@ -37,6 +37,33 @@ export async function setSetting(key: string, value: string): Promise<void> {
   `);
 }
 
+/**
+ * Atomically append `value` to a JSON-array setting, deduping — in ONE
+ * lock-free upsert. Two concurrent appends can't lose an update the way a
+ * read-modify-write (getSetting → push → setSetting) can, and the single
+ * statement also covers the first append when no row exists yet (the SELECT ...
+ * FOR UPDATE approach can't lock a row that isn't there). On insert the value
+ * becomes a one-element array; on conflict we union the existing array with the
+ * incoming one and keep only DISTINCT elements. Conflict-by-constraint-name for
+ * the same self-host/EE reason setSetting documents above.
+ */
+export async function appendToSettingArray(key: string, value: string): Promise<void> {
+  const db = await getDb();
+  await db.execute(sql`
+    insert into settings (key, value, updated_at)
+    values (${key}, to_jsonb(array[${value}]::text[])::text, now())
+    on conflict on constraint settings_pkey
+    do update set
+      value = (
+        select jsonb_agg(distinct e)::text
+        from jsonb_array_elements_text(
+          coalesce(settings.value, '[]')::jsonb || excluded.value::jsonb
+        ) as e
+      ),
+      updated_at = now()
+  `);
+}
+
 /** Whether scanned card photos are kept as visual receipts (default: yes). */
 export async function shouldStoreCardPhotos(): Promise<boolean> {
   return (await getSetting(STORE_CARD_PHOTOS_KEY)) !== "off";

@@ -1,5 +1,6 @@
 import { Pool } from "pg";
 import type { PoolClient } from "pg";
+import { withConnectRetry } from "./connect-retry";
 
 /**
  * EE connects to the exact same Postgres database as core (same tables) —
@@ -52,18 +53,27 @@ export function getPool(): Pool {
   // tenant + core small enough that several instances fit under it — default
   // 3 + 2 = 5/instance ⇒ ~9 warm instances. Do not raise blindly: one instance
   // hoarding the whole pool is the EMAXCONNSESSION outage this guards against.
-  pool ??= new Pool({
-    connectionString,
-    max: tenantPoolMax(),
-    // No warm floor: idle backends drain fully so this instance never holds a
-    // tenant slot it isn't using against the shared pool.
-    min: 0,
-    connectionTimeoutMillis: posIntEnv(process.env.DB_POOL_CONNECTION_TIMEOUT_MS, POOL_CONNECTION_TIMEOUT_MS_DEFAULT),
-    idleTimeoutMillis: posIntEnv(process.env.DB_POOL_IDLE_TIMEOUT_MS, POOL_IDLE_TIMEOUT_MS_DEFAULT),
-    // Longer-lived idle connections can be silently dropped by NAT/LB idle
-    // reaping; keepAlive holds the socket open.
-    keepAlive: true,
-  });
+  //
+  // withConnectRetry patches this pool's connect()/query() so pool-bound
+  // `drizzle(getPool())` control-plane reads (admin/repo.ts, access-requests,
+  // billing, referrals, subscription-admin) ride out a momentary
+  // EMAXCONNSESSION / connect-timeout instead of throwing — the explicit
+  // tenant/admin acquire paths already retry via connectWithRetry. See
+  // ./connect-retry.
+  pool ??= withConnectRetry(
+    new Pool({
+      connectionString,
+      max: tenantPoolMax(),
+      // No warm floor: idle backends drain fully so this instance never holds a
+      // tenant slot it isn't using against the shared pool.
+      min: 0,
+      connectionTimeoutMillis: posIntEnv(process.env.DB_POOL_CONNECTION_TIMEOUT_MS, POOL_CONNECTION_TIMEOUT_MS_DEFAULT),
+      idleTimeoutMillis: posIntEnv(process.env.DB_POOL_IDLE_TIMEOUT_MS, POOL_IDLE_TIMEOUT_MS_DEFAULT),
+      // Longer-lived idle connections can be silently dropped by NAT/LB idle
+      // reaping; keepAlive holds the socket open.
+      keepAlive: true,
+    }),
+  );
   return pool;
 }
 

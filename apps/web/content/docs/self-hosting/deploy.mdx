@@ -255,17 +255,16 @@ multi-tenant in containers, additionally:
    `docker compose exec -T db psql -U dhaga -d dhaga < packages/ee/scripts/create-app-role.sql`,
    and point `DATABASE_URL` at the resulting non-`BYPASSRLS` `dhaga_app`
    role — see "The Postgres role DATABASE_URL connects as matters" above.
-2. Keep pooling **session-scoped**: connect directly (what the compose file
-   does) or via a session-mode pooler, never a transaction-mode pooler such
-   as Supabase's port 6543, PgBouncer, Supavisor, or Neon's `-pooler`
-   endpoint. Tenant scoping rides on session-level `set_config`, which
-   transaction pooling silently breaks; the boot guard in
-   `packages/ee/src/db/bootstrap.ts` refuses to start when `DATABASE_URL`
-   looks like a transaction pooler (a `pooler`/`pgbouncer` hostname,
-   `pgbouncer=true`, or Supabase's `:6543`). If that heuristic false-positives
-   on a pooler you have verified is session-scoped, set
-   `DHAGA_ALLOW_TRANSACTION_POOLER=true` to downgrade the throw to a one-time
-   warning.
+2. Pooling mode doesn't matter here. Tenant scoping is **transaction-local**
+   (`set_config('app.current_user_id', …, true)` inside one `BEGIN … COMMIT`,
+   which self-clears at COMMIT — `packages/ee/src/tenant/scoped-db.ts`), so it is correct
+   whether you connect directly (what the compose file does), through a
+   session-mode pooler, or through a transaction-mode pooler (Supabase's port
+   6543, PgBouncer, Supavisor, Neon's `-pooler`). There is no pooling-mode boot
+   guard to satisfy — the earlier one, and its `DHAGA_ALLOW_TRANSACTION_POOLER`
+   override, were removed as obsolete. (Supabase specifically: 5432 vs 6543 is
+   just a `DATABASE_URL` change — the 6543 path is designed-correct but not yet
+   verified against a live transaction pooler; see `docs/SCALING.md` §2.)
 3. Add the hosted-mode env vars (`DHAGA_HOSTED_MODE`, `DHAGA_ADMIN_EMAILS`,
    `STRIPE_*`) to the `app` service's `environment` block yourself.
 

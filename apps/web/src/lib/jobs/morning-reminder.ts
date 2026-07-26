@@ -27,8 +27,9 @@ function isLocalMorning(now: Date, utcOffsetMinutes: number): boolean {
 /**
  * Daily "you have follow-ups waiting — open Dhaga" reminder. Opt-in
  * (isMorningReminderEnabled), template-only (no AI, no metered cost), and runs
- * on the default connection like the reach-out digest — per-user fan-out is the
- * same deferred follow-up that job documents.
+ * on the default connection like the reach-out digest — a per-user fan-out (now
+ * implemented for the signal-detection job) is a remaining follow-up for these
+ * email jobs (see docs/FOLLOW_UPS.md).
  *
  * TIMEZONE: to deliver at ~08:00 in the recipient's local time the operator must
  * drive this endpoint hourly and set MORNING_REMINDER_HOURLY=true — the job then

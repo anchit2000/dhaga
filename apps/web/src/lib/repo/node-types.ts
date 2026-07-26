@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { asc, count, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { entities, nodeTypes, type NodeTypeRow } from "@/lib/db/schema";
+import { PreconditionError } from "@/lib/repo/errors";
 import { toSlug } from "@/utils/slug";
 
 export async function listNodeTypes(): Promise<NodeTypeRow[]> {
@@ -24,13 +25,13 @@ export async function createNodeType(input: {
   const db = await getDb();
   const name = input.name.trim();
   const slug = toSlug(name);
-  if (!slug) throw new Error("Type name must contain letters or numbers.");
+  if (!slug) throw new PreconditionError("Type name must contain letters or numbers.");
   const [existing] = await db
     .select({ id: nodeTypes.id })
     .from(nodeTypes)
     .where(eq(nodeTypes.slug, slug))
     .limit(1);
-  if (existing) throw new Error(`A type named "${name}" already exists.`);
+  if (existing) throw new PreconditionError(`A type named "${name}" already exists.`);
   const id = randomUUID();
   await db.insert(nodeTypes).values({ id, name, slug, color: input.color });
   return id;

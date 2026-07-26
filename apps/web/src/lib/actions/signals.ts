@@ -6,9 +6,8 @@ import { withUserDb } from "@/lib/db/request-scope";
 import { addNote } from "@/lib/repo/notes";
 import { upsertEmbedding } from "@/lib/repo/embeddings";
 import {
+  claimSignalForNote,
   dismissSignal,
-  getSignal,
-  markSignalNoted,
   toggleWatch,
   type ToggleWatchResult,
 } from "@/lib/repo/signals";
@@ -58,12 +57,17 @@ export async function addSignalAsNoteAction(formData: FormData): Promise<void> {
   const contactName = String(formData.get("contactName") ?? "");
   if (!signalId || !contactId) return;
 
-  // Scope 1 (read + note write): find the signal and, if it exists, save the
-  // receipted note + its embedding. All DB work here happens inside ONE short
-  // scoped connection that is released at the end of the block — nothing is
-  // held across the LLM call below (GOAL 1b / pool-exhaustion #92).
+  // Scope 1 (claim + note write): CLAIM the signal FIRST (flip it to "noted"
+  // only if it isn't already), then, if we won the claim, save the receipted
+  // note + its embedding. The claim and the writes share ONE scoped connection
+  // — under EE this is a single transaction, so a failed write rolls the claim
+  // back too and a retry can re-claim (no claimed-but-noteless signal). It also
+  // guards against a double-click: a second in-flight submission finds the
+  // signal already noted, claims nothing, and creates no duplicate note/facts/
+  // edges (#13). The connection is released at the end of the block — nothing
+  // is held across the LLM call below (GOAL 1b / pool-exhaustion #92).
   const prepared = await withUserDb(userId, async () => {
-    const signal = await getSignal(signalId);
+    const signal = await claimSignalForNote(signalId);
     if (!signal) return null;
     const body = signal.sourceUrl
       ? `${signal.headline}\n${signal.detail}\nSource: ${signal.sourceUrl}`
@@ -79,8 +83,5 @@ export async function addSignalAsNoteAction(formData: FormData): Promise<void> {
     await extractAndApplyNote(userId, contactId, prepared.noteId, contactName, prepared.body);
   }
 
-  // Scope 2 (write): mark the signal handled — unconditionally, matching the
-  // original (a signal that vanished mid-flight is still cleared from the feed).
-  await withUserDb(userId, () => markSignalNoted(signalId));
   revalidate(contactId);
 }

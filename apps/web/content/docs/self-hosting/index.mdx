@@ -224,19 +224,19 @@ app needs from the database:
   set `DHAGA_VECTOR_STORE` to a registered external vector store (see
   [Providers](/docs/self-hosting/providers)); the boot DDL skips the vector schema
   entirely in that case.
-- **Session-scoped pooling** (hosted mode only) — tenant scoping works via
-  session-level `set_config('app.current_user_id', …)`, which
-  transaction-mode poolers (e.g. Supabase's port 6543, PgBouncer, Supavisor,
-  Neon's `-pooler` endpoint) silently break by swapping the server backend
-  between queries: RLS intermittently returns zero rows *and* the tenant
-  setting can leak onto a backend later handed to another user. Use a direct
-  connection or a session-mode pooler; the boot guard in
-  `packages/ee/src/db/bootstrap.ts` fails loud when the connection string
-  looks like a transaction pooler (a `pooler`/`pgbouncer` hostname,
-  `pgbouncer=true`, or Supabase's `:6543`). If that heuristic false-positives
-  on a pooler you have confirmed is session-scoped, set
-  `DHAGA_ALLOW_TRANSACTION_POOLER=true` to downgrade the fail-loud throw to a
-  one-time warning.
+- **Any pooling mode works** (hosted mode only) — tenant scoping is
+  **transaction-local**: each unit of work runs inside one `BEGIN … COMMIT`
+  whose first statement is `set_config('app.current_user_id', …, true)`, and
+  Postgres discards that setting at COMMIT. Because the scope never outlives its
+  transaction, a transaction-mode pooler (Supabase's port 6543, PgBouncer,
+  Supavisor, Neon's `-pooler` endpoint) can't run a query unscoped or leak the
+  setting onto another user's backend — so a direct connection, a session-mode
+  pooler, and a transaction-mode pooler are all safe, with no pooling-mode boot
+  guard to satisfy (the earlier one, and its `DHAGA_ALLOW_TRANSACTION_POOLER`
+  override, were removed as obsolete). Supabase specifically: moving from 5432 to
+  6543 is a `DATABASE_URL` change with no code change — the 6543 path is
+  designed-correct but not yet verified against a live transaction pooler; see
+  `docs/SCALING.md` §2.
 - **A role without `BYPASSRLS` or `SUPERUSER`** (hosted mode only) — either
   attribute makes the role ignore RLS (a superuser bypasses it unconditionally
   even while `rolbypassrls` reads false), and the boot guard rejects both. Run

@@ -10,9 +10,11 @@ afterthought.
   everything derived from them live in a database you control. There is no
   central Dhaga server that reads your graph.
 - **Hosted (Dhaga Cloud) tenant isolation** is enforced by Postgres row-level
-  security, keyed to the authenticated user via a session-scoped setting, on a
-  non-privileged database role (no `BYPASSRLS` or `SUPERUSER`) with
-  `FORCE ROW LEVEL SECURITY` on every tenant table.
+  security, keyed to the authenticated user via a transaction-local setting
+  (`set_config('app.current_user_id', …, true)`, applied inside each unit of
+  work's own transaction and discarded at COMMIT), on a non-privileged database
+  role (no `BYPASSRLS` or `SUPERUSER`) with `FORCE ROW LEVEL SECURITY` on every
+  tenant table.
 - **Receipts and deletion.** Every AI-derived fact links back to its source
   note. Deleting data cascades and tombstones across notes, facts, edges, and
   embeddings — transactionally, so nothing is left half-deleted.
@@ -42,10 +44,13 @@ reasonable window to fix before any disclosure. We aim to acknowledge within
 - **2026-07 — superuser RLS bypass and pooler-detection gap.** The same audit
   found the boot-time role check tested only `rolbypassrls`, missing that a
   `SUPERUSER` role also bypasses row-level security unconditionally, and that
-  transaction-mode pooler detection (which breaks the session-scoped setting
-  tenant isolation relies on) only recognized Supabase's `:6543` port. Both are
-  closed: the boot guard now rejects a connecting role with `BYPASSRLS` **or**
-  `SUPERUSER`, and pooler detection was broadened to PgBouncer/Supavisor/
-  Neon-pooler hostnames, with a `DHAGA_ALLOW_TRANSACTION_POOLER` escape hatch
-  for a pooler confirmed session-scoped. No user data was known to have been
-  accessed.
+  transaction-mode pooler detection (which broke the session-scoped setting
+  tenant isolation relied on at the time) only recognized Supabase's `:6543`
+  port. The superuser gap is closed: the boot guard now rejects a connecting
+  role with `BYPASSRLS` **or** `SUPERUSER`. The pooler-detection gap was
+  superseded rather than patched: tenant scoping moved to a **transaction-local**
+  setting (`set_config('app.current_user_id', …, true)` inside one
+  `BEGIN … COMMIT`, which self-clears at COMMIT), which is safe on both session-
+  and transaction-mode poolers — so the pooler-detection guard, and its
+  `DHAGA_ALLOW_TRANSACTION_POOLER` escape hatch, were retired as no longer
+  needed. No user data was known to have been accessed.

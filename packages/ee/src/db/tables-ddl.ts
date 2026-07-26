@@ -14,6 +14,36 @@ CREATE TABLE IF NOT EXISTS access_requests (
   approval_token text
 );
 
+-- One-time normalization: the write path now stores email lowercased
+-- (access-requests/repo.ts), but pre-existing rows may hold a mixed-case email.
+-- Every lookup (isEmailApproved / reviewAccessRequest) matches on lower(email)
+-- and Postgres text equality is case-sensitive, so a mixed-case row is
+-- unreachable — stuck "pending" forever. Lowercase existing rows to match.
+-- email is the PRIMARY KEY, so lowercasing can COLLIDE with another row that
+-- already normalizes to the same value (a mixed-case row vs an existing
+-- lowercase one, OR two mixed-case variants of each other). Collapse each
+-- lower(email) group to one canonical row FIRST — an already-lowercase row
+-- wins; otherwise the earliest-requested, tiebroken lexically for determinism —
+-- then lowercase the survivors. Idempotent: once every row is lowercase and
+-- unique per lower(email), the DELETE finds no rn>1 rows and the UPDATE finds
+-- nothing to change, so re-running (on every DDL replay) is a no-op.
+DO $$
+BEGIN
+  DELETE FROM access_requests
+  WHERE ctid IN (
+    SELECT ctid FROM (
+      SELECT ctid,
+             row_number() OVER (
+               PARTITION BY lower(email)
+               ORDER BY (email = lower(email)) DESC, requested_at ASC, email ASC
+             ) AS rn
+      FROM access_requests
+    ) ranked
+    WHERE rn > 1
+  );
+  UPDATE access_requests SET email = lower(email) WHERE email <> lower(email);
+END $$;
+
 CREATE TABLE IF NOT EXISTS subscriptions (
   id text PRIMARY KEY,
   user_id text NOT NULL UNIQUE,

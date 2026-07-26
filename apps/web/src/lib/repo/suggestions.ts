@@ -2,7 +2,7 @@ import { and, eq, inArray, isNull } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { companies, contacts } from "@/lib/db/schema";
 import { findOrCreateCompany } from "./contacts";
-import { getSetting, setSetting } from "./settings";
+import { appendToSettingArray, getSetting } from "./settings";
 import { computeNameClusters } from "@/lib/suggestions/name-clusters";
 import type { NameCluster } from "@/lib/suggestions/name-clusters";
 
@@ -36,9 +36,12 @@ export async function getSuggestedClusters(): Promise<NameCluster[]> {
 }
 
 export async function dismissCluster(key: string): Promise<void> {
-  const keys = await dismissedKeys();
-  if (!keys.includes(key)) keys.push(key);
-  await setSetting(DISMISSED_KEY, JSON.stringify(keys));
+  // Atomic append instead of read-modify-write: two concurrent dismissals used
+  // to race (each read the same array, each wrote back its own +1, one dismissal
+  // was lost and the cluster reappeared). A single deduping upsert can't lose an
+  // update and also handles the first dismissal, when no settings row exists yet
+  // (#14).
+  await appendToSettingArray(DISMISSED_KEY, key);
 }
 
 /** User confirmed the cluster as a community — tag every member. */

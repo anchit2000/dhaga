@@ -1,6 +1,6 @@
 ---
 title: Isolating tenants on serverless Postgres
-description: "Row-level security is easy to turn on and easy to get catastrophically wrong. How a connection pooler almost leaked one customer's data into another's in Dhaga Cloud, and the boot guard that makes it impossible."
+description: "Row-level security is easy to turn on and easy to get catastrophically wrong. How a connection pooler almost leaked one customer's data into another's in Dhaga Cloud, and the transaction-scoped design that makes it impossible on either pooling mode."
 date: "2026-07-10"
 author: "Anchit Shrivastava"
 tags: ["engineering", "postgres", "security", "multi-tenancy", "rls"]
@@ -9,16 +9,19 @@ tags: ["engineering", "postgres", "security", "multi-tenancy", "rls"]
 <Callout title="The short version">
 Dhaga Cloud is multi-tenant: many customers' relationship graphs live in one
 Postgres database, kept apart by Postgres **row-level security (RLS)**. RLS is
-the right tool — but the way we scope each request (a per-connection session
-setting that says "you are user X") collides violently with how serverless
-connection *poolers* work. In transaction-pooling mode, that setting can leak
-onto the **wrong** connection, and one tenant can render another tenant's data.
+the right tool — but *how* you tell the database "this request is user X" decides
+whether a serverless connection *pooler* can leak that identity onto another
+tenant's query. Our first version scoped it with a **session-level** setting,
+which collides violently with transaction pooling: the setting can ride onto the
+**wrong** connection, and one tenant can render another tenant's data.
 
-We caught it in end-to-end testing, not production. The fix is two parts: a
-**fail-loud boot guard** that refuses to start in the unsafe pooler mode, and a
-**connection-reuse discipline** that scrubs every session variable (`RESET ALL`)
-before a connection goes back in the pool. This post is the whole trap and the
-whole fix.
+We caught it in end-to-end testing, not production, and shipped a two-part fix —
+a **fail-loud boot guard** against the unsafe pooler, plus a **`RESET ALL`
+scrub** on every connection release. Then we replaced both with something
+simpler: scope each request **inside one transaction**, with a
+**transaction-local** setting that Postgres discards automatically at `COMMIT`.
+No boot guard, no scrub, and correct on *either* pooling mode. This post is the
+whole trap and both fixes.
 </Callout>
 
 *The rest of this post is the deep dive. It's a good read for anyone running RLS
@@ -47,8 +50,8 @@ USING (
 )
 ```
 
-So before running a tenant's queries, we set that variable on the connection —
-[`set_config('app.current_user_id', <the user>, …)`](https://github.com/anchit2000/dhaga/blob/main/packages/ee/src/db/bootstrap.ts#L32) —
+So before running a tenant's queries, we set that variable —
+[`set_config('app.current_user_id', <the user>, …)`](https://github.com/anchit2000/dhaga/blob/main/packages/ee/src/tenant/scoped-db.ts) —
 and Postgres does the rest. Admin/webhook code paths set
 [`app.bypass_rls`](https://github.com/anchit2000/dhaga/blob/main/packages/ee/src/db/admin-db.ts#L16)
 instead. Clean, database-enforced isolation: even a bug in application code can't
@@ -68,9 +71,9 @@ Postgres) offers two modes, and the difference is the whole story:
 | **Session** | 5432 | One backend per client connection, for the life of that connection |
 | **Transaction** | 6543 | A backend is borrowed **per transaction** and can change between queries |
 
-Our isolation depends on a **session-level** setting — `app.current_user_id`
-persists on a connection across queries. Transaction pooling breaks that
-assumption in two distinct, both-bad ways:
+Our *first* isolation design depended on a **session-level** setting —
+`app.current_user_id` persisted on a connection across queries. Transaction
+pooling breaks that assumption in two distinct, both-bad ways:
 
 1. **Silent under-fetch.** You `set_config` on one backend, then your next query
    runs on a *different* backend that never got the setting. `current_setting(…,
@@ -86,76 +89,103 @@ zero-row renders, and the session setting bleeding across pooled backends. The
 scariest part is how *quiet* it is — most requests are fine, because most of the
 time the backend you get happens to be yours.
 
-## Fix part one: refuse to boot in the unsafe mode
+## The first fix: forbid the unsafe mode, and scrub on reuse
 
-The first defence is to make the unsafe configuration **impossible to run**, not
-merely discouraged. If Dhaga Cloud is pointed at the transaction pooler, it
-should not start — loudly — rather than start and occasionally leak.
+Our first version attacked the trap from two directions at once.
 
-That's a
-[fail-loud boot guard in `bootstrap.ts`](https://github.com/anchit2000/dhaga/blob/main/packages/ee/src/db/bootstrap.ts):
-tenant scoping *uses session-level `set_config`, which transaction pooling
-silently breaks*, so the guard checks the connection mode at startup and throws
-if it's wrong. The `DATABASE_URL` must point at the session pooler (port 5432).
-This is a direct application of our "fail loud" principle: a misconfiguration
-that could expose data must crash the deploy, not degrade silently in
-production.
+**Refuse to boot in the unsafe mode.** The strongest form of a safety rule is to
+make the unsafe configuration *impossible to run*. So a fail-loud boot guard in
+`bootstrap.ts` checked the connection string at startup and threw if it looked
+like a transaction pooler — `DATABASE_URL` had to point at the session pooler
+(port 5432). A direct application of our "fail loud" principle: a
+misconfiguration that could expose data should crash the deploy, not degrade
+silently in production.
 
-## Fix part two: scrub every connection before reuse
-
-The boot guard makes session mode mandatory. But session mode surfaces a
-*second* problem, and this is where it gets subtle.
-
-Under session pooling we run **small, per-role connection pools** — a tenant pool
-(default max 3, via
+**Scrub every connection before reuse.** Session mode then surfaced a *second*,
+subtler problem. Under session pooling we run **small, per-role connection
+pools** — a tenant pool (default max 3, via
 [`DB_POOL_MAX_TENANT`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/utils/constants/db.ts))
 and a core pool (default max 2), so a single serverless instance holds at most 5
 of Supabase's shared connection slots. One instance hoarding all the slots is its
 own outage, so those maxes are deliberately low and **must not be raised
-blindly.**
+blindly.** Small pools mean connections get **reused** across requests — and a
+reused connection still carried the `app.current_user_id` (or `app.bypass_rls`)
+from whoever used it last. If request B checked out the connection request A just
+returned, B inherited A's identity. So on release we ran `RESET ALL` to wipe
+every session variable before handing the connection back, destroying it only if
+the reset itself failed.
 
-Small pools mean connections get **reused** across requests. And a reused
-connection still carries the `app.current_user_id` (or `app.bypass_rls`) from
-whoever used it last. If request B checks out the connection request A just
-returned, B inherits A's identity — the exact cross-tenant leak we were trying to
-kill, reintroduced by connection reuse.
+This worked — connections were reused (fast) **and** carried no identity across
+checkouts (safe). But it left two things we weren't happy about. The whole system
+was **locked to the session pooler** — the boot guard existed precisely to
+enforce that — so we couldn't move to Supabase's transaction pooler later without
+a rewrite. And correctness leaned on *remembering to scrub* every connection on
+every path. Both are the kind of load-bearing discipline that quietly rots. So we
+replaced them with a design that needs neither.
 
-There are two ways to handle a returned connection:
+## The better fix: scope inside one transaction
 
-- **Destroy it** (`release(true)`). Safe — the session state dies with it — but
-  brutal: with a pool of 3, destroy-on-release means a fresh TLS + auth handshake
-  on nearly every request. Across regions (see below) that alone was seconds of
-  latency.
-- **Scrub and reuse.** Keep the connection, but wipe every customized session
-  variable first.
+The root cause of the entire trap is that `app.current_user_id` was a
+**session**-level setting that lived on a connection *between* transactions —
+which is exactly the window a transaction pooler reassigns backends in. Take that
+window away and the whole class of problem disappears.
 
-We do the second, in a helper called
-[`releaseScoped`](https://github.com/anchit2000/dhaga/blob/main/packages/ee/src/db/pool.ts#L70):
-run `RESET ALL`, then return the connection to the pool; only if the reset itself
-fails do we fall back to destroying it. `RESET ALL` clears **every** session
-customization — both `app.current_user_id` and `app.bypass_rls` — so no tenant
-identity and no admin bypass can ride a reused connection into the next request.
-We verified against real Postgres that `RESET ALL` actually clears both GUCs;
-"probably" is not good enough when the failure mode is cross-tenant exposure.
+So each unit of tenant work now runs inside a single transaction, and the setting
+is made **transaction-local**:
 
-The result: connections are reused (fast) **and** carry no identity across
-checkouts (safe). We stopped paying for a handshake per request without
-reopening the leak.
+```sql
+BEGIN;
+SELECT set_config('app.current_user_id', $1, true);  -- is_local = true
+-- … the tenant's queries run here, RLS-scoped …
+COMMIT;  -- Postgres discards the setting automatically, right here
+```
+
+That third `true` argument is the whole trick: a transaction-local setting is
+discarded the instant its transaction ends
+([`scoped-db.ts`](https://github.com/anchit2000/dhaga/blob/main/packages/ee/src/tenant/scoped-db.ts)).
+One change, and both earlier fixes fall away:
+
+- **No `RESET ALL` on release.** There is nothing left to reset — the setting is
+  already gone at `COMMIT`. Release just returns the physical connection to the
+  pool
+  ([`releaseScoped`](https://github.com/anchit2000/dhaga/blob/main/packages/ee/src/db/pool.ts)),
+  so we keep connection reuse (no handshake per request) with no scrub discipline
+  to get wrong. A connection that won't release cleanly is still destroyed rather
+  than returned dirty.
+- **No boot guard, and no pooler lock-in.** Because the scope lives entirely
+  inside one transaction that sets its own setting first, a transaction pooler
+  never gets the chance to run a query unscoped, or to carry the setting onto a
+  backend it later hands to someone else. The **same code is correct on both
+  pooling modes** — the session pooler (5432) and the transaction pooler (6543).
+  Flipping between them becomes a `DATABASE_URL` change, no code change, which is
+  what lets us move to the transaction pooler at Supabase Pro without touching the
+  isolation layer. The old boot guard (and its `DHAGA_ALLOW_TRANSACTION_POOLER`
+  escape hatch) was retired as obsolete.
+
+One honest caveat: the transaction-pooler (6543) path is designed-correct and
+follows directly from the reasoning above, but we have not yet run it against a
+live 6543 pooler — that verification is still pending before we flip
+`DATABASE_URL` at Pro. The session pooler (5432) is what serves production today.
 
 ## Proving it stays fixed
 
 A subtle isolation guarantee that isn't tested is a guarantee that will regress.
-This work shipped alongside the EE package's **first automated test harness**:
+The isolation layer is covered from two angles:
 
-- A **contract test** that `releaseScoped` issues `RESET ALL` and returns the
-  connection to the pool.
-- A **real-Postgres integration test** (skipped when no database URL is present)
-  that reuses a connection across two tenants and asserts **no `user_id`/bypass
-  leak** and correct RLS isolation — verified green against Supabase.
+- **Unit tests** (a fake `pg` client under real drizzle) assert that a tenant
+  scope wraps its work in `BEGIN … COMMIT`, sets the GUC **transaction-local**
+  (`set_config(…, true)` as a bound parameter, never interpolated), rolls back on
+  error, and issues **no `RESET ALL`** on release. They fail the moment the scope
+  stops being transaction-local or a session reset creeps back in.
+- A **real-Postgres integration test** (skipped when no `DATABASE_URL` is
+  present) reuses a single backend across two tenants and asserts the second
+  checkout carries **no `user_id`/bypass** from the first *and* that RLS isolates
+  the two end-to-end — the property transaction-local scoping exists to
+  guarantee. Verified green against real Postgres on the session pooler; the
+  transaction pooler runs the same code and is the pending live check above.
 
-So the two failure modes — leak-on-reuse and wrong-pooler-mode — each have
-something that fails loudly if they ever come back: a test for the first, a boot
-guard for the second.
+The guarantee is now a property of *when the setting exists* — one transaction,
+no longer — rather than of a scrub we have to remember to run.
 
 ## A footnote that cost real milliseconds: put the function next to the database
 
@@ -172,13 +202,16 @@ performance decision, not an afterthought.
 1. **RLS is enforced by the database — but scoped by your connection.** The
    moment a pooler can move your queries to a different backend, or hand your
    backend to someone else, your isolation model has a hole. Understand your
-   pooler's mode before you trust session-scoped RLS.
-2. **Make the unsafe config refuse to boot.** A fail-loud guard that crashes on
-   the transaction pooler is worth more than a paragraph in a runbook nobody
-   reads.
-3. **Reuse connections, but scrub them.** `RESET ALL` on release buys you pooled
-   performance without leaking session identity. Destroy-on-release is safe but
-   slow; scrub-on-release is safe and fast.
+   pooler's mode before you trust connection-scoped RLS.
+2. **Prefer a design with no unsafe mode over a guard against it.** Our first fix
+   was a fail-loud guard forbidding the transaction pooler; the better fix made
+   the pooler mode *not matter*. A configuration you can't get wrong beats a loud
+   error when you do.
+3. **Scope to a transaction, not a session.** A transaction-local setting
+   (`set_config(…, true)`) is discarded at `COMMIT` for free — no `RESET ALL`, no
+   scrub-on-release to forget, and it's correct under both session and
+   transaction pooling. Reaching for a session variable across the pooler was the
+   original mistake.
 4. **Test the isolation itself.** A real two-tenant integration test that asserts
    "B cannot see A" is the only thing that keeps a silent leak from coming back.
 5. **Co-locate compute and data.** Cross-region round trips are invisible in dev

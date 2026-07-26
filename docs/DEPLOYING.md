@@ -110,18 +110,25 @@ everywhere):
    fresh setup, though — check via the script's own verification query
    *before* traffic hits it, not after.
 
-**Pooled connections are made safe by scrubbing, not by isolation.** In hosted
-mode each request borrows a connection from a shared pool, applies its
-tenant/role scope for the duration, and on release scrubs it with `RESET ALL`
-before returning it to the pool (`packages/ee/src/db/pool.ts`). Reuse avoids a
-fresh TCP+TLS+auth handshake per request — real latency when the database is a
-region away — but a session setting left on a reused connection would be a
-cross-tenant leak, so a `RESET ALL` that fails **destroys** the connection
-rather than returning it dirty. This is the connection-level complement to the
-session-pooler requirement (transaction pooling would defeat both). Separately,
-the hot contact-page reads (`notes`, `facts`, `follow_ups`, `card_images`,
-`signals` by `contact_id`) carry partial `(contact_id, created_at DESC)` indexes
-so they stay index scans as the graph grows.
+**Pooled connections are made safe by transaction-local scoping, not by
+scrubbing.** In hosted mode each request borrows a connection from a shared pool
+and runs its work inside one `BEGIN … COMMIT` whose first statement sets
+`app.current_user_id` **transaction-local** (`set_config(…, true)`,
+`packages/ee/src/tenant/scoped-db.ts`). Postgres discards that setting the instant
+the transaction ends, so a reused connection can never carry the previous
+tenant's scope — release just returns the connection to the pool, with **no
+`RESET ALL`** (`packages/ee/src/db/pool.ts`'s `releaseScoped`; a client that
+won't release cleanly is still destroyed rather than returned dirty). Reuse
+avoids a fresh TCP+TLS+auth handshake per request — real latency when the
+database is a region away. Because the scope lives entirely inside one
+transaction, the **same code is correct on both Supabase pooling modes**: the
+session pooler (port 5432, used today) and the transaction pooler (port 6543);
+moving between them is a `DATABASE_URL` change with no code change (the 6543 path
+is designed-correct but not yet verified against a live transaction pooler — see
+`docs/SCALING.md` §2). Separately, the hot contact-page reads (`notes`, `facts`,
+`follow_ups`, `card_images`, `signals` by `contact_id`) carry partial
+`(contact_id, created_at DESC)` indexes so they stay index scans as the graph
+grows.
 
 ### Migrating off Supabase (or any hosted Postgres) later
 
@@ -262,17 +269,16 @@ multi-tenant in containers, additionally:
    `docker compose exec -T db psql -U dhaga -d dhaga < packages/ee/scripts/create-app-role.sql`,
    and point `DATABASE_URL` at the resulting non-`BYPASSRLS` `dhaga_app`
    role — see "The Postgres role DATABASE_URL connects as matters" above.
-2. Keep pooling **session-scoped**: connect directly (what the compose file
-   does) or via a session-mode pooler, never a transaction-mode pooler such
-   as Supabase's port 6543, PgBouncer, Supavisor, or Neon's `-pooler`
-   endpoint. Tenant scoping rides on session-level `set_config`, which
-   transaction pooling silently breaks; the boot guard in
-   `packages/ee/src/db/bootstrap.ts` refuses to start when `DATABASE_URL`
-   looks like a transaction pooler (a `pooler`/`pgbouncer` hostname,
-   `pgbouncer=true`, or Supabase's `:6543`). If that heuristic false-positives
-   on a pooler you have verified is session-scoped, set
-   `DHAGA_ALLOW_TRANSACTION_POOLER=true` to downgrade the throw to a one-time
-   warning.
+2. Pooling mode doesn't matter here. Tenant scoping is **transaction-local**
+   (`set_config('app.current_user_id', …, true)` inside one `BEGIN … COMMIT`,
+   which self-clears at COMMIT — `packages/ee/src/tenant/scoped-db.ts`), so it is correct
+   whether you connect directly (what the compose file does), through a
+   session-mode pooler, or through a transaction-mode pooler (Supabase's port
+   6543, PgBouncer, Supavisor, Neon's `-pooler`). There is no pooling-mode boot
+   guard to satisfy — the earlier one, and its `DHAGA_ALLOW_TRANSACTION_POOLER`
+   override, were removed as obsolete. (Supabase specifically: 5432 vs 6543 is
+   just a `DATABASE_URL` change — the 6543 path is designed-correct but not yet
+   verified against a live transaction pooler; see `docs/SCALING.md` §2.)
 3. Add the hosted-mode env vars (`DHAGA_HOSTED_MODE`, `DHAGA_ADMIN_EMAILS`,
    `STRIPE_*`) to the `app` service's `environment` block yourself.
 

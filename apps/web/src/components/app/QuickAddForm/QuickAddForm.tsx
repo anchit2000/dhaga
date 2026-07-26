@@ -127,18 +127,22 @@ export function QuickAddForm({
 
   return (
     <div className="pb-28">
-      {captureOpen && !resultOpen ? (
-        <Dialog open={captureOpen} onOpenChange={setCaptureOpen}>
-          <DialogContent className="max-w-lg">
-            <DialogTitle>Capture someone</DialogTitle>
-            <DialogDescription>
-              Paste an intro, speak a note, or scan a card. Dhaga keeps the source as a receipt.
-            </DialogDescription>
-            {aiUsage ? <p className="font-mono text-[10px] uppercase tracking-wider text-fog/60">{aiUsage}</p> : null}
-            {captureForm}
-          </DialogContent>
-        </Dialog>
-      ) : (
+      {/* Keep the capture Dialog MOUNTED and drive it by `open` — a successful
+          scan flips resultOpen true in the same commit that opens the result
+          Dialog, so unmounting this one mid-open would leave Base UI's modal
+          manager wedged and the result Dialog would never paint. Letting `open`
+          go false runs the normal close→open handoff between the two dialogs. */}
+      <Dialog open={captureOpen && !resultOpen} onOpenChange={setCaptureOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogTitle>Capture someone</DialogTitle>
+          <DialogDescription>
+            Paste an intro, speak a note, or scan a card. Dhaga keeps the source as a receipt.
+          </DialogDescription>
+          {aiUsage ? <p className="font-mono text-[10px] uppercase tracking-wider text-fog/60">{aiUsage}</p> : null}
+          {captureForm}
+        </DialogContent>
+      </Dialog>
+      {!captureOpen && !resultOpen ? (
         <QuickAddDock
           formAction={formAction}
           onVoiceStart={() => { setCaptureOpen(true); setMode("paste"); }}
@@ -146,7 +150,7 @@ export function QuickAddForm({
           captureOpen={captureOpen}
           onCaptureToggle={() => setCaptureOpen(true)}
         />
-      )}
+      ) : null}
       {resultDialog}
     </div>
   );

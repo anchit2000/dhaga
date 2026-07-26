@@ -1,4 +1,4 @@
-import { and, cosineDistance, desc, eq, gt, or, sql } from "drizzle-orm";
+import { and, cosineDistance, desc, eq, exists, gt, isNull, or, sql } from "drizzle-orm";
 import type {
   VectorRecord,
   VectorSearchOptions,
@@ -14,7 +14,7 @@ import {
 
 export { getVectorStore, registerVectorStore, selectVectorStore };
 import { getDb } from "@/lib/db/request-scope";
-import { embeddings } from "@/lib/db/schema";
+import { contacts, embeddings, facts, notes } from "@/lib/db/schema";
 import type { DhagaDb } from "@/lib/db";
 
 function transaction(options?: VectorWriteOptions): DhagaDb | undefined {
@@ -48,6 +48,42 @@ export class PgVectorStore implements VectorStore {
   async search(vector: number[], options: VectorSearchOptions = {}) {
     const db = await getDb();
     const similarity = sql<number>`1 - (${cosineDistance(embeddings.embedding, vector)})`;
+    // Defense-in-depth atop the transactional cascade: deleting a note/fact
+    // removes its embedding in the same transaction, so a tombstoned owner
+    // should never have an embedding at all. This EXISTS guard is
+    // belt-and-suspenders in case an embedding and its tombstone ever diverge —
+    // a soft-deleted (notes/facts) or hard-deleted (contacts, no deletedAt
+    // column) owner can never surface via semantic search. EXISTS also drops
+    // any embedding whose owner row no longer exists at all.
+    const ownerLive = or(
+      and(
+        eq(embeddings.ownerType, "note"),
+        exists(
+          db
+            .select({ id: notes.id })
+            .from(notes)
+            .where(and(eq(notes.id, embeddings.ownerId), isNull(notes.deletedAt))),
+        ),
+      ),
+      and(
+        eq(embeddings.ownerType, "fact"),
+        exists(
+          db
+            .select({ id: facts.id })
+            .from(facts)
+            .where(and(eq(facts.id, embeddings.ownerId), isNull(facts.deletedAt))),
+        ),
+      ),
+      and(
+        eq(embeddings.ownerType, "contact"),
+        exists(
+          db
+            .select({ id: contacts.id })
+            .from(contacts)
+            .where(eq(contacts.id, embeddings.ownerId)),
+        ),
+      ),
+    );
     return db
       .select({
         contactId: embeddings.contactId,
@@ -56,7 +92,7 @@ export class PgVectorStore implements VectorStore {
         similarity,
       })
       .from(embeddings)
-      .where(gt(similarity, options.minimumSimilarity ?? 0.5))
+      .where(and(gt(similarity, options.minimumSimilarity ?? 0.5), ownerLive))
       .orderBy(desc(similarity))
       .limit(options.limit ?? 12);
   }

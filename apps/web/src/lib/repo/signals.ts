@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, ne } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { companies, contacts, signals, type SignalRow } from "@/lib/db/schema";
 import { currentPlan, requireFeature } from "@/lib/entitlements";
@@ -135,4 +135,24 @@ export async function dismissSignal(signalId: string): Promise<void> {
 export async function markSignalNoted(signalId: string): Promise<void> {
   const db = await getDb();
   await db.update(signals).set({ status: "noted" }).where(eq(signals.id, signalId));
+}
+
+/**
+ * Atomically CLAIM a signal for "add as note", returning the claimed row or
+ * null if it was already noted (or is gone). The `status <> 'noted'` predicate
+ * lives in the UPDATE itself, so the flip-to-noted and the not-yet-noted check
+ * are one indivisible statement: a double-clicked second submission finds the
+ * row locked, then re-evaluates the predicate against the winner's committed
+ * `noted` status and matches nothing — so only the first submission proceeds to
+ * create a note/facts/edges (idempotency guard, #13). Returning the full row
+ * lets the caller build the note body without a separate read.
+ */
+export async function claimSignalForNote(signalId: string): Promise<SignalRow | null> {
+  const db = await getDb();
+  const [row] = await db
+    .update(signals)
+    .set({ status: "noted" })
+    .where(and(eq(signals.id, signalId), ne(signals.status, "noted")))
+    .returning();
+  return row ?? null;
 }

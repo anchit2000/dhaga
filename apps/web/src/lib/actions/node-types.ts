@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { invalidateNodeTypes } from "@/lib/cache/node-types";
 import { createNodeType, deleteNodeType, updateNodeType } from "@/lib/repo/node-types";
+import { PreconditionError } from "@/lib/repo/errors";
 import { MutationError, mutation } from "@/lib/actions/mutation";
 import { HEX_COLOR_PATTERN } from "@/utils/constants/graph";
 import type { ActionResult } from "./types";
@@ -20,12 +21,12 @@ export async function createNodeTypeAction(input: {
     try {
       id = await createNodeType({ name: input.name, color: input.color });
     } catch (error) {
-      // createNodeType throws a hand-written, user-safe Error for its
-      // precondition failures (unusable name, duplicate). Surface that message
-      // as a specific outcome rather than the generic transient retry copy.
-      throw new MutationError(
-        error instanceof Error ? error.message : "Could not create the type.",
-      );
+      // A PreconditionError is a hand-written, user-safe message (unusable name,
+      // duplicate) — surface it as a specific outcome. Any other throw is a real
+      // infra failure: re-throw so mutation() logs it and returns the generic
+      // transient retry copy rather than a raw SQL/timeout string.
+      if (error instanceof PreconditionError) throw new MutationError(error.message);
+      throw error;
     }
     invalidateNodeTypes(userId);
     return id;

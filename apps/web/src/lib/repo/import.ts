@@ -11,6 +11,13 @@ import type { ImportCandidate, ImportFormat } from "@/lib/import";
 export interface ImportSummary {
   created: number;
   skipped: number;
+  /**
+   * Echoed back only to a skipWebhook caller (importCsvBatchAction), which emits
+   * contacts.imported AFTER releasing its scoped DB connection so the outbound
+   * webhook fetch never holds the connection. Absent on the default path, which
+   * emits the webhook inline.
+   */
+  format?: ImportFormat;
 }
 
 /**
@@ -28,6 +35,10 @@ export interface ImportSummary {
 export async function importContacts(
   candidates: ImportCandidate[],
   format: ImportFormat,
+  // skipWebhook: a caller running inside a scoped DB connection emits
+  // contacts.imported itself once that scope closes, so the webhook fetch never
+  // holds the connection (mirrors createContactProfile's skipWebhook).
+  options?: { skipWebhook?: boolean },
 ): Promise<ImportSummary> {
   const db = await getDb();
   // Dedup preload: one scan of the graph per call. Large connector/vCard
@@ -89,6 +100,10 @@ export async function importContacts(
     created++;
   }
 
+  if (options?.skipWebhook) {
+    // The caller emits contacts.imported after its DB scope closes.
+    return { created, skipped, format };
+  }
   if (created > 0) {
     await emitWebhook("contacts.imported", { count: created, format });
   }

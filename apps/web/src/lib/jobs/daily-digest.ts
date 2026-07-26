@@ -15,10 +15,12 @@ export interface DailyDigestSummary {
 
 /**
  * Morning "reach out to these people today" email. Opt-in (isDailyDigestEnabled),
- * template-only (no AI, no metered cost). Runs on the default connection like
- * the signal-detection job — multi-tenant fan-out is the same deferred follow-up
- * that job documents. Reads the week's free/busy (if a calendar is connected) so
- * the spread avoids already-busy days.
+ * template-only (no AI, no metered cost). Runs on the default connection — so in
+ * hosted (multi-tenant RLS) mode it only produces output for the self-host case
+ * today; a per-tenant fan-out (which the signal-detection job now implements) is
+ * a remaining follow-up for these email jobs (see docs/FOLLOW_UPS.md). Reads the
+ * week's free/busy (if a calendar is connected) so the spread avoids already-busy
+ * days.
  */
 export async function runDailyDigest(now: Date = new Date()): Promise<DailyDigestSummary> {
   if (!(await isDailyDigestEnabled())) return { sent: false, suggested: 0, skipped: "not_enabled" };

@@ -5,152 +5,149 @@ a known, currently-exploitable security vulnerability — tenant isolation was
 reviewed (see [`SECURITY.md`](../SECURITY.md)); these are functional gaps,
 hardening, and correctness items. Grouped by area.
 
-## Connection-hygiene + optimistic-UX sweep (2026-07-26)
+## Connection-hygiene sweeps (2026-07-26)
 
-App-wide pass: every DB-mutating server action now runs in ONE scoped connection
-(`mutation()` / short-scope `withUserDb`), mutation surfaces are optimistic +
-resilient (canonical `FormError`/`toastError`, never the error boundary), session
-`cookieCache` is on, and RLS scoping is transaction-local so the same code runs
-on the session pooler (5432) and the transaction pooler (6543) — see
-[`SCALING.md`](SCALING.md) §1–§2. This **resolves** the write-path half of
-"Concurrent `getDb()` fan-out" below (now enforced by
-`lib/__tests__/action-db-scope.guard.test.ts`) and two sub-points of "Per-request
-fixed overhead" (session validation is `cookieCache`d; `RESET ALL` is gone from
-release). Remaining from this sweep:
+Two passes landed the connection-hygiene model — acquire a connection, use it for
+a read (or a write), and **release it before any slow non-DB work** (LLM calls,
+web search, webhooks); never hold one across slow I/O and never fan out multiple
+`getDb()` checkouts concurrently. **PR #100** made every DB-mutating server action
+run in ONE scoped connection (`mutation()` / short-scope `withUserDb`), made
+mutation surfaces optimistic + resilient (canonical `FormError`/`toastError`,
+never the error boundary), turned on session `cookieCache`, and made RLS scoping
+transaction-local so the same code runs on the session pooler (5432) and the
+transaction pooler (6543) — see [`SCALING.md`](SCALING.md) §1–§2. **This
+follow-up PR** closed the remaining hold-across-slow-I/O and `getDb()` fan-out
+gaps and the correctness/doc items below.
 
-- **`importCsvBatchAction` holds its one connection across the end-of-batch
-  webhook.** The `mutation()` wrap fixed the per-row fan-out, but the candidate
-  loop + `emitWebhook` live inside `repo/import.ts`'s `importContacts`. Give it a
-  `skipWebhook` option (like `createContactProfile` has) and return `{created,
-  skipped, format}` so the action emits `contacts.imported` AFTER the scope
-  closes. Only bites when `DHAGA_WEBHOOK_URL` is set (best-effort, 5s timeout).
-- **Worker-path metering not short-scoped.** `lib/ai/enrich.ts` holds the
-  AI-budget connection across the enrichment LLM/web-search — but in the batch
-  worker (off the request path), so lower priority than the request-path fixes
-  already applied (`brief.ts`, `draft.ts`, `contact-extraction.ts`,
-  `card-scan.ts`). Apply the same short-scope if it ever runs where pool pressure
-  matters.
+**Resolved in this follow-up sweep:**
+
+- **`importContacts` no longer holds its connection across the webhook.** It takes
+  a `skipWebhook` option and returns `{ created, skipped, format }`; the action
+  emits `contacts.imported` AFTER `mutation()` releases the connection.
+- **Worker-path metering confirmed short-scoped.** `lib/ai/enrich.ts` was already
+  in the three-phase form (budget checkout released before the LLM/web-search
+  call), matching `brief.ts` / `draft.ts` / `contact-extraction.ts` /
+  `card-scan.ts` — no change needed.
 - **Typed repo errors for create-with-unique-name.** `createNodeType` /
-  `createRelationshipType` (`repo/node-types.ts`, `relationship-types.ts`) throw a
-  plain `Error` for BOTH a duplicate-name precondition and a real infra failure;
-  the actions surface the message to preserve the duplicate copy, so a transient
-  failure there shows its raw message instead of the standard retry copy (matches
-  prior behavior — not a regression). Give them a sentinel/typed error so the
-  action can distinguish precondition from transient.
-- **Verify the transaction-scope change on a real pooled DB before Pro.** The EE
-  integration suite (`tenant-reuse.integration.test.ts`) is skip-guarded without
-  `DATABASE_URL`; run it against a real session-pooled DB, and ideally the 6543
-  transaction pooler, before flipping `DATABASE_URL` at Supabase Pro.
-- **Stale pooling prose** still describing the old session-mode-required /
-  `RESET ALL` behavior: `docs/DEPLOYING.md`,
-  `apps/web/content/docs/self-hosting/{deploy,index}.mdx`, `SECURITY.md`, and
-  `apps/web/content/blog/engineering/tenant-isolation-serverless-postgres.mdx`.
-- **Pre-existing >150-line files nudged by the sweep (directory-split deferred —
-  surgical scope):** `lib/actions/notes.ts` (169), `contacts.ts` (196),
-  `import.ts` (165), `lib/hosted/gate.ts` (168),
-  `components/app/home/TodaySuggestions.tsx`.
-- **Optional (surfaced, not adopted):** cache the home `StatStrip` (2
-  round-trips) via `cachePerUserVersioned` keyed by an 8-table stats version + a
-  daily time bucket — rejected because it adds ~24h staleness to a decorative
-  sparkline; and a shared `OptimisticSwitch` to de-dupe the amber toggle markup.
+  `createRelationshipType` throw a typed `PreconditionError` (`lib/repo/errors.ts`)
+  for the duplicate/invalid-name precondition; the actions surface that message
+  but re-throw genuine infra failures into `mutation()`'s standard retry copy +
+  server log.
+- **EE `getDb()` fan-out + connect-retry gap.** `getPool()` is now wrapped at the
+  pool level (`packages/ee/src/db/connect-retry.ts` `withConnectRetry`, patching
+  `pool.query` + `pool.connect`), so every `drizzle(getPool())` read (admin /
+  access-request / billing / referrals) inherits transient backoff+jitter. The
+  admin/access-request `Promise.all` fan-outs (`dashboardCounts`, `listUsersPage`,
+  `listSubscriptionsPage`, `listAccessRequestsPage`) now run on ONE
+  `openAdminConnection()` client instead of 2–3 concurrent tenant-pool checkouts.
+- **Semantic-search tombstone guard.** `PgVectorStore.search()` structurally
+  excludes embeddings whose owning note/fact is soft-deleted (per-`ownerType`
+  `EXISTS` guard) — defense-in-depth atop the transactional delete cascade.
+- **`addSignalAsNoteAction` idempotency.** An upfront atomic claim
+  (`UPDATE signals SET status='noted' WHERE id=$1 AND status<>'noted' RETURNING`)
+  makes a double-click a no-op; the claim shares the action's transaction, so a
+  later failure rolls it back for a clean retry.
+- **`dismissCluster` race-free.** A single lock-free upsert (`appendToSettingArray`,
+  `jsonb_agg(DISTINCT …)`) replaces the read-modify-write, covering the
+  first-insert race too.
+- **Telegram owner resolution deterministic.** Exact `DHAGA_OWNER_EMAIL` match
+  first, else the earliest admin via `orderBy(asc(createdAt), asc(id))` so
+  `.limit(1)` can't flip between requests.
+- **Access-request email backfill.** An idempotent `DO $$…$$` block appended to the
+  EE DDL lowercases pre-existing mixed-case `access_requests.email`, deduping PK
+  collisions by `row_number()` before the `lower()` update.
+- **Signals per-tenant sweep (hosted).** `runSignalDetection` loops each tenant
+  through `withUserDb` in hosted mode (tenants enumerated from the non-RLS auth
+  `user` table — NOT an RLS bypass), while self-host runs the single global scan
+  unchanged; the LLM/web-search calls stay outside every DB scope. **Still needs
+  live multi-tenant verification** (below).
+- **RLS runtime integration test added** (`packages/ee` `rls-isolation.integration.test.ts`,
+  skip-guarded on `DATABASE_URL`): asserts every `TENANT_TABLES` table isolates at
+  runtime and that `user_id` is GUC-stamped, with a `pg_policies` check that fails
+  the suite if a new tenant table is added without a spec.
+- **Firecrawl retry/backoff** (2 retries, exponential backoff + jitter,
+  transient-only) — closes the asymmetry with the Anthropic SDK's built-in retry.
+- **Prompt-export path consistency.** The `signal-detection` prompt re-exports
+  through the `llm/index.ts` barrel like every sibling prompt.
+- **Stale pooling prose corrected** in `docs/DEPLOYING.md`, both self-hosting
+  `.mdx` pages, `SECURITY.md`, and the tenant-isolation blog post (transaction-local
+  scoping, no `RESET ALL`, both poolers; no session-mode boot guard /
+  `DHAGA_ALLOW_TRANSACTION_POOLER` escape hatch anymore).
+
+**Still open from the connection-hygiene work:**
+
+- **Verify on a real pooled DB before Pro.** The EE integration suites
+  (`tenant-reuse.integration.test.ts` and the new
+  `rls-isolation.integration.test.ts`) are skip-guarded without `DATABASE_URL`;
+  run them against a real session-pooled DB, and ideally the 6543 transaction
+  pooler, before flipping `DATABASE_URL` at Supabase Pro. This is the single
+  verification gate that also covers the transaction-scope and hosted-signals
+  changes below.
+- **Live multi-tenant verification of the hosted signals sweep.** The per-tenant
+  loop is correct by construction and leaves self-host untouched, but was not run
+  against a live multi-tenant RLS DB.
+- **Pre-existing >150-line files nudged by the sweeps (directory-split still
+  deferred — surgical scope; the splits would also collide with the hygiene
+  edits):** `lib/actions/notes.ts`, `contacts.ts`, `import.ts`,
+  `lib/hosted/gate.ts`, `components/app/home/TodaySuggestions.tsx`.
+- **Optional (surfaced, not adopted):** cache the home `StatStrip` via
+  `cachePerUserVersioned` (rejected — adds ~24h staleness to a decorative
+  sparkline); a shared `OptimisticSwitch` to de-dupe the amber toggle markup.
+- **Minor fan-out residuals (safe today):** `repo/relationships/list.ts`
+  `listContactRelationships` is shape-fragile (would fan to 2 checkouts if ever
+  called outside a scoped context; its only caller is RSC-pinned), and
+  `repo/embeddings.ts` `countUnindexed` fans one vector lookup per row (only
+  reached when `embeddingsEnabled()`, which is off on Vercel serverless).
 
 ## Hosted (Dhaga Cloud) multi-tenant
 
-- **Signals / watchlist generation in hosted mode.** The nightly
-  signal-detection job runs on the shared, non-tenant-scoped connection, which
-  row-level security neutralizes in hosted mode — so watchlist signals are not
-  generated in Dhaga Cloud today (this works normally in single-tenant
-  self-host). Implement a per-tenant sweep (loop each watched tenant through
-  `withUserDb`) or stamp each signal's `user_id` from its contact's owner. Do
-  **not** give the global sweep an RLS bypass — that is the one shape that would
-  create a cross-tenant issue.
-- **Runtime verification of RLS coverage.** `signals` is in `TENANT_TABLES` and
-  the generated DDL is correct, but `packages/ee` has no live-Postgres test.
-  Add an integration test that asserts RLS actually isolates every tenant table
-  at runtime.
-- **Telegram owner resolution.** `DHAGA_OWNER_EMAIL` doesn't deterministically
-  pin the owner when more than one admin exists (`or(isAdmin, email=owner)`
-  with `.limit(1)` and no tiebreaker). Match by email when it's set and add a
-  deterministic `orderBy`. Today's only impact is which admin's AI quota absorbs
-  bot usage — no data-isolation consequence.
-- **Access-request email backfill.** Email case-normalization happens on write;
-  before the first real hosted deployment, normalize any pre-existing mixed-case
-  `accessRequests.email` rows so a resubmission can't create a duplicate.
-
-## Data integrity / hardening
-
-- **Semantic-search tombstone guarantee (defense-in-depth).** `semanticSearch`
-  doesn't filter on `deletedAt`; it trusts embeddings to be removed in lockstep
-  with tombstoning (which the delete cascades now do transactionally). Add a
-  structural guard (join/filter) so deleted content can't resurface via search
-  even if a future code path ever lets embeddings and tombstones diverge.
-- **`addSignalAsNoteAction` idempotency.** No guard against a double-click
-  creating duplicate notes/facts/edges. Needs `"use server"` action test
-  infrastructure (auth/request-scope mocking) that the suite doesn't have yet.
-- **`dismissCluster` locking.** Read-modify-write on a shared settings row with
-  no lock; worst case a dismissed duplicate-name suggestion reappears once under
-  a concurrent double-click. Low priority.
+- **Daily-digest + morning-reminder email jobs run on the default connection.**
+  Like the signal-detection job used to, `runDailyDigest` and the morning-reminder
+  job run unscoped, so in hosted (multi-tenant RLS) mode they only produce output
+  for the self-host case. Give them the same per-tenant `withUserDb` fan-out the
+  signal-detection job now uses (enumerate tenants from the non-RLS auth `user`
+  table; do **not** give the sweep an RLS bypass on tenant tables).
+- **Telegram owner resolution.** Resolved (deterministic email-first + `orderBy`).
+  Kept here only as a pointer; today's only impact was which admin's AI quota
+  absorbed bot usage — no data-isolation consequence.
 
 ## Performance / scaling
 
 - **Per-request fixed overhead (~1s floor, cross-region).** Every authenticated
-  request — any `/app/*` page or `/api/*` route, not just search — pays a fixed
-  setup cost before its query runs: Better Auth session validation (a DB lookup),
-  then `openTenantConnection` (`pool.connect()` — a fresh TCP+TLS+auth handshake
-  when no warm connection is idle, and `idleTimeoutMillis` is 2s so spaced
-  requests re-handshake — plus a `set_config('app.current_user_id', …)` query),
-  then the query, then `RESET ALL` on release. At ~150ms/round-trip to a
-  region-away Postgres (the US-function → Sydney-DB latency flagged in
-  [`SCALING.md`](SCALING.md)), those 2–4 serial setup round-trips plus any cold
-  handshake dominate small requests — the ~1s floor observed in the search
-  benchmarks (`apps/web/scripts/bench`). It is not search-specific and was left
-  untouched by the search round-trip work. Enhancement scope, app-wide: (1)
-  cache/skip redundant session validation on the hot path; (2) keep the tenant
-  pool warm (raise `idleTimeoutMillis`, or a keepalive) so steady traffic stops
-  paying the connect handshake — weigh against the max-15-backend Supabase cap;
-  (3) co-locate the Vercel function region with the DB region to cut the
-  round-trip base latency. Each is a broad infra change, not a per-endpoint fix.
-
-- **Concurrent `getDb()` fan-out (general pattern).** A request that fires 2+
-  `getDb()`-acquiring operations concurrently (`Promise.all` over functions that
-  each `await getDb()` internally) checks out one tenant-pool connection per
-  branch — concurrent `getDb()` calls do not dedupe to one connection inside a
-  Server Action — and exhausts the `max=3` tenant pool (HTTP 500). The two search
-  reads are fixed (one query on one connection); a repo-wide audit for other
-  fan-out sites rides with that change. Rule of thumb (now in
+  request pays a fixed setup cost before its query runs. Two of the original three
+  contributors are now addressed: session validation is `cookieCache`d (PR #100)
+  and `RESET ALL` is gone from the release path. The remaining levers are broad
+  infra changes, not per-endpoint fixes: (1) keep the tenant pool warm (raise
+  `idleTimeoutMillis` or add a keepalive) so steady traffic stops paying the
+  connect handshake — weighed against the max-15-backend Supabase cap; (2)
+  co-locate the Vercel function region with the DB region to cut the round-trip
+  base latency (the US-function → Sydney-DB hop flagged in [`SCALING.md`](SCALING.md)).
+- **Concurrent `getDb()` fan-out — resolved for the identified sites.** The write
+  path (PR #100), the two search reads, and the EE admin/access-request fan-outs
+  (this sweep) all run on one connection. Rule of thumb (now in
   [`SCALING.md`](SCALING.md) lever 2): resolve `getDb()` **once** per request and
-  thread the handle; prefer one round-trip over a fan-out.
-- **Connect-retry doesn't cover the EE `drizzle(getPool())` reads.** The
-  transient-acquisition retry (`connect-retry.ts`, both the EE tenant pool and
-  the core pool) wraps `openTenantConnection`/`openAdminConnection` and
-  better-auth's session read, but not the admin/access-request/billing repos,
-  which issue `pool.query()` directly. Low-frequency paths, so not urgent — an
-  enhancement to bring them under the same backoff+jitter wrapper (see
-  [`SCALING.md`](SCALING.md) lever 2).
+  thread the handle; prefer one round-trip over a fan-out. Minor residuals noted
+  in the connection-hygiene section above.
 
 ## Self-hosting / packaging
 
 - **Relocate the admin/EE surface into `packages/ee`.** The "provably-100%-AGPL"
   proof (`.github/workflows/ci.yml`'s `verify-without-ee` job and
-  `docs/SELF_HOSTING.md` "Level 2") deletes a hand-maintained list of admin
-  files that physically live in `apps/web/src` but depend on removed EE code:
+  `docs/SELF_HOSTING.md` "Level 2") deletes a hand-maintained list of admin files
+  that physically live in `apps/web/src` but depend on removed EE code:
   `app/app/admin/`, `lib/actions/admin/`, `components/app/admin/`,
-  `components/app/table/AdminTables.tsx`, and the `api/stripe` + `api/access-requests`
-  routes. Every new admin/EE feature has to be added to that list by hand, and
-  forgetting silently breaks the pure-AGPL build — this happened when
-  `SubscriptionControls.tsx` was added (it imports `lib/actions/admin/subscriptions`),
-  and again each time the surface grows. Move the admin/EE UI + server actions
-  into `packages/ee` and load them dynamically (the way `apps/web/src/lib/hosted/gate.ts`
-  already loads EE *logic*), so Level 2 collapses to just "delete `packages/ee`"
-  with no stragglers to enumerate. Note: this shifts those files from AGPL to
-  PolyForm Shield — a licensing decision, not just a refactor. (Level 1
-  self-hosting is unaffected either way; the admin panel 404s without the EE
-  flag regardless.)
+  `components/app/table/AdminTables.tsx`, and the `api/stripe` +
+  `api/access-requests` routes. Every new admin/EE feature has to be added to that
+  list by hand, and forgetting silently breaks the pure-AGPL build. Move the
+  admin/EE UI + server actions into `packages/ee` and load them dynamically (the
+  way `apps/web/src/lib/hosted/gate.ts` already loads EE *logic*), so Level 2
+  collapses to just "delete `packages/ee`" with no stragglers to enumerate.
+  **This shifts those files from AGPL to PolyForm Shield — a licensing decision,
+  not just a refactor — so it needs an explicit owner call and belongs in its own
+  PR, not a hygiene sweep.** (Level 1 self-hosting is unaffected either way.)
 
 ## Minor / enhancements
 
-- **Firecrawl retry/backoff.** `firecrawl-client.ts` has no retry on transient
-  failures (asymmetric with the Anthropic SDK's built-in retry). Enhancement,
-  not a defect.
-- **Prompt-export path consistency.** `signal-detection.ts`'s prompt export
-  bypasses the normal `llm/index.ts` re-export path (works; purely stylistic).
+- **Prompt-export path consistency** — resolved (signal-detection prompt now flows
+  through the `llm/index.ts` barrel). Firecrawl retry/backoff — resolved (see the
+  connection-hygiene sweep above).

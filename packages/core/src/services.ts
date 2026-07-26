@@ -52,7 +52,7 @@ export {
   SIGNAL_DETECTION_SYSTEM,
   buildSignalDetectionPrompt,
   type SignalDetectionSubject,
-} from "./llm/prompts/signal-detection";
+} from "./llm";
 export { heuristicContactParse } from "./parse/heuristic-contact";
 export {
   FirecrawlSearchClient,

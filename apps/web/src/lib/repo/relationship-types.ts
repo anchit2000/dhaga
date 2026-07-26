@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { asc, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { relationshipTypes, type RelationshipTypeRow } from "@/lib/db/schema";
+import { PreconditionError } from "@/lib/repo/errors";
 import { buildRelationshipLabelMap, type RelationshipLabelMap } from "@dhaga/core";
 
 export async function listRelationshipTypes(): Promise<RelationshipTypeRow[]> {
@@ -33,7 +34,7 @@ export async function createRelationshipType(input: {
     .from(relationshipTypes)
     .where(eq(relationshipTypes.slug, input.slug))
     .limit(1);
-  if (existing) throw new Error(`A relationship type "${input.slug}" already exists.`);
+  if (existing) throw new PreconditionError(`A relationship type "${input.slug}" already exists.`);
   const id = randomUUID();
   await db.insert(relationshipTypes).values({
     id,

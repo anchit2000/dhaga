@@ -53,6 +53,11 @@ export {
 } from "./prompts/brief";
 export { CARD_SCAN_SYSTEM, CARD_SCAN_PROMPT } from "./prompts/card-scan";
 export {
+  SIGNAL_DETECTION_SYSTEM,
+  buildSignalDetectionPrompt,
+  type SignalDetectionSubject,
+} from "./prompts/signal-detection";
+export {
   getBatchLLMClient,
   getLLMClient,
   getLLMProvider,

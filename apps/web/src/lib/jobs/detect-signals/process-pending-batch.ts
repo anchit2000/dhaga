@@ -1,11 +1,12 @@
 import { randomUUID } from "node:crypto";
 import type { BatchLLMClient } from "@dhaga/core";
 import { signalDetectionSchema } from "@dhaga/core";
-import { getDb } from "@/lib/db";
+import { getDb } from "@/lib/db/request-scope";
 import { signals } from "@/lib/db/schema";
 import { recordAiAction } from "@/lib/ai/metering";
 import { hasOpenSignal } from "@/lib/repo/signals";
 import { setPendingSignalBatchId } from "@/lib/repo/settings";
+import type { ScopedRunner } from "./index";
 
 export type PendingBatchOutcome = { done: false } | { done: true; created: number };
 
@@ -14,8 +15,15 @@ export type PendingBatchOutcome = { done: false } | { done: true; created: numbe
  * previous run has finished, and if so, apply its results — the exact same
  * per-contact side effects the old synchronous loop did inline (dedup via
  * hasOpenSignal, insert the signals row, meter real usage from the result).
+ *
+ * The status/results fetches from Anthropic run OUTSIDE `runScoped`, so no
+ * tenant connection is held across the network. The result application
+ * (metering, dedup read, insert, clearing the pending pointer) is one scoped
+ * unit — all DB work, no network — so in hosted mode it commits atomically per
+ * tenant and every query is RLS-scoped to that user.
  */
 export async function processPendingBatch(
+  runScoped: ScopedRunner,
   batchClient: BatchLLMClient,
   batchId: string,
 ): Promise<PendingBatchOutcome> {
@@ -29,45 +37,48 @@ export async function processPendingBatch(
   }
   if (!isDone) return { done: false };
 
-  const db = await getDb();
   try {
     const results = await batchClient.getBatchResults(batchId, signalDetectionSchema);
-    let created = 0;
-    for (const result of results) {
-      if (result.status !== "succeeded" || !result.data || !result.model || !result.usage) {
-        // errored/expired/canceled — Anthropic doesn't bill these, and
-        // there's nothing to apply for this contact this cycle.
-        continue;
-      }
-      try {
-        await recordAiAction("signal_detection", result.model, result.usage);
-        const { hasSignal, kind, headline, detail, sourceUrl } = result.data;
-        // Same dedup guard the synchronous job used — see hasOpenSignal's
-        // doc comment for why the sweep would otherwise duplicate the same
-        // still-open change every rescan.
-        if (hasSignal && kind && !(await hasOpenSignal(result.id, kind))) {
-          await db.insert(signals).values({
-            id: randomUUID(),
-            contactId: result.id,
-            kind,
-            headline,
-            detail,
-            sourceUrl,
-            status: "new",
-          });
-          created += 1;
+    const created = await runScoped(async () => {
+      const db = await getDb();
+      let count = 0;
+      for (const result of results) {
+        if (result.status !== "succeeded" || !result.data || !result.model || !result.usage) {
+          // errored/expired/canceled — Anthropic doesn't bill these, and
+          // there's nothing to apply for this contact this cycle.
+          continue;
         }
-      } catch {
-        // One contact's result failing to apply must never abort the rest
-        // of the batch (best-effort, like the old inline loop).
+        try {
+          await recordAiAction("signal_detection", result.model, result.usage);
+          const { hasSignal, kind, headline, detail, sourceUrl } = result.data;
+          // Same dedup guard the synchronous job used — see hasOpenSignal's
+          // doc comment for why the sweep would otherwise duplicate the same
+          // still-open change every rescan.
+          if (hasSignal && kind && !(await hasOpenSignal(result.id, kind))) {
+            await db.insert(signals).values({
+              id: randomUUID(),
+              contactId: result.id,
+              kind,
+              headline,
+              detail,
+              sourceUrl,
+              status: "new",
+            });
+            count += 1;
+          }
+        } catch {
+          // One contact's result failing to apply must never abort the rest
+          // of the batch (best-effort, like the old inline loop).
+        }
       }
-    }
-    await setPendingSignalBatchId(null);
+      await setPendingSignalBatchId(null);
+      return count;
+    });
     return { done: true, created };
   } catch {
-    // Batch reports done but results couldn't be downloaded (transient
-    // network issue) — keep the pointer and retry next run instead of
-    // silently losing a night's worth of signals.
+    // Batch reports done but the results couldn't be downloaded (transient
+    // network issue), or the scoped write failed — keep the pointer and retry
+    // next run instead of silently losing a night's worth of signals.
     return { done: false };
   }
 }

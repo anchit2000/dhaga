@@ -12,6 +12,7 @@ import { enforceRateLimit, RateLimitError } from "@/lib/ratelimit";
 import { getContactsProvider } from "@/lib/import/providers";
 import { CONTACT_IMPORT_PROVIDERS, type ContactImportProviderId } from "@/utils/constants/auth";
 import { importContacts, type ImportSummary } from "@/lib/repo/import";
+import { emitWebhook } from "@/lib/webhooks";
 import {
   dismissCluster,
   linkClusterToCompany,
@@ -48,14 +49,26 @@ export async function importCsvBatchAction(input: unknown): Promise<ImportBatchR
   // distinct company plus the dedup scan and per-row note — enough to exhaust the
   // max-3 tenant pool (a server action gets no cache() getDb() dedupe). mutation()
   // collapses them to one connection and returns a resilient result on failure.
+  // skipWebhook keeps the outbound contacts.imported fetch OUT of that scope — we
+  // emit it below, after mutation() has released the connection.
   const r = await mutation("importCsvBatch", () =>
-    importContacts(parsed.data.candidates, parsed.data.format),
+    importContacts(parsed.data.candidates, parsed.data.format, { skipWebhook: true }),
   );
   if (!r.ok) return { error: r.error };
   revalidatePath("/app/people");
   revalidatePath("/app/import");
   revalidatePath("/app");
-  return r.data;
+  // Best-effort, post-scope: a dead receiver must never fail an import that has
+  // already committed (emitWebhook itself swallows + 5s-timeouts; the try/catch
+  // is belt-and-braces so a future throwing emit can't break the action).
+  if (r.data.created > 0 && r.data.format) {
+    try {
+      await emitWebhook("contacts.imported", { count: r.data.created, format: r.data.format });
+    } catch {
+      // Swallowed — the contacts are saved; the webhook is a courtesy.
+    }
+  }
+  return { created: r.data.created, skipped: r.data.skipped };
 }
 
 /** Which contacts providers are env-configured, so the UI gates buttons. */

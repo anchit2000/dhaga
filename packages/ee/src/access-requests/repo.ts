@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { and, count, desc, eq, ilike, lte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { getPool } from "../db/pool";
+import { openAdminConnection } from "../db/admin-db";
 import { ensureEeSchema } from "../db/bootstrap";
 import { accessRequests, type AccessRequestRow, type AccessRequestStatus } from "../db/schema";
 
@@ -67,14 +68,22 @@ export async function listAccessRequests(
 }
 
 export async function listAccessRequestsPage({ page, pageSize, email, status }: { page: number; pageSize: number; email?: string; status?: AccessRequestStatus }): Promise<{ rows: AccessRequestRow[]; total: number }> {
-  const conn = await db();
   const conditions = [email ? ilike(accessRequests.email, `%${email}%`) : undefined, status ? eq(accessRequests.status, status) : undefined].filter((value) => value !== undefined);
   const where = conditions.length > 0 ? and(...conditions) : undefined;
-  const [rows, [total]] = await Promise.all([
-    conn.select().from(accessRequests).where(where).orderBy(desc(accessRequests.requestedAt)).limit(pageSize).offset((page - 1) * pageSize),
-    conn.select({ value: count() }).from(accessRequests).where(where),
-  ]);
-  return { rows, total: total?.value ?? 0 };
+  // ONE checkout for the page and its count: a Promise.all on a single admin
+  // connection pipelines both queries on one backend, instead of two concurrent
+  // checkouts against the small (max 3) tenant pool. access_requests carries no
+  // RLS, so the bypass-RLS admin connection reads it identically.
+  const { db: conn, release } = await openAdminConnection();
+  try {
+    const [rows, [total]] = await Promise.all([
+      conn.select().from(accessRequests).where(where).orderBy(desc(accessRequests.requestedAt)).limit(pageSize).offset((page - 1) * pageSize),
+      conn.select({ value: count() }).from(accessRequests).where(where),
+    ]);
+    return { rows, total: total?.value ?? 0 };
+  } finally {
+    await release();
+  }
 }
 
 export async function reviewAccessRequest(

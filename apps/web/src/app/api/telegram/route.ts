@@ -1,4 +1,4 @@
-import { or, eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { authUser } from "@/lib/db/schema/auth";
 import { extractContactFromText } from "@/lib/ai/contact-extraction";
@@ -41,17 +41,31 @@ export async function resolveOwnerUserId(): Promise<string | null> {
   if (cachedOwnerId !== undefined) return cachedOwnerId;
   const db = await getDb();
   const ownerEmail = process.env.DHAGA_OWNER_EMAIL;
-  const [owner] = await db
+
+  // When DHAGA_OWNER_EMAIL is set, it pins the owner exactly (email is unique),
+  // so try it first — that's the one query when it resolves.
+  if (ownerEmail) {
+    const [byEmail] = await db
+      .select({ id: authUser.id })
+      .from(authUser)
+      .where(eq(authUser.email, ownerEmail))
+      .limit(1);
+    if (byEmail?.id) {
+      cachedOwnerId = byEmail.id;
+      return byEmail.id;
+    }
+  }
+
+  // Fallback: the earliest admin. A stable orderBy makes this deterministic so
+  // .limit(1) can't flip between requests when more than one admin exists.
+  const [admin] = await db
     .select({ id: authUser.id })
     .from(authUser)
-    .where(
-      ownerEmail
-        ? or(eq(authUser.isAdmin, true), eq(authUser.email, ownerEmail))
-        : eq(authUser.isAdmin, true),
-    )
+    .where(eq(authUser.isAdmin, true))
+    .orderBy(asc(authUser.createdAt), asc(authUser.id))
     .limit(1);
-  if (owner?.id) cachedOwnerId = owner.id;
-  return owner?.id ?? null;
+  if (admin?.id) cachedOwnerId = admin.id;
+  return admin?.id ?? null;
 }
 
 /**

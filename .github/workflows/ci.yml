@@ -18,7 +18,18 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      # onnxruntime-node fetches its native binary in a postinstall OUTSIDE the
+      # npm cache, so a transient CDN timeout (ETIMEDOUT) can fail an otherwise
+      # healthy install. Retry the whole install — postinstall included — before
+      # failing the run.
+      - run: |
+          n=0
+          until npm ci; do
+            n=$((n + 1))
+            if [ "$n" -ge 3 ]; then echo "npm ci failed after $n attempts"; exit 1; fi
+            echo "npm ci failed — retry $n/3 in 15s…"
+            sleep 15
+          done
       - run: npm run typecheck --workspace @dhaga/core
       - run: npm run typecheck --workspace @dhaga/extension
       - run: npm run typecheck --workspace @dhaga/mobile
@@ -50,5 +61,14 @@ jobs:
             apps/web/src/components/app/table/AdminTables.tsx
           sed -i '/"@dhaga\/ee": "\*",/d' apps/web/package.json
           sed -i 's/\["@dhaga\/core", "@dhaga\/ee"\]/["@dhaga\/core"]/' apps/web/next.config.ts
-      - run: npm install
+      # Same retry as the verify job — onnxruntime-node's native-binary download
+      # is the flaky step (ETIMEDOUT to its CDN), unrelated to the build.
+      - run: |
+          n=0
+          until npm install; do
+            n=$((n + 1))
+            if [ "$n" -ge 3 ]; then echo "npm install failed after $n attempts"; exit 1; fi
+            echo "npm install failed — retry $n/3 in 15s…"
+            sleep 15
+          done
       - run: npm run build --prefix apps/web

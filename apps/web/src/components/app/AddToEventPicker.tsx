@@ -61,6 +61,7 @@ export function AddToEventPicker({
       placeholder="Search groups…"
       triggerLabel="Add to group"
       clearOnSelect
+      preloadOnOpen
       disabled={pending}
     />
   );

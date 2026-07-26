@@ -26,6 +26,7 @@ export async function GET(request: Request): Promise<Response> {
     text: q,
     kinds: parseKinds(searchParams.get("kinds")),
     matchMode: "prefix",
+    listWhenEmpty: searchParams.get("list") === "1",
   });
   // Map the gateway's wider kind union back to the picker's GraphTarget shape.
   // Prefix search only ever surfaces endpoint kinds, so note/fact never appear.

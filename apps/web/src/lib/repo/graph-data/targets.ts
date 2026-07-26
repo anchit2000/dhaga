@@ -54,17 +54,21 @@ function branch(kind: GraphTargetKind, like: string, prefix: string): SQL {
  * "Acme …" contacts can't starve the Acme company row out of the list. Folding
  * the per-kind queries into a single statement matters most on a region-away
  * hosted DB, where each separate query was another full network round-trip.
- * `kinds` optionally restricts the search (default: all kinds).
+ * `kinds` optionally restricts the search (default: all kinds). With
+ * `opts.listWhenEmpty` an empty query lists all nodes (match-all, ranked by
+ * name, capped at TARGET_LIMIT per kind) instead of returning nothing.
  */
 export async function searchGraphTargets(
   query: string,
   kinds: readonly GraphTargetKind[] = RELATIONSHIP_ENDPOINT_KINDS,
+  opts?: { listWhenEmpty?: boolean },
 ): Promise<GraphTarget[]> {
   const trimmed = query.trim();
-  if (!trimmed || kinds.length === 0) return [];
+  if (kinds.length === 0) return [];
+  if (!trimmed && !opts?.listWhenEmpty) return [];
   const db = await getDb();
-  const like = `%${trimmed}%`;
-  const prefix = `${trimmed}%`;
+  const like = trimmed ? `%${trimmed}%` : "%";
+  const prefix = trimmed ? `${trimmed}%` : "%";
 
   // Stable kind order regardless of the order the caller listed them in.
   const requested = RELATIONSHIP_ENDPOINT_KINDS.filter((kind) => kinds.includes(kind));

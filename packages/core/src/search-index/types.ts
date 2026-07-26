@@ -50,6 +50,8 @@ export interface SearchQuery {
    * "exact": exact-token match (e.g. write-time identity resolution).
    */
   matchMode?: "fuzzy" | "prefix" | "exact";
+  /** prefix/typeahead: list results when the query is empty instead of returning nothing. */
+  listWhenEmpty?: boolean;
 }
 
 export interface SearchIndexResult {

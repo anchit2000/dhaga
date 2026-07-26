@@ -1,4 +1,4 @@
-export { ASK_QUERIES, GITHUB_URL, HERO, STATS } from "./hero";
+export { ASK_QUERIES, GITHUB_URL, HERO, HERO_SUBLINES, STATS } from "./hero";
 export {
   MOCK_CIRCLES,
   MOCK_CAPTURE_ACTIONS,

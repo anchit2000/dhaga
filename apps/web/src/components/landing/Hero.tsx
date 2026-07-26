@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { GITHUB_URL, HERO } from "@/utils/constants/landing";
+import { HeroSubline } from "./HeroSubline";
 import { ThreadCanvas } from "./ThreadCanvas";
 import { AppWindow } from "./AppWindow";
 import { CaptureOrbit } from "./CaptureOrbit";
@@ -27,6 +28,10 @@ export function Hero() {
           The best contact you made this year — what was their{" "}
           <em className="text-ember italic">name</em> again?
         </h1>
+        <HeroSubline
+          className={`mx-auto mt-5 max-w-2xl text-balance font-display text-xl leading-snug font-medium text-paper/90 sm:text-2xl ${RISE}`}
+          style={{ animationDelay: "0.2s" }}
+        />
         <p
           className={`mx-auto mt-6 max-w-2xl text-pretty text-lg text-fog ${RISE}`}
           style={{ animationDelay: "0.26s" }}

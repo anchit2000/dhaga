@@ -1,0 +1,4 @@
+# Playwright saved login session — auth.setup.ts writes storageState here every
+# run. It contains live session cookies, so it must never be committed. (Also
+# covered by apps/web/.gitignore; kept here so the rule travels with the suite.)
+.auth/

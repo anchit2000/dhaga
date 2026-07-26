@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Check, Pencil } from "lucide-react";
-import { ActionForm } from "@/components/app/ActionForm";
+import { ActionForm, runAction } from "@/components/app/ActionForm";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
 import {
@@ -35,8 +35,13 @@ export function FollowUpItem({
       <li className="rounded-lg border border-seam bg-panel px-3 py-2">
         <form
           action={async (formData) => {
-            await updateFollowUpAction(formData);
-            setEditing(false);
+            // Keep the row in edit mode (action + date intact) if the save
+            // throws — a transient failure toasts, never the full-page boundary.
+            const ok = await runAction(
+              () => updateFollowUpAction(formData),
+              "Couldn't save the follow-up — try again.",
+            );
+            if (ok) setEditing(false);
           }}
           className="flex flex-col gap-2 sm:flex-row sm:items-center"
         >

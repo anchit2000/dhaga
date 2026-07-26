@@ -5,10 +5,10 @@ import Link from "next/link";
 import { CalendarClock } from "lucide-react";
 import { AddToCalendar } from "./AddToCalendar";
 import { HomeTile } from "./HomeTile";
-import { ActionForm } from "@/components/app/ActionForm";
 import { ThreadMark } from "@/components/brand/ThreadMark";
 import { Button } from "@/components/ui/button";
 import { markReachedOutAction } from "@/lib/actions/reminders";
+import { useOptimisticList } from "@/lib/hooks/useOptimisticList";
 import { formatWeekdayTime } from "@/utils/format-date";
 import type { DailySuggestion } from "@/lib/repo/daily-suggestions";
 
@@ -45,6 +45,12 @@ export function TodaySuggestions({
   className?: string;
 }) {
   const [schedulingId, setSchedulingId] = useState<string | null>(null);
+  // Marking someone reached out drops them from today's list instantly; the row
+  // reappears with a Retry toast if the server rejects it.
+  const { items, remove } = useOptimisticList<DailySuggestion>({
+    items: suggestions,
+    errorMessage: "Couldn't mark that as reached out.",
+  });
 
   return (
     <HomeTile
@@ -54,7 +60,7 @@ export function TodaySuggestions({
       className={className}
       meta={
         <span className="font-mono text-[10px] uppercase tracking-widest text-fog">
-          {suggestions.length} {suggestions.length === 1 ? "person" : "people"}
+          {items.length} {items.length === 1 ? "person" : "people"}
         </span>
       }
     >
@@ -65,7 +71,7 @@ export function TodaySuggestions({
         </div>
       ) : null}
 
-      {suggestions.length === 0 ? (
+      {items.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-4 py-10 text-center">
           <ThreadMark size={44} />
           <div>
@@ -80,7 +86,7 @@ export function TodaySuggestions({
         </div>
       ) : (
         <div className="divide-y divide-seam">
-          {suggestions.map((person) => (
+          {items.map((person) => (
             <div key={person.contactId} className="rounded-lg py-3 transition-colors first:pt-0 last:pb-0 hover:bg-amber/[0.03]">
               <div className="flex items-center gap-3">
                 <Button
@@ -97,15 +103,21 @@ export function TodaySuggestions({
                     · {person.reason}
                   </span>
                 </Button>
-                <ActionForm
-                  action={markReachedOutAction}
-                  errorMessage="Couldn't mark that as reached out."
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    remove(person, async () => {
+                      const formData = new FormData();
+                      formData.set("contactId", person.contactId);
+                      await markReachedOutAction(formData);
+                      return null;
+                    })
+                  }
                 >
-                  <input type="hidden" name="contactId" value={person.contactId} />
-                  <Button type="submit" variant="outline" size="sm">
-                    Reached out
-                  </Button>
-                </ActionForm>
+                  Reached out
+                </Button>
               </div>
               {calendarConnected && slots.length > 0 ? (
                 <div className="mt-1.5">

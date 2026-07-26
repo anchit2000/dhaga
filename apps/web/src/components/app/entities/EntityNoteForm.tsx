@@ -2,6 +2,7 @@
 
 import { useActionState, useRef } from "react";
 import { addEntityNoteAction, type NoteFormState } from "@/lib/actions/notes";
+import { FormError } from "@/components/app/feedback";
 import { Textarea } from "@/components/ui/textarea";
 import { SubmitButton } from "../SubmitButton";
 
@@ -26,11 +27,7 @@ export function EntityNoteForm({ entityId }: { entityId: string }) {
         rows={3}
         placeholder="What's worth remembering about this place or thing?"
       />
-      {state.error ? (
-        <p className="text-sm text-red-400" role="alert">
-          {state.error}
-        </p>
-      ) : null}
+      <FormError message={state.error} />
       <SubmitButton>Add note</SubmitButton>
     </form>
   );

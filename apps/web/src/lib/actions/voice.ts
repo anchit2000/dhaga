@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireUserId } from "@/lib/auth/guard";
+import { mutation } from "@/lib/actions/mutation";
 import { clearVocab, removeVocab, upsertVocab } from "@/lib/repo/voice-vocab";
 
 /**
@@ -21,26 +21,28 @@ function parseAliases(raw: FormDataEntryValue | null): string[] {
 }
 
 export async function addVocabTermAction(formData: FormData): Promise<void> {
-  await requireUserId();
   const term = String(formData.get("term") ?? "").trim();
   if (!term) return;
   const aliases = parseAliases(formData.get("aliases"));
   const boostRaw = formData.get("boost");
   const boost = typeof boostRaw === "string" && boostRaw.trim() ? Number(boostRaw) : undefined;
-  await upsertVocab(term, aliases, Number.isInteger(boost) ? boost : undefined);
+  const r = await mutation("addVocabTerm", () =>
+    upsertVocab(term, aliases, Number.isInteger(boost) ? boost : undefined),
+  );
+  if (!r.ok) throw new Error(r.error);
   revalidatePath("/app/settings");
 }
 
 export async function removeVocabTermAction(formData: FormData): Promise<void> {
-  await requireUserId();
   const term = String(formData.get("term") ?? "").trim();
   if (!term) return;
-  await removeVocab(term);
+  const r = await mutation("removeVocabTerm", () => removeVocab(term));
+  if (!r.ok) throw new Error(r.error);
   revalidatePath("/app/settings");
 }
 
 export async function clearVocabAction(): Promise<void> {
-  await requireUserId();
-  await clearVocab();
+  const r = await mutation("clearVocab", () => clearVocab());
+  if (!r.ok) throw new Error(r.error);
   revalidatePath("/app/settings");
 }

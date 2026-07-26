@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireUserId } from "@/lib/auth/guard";
 import { withUserDb } from "@/lib/db/request-scope";
 import { SAVE_RETRY_MESSAGE, logActionError } from "@/lib/actions/resilience";
+import { mutation, MutationError } from "@/lib/actions/mutation";
 import { getContact } from "@/lib/repo/contacts";
 import { getEntity } from "@/lib/repo/entities";
 import { addEntityNote } from "@/lib/repo/entity-notes";
@@ -110,70 +111,71 @@ export async function addEntityNoteAction(
   _previous: NoteFormState,
   formData: FormData,
 ): Promise<NoteFormState> {
-  await requireUserId();
   const entityId = String(formData.get("entityId") ?? "");
   const body = String(formData.get("body") ?? "").trim();
   if (!entityId) return { error: "Missing entity." };
   if (!body) return { error: "Write something first." };
-  if (!(await getEntity(entityId))) return { error: "Entity not found." };
-  try {
+  // The existence check + write share ONE scoped connection via mutation() — a
+  // server action gets no React cache() getDb() dedupe, so an unscoped getEntity
+  // would otherwise fan out its own tenant-pool connection (max 3).
+  const r = await mutation("addEntityNote", async () => {
+    if (!(await getEntity(entityId))) throw new MutationError("Entity not found.");
     await addEntityNote(entityId, body);
-  } catch (error) {
-    logActionError("addEntityNote", error);
-    return { error: SAVE_RETRY_MESSAGE };
-  }
+  });
+  if (!r.ok) return { error: r.error };
   revalidatePath(`/app/entities/${entityId}`);
   return {};
 }
 
 export async function deleteEntityNoteAction(formData: FormData): Promise<void> {
-  await requireUserId();
   const noteId = String(formData.get("noteId") ?? "");
   const entityId = String(formData.get("entityId") ?? "");
   if (!noteId) return;
-  await deleteNote(noteId);
+  const r = await mutation("deleteEntityNote", () => deleteNote(noteId));
+  if (!r.ok) throw new Error(r.error);
   revalidatePath(`/app/entities/${entityId}`);
 }
 
 export async function deleteNoteAction(formData: FormData): Promise<void> {
-  await requireUserId();
   const noteId = String(formData.get("noteId") ?? "");
   const contactId = String(formData.get("contactId") ?? "");
   if (!noteId) return;
-  await deleteNote(noteId);
+  const r = await mutation("deleteNote", () => deleteNote(noteId));
+  if (!r.ok) throw new Error(r.error);
   revalidatePath(`/app/people/${contactId}`);
 }
 
 export async function deleteFactAction(formData: FormData): Promise<void> {
-  await requireUserId();
   const factId = String(formData.get("factId") ?? "");
   const contactId = String(formData.get("contactId") ?? "");
   if (!factId) return;
-  await deleteFact(factId);
+  const r = await mutation("deleteFact", () => deleteFact(factId));
+  if (!r.ok) throw new Error(r.error);
   revalidatePath(`/app/people/${contactId}`);
 }
 
 export async function updateFactAction(formData: FormData): Promise<void> {
-  const userId = await requireUserId();
   const factId = String(formData.get("factId") ?? "");
   const contactId = String(formData.get("contactId") ?? "");
   const text = String(formData.get("text") ?? "").trim();
   if (!factId || !text) return;
-  // One scoped connection for the update + local-embed index (see request-scope):
-  // a server action gets no React cache() getDb() dedupe.
-  await withUserDb(userId, async () => {
+  // One scoped connection for the update + local-embed index (mutation() pins it):
+  // a server action gets no React cache() getDb() dedupe. A transient throw is
+  // caught by the caller's runAction, keeping the inline edit open with its text.
+  const r = await mutation("updateFact", async () => {
     await updateFactText(factId, text);
     await upsertEmbedding("fact", factId, contactId, text);
   });
+  if (!r.ok) throw new Error(r.error);
   revalidatePath(`/app/people/${contactId}`);
 }
 
 /** Confirm a web-sourced (unverified) fact, clearing its badge. */
 export async function verifyFactAction(formData: FormData): Promise<void> {
-  await requireUserId();
   const factId = String(formData.get("factId") ?? "");
   const contactId = String(formData.get("contactId") ?? "");
   if (!factId) return;
-  await verifyFact(factId);
+  const r = await mutation("verifyFact", () => verifyFact(factId));
+  if (!r.ok) throw new Error(r.error);
   revalidatePath(`/app/people/${contactId}`);
 }

@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { z } from "zod";
 import { contactProfileSchema } from "@dhaga/core";
 import { requireUserId } from "@/lib/auth/guard";
+import { mutation } from "@/lib/actions/mutation";
 import { getAuth } from "@/lib/auth/config";
 import { socialProviderConfig } from "@/lib/auth/config/social";
 import { enforceRateLimit, RateLimitError } from "@/lib/ratelimit";
@@ -40,14 +41,21 @@ const clusterSchema = z.object({
 type ImportBatchResult = ImportSummary | { error: string };
 
 export async function importCsvBatchAction(input: unknown): Promise<ImportBatchResult> {
-  await requireUserId();
   const parsed = batchSchema.safeParse(input);
   if (!parsed.success) return { error: "That batch didn't validate — re-parse the file." };
-  const summary = await importContacts(parsed.data.candidates, parsed.data.format);
+  // The client already chunks into ≤200-row batches (one request each). Pin ONE
+  // scoped connection for this batch: importContacts fans out a getDb() per row ×
+  // distinct company plus the dedup scan and per-row note — enough to exhaust the
+  // max-3 tenant pool (a server action gets no cache() getDb() dedupe). mutation()
+  // collapses them to one connection and returns a resilient result on failure.
+  const r = await mutation("importCsvBatch", () =>
+    importContacts(parsed.data.candidates, parsed.data.format),
+  );
+  if (!r.ok) return { error: r.error };
   revalidatePath("/app/people");
   revalidatePath("/app/import");
   revalidatePath("/app");
-  return summary;
+  return r.data;
 }
 
 /** Which contacts providers are env-configured, so the UI gates buttons. */
@@ -109,19 +117,22 @@ export async function fetchProviderContactsAction(
 }
 
 export async function confirmClusterTagAction(input: unknown): Promise<{ updated?: number; error?: string }> {
-  await requireUserId();
   const parsed = clusterSchema.safeParse(input);
   if (!parsed.success) return { error: "Invalid suggestion." };
-  // Tags are stored lowercase (extraction convention).
-  const updated = await tagCluster(parsed.data.label.toLowerCase(), parsed.data.contactIds);
-  await dismissCluster(parsed.data.label.toLowerCase());
+  // Pin tagCluster + dismissCluster (each opens a getDb()) to one connection.
+  const r = await mutation("confirmClusterTag", async () => {
+    // Tags are stored lowercase (extraction convention).
+    const updated = await tagCluster(parsed.data.label.toLowerCase(), parsed.data.contactIds);
+    await dismissCluster(parsed.data.label.toLowerCase());
+    return updated;
+  });
+  if (!r.ok) return { error: r.error };
   revalidatePath("/app/people");
   revalidatePath("/app/import");
-  return { updated };
+  return { updated: r.data };
 }
 
 export async function confirmClusterCompanyAction(input: unknown): Promise<{ updated?: number; error?: string }> {
-  await requireUserId();
   const parsed = clusterSchema.safeParse(input);
   if (!parsed.success) return { error: "Invalid suggestion." };
   const { label, contactIds } = parsed.data;
@@ -131,18 +142,23 @@ export async function confirmClusterCompanyAction(input: unknown): Promise<{ upd
     label.length > 3 && label === label.toUpperCase()
       ? label[0] + label.slice(1).toLowerCase()
       : label;
-  const updated = await linkClusterToCompany(companyName, contactIds);
-  await dismissCluster(label.toLowerCase());
+  // Pin linkClusterToCompany (+ findOrCreateCompany) + dismissCluster to one connection.
+  const r = await mutation("confirmClusterCompany", async () => {
+    const updated = await linkClusterToCompany(companyName, contactIds);
+    await dismissCluster(label.toLowerCase());
+    return updated;
+  });
+  if (!r.ok) return { error: r.error };
   revalidatePath("/app/people");
   revalidatePath("/app/import");
-  return { updated };
+  return { updated: r.data };
 }
 
 export async function dismissClusterAction(input: unknown): Promise<{ error?: string }> {
-  await requireUserId();
   const parsed = z.object({ key: z.string().min(1).max(80) }).safeParse(input);
   if (!parsed.success) return { error: "Invalid suggestion." };
-  await dismissCluster(parsed.data.key);
+  const r = await mutation("dismissCluster", () => dismissCluster(parsed.data.key));
+  if (!r.ok) return { error: r.error };
   revalidatePath("/app/import");
   return {};
 }

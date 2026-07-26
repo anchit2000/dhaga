@@ -4,6 +4,7 @@ import {
 } from "@/lib/actions/billing";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ActionForm } from "@/components/app/ActionForm";
 import type { PlanSummary } from "@/lib/hosted/gate";
 
 const PLAN_LABEL: Record<PlanSummary["plan"], string> = {
@@ -67,28 +68,37 @@ export function BillingSetting({
           </p>
         </div>
         {summary.hasStripeCustomer ? (
-          <form action={createBillingPortalSessionAction}>
+          <ActionForm
+            action={createBillingPortalSessionAction}
+            errorMessage="Couldn't open billing — please try again."
+          >
             <Button type="submit" variant="outline" size="sm">
               Manage billing
             </Button>
-          </form>
+          </ActionForm>
         ) : null}
       </div>
       {aiUsage ? <AiCreditsRow {...aiUsage} /> : null}
       {summary.plan === "free" ? (
         <div className="flex flex-wrap gap-2 border-t border-seam pt-4">
-          <form action={createCheckoutSessionAction}>
+          <ActionForm
+            action={createCheckoutSessionAction}
+            errorMessage="Couldn't start checkout — please try again."
+          >
             <input type="hidden" name="plan" value="pro" />
             <Button type="submit" size="sm">
               Go Pro
             </Button>
-          </form>
-          <form action={createCheckoutSessionAction}>
+          </ActionForm>
+          <ActionForm
+            action={createCheckoutSessionAction}
+            errorMessage="Couldn't start checkout — please try again."
+          >
             <input type="hidden" name="plan" value="lifetime" />
             <Button type="submit" variant="outline" size="sm">
               Buy Lifetime
             </Button>
-          </form>
+          </ActionForm>
         </div>
       ) : null}
     </div>

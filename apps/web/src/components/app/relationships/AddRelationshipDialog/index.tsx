@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { createRelationshipAction } from "@/lib/actions/relationships";
+import { FormError } from "@/components/app/feedback";
 import { RELATIONSHIP_KIND_LABELS } from "@/utils/constants/graph";
 import type { GraphTarget } from "@/lib/repo/graph-data";
 import { DirectionPreview } from "./DirectionPreview";
@@ -132,7 +133,7 @@ export function AddRelationshipDialog({
                 onFlip={() => setFlipped((value) => !value)}
               />
             ) : null}
-            {error ? <p className="text-sm text-red-400" role="alert">{error}</p> : null}
+            <FormError message={error} />
           </div>
           <DialogFooter>
             <Button loading={pending} disabled={!target || !predicate} onClick={submit}>

@@ -7,6 +7,7 @@ import {
   type ExtractedContact,
   type LLMImage,
 } from "@dhaga/core";
+import { withUserDb } from "@/lib/db/request-scope";
 import { AiBudgetError, assertAiBudget, recordAiAction } from "./metering";
 
 export interface CardScanResult {
@@ -34,7 +35,12 @@ export async function scanCardImages(
     return { error: "Add at least one card photo to scan." };
   }
   try {
-    await assertAiBudget(userId);
+    // Budget check and usage-record each in their OWN short scope, released
+    // before/after the vision call, so no tenant connection is held across the
+    // multi-second Anthropic round-trip (GOAL 1b / SCALING.md lever 2). Left
+    // unscoped in a server action, these getDb()-acquiring calls pin the
+    // request-scoped connection across the whole extract() — the #92 pool bug.
+    await withUserDb(userId, () => assertAiBudget(userId));
     const result = await getLLMClient().extract({
       schema: cardScanSchema,
       system: CARD_SCAN_SYSTEM,
@@ -42,7 +48,9 @@ export async function scanCardImages(
       tier: "extract",
       images,
     });
-    await recordAiAction("contact_parse", result.model, result.usage);
+    await withUserDb(userId, () =>
+      recordAiAction("contact_parse", result.model, result.usage),
+    );
     const { raw_text, ...contact } = result.data;
     if (!contact.name.trim()) {
       return {

@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireUserId } from "@/lib/auth/guard";
+import { mutation } from "@/lib/actions/mutation";
 import {
   dismissConfirmation,
   resolveConfirmation,
@@ -21,9 +21,14 @@ export async function resolveConfirmationAction(
   choice?: ConfirmationChoice,
   contactId?: string | null,
 ): Promise<void> {
-  await requireUserId();
   if (!id) return;
-  const result = await resolveConfirmation(id, choice);
+  // One scoped connection for the whole resolve (the applier fans out several
+  // getDb() reads/writes) — see GOAL 1 in the sweep contract. On failure, throw
+  // so the client ConfirmationButton's catch surfaces a toast (never the
+  // full-page error boundary).
+  const r = await mutation("resolveConfirmation", () => resolveConfirmation(id, choice));
+  if (!r.ok) throw new Error(r.error);
+  const result = r.data;
   revalidatePath("/app/confirmations");
   revalidatePath("/app");
   if (contactId) revalidatePath(`/app/people/${contactId}`);
@@ -45,9 +50,11 @@ export async function dismissConfirmationAction(
   id: string,
   contactId?: string | null,
 ): Promise<void> {
-  await requireUserId();
   if (!id) return;
-  await dismissConfirmation(id);
+  // Single scoped connection (dismiss may delete an enrichment fact + flip the
+  // row — two getDb() reads/writes). Throw on failure so the client toasts.
+  const r = await mutation("dismissConfirmation", () => dismissConfirmation(id));
+  if (!r.ok) throw new Error(r.error);
   revalidatePath("/app/confirmations");
   revalidatePath("/app");
   if (contactId) revalidatePath(`/app/people/${contactId}`);

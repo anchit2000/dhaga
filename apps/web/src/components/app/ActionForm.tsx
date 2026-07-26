@@ -2,21 +2,7 @@
 
 import { toast } from "sonner";
 import type { ReactNode } from "react";
-
-/**
- * Next.js signals redirect() / notFound() by THROWING a control-flow error with
- * a `NEXT_*` digest. A resilience wrapper must re-throw those so the navigation
- * still happens — only a real failure becomes a toast.
- */
-function isNextControlFlow(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "digest" in error &&
-    typeof (error as { digest?: unknown }).digest === "string" &&
-    (error as { digest: string }).digest.startsWith("NEXT_")
-  );
-}
+import { isNextControlFlow } from "@/lib/actions/next-control-flow";
 
 /**
  * Run a server action from a client handler, turning a transient failure into a

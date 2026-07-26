@@ -1,4 +1,5 @@
 import { startTransition, useActionState, useEffect, useId, useState } from "react";
+import { toastError } from "@/components/app/feedback";
 import { useDictation } from "@/components/app/contact/useDictation";
 import {
   saveSearchWeightsAction,
@@ -71,7 +72,11 @@ export function useSearchPalette(initialWeights: SearchWeights) {
    *  through the debounced effect above, not a DB write per pixel. */
   function commitWeights(next: SearchWeights): void {
     setWeights(next);
-    void saveSearchWeightsAction(next);
+    // Fire-and-forget, but not fully silent: a failed persist toasts so the user
+    // knows their ranking tweak didn't stick (the live re-rank still applied).
+    void saveSearchWeightsAction(next).catch(() =>
+      toastError("Couldn't save your ranking preferences — try again."),
+    );
   }
 
   /** Ask-Dhaga is metered streaming, not a server action: submitting the form

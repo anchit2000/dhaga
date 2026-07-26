@@ -29,8 +29,18 @@ const getRequestScopedDb = cache(async (): Promise<DhagaDb> => {
   if (user) {
     const scoped = await (await getTenantGate()).scopedDb(user.id);
     if (scoped) {
+      // RSC page reads span the whole render with no single callback to wrap in
+      // scoped.run(), so open the tenant transaction lazily via begin() and hold
+      // it for the request, committing in after() — which Next runs even on a
+      // thrown error / notFound / redirect, so the connection is always freed.
+      // Every getDb() in the render shares this one transaction, so each read is
+      // RLS-scoped on both the session (5432) and transaction (6543) pooler.
+      // Invariant: repo reads on this path must not open a top-level
+      // db.transaction() (it would close this scope early) — holds today because
+      // writes/transactions run under withUserDb (scoped.run), not RSC render.
+      const db = await scoped.begin();
       after(() => scoped.release());
-      return scoped.db;
+      return db;
     }
   }
   return getGlobalDb();
@@ -48,12 +58,18 @@ export async function getDb(): Promise<DhagaDb> {
   return getRequestScopedDb();
 }
 
-/** Runs cacheable work with an explicit tenant instead of reading request APIs. */
+/** Runs cacheable work with an explicit tenant instead of reading request APIs.
+ *  The work runs inside ONE tenant transaction (scoped.run) whose transaction-
+ *  local GUC self-clears at COMMIT — so the same code is correct on the session
+ *  pooler (5432) and the transaction pooler (6543). Public signature unchanged;
+ *  only the internals moved from a session-scoped connection to a transaction. */
 export async function withUserDb<T>(userId: string, work: () => Promise<T>): Promise<T> {
   const scoped = await (await getTenantGate()).scopedDb(userId);
   if (!scoped) return explicitDb.run(await getGlobalDb(), work);
   try {
-    return await explicitDb.run(scoped.db, work);
+    // scoped.run opens the transaction + sets the tenant GUC; we put the
+    // transaction-bound db into the ALS so repo getDb() calls resolve to it.
+    return await scoped.run((txDb) => explicitDb.run(txDb, work));
   } finally {
     await scoped.release();
   }

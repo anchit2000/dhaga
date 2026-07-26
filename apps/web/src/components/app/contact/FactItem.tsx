@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
 import { BadgeCheck, Loader2, Pencil } from "lucide-react";
-import { ActionForm } from "@/components/app/ActionForm";
+import { ActionForm, runAction } from "@/components/app/ActionForm";
 import {
   deleteFactAction,
   updateFactAction,
@@ -63,8 +63,13 @@ export function FactItem({
       {editing ? (
         <form
           action={async (formData) => {
-            await updateFactAction(formData);
-            setEditing(false);
+            // Keep the row in edit mode (text intact) if the save throws — a
+            // transient failure becomes a toast, never the full-page boundary.
+            const ok = await runAction(
+              () => updateFactAction(formData),
+              "Couldn't save that fact — try again.",
+            );
+            if (ok) setEditing(false);
           }}
           className="flex min-w-0 flex-1 items-center gap-2"
         >

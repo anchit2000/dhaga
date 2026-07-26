@@ -1,17 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import { AttachTargetSearch } from "@/components/app/AttachTargetSearch";
 import { EmptyState } from "@/components/app/EmptyState";
+import { toastError } from "@/components/app/feedback";
 import { Button } from "@/components/ui/button";
 import {
   attachContactToEventAction,
   detachContactFromEventAction,
 } from "@/lib/actions/event-membership";
+import { useOptimisticList } from "@/lib/hooks/useOptimisticList";
 import type { GraphTarget } from "@/lib/repo/graph-data";
 
 export interface EventPerson {
@@ -23,8 +25,10 @@ export interface EventPerson {
 
 /**
  * Event-page roster: search existing people to attach (several in a row) and
- * detach anyone with the × affordance. The server re-renders the list after
- * each mutation (revalidatePath); router.refresh() commits that immediately.
+ * detach anyone with the × affordance. Detach is optimistic — the row vanishes
+ * instantly (useOptimisticList) and rolls back with a Retry toast if the write
+ * fails. Attach comes from a search (no full row data yet), so it stays
+ * resilient: await, then router.refresh() commits the server re-render.
  */
 export function EventPeople({
   eventId,
@@ -34,20 +38,21 @@ export function EventPeople({
   people: EventPerson[];
 }): React.ReactElement {
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
-  const [busyId, setBusyId] = useState<string | null>(null);
+  const [attachPending, startAttach] = useTransition();
+  const roster = useOptimisticList<EventPerson>({
+    items: people,
+    errorMessage: "Couldn't remove them from this event — try again.",
+  });
   const attachedIds = useMemo(
-    () => new Set(people.map((person) => person.id)),
-    [people],
+    () => new Set(roster.items.map((person) => person.id)),
+    [roster.items],
   );
 
   function attach(target: GraphTarget): void {
-    setBusyId(target.id);
-    startTransition(async () => {
+    startAttach(async () => {
       const result = await attachContactToEventAction(eventId, target.id);
-      setBusyId(null);
       if (result.error) {
-        toast.error(result.error);
+        toastError(result.error, () => attach(target));
         return;
       }
       toast.success(`Added ${target.label} to this event.`);
@@ -55,17 +60,12 @@ export function EventPeople({
     });
   }
 
-  function detach(contactId: string, name: string): void {
-    setBusyId(contactId);
-    startTransition(async () => {
-      const result = await detachContactFromEventAction(eventId, contactId);
-      setBusyId(null);
-      if (result.error) {
-        toast.error(result.error);
-        return;
-      }
-      toast.success(`Removed ${name} from this event.`);
+  function detach(person: EventPerson): void {
+    roster.remove(person, async () => {
+      const result = await detachContactFromEventAction(eventId, person.id);
+      if (result.error) return result.error;
       router.refresh();
+      return null;
     });
   }
 
@@ -76,16 +76,16 @@ export function EventPeople({
         excludeIds={attachedIds}
         onPick={attach}
         placeholder="Add people — search by name…"
-        disabled={pending}
+        disabled={attachPending}
       />
-      {people.length === 0 ? (
+      {roster.items.length === 0 ? (
         <EmptyState
           title="Nobody here yet"
           body="Search above to attach people you've already captured, or quick-add someone new."
         />
       ) : (
         <ul className="divide-y divide-seam overflow-hidden rounded-2xl border border-seam bg-panel">
-          {people.map((person) => (
+          {roster.items.map((person) => (
             <li key={person.id} className="flex items-center gap-3 px-4 py-3">
               <Link
                 href={`/app/people/${person.id}`}
@@ -109,8 +109,7 @@ export function EventPeople({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => detach(person.id, person.name)}
-                loading={pending && busyId === person.id}
+                onClick={() => detach(person)}
                 aria-label={`Remove ${person.name} from this event`}
                 title={`Remove ${person.name} from this event`}
                 className="shrink-0 text-fog/60 hover:text-paper"

@@ -2,8 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireUserId } from "@/lib/auth/guard";
-import { SAVE_RETRY_MESSAGE, logActionError } from "@/lib/actions/resilience";
+import { mutation } from "@/lib/actions/mutation";
 import { createEvent, mergeEvents, renameEvent, getEvent, updateEventMeta } from "@/lib/repo/events";
 import { eventDigestData } from "@/lib/repo/digest";
 import { eventDigestHtml } from "@/lib/email/digest";
@@ -49,42 +48,36 @@ export async function createEventAction(
   _previous: EventFormState,
   formData: FormData,
 ): Promise<EventFormState> {
-  await requireUserId();
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return { error: "Give the event a name." };
-  let id = "";
-  try {
-    id = await createEvent(name, {
-      emoji: parseEmoji(formData.get("emoji")),
-      color: parseColor(formData.get("color")),
-    });
-  } catch (error) {
-    logActionError("createEvent", error);
-    return { error: SAVE_RETRY_MESSAGE };
-  }
-  redirect(`/app/events/${id}`);
+  const emoji = parseEmoji(formData.get("emoji"));
+  const color = parseColor(formData.get("color"));
+  const r = await mutation("createEvent", () => createEvent(name, { emoji, color }));
+  if (!r.ok) return { error: r.error };
+  redirect(`/app/events/${r.data}`);
 }
 
 export async function renameEventAction(formData: FormData): Promise<void> {
-  await requireUserId();
   const eventId = String(formData.get("eventId") ?? "");
   const name = String(formData.get("name") ?? "").trim();
   if (!eventId || !name) return;
-  await renameEvent(eventId, name);
+  const r = await mutation("renameEvent", () => renameEvent(eventId, name));
+  if (!r.ok) throw new Error(r.error);
   revalidatePath(`/app/events/${eventId}`);
   revalidatePath("/app/events");
 }
 
 /** Save a group's colour, emoji, and tags from the detail-page editor. */
 export async function updateEventMetaAction(formData: FormData): Promise<void> {
-  await requireUserId();
   const eventId = String(formData.get("eventId") ?? "");
   if (!eventId) return;
-  await updateEventMeta(eventId, {
+  const meta = {
     color: parseColor(formData.get("color")),
     emoji: parseEmoji(formData.get("emoji")),
     tags: parseTags(formData.getAll("tags")),
-  });
+  };
+  const r = await mutation("updateEventMeta", () => updateEventMeta(eventId, meta));
+  if (!r.ok) throw new Error(r.error);
   revalidatePath(`/app/events/${eventId}`);
   revalidatePath("/app/events");
   revalidatePath("/app");
@@ -99,7 +92,6 @@ export async function emailDigestAction(
   _previous: DigestState,
   formData: FormData,
 ): Promise<DigestState> {
-  await requireUserId();
   const eventId = String(formData.get("eventId") ?? "");
   if (!eventId) return { error: "Missing event." };
   if (!emailEnabled()) {
@@ -109,9 +101,17 @@ export async function emailDigestAction(
   if (!to) {
     return { error: "Set DHAGA_OWNER_EMAIL in .env.local to receive digests." };
   }
-  const event = await getEvent(eventId);
+
+  // Read everything the email needs inside ONE short scoped connection, which
+  // mutation() releases before the multi-second Resend call — never hold a
+  // tenant connection across the external send (#92 pool saturation).
+  const r = await mutation("emailDigest", async () => ({
+    event: await getEvent(eventId),
+    people: await eventDigestData(eventId),
+  }));
+  if (!r.ok) return { error: r.error };
+  const { event, people } = r.data;
   if (!event) return { error: "Event not found." };
-  const people = await eventDigestData(eventId);
   if (people.length === 0) return { error: "Nobody in this event yet." };
 
   const result = await sendEmail({
@@ -123,10 +123,10 @@ export async function emailDigestAction(
 }
 
 export async function mergeEventAction(formData: FormData): Promise<void> {
-  await requireUserId();
   const fromId = String(formData.get("fromId") ?? "");
   const intoId = String(formData.get("intoId") ?? "");
   if (!fromId || !intoId || fromId === intoId) return;
-  await mergeEvents(fromId, intoId);
+  const r = await mutation("mergeEvent", () => mergeEvents(fromId, intoId));
+  if (!r.ok) throw new Error(r.error);
   redirect(`/app/events/${intoId}`);
 }

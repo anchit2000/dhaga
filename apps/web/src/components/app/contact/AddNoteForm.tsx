@@ -3,6 +3,7 @@
 import { useActionState, useRef, useState } from "react";
 import { Mic, Square } from "lucide-react";
 import { addNoteAction, type NoteFormState } from "@/lib/actions/notes";
+import { FormError } from "@/components/app/feedback";
 import { Textarea } from "@/components/ui/textarea";
 import { SubmitButton } from "../SubmitButton";
 import { useDictation } from "./useDictation";
@@ -55,11 +56,7 @@ export function AddNoteForm({ contactId }: { contactId: string }) {
       {voiceReview.show ? (
         <VoiceNoteReview text={voiceReview.text} onChange={voiceReview.onChange} onWordFix={voiceReview.onWordFix} />
       ) : null}
-      {state.error ? (
-        <p className="text-sm text-red-400" role="alert">
-          {state.error}
-        </p>
-      ) : null}
+      <FormError message={state.error} />
       {state.notice ? <p className="text-sm text-ember/90">{state.notice}</p> : null}
       <div className="flex flex-wrap items-center gap-2">
         <SubmitButton>Add note</SubmitButton>

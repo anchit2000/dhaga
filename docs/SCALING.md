@@ -60,6 +60,14 @@ What is cached today:
   version query still runs per request, but the heavy assembly now runs once per
   graph version across all of a user's clients/instances, not per request.
 
+**Session validation (separate mechanism, `lib/auth/config`).** Distinct from the
+`lib/cache/` machinery above: `getCurrentUser()` calls `auth.api.getSession()` on
+every `/app` request, which otherwise reads the `session` row from Postgres.
+better-auth's session `cookieCache` is enabled (60s `maxAge`) so it trusts a
+short-lived signed cookie instead — cutting that DB read per request on the small
+per-tenant pool + free tier. The short 60s cap bounds how long a server-side
+revoke (`revokeSessionsOnPasswordReset`) can go unobserved.
+
 **Not yet cached — the remaining hot reads:**
 
 - Home dashboard feed (due reach-outs, quiet contacts, daily suggestions).
@@ -102,8 +110,19 @@ cap makes it worse. Read → compute → write, no await-on-network mid-transact
   (the file documents this and the connection-cap reasoning).
 - Extraction/enrichment/embeddings run **off** the request path (lever 4), so
   the LLM/search latency never sits on a DB connection.
-- PR #28 reuses tenant connections via `RESET ALL` rather than holding/destroying
-  them, and indexed the person-page queries.
+- Tenant connections are **reused** (not held/destroyed) and RLS scoping is
+  **transaction-scoped**: each scoped unit of work runs inside one
+  `BEGIN…COMMIT` whose first statement sets `app.current_user_id` transaction-
+  local (`packages/ee/src/tenant/scoped-db.ts`; admin bypass the same in
+  `admin-db.ts`). The setting vanishes at COMMIT, so release just returns the
+  connection to the pool — **no `RESET ALL`** (`pool.ts`'s `releaseScoped`).
+  Because a session command run between transactions is exactly what a
+  transaction-mode pooler can't route safely, dropping it is what lets the
+  **same code run on both Supabase pooling modes**: moving from the session
+  pooler (5432, today) to the transaction pooler (6543, at Pro tier) is a
+  **`DATABASE_URL` change with no code change** (the earlier session-mode-only
+  boot guard in `bootstrap.ts` was removed as obsolete). PR #28 originally added
+  the reuse (then via `RESET ALL`) and indexed the person-page queries.
 - **One query, one connection on the read hot paths.** A repo read that fans out
   several sub-queries with `Promise.all` and a per-source `getDb()` is a trap
   against the tenant pool: those `getDb()` calls do **not** dedupe inside a
@@ -123,6 +142,22 @@ cap makes it worse. Read → compute → write, no await-on-network mid-transact
   the request-scoped connection instead of opening its own, so a cold app-config
   cache no longer draws a third concurrent tenant connection — **done**.)
 
+- **Every DB-mutating server action runs in ONE scoped connection.** The
+  write-path twin of the read fan-out above. Unlike RSC render (which
+  request-scopes a single connection via `cache()`), a server action gets **no**
+  `getDb()` dedupe, so an unwrapped action that calls repo writes checks out a
+  fresh tenant-pool connection per `getDb()` and, under load, exhausts the pool —
+  the "Something interrupted the save" outage. `mutation(name, work)`
+  (`lib/actions/mutation.ts`) is the single path every mutating action takes: it
+  resolves the user, runs `work` inside one `withUserDb` scope, and returns a
+  resilient `{ ok }` result instead of throwing to the error boundary. Actions
+  that call an LLM / Stripe / Resend / a webhook use **short** `withUserDb` scopes
+  *around* the external call (read → release → call → write), never a connection
+  held across the network round-trip. A guard test
+  (`lib/__tests__/action-db-scope.guard.test.ts`) fails if a new action skips the
+  scope, with a documented `EXEMPT` list for the few on a different DB path
+  (better-auth's own DB; EE admin/billing's per-query `drizzle(getPool())` pool).
+
 - **Transient acquisition rejections are retried, not surfaced as 500s.**
   Supabase's session pooler exposes a `pool_size` of ~48 backends (80% of the
   instance's 60 max_connections) shared across every warm instance (see
@@ -141,8 +176,9 @@ cap makes it worse. Read → compute → write, no await-on-network mid-transact
   predicate is retried — a real error still fails loud on the first attempt.
   **This is a graceful degradation, not a capacity increase:** the durable
   lever for sustained pressure is raising `pool_size` in Supabase's pooler
-  settings (session mode stays required — transaction pooling breaks tenant
-  scoping, `bootstrap.ts` enforces it).
+  settings, or switching to the transaction pooler (6543) — now safe because RLS
+  scoping is transaction-local (§2 above), which multiplexes a far larger
+  effective connection count than session mode's fixed `pool_size`.
 
 - **Pool timeouts sized for a region-away DB, not just a bigger `pool_size`.**
   When the Vercel function and the DB are in different regions (US function →

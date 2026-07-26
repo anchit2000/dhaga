@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { toast } from "sonner";
+import { toastError } from "@/components/app/feedback";
 import { Button } from "@/components/ui/button";
 import type { ReactNode } from "react";
 
@@ -21,21 +21,22 @@ export function ConfirmationButton({
   variant?: "outline" | "ghost";
 }): React.ReactElement {
   const [pending, startTransition] = useTransition();
+  function run(): void {
+    startTransition(async () => {
+      try {
+        await onRun();
+      } catch {
+        toastError("Something went wrong. Please try again.", run);
+      }
+    });
+  }
   return (
     <Button
       type="button"
       size="sm"
       variant={variant}
       loading={pending}
-      onClick={() =>
-        startTransition(async () => {
-          try {
-            await onRun();
-          } catch {
-            toast.error("Something went wrong. Please try again.");
-          }
-        })
-      }
+      onClick={run}
     >
       {children}
     </Button>

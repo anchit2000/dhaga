@@ -7,7 +7,7 @@ import {
   type RelationshipDraft,
   type RelationshipSourceKind,
 } from "@/components/app/relationships/AddRelationshipDialog";
-import { createRelationshipAction } from "@/lib/actions/relationships";
+import { createRelationshipAction, deleteRelationshipAction } from "@/lib/actions/relationships";
 import { useOptimisticList } from "@/lib/hooks/useOptimisticList";
 import { RELATIONSHIP_KIND_LABELS } from "@/utils/constants/graph";
 import { RelationshipDeleteButton } from "./RelationshipDeleteButton";
@@ -52,10 +52,22 @@ export function RelationshipSection({
   rows: RelationshipRowView[];
 }) {
   const router = useRouter();
-  const { items, add } = useOptimisticList<RelationshipRowView>({
+  const { items, add, remove } = useOptimisticList<RelationshipRowView>({
     items: rows,
-    errorMessage: "Couldn't add the relationship — try again.",
+    errorMessage: "Couldn't save that change — please try again.",
   });
+
+  /** Optimistic remove: the row disappears instantly, then the tombstone write
+   *  + revalidation reconcile it. A failed write puts the row back and offers
+   *  Retry (useOptimisticList). */
+  function handleDelete(row: RelationshipRowView): void {
+    remove(row, async () => {
+      const result = await deleteRelationshipAction(row.edgeId);
+      if (result.error) return result.error;
+      router.refresh();
+      return null;
+    });
+  }
 
   function handleCreate({ target, predicate, flipped }: RelationshipDraft): void {
     const optimisticRow: RelationshipRowView = {
@@ -128,7 +140,11 @@ export function RelationshipSection({
                   </span>
                 ) : null}
               </Link>
-              <RelationshipDeleteButton edgeId={row.edgeId} name={row.name} role={row.role} />
+              <RelationshipDeleteButton
+                name={row.name}
+                role={row.role}
+                onDelete={() => handleDelete(row)}
+              />
             </li>
           ))}
         </ul>

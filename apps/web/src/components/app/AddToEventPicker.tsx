@@ -4,6 +4,7 @@ import { useMemo, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { EntityCombobox } from "@/components/app/EntityCombobox";
+import { toastError } from "@/components/app/feedback";
 import {
   attachContactToEventAction,
   createEventAndAttachAction,
@@ -31,7 +32,7 @@ export function AddToEventPicker({
     startTransition(async () => {
       const result = await attachContactToEventAction(target.id, contactId);
       if (result.error) {
-        toast.error(result.error);
+        toastError(result.error, () => attach(target));
         return;
       }
       toast.success(`Added to ${target.label}.`);
@@ -43,7 +44,7 @@ export function AddToEventPicker({
     startTransition(async () => {
       const result = await createEventAndAttachAction(name, contactId);
       if (result.error) {
-        toast.error(result.error);
+        toastError(result.error, () => createGroup(name));
         return;
       }
       toast.success(`Added to ${name}.`);

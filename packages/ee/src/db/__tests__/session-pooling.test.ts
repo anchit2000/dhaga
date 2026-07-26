@@ -1,74 +1,128 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { assertSessionScopedPooling } from "../bootstrap";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
- * Tenant scoping rides on session-level set_config on a pinned backend (see
- * bootstrap.ts). A transaction-mode pooler swaps that backend between queries,
- * which both breaks scoping (RLS returns zero rows) AND can leak a tenant's
- * setting onto a backend later handed to another user — a silent cross-tenant
- * exposure, not a crash. These tests fail exactly when the boot guard stops
- * catching a transaction pooler, or starts refusing a safe session-mode one.
+ * Tenant scoping is TRANSACTION-scoped: each unit of work runs inside one
+ * BEGIN…COMMIT whose first statement sets `app.current_user_id` as a
+ * transaction-LOCAL setting (`is_local = true`, a bound parameter — never
+ * string-interpolated). Because the setting is transaction-local it is
+ * discarded at COMMIT/ROLLBACK, so a connection reused for a second tenant
+ * cannot carry the first tenant's scope — the isolation the old session-level
+ * set_config + RESET-ALL design bought, now WITHOUT a session reset (which a
+ * transaction-mode pooler cannot run safely) and therefore correct on both the
+ * session pooler (5432) and the transaction pooler (6543).
+ *
+ * These are driven by a fake pg client (real drizzle on top of it), so they run
+ * with no live database. They fail exactly when openTenantConnection stops
+ * wrapping work in a transaction, stops setting the tenant GUC transaction-
+ * local, commits when it should roll back, or re-introduces a session reset.
  */
-describe("assertSessionScopedPooling", () => {
-  const ENV = "DHAGA_ALLOW_TRANSACTION_POOLER";
-  const original = process.env[ENV];
 
+interface QueryCall {
+  text: string;
+  values: unknown[];
+}
+
+const holder = vi.hoisted(() => ({
+  client: undefined as
+    | { calls: QueryCall[]; query: ReturnType<typeof vi.fn>; release: ReturnType<typeof vi.fn> }
+    | undefined,
+}));
+
+vi.mock("../connect-retry", () => ({
+  connectWithRetry: vi.fn(async () => holder.client),
+}));
+vi.mock("../bootstrap", () => ({
+  ensureEeSchema: vi.fn(async () => {}),
+}));
+vi.mock("../pool", () => ({
+  getPool: vi.fn(() => ({})),
+  // Mirror the real releaseScoped (plain release, no query) so the tests can
+  // assert reuse without a session reset.
+  releaseScoped: vi.fn((client: { release: () => void }) => client.release()),
+}));
+
+// Imported after the mocks (vi.mock is hoisted above imports).
+import { openTenantConnection } from "../../tenant/scoped-db";
+
+function makeFakeClient() {
+  const calls: QueryCall[] = [];
+  return {
+    calls,
+    query: vi.fn((cfg: unknown, values?: unknown) => {
+      const text = typeof cfg === "string" ? cfg : (cfg as { text: string }).text;
+      calls.push({ text, values: (values as unknown[]) ?? [] });
+      return Promise.resolve({ rows: [], rowCount: 0 });
+    }),
+    release: vi.fn(),
+  };
+}
+
+const texts = (): string[] => (holder.client?.calls ?? []).map((c) => c.text.trim().toLowerCase());
+const indexOfIncluding = (needle: string): number => texts().findIndex((t) => t.includes(needle));
+
+describe("openTenantConnection — transaction-scoped tenant isolation", () => {
   beforeEach(() => {
-    delete process.env[ENV];
-  });
-  afterEach(() => {
-    if (original === undefined) delete process.env[ENV];
-    else process.env[ENV] = original;
-    vi.restoreAllMocks();
+    holder.client = makeFakeClient();
+    vi.clearAllMocks();
   });
 
-  it("throws on Supabase's transaction pooler (port 6543)", () => {
-    expect(() =>
-      assertSessionScopedPooling("postgres://user:pw@aws-0-ap-southeast-2.pooler.supabase.com:6543/postgres"),
-    ).toThrow(/transaction-mode/i);
+  it("runs work inside a transaction: BEGIN → transaction-local set_config(userId) → COMMIT", async () => {
+    const scoped = await openTenantConnection("user-a");
+    const result = await scoped.run(async () => "done");
+    expect(result).toBe("done");
+
+    // Ordering: the tenant GUC is set AFTER begin and BEFORE commit — i.e. it is
+    // the scope's own transaction that carries it, not the ambient session.
+    const begin = indexOfIncluding("begin");
+    const setConfig = indexOfIncluding("set_config");
+    const commit = indexOfIncluding("commit");
+    expect(begin).toBeGreaterThanOrEqual(0);
+    expect(setConfig).toBeGreaterThan(begin);
+    expect(commit).toBeGreaterThan(setConfig);
+    expect(indexOfIncluding("rollback")).toBe(-1);
+
+    const setCall = holder.client!.calls.find((c) => c.text.includes("set_config"))!;
+    // Bound parameter (not interpolated) and is_local = true (the 3rd arg) —
+    // that `true` is what makes the setting vanish at COMMIT.
+    expect(setCall.text).toMatch(/set_config\('app\.current_user_id',\s*\$1,\s*true\)/);
+    expect(setCall.values).toEqual(["user-a"]);
+
+    // Never a session-level reset — the whole point of transaction scoping.
+    expect(texts().some((t) => t.includes("reset all"))).toBe(false);
   });
 
-  it("allows Supabase's session pooler (same host, port 5432) — the safe, recommended config", () => {
-    expect(() =>
-      assertSessionScopedPooling("postgres://user:pw@aws-0-ap-southeast-2.pooler.supabase.com:5432/postgres"),
-    ).not.toThrow();
+  it("rolls back — never commits — when the work throws", async () => {
+    const scoped = await openTenantConnection("user-a");
+    await expect(
+      scoped.run(async () => {
+        throw new Error("boom");
+      }),
+    ).rejects.toThrow("boom");
+
+    expect(indexOfIncluding("begin")).toBeGreaterThanOrEqual(0);
+    expect(indexOfIncluding("rollback")).toBeGreaterThan(-1);
+    expect(indexOfIncluding("commit")).toBe(-1);
   });
 
-  it("throws on a generic `pooler` hostname (Neon's -pooler endpoint, on 5432)", () => {
-    expect(() =>
-      assertSessionScopedPooling("postgres://user:pw@ep-cool-name-123456-pooler.us-east-2.aws.neon.tech:5432/db"),
-    ).toThrow(/transaction-mode/i);
+  it("release() reuses the connection (no session reset)", async () => {
+    const scoped = await openTenantConnection("user-a");
+    await scoped.run(async () => "x");
+    await scoped.release();
+
+    expect(holder.client!.release).toHaveBeenCalledWith();
+    expect(texts().some((t) => t.includes("reset all"))).toBe(false);
   });
 
-  it("throws on a `pgbouncer` hostname", () => {
-    expect(() => assertSessionScopedPooling("postgres://user:pw@pgbouncer.internal:5432/db")).toThrow();
-  });
+  it("begin() holds the tenant transaction open until release() commits it", async () => {
+    const scoped = await openTenantConnection("user-a");
+    await scoped.begin();
 
-  it("throws on a `pgbouncer=true` query flag regardless of host", () => {
-    expect(() =>
-      assertSessionScopedPooling("postgres://user:pw@db.internal:5432/db?pgbouncer=true"),
-    ).toThrow();
-  });
+    // Opened and scoped, but NOT yet committed — the render still needs the db.
+    expect(texts()).toEqual(["begin", "select set_config('app.current_user_id', $1, true)"]);
 
-  it("allows a plain direct connection", () => {
-    expect(() => assertSessionScopedPooling("postgres://user:pw@db.internal:5432/postgres")).not.toThrow();
-  });
-
-  it("no-ops on an undefined or non-URL connection string (can't be checked here)", () => {
-    expect(() => assertSessionScopedPooling(undefined)).not.toThrow();
-    expect(() => assertSessionScopedPooling("host=db user=app dbname=postgres")).not.toThrow();
-  });
-
-  it("downgrades the throw to a one-time console.warn when DHAGA_ALLOW_TRANSACTION_POOLER=true", () => {
-    process.env[ENV] = "true";
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const offending = "postgres://user:pw@aws-0-ap-southeast-2.pooler.supabase.com:6543/postgres";
-
-    expect(() => assertSessionScopedPooling(offending)).not.toThrow();
-    expect(() => assertSessionScopedPooling(offending)).not.toThrow();
-
-    // One-time: repeated cold-start checks must not spam the logs.
-    expect(warn).toHaveBeenCalledTimes(1);
-    expect(warn.mock.calls[0]?.[0]).toMatch(/DHAGA_ALLOW_TRANSACTION_POOLER/);
+    await scoped.release();
+    // release() commits the held transaction and never issues a session reset.
+    expect(texts()[texts().length - 1]).toBe("commit");
+    expect(texts().some((t) => t.includes("reset all"))).toBe(false);
   });
 });

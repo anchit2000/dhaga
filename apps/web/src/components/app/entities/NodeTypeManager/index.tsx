@@ -15,6 +15,7 @@ import {
   deleteNodeTypeAction,
   updateNodeTypeAction,
 } from "@/lib/actions/node-types";
+import { FormError } from "@/components/app/feedback";
 import { NODE_TYPE_COLOR_SWATCHES } from "@/utils/constants/graph";
 import { TypeEditor } from "./TypeEditor";
 
@@ -133,9 +134,7 @@ export function NodeTypeManager({ types }: { types: NodeTypeWithCount[] }) {
                 New type
               </Button>
             )}
-            {error ? (
-              <p className="text-sm text-red-400" role="alert">{error}</p>
-            ) : null}
+            <FormError message={error} />
           </div>
         </DialogContent>
       </Dialog>

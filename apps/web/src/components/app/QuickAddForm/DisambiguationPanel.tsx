@@ -1,3 +1,4 @@
+import { ActionForm } from "@/components/app/ActionForm";
 import { attachCapturedNoteAction } from "@/lib/actions/quick-add";
 import type { ContactIdentityCandidate } from "@/lib/repo/contacts";
 
@@ -21,7 +22,11 @@ export function DisambiguationPanel({
       </div>
       <div className="grid gap-2 sm:grid-cols-2">
         {matches.map((candidate) => (
-          <form key={candidate.id} action={attachCapturedNoteAction}>
+          <ActionForm
+            key={candidate.id}
+            action={attachCapturedNoteAction}
+            errorMessage="Couldn't attach that note — please try again."
+          >
             <input type="hidden" name="contactId" value={candidate.id} />
             <input type="hidden" name="raw" value={sourceText} />
             <button className="w-full rounded-xl border border-seam p-3 text-left transition-colors hover:border-amber/40 hover:bg-amber/[0.05]">
@@ -30,7 +35,7 @@ export function DisambiguationPanel({
                 {[candidate.title, candidate.companyName].filter(Boolean).join(" · ") || "No title or company"}
               </span>
             </button>
-          </form>
+          </ActionForm>
         ))}
       </div>
       <div className="flex flex-wrap gap-2">

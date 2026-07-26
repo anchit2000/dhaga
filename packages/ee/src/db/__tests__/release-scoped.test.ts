@@ -3,52 +3,45 @@ import { describe, expect, it, vi } from "vitest";
 import { releaseScoped } from "../pool";
 
 /**
- * releaseScoped returns tenant/admin-scoped connections to the pool for REUSE
- * instead of destroying them (the churn a tiny pool would otherwise pay on
- * every request). The safety of that reuse rests on one invariant: the
- * session-level `app.*` GUCs a checkout set — `app.current_user_id` for a
- * tenant, `app.bypass_rls` for admin — MUST be gone before the connection is
- * handed out again. A stale setting on a reused connection is a silent
- * cross-tenant data leak, not a crash (see rls-ddl.ts's tenant_isolation
- * policy). These tests fail exactly when that protection regresses.
- *
- * `RESET ALL` clears every customized session GUC regardless of which path set
- * it (verified against real Postgres semantics), so it — not a narrower
- * `RESET app.current_user_id` that would miss admin's `app.bypass_rls` — is the
- * command required here.
+ * A connection reused for another checkout must not leak one tenant's scope
+ * into another's. Under the transaction-scoped design that safety no longer
+ * comes from a reset on release: each scope sets its `app.*` GUC transaction-
+ * LOCAL (`is_local = true`) inside its own BEGIN…COMMIT, so the setting is
+ * discarded the instant that transaction ends (see tenant/scoped-db.ts and
+ * admin-db.ts). releaseScoped therefore only hands the physical connection
+ * back — and MUST NOT issue a session-level `RESET ALL`, which is both
+ * unnecessary here and unsafe on a transaction-mode pooler (a session command
+ * run between transactions can land on a different backend than the scope ran
+ * on). These tests fail exactly when either property regresses.
  */
 describe("releaseScoped", () => {
-  it("clears session state with RESET ALL, THEN returns the connection to the pool", async () => {
-    const order: string[] = [];
-    const query = vi.fn(async (sql: string) => {
-      order.push(sql);
-      return { rows: [] };
-    });
-    const release = vi.fn(() => order.push("release"));
+  it("returns the connection to the pool for reuse, issuing no session reset", () => {
+    const query = vi.fn();
+    const release = vi.fn();
 
-    await releaseScoped({ query, release } as unknown as PoolClient);
+    releaseScoped({ query, release } as unknown as PoolClient);
 
-    // The exact command matters: a narrower reset would leave admin's
-    // app.bypass_rls set on a connection later reused by a tenant.
-    expect(query).toHaveBeenCalledWith("RESET ALL");
-    // Ordering matters: a client released before the reset completes could be
-    // checked out again still carrying the previous tenant's GUC.
-    expect(order).toEqual(["RESET ALL", "release"]);
     // Reuse (plain release), not destroy (release(true)).
     expect(release).toHaveBeenCalledTimes(1);
     expect(release).toHaveBeenCalledWith();
+    // The regression that matters: no `RESET ALL` — no query at all on release.
+    // A session reset between transactions is exactly what breaks on the
+    // transaction pooler, so re-introducing one here must fail this test.
+    expect(query).not.toHaveBeenCalled();
   });
 
-  it("destroys the connection instead of reusing it when the reset fails", async () => {
-    const query = vi.fn(async () => {
-      throw new Error("connection reset by peer");
-    });
-    const release = vi.fn();
+  it("destroys the connection instead of reusing it when a clean release fails", () => {
+    const release = vi
+      .fn()
+      .mockImplementationOnce(() => {
+        throw new Error("socket already gone");
+      });
 
-    await releaseScoped({ query, release } as unknown as PoolClient);
+    releaseScoped({ query: vi.fn(), release } as unknown as PoolClient);
 
-    // A connection whose reset failed may still carry the tenant GUC, so it
-    // must be discarded — release(true) — never returned to the pool clean.
-    expect(release).toHaveBeenCalledWith(true);
+    // A connection that can't be cleanly released may be in an unknown state,
+    // so it is discarded — release(true) — never returned to the pool.
+    expect(release).toHaveBeenCalledTimes(2);
+    expect(release).toHaveBeenLastCalledWith(true);
   });
 });

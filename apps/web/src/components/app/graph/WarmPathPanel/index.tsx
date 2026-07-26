@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { Crosshair, MoveRight } from "lucide-react";
 import { findWarmPathsAction, type WarmPathState } from "@/lib/actions/graph";
 import { Button } from "@/components/ui/button";
+import { FormError } from "@/components/app/feedback";
 import { Input } from "@/components/ui/input";
 import {
   GRAPH_TARGET_RESULTS_DISMISS_MS,
@@ -88,7 +89,7 @@ export function WarmPathPanel({
         <SubmitButton className="h-9 px-4 text-sm">Find path</SubmitButton>
       </form>
 
-      {state.error ? <p className="text-sm text-red-400">{state.error}</p> : null}
+      <FormError message={state.error} />
       {state.paths && state.paths.length === 0 ? (
         <p className="text-sm text-fog">
           No thread reaches {state.targetLabel || "that target"} yet — capture

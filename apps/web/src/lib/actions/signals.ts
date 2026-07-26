@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "@/lib/auth/guard";
+import { withUserDb } from "@/lib/db/request-scope";
 import { addNote } from "@/lib/repo/notes";
 import { upsertEmbedding } from "@/lib/repo/embeddings";
 import {
@@ -12,6 +13,7 @@ import {
   type ToggleWatchResult,
 } from "@/lib/repo/signals";
 import { extractAndApplyNote } from "@/lib/ai/note-extraction";
+import { mutation } from "@/lib/actions/mutation";
 
 function revalidate(contactId: string): void {
   revalidatePath(`/app/people/${contactId}`);
@@ -22,21 +24,25 @@ export async function toggleWatchAction(
   _previous: ToggleWatchResult,
   formData: FormData,
 ): Promise<ToggleWatchResult> {
-  const userId = await requireUserId();
   const contactId = String(formData.get("contactId") ?? "");
   const watch = formData.get("watch") === "true";
   if (!contactId) return { ok: false, error: "Missing contact." };
-  const result = await toggleWatch(userId, contactId, watch);
+  const r = await mutation("toggleWatch", (userId) =>
+    toggleWatch(userId, contactId, watch),
+  );
+  if (!r.ok) return { ok: false, error: r.error };
   revalidate(contactId);
-  return result;
+  // toggleWatch itself may return a plan/cap rejection (ok:false) without
+  // throwing — surface that business outcome verbatim.
+  return r.data;
 }
 
 export async function dismissSignalAction(formData: FormData): Promise<void> {
-  await requireUserId();
   const signalId = String(formData.get("signalId") ?? "");
   const contactId = String(formData.get("contactId") ?? "");
   if (!signalId) return;
-  await dismissSignal(signalId);
+  const r = await mutation("dismissSignal", () => dismissSignal(signalId));
+  if (!r.ok) throw new Error(r.error);
   revalidate(contactId);
 }
 
@@ -52,15 +58,29 @@ export async function addSignalAsNoteAction(formData: FormData): Promise<void> {
   const contactName = String(formData.get("contactName") ?? "");
   if (!signalId || !contactId) return;
 
-  const signal = await getSignal(signalId);
-  if (signal) {
+  // Scope 1 (read + note write): find the signal and, if it exists, save the
+  // receipted note + its embedding. All DB work here happens inside ONE short
+  // scoped connection that is released at the end of the block — nothing is
+  // held across the LLM call below (GOAL 1b / pool-exhaustion #92).
+  const prepared = await withUserDb(userId, async () => {
+    const signal = await getSignal(signalId);
+    if (!signal) return null;
     const body = signal.sourceUrl
       ? `${signal.headline}\n${signal.detail}\nSource: ${signal.sourceUrl}`
       : `${signal.headline}\n${signal.detail}`;
     const noteId = await addNote(contactId, "signal", body);
     await upsertEmbedding("note", noteId, contactId, body);
-    await extractAndApplyNote(userId, contactId, noteId, contactName, body);
+    return { noteId, body };
+  });
+
+  // LLM phase: extraction wraps its own short-lived DB scopes and releases the
+  // connection around the model call — we hold NO tenant connection here.
+  if (prepared) {
+    await extractAndApplyNote(userId, contactId, prepared.noteId, contactName, prepared.body);
   }
-  await markSignalNoted(signalId);
+
+  // Scope 2 (write): mark the signal handled — unconditionally, matching the
+  // original (a signal that vanished mid-flight is still cleared from the feed).
+  await withUserDb(userId, () => markSignalNoted(signalId));
   revalidate(contactId);
 }

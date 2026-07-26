@@ -8,6 +8,8 @@ import {
   deleteApiKeyAction,
   type CreateApiKeyState,
 } from "@/lib/actions/api-keys";
+import { ActionForm } from "@/components/app/ActionForm";
+import { FormError } from "@/components/app/feedback";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/utils/format-date";
@@ -62,10 +64,13 @@ export function ApiKeysSetting({ keys }: { keys: ApiKeySummary[] }) {
                   {formatDate(key.createdAt)}
                 </p>
               </div>
-              <form action={deleteApiKeyAction}>
+              <ActionForm
+                action={deleteApiKeyAction}
+                errorMessage="Couldn't revoke that token — try again."
+              >
                 <input type="hidden" name="keyId" value={key.id} />
                 <DeleteSubmit />
-              </form>
+              </ActionForm>
             </li>
           ))}
         </ul>
@@ -88,6 +93,8 @@ export function ApiKeysSetting({ keys }: { keys: ApiKeySummary[] }) {
         />
         <CreateSubmit />
       </form>
+
+      <FormError message={state.error} />
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { Check, Copy } from "lucide-react";
+import { FormError } from "@/components/app/feedback";
 import { draftFollowUpAction, type DraftState } from "@/lib/actions/drafts";
 import { Textarea } from "@/components/ui/textarea";
 import { ThreadLoader } from "@/components/brand/ThreadLoader";
@@ -30,11 +31,7 @@ export function DraftSection({ contactId }: { contactId: string }) {
           </SubmitButton>
         </form>
       </div>
-      {state.error ? (
-        <p className="text-sm text-red-400" role="alert">
-          {state.error}
-        </p>
-      ) : null}
+      <FormError message={state.error} />
       {pending ? (
         <ThreadLoader messages={DRAFT_MESSAGES} />
       ) : state.draft ? (

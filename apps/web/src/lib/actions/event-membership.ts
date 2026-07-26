@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "@/lib/auth/guard";
 import { withUserDb } from "@/lib/db/request-scope";
+import { mutation } from "@/lib/actions/mutation";
 import { addContactToEvent, createEvent, removeContactFromEvent } from "@/lib/repo/events";
 
 export interface EventMembershipState {
@@ -22,9 +23,9 @@ export async function attachContactToEventAction(
   eventId: string,
   contactId: string,
 ): Promise<EventMembershipState> {
-  await requireUserId();
   if (!eventId || !contactId) return { error: "Missing event or person." };
-  await addContactToEvent(eventId, contactId);
+  const r = await mutation("attachContactToEvent", () => addContactToEvent(eventId, contactId));
+  if (!r.ok) return { error: r.error };
   revalidateMembership(eventId, contactId);
   return {};
 }
@@ -56,9 +57,9 @@ export async function detachContactFromEventAction(
   eventId: string,
   contactId: string,
 ): Promise<EventMembershipState> {
-  await requireUserId();
   if (!eventId || !contactId) return { error: "Missing event or person." };
-  await removeContactFromEvent(eventId, contactId);
+  const r = await mutation("detachContactFromEvent", () => removeContactFromEvent(eventId, contactId));
+  if (!r.ok) return { error: r.error };
   revalidateMembership(eventId, contactId);
   return {};
 }

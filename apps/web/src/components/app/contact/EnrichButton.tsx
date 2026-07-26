@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { enrichContactAction, type EnrichResult } from "@/lib/actions/enrich";
+import { FormError } from "@/components/app/feedback";
 import { ThreadLoader } from "@/components/brand/ThreadLoader";
 import { ENRICH_MESSAGES } from "@/utils/constants/loader-messages";
 import { SubmitButton } from "../SubmitButton";
@@ -37,11 +38,9 @@ export function EnrichButton({ contactId }: { contactId: string }) {
           {state.noticed}
         </p>
       ) : null}
-      {state.error ? (
-        <p className="w-full text-xs text-red-400" role="alert">
-          {state.error}
-        </p>
-      ) : null}
+      <div className="w-full empty:hidden">
+        <FormError message={state.error} />
+      </div>
     </div>
   );
 }

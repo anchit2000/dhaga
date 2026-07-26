@@ -9,6 +9,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { createEntityAction, updateEntityAction } from "@/lib/actions/entities";
 import { createNodeTypeAction } from "@/lib/actions/node-types";
+import { FormError } from "@/components/app/feedback";
 import { NODE_TYPE_COLOR_SWATCHES } from "@/utils/constants/graph";
 import { ColorSwatchPicker } from "./ColorSwatchPicker";
 
@@ -115,9 +116,7 @@ export function EntityForm({
           placeholder="Optional — what is this, and why does it matter?"
         />
       </div>
-      {error ? (
-        <p className="text-sm text-red-400" role="alert">{error}</p>
-      ) : null}
+      <FormError message={error} />
       <Button type="submit" loading={pending}>
         {entityId ? "Save changes" : "Create entity"}
       </Button>

@@ -5,6 +5,13 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
+      // `server-only` (imported by lib/actions/mutation.ts) throws unless the
+      // bundler sets the react-server export condition — Next does at build,
+      // vitest doesn't — so alias it to an empty no-op for unit tests. Keeps the
+      // production import guard while letting mutation()-wrapped actions be tested.
+      "server-only": fileURLToPath(
+        new URL("./src/test/server-only-stub.ts", import.meta.url),
+      ),
     },
   },
   test: {

@@ -8,6 +8,7 @@ import {
   createRelationshipTypeAction,
   type RelationshipTypeOption,
 } from "@/lib/actions/relationship-types";
+import { FormError } from "@/components/app/feedback";
 import { toSlug } from "@/utils/slug";
 
 /** Inline relationship-type creation: forward + inverse labels; the slug is
@@ -70,7 +71,7 @@ export function CreateTypePanel({
           Saved as {derivedSlug}
         </p>
       ) : null}
-      {error ? <p className="text-sm text-red-400" role="alert">{error}</p> : null}
+      <FormError message={error} />
       <div className="flex gap-2">
         <Button
           type="button"

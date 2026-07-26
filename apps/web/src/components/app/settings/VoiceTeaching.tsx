@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
 import { Loader2, X } from "lucide-react";
+import { ActionForm, runAction } from "@/components/app/ActionForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -60,8 +61,13 @@ export function VoiceTeaching({ terms }: { terms: VocabTerm[] }) {
   const [resetKey, setResetKey] = useState(0);
 
   async function handleAdd(formData: FormData): Promise<void> {
-    await addVocabTermAction(formData);
-    setResetKey((key) => key + 1);
+    // Only remount (reset) the inputs on a successful write; a transient failure
+    // becomes a toast (runAction) and keeps what the user typed.
+    const ok = await runAction(
+      () => addVocabTermAction(formData),
+      "Couldn't add that word — try again.",
+    );
+    if (ok) setResetKey((key) => key + 1);
   }
 
   return (
@@ -100,10 +106,14 @@ export function VoiceTeaching({ terms }: { terms: VocabTerm[] }) {
                   <p className="truncate text-xs text-fog">heard as {t.aliases.join(", ")}</p>
                 ) : null}
               </div>
-              <form action={removeVocabTermAction} className="shrink-0">
+              <ActionForm
+                action={removeVocabTermAction}
+                errorMessage="Couldn't remove that word — try again."
+                className="shrink-0"
+              >
                 <input type="hidden" name="term" value={t.term} />
                 <RemoveButton />
-              </form>
+              </ActionForm>
             </li>
           ))}
         </ul>
@@ -112,9 +122,13 @@ export function VoiceTeaching({ terms }: { terms: VocabTerm[] }) {
       )}
 
       {terms.length > 0 ? (
-        <form action={clearVocabAction} className="flex justify-end border-t border-seam pt-4">
+        <ActionForm
+          action={clearVocabAction}
+          errorMessage="Couldn't clear the taught words — try again."
+          className="flex justify-end border-t border-seam pt-4"
+        >
           <ClearAllButton />
-        </form>
+        </ActionForm>
       ) : null}
     </div>
   );

@@ -1,12 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireUserId } from "@/lib/auth/guard";
 import {
   confirmEdgeSuggestion,
   dismissEdgeSuggestion,
   type EdgeSuggestionTarget,
 } from "@/lib/repo/edge-suggestions";
+import { mutation } from "@/lib/actions/mutation";
 
 /** Which target the confirm form chose. Person suggestions send `contactId`
  *  (empty = "none of these — create a new person"); entity suggestions send
@@ -21,11 +21,16 @@ function targetFromForm(formData: FormData): EdgeSuggestionTarget {
 }
 
 export async function confirmEdgeSuggestionAction(formData: FormData): Promise<void> {
-  await requireUserId();
   const suggestionId = String(formData.get("suggestionId") ?? "");
   if (!suggestionId) return;
   const target = targetFromForm(formData);
-  const resolved = await confirmEdgeSuggestion(suggestionId, target);
+  const r = await mutation("confirmEdgeSuggestion", () =>
+    confirmEdgeSuggestion(suggestionId, target),
+  );
+  // Fire-and-forget surface (ActionForm/runAction toasts a throw); a transient
+  // failure re-throws so the client wrapper shows its error toast.
+  if (!r.ok) throw new Error(r.error);
+  const resolved = r.data;
   revalidatePath("/app");
   if (resolved?.dstType === "contact") revalidatePath(`/app/people/${resolved.dstId}`);
   if (resolved?.dstType === "entity") {
@@ -37,9 +42,9 @@ export async function confirmEdgeSuggestionAction(formData: FormData): Promise<v
 }
 
 export async function dismissEdgeSuggestionAction(formData: FormData): Promise<void> {
-  await requireUserId();
   const suggestionId = String(formData.get("suggestionId") ?? "");
   if (!suggestionId) return;
-  await dismissEdgeSuggestion(suggestionId);
+  const r = await mutation("dismissEdgeSuggestion", () => dismissEdgeSuggestion(suggestionId));
+  if (!r.ok) throw new Error(r.error);
   revalidatePath("/app");
 }

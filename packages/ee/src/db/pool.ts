@@ -68,29 +68,34 @@ export function getPool(): Pool {
 }
 
 /**
- * Return a tenant/admin-scoped client to the pool CLEAN so it can be reused
- * rather than destroyed. With a pool this small (default 3), destroying every
+ * Return a tenant/admin-scoped client to the pool for REUSE rather than
+ * destroying it. With a pool this small (default 3), destroying every
  * connection on release means a fresh TCP+TLS+auth handshake to the database on
  * essentially every request — costly on its own, and doubly so when the
  * database is a region away. Reuse removes that churn.
  *
- * The catch is safety: the session-level `app.*` GUCs set for tenant scoping
- * (`app.current_user_id`, see tenant/scoped-db.ts) and admin bypass
- * (`app.bypass_rls`, see admin-db.ts) MUST NOT survive into the next checkout —
- * a stale setting on a reused connection is a cross-tenant data leak, not a
- * crash. `RESET ALL` clears every customized session setting regardless of
- * which path set it, so a backend previously used by openAdminConnection can
- * never leak `app.bypass_rls` into a tenant checkout (or vice versa). This is
- * sound only under session-mode pooling — one backend pinned per client for the
- * life of the checkout — which bootstrap.ts already enforces (port 5432, never
- * 6543). The client is not handed back to the pool until the reset resolves; if
- * the reset fails, the connection is destroyed rather than reused dirty. Await
- * it where the reset must complete before the function may suspend (see
- * request-scope.ts / admin/usage.ts).
+ * Reuse safety now rests on TRANSACTION-scoping, not on a session reset. Every
+ * scope sets its `app.*` GUC as a transaction-LOCAL setting
+ * (`set_config(name, value, is_local => true)`, see tenant/scoped-db.ts and
+ * admin-db.ts) inside a single BEGIN…COMMIT, so the setting is discarded the
+ * instant that transaction ends — nothing can survive into the next checkout,
+ * and there is nothing left to reset here. Deliberately NO `RESET ALL`:
+ *   - it is unnecessary — the tenant/bypass GUC is already gone at
+ *     COMMIT/ROLLBACK; and
+ *   - it is UNSAFE under transaction-mode pooling — `RESET ALL` is a
+ *     session-level command, and a transaction pooler (Supabase's port 6543,
+ *     PgBouncer, Supavisor) routes a between-transactions statement to whatever
+ *     backend it happens to grab, not the one the scope actually ran on.
+ * Dropping it is exactly what lets this one release path run UNCHANGED on both
+ * the session pooler (5432, today) and the transaction pooler (6543, at Pro
+ * time): flipping pooler becomes a DATABASE_URL change, no code change.
+ *
+ * The scope ends its own transaction (COMMIT/ROLLBACK) before calling this — so
+ * this only hands the physical connection back. Destroy-on-error fallback kept:
+ * a client that won't release cleanly is discarded rather than reused dirty.
  */
-export async function releaseScoped(client: PoolClient): Promise<void> {
+export function releaseScoped(client: PoolClient): void {
   try {
-    await client.query("RESET ALL");
     client.release();
   } catch {
     client.release(true);

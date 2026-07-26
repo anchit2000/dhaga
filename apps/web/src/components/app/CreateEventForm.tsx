@@ -5,6 +5,7 @@ import {
   createEventAction,
   type EventFormState,
 } from "@/lib/actions/events";
+import { FormError } from "@/components/app/feedback";
 import { Input } from "@/components/ui/input";
 import { EventStyleFields } from "./EventStyleFields";
 import { SubmitButton } from "./SubmitButton";
@@ -31,11 +32,7 @@ export function CreateEventForm({ withStyle = false, compact = false }: { withSt
         <SubmitButton>Create event</SubmitButton>
       </div>
       {withStyle ? <EventStyleFields /> : null}
-      {state.error ? (
-        <p className="text-sm text-red-400" role="alert">
-          {state.error}
-        </p>
-      ) : null}
+      <FormError message={state.error} />
     </form>
   );
 }

@@ -2,6 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { requireUserId } from "@/lib/auth/guard";
+import { withUserDb } from "@/lib/db/request-scope";
+import { SAVE_RETRY_MESSAGE, logActionError } from "@/lib/actions/resilience";
 import { extractAndApplyNote } from "@/lib/ai/note-extraction";
 import { extractContactFromText } from "@/lib/ai/contact-extraction";
 import { scanCardImages } from "@/lib/ai/card-scan";
@@ -38,9 +40,18 @@ export async function extractQuickAddAction(
   const raw = String(formData.get("raw") ?? "").trim();
   if (!raw) return { error: "Paste some text first." };
   if (formData.get("skipDisambiguation") !== "true") {
-    const matches = await findContactIdentityCandidates(raw);
-    if (matches.length > 1) {
-      return { matches, sourceText: raw };
+    try {
+      // Short scope: the disambiguation read releases its tenant connection
+      // BEFORE the extraction LLM call below — a server action gets no getDb()
+      // dedupe, so an unscoped read would pin a connection across the
+      // multi-second model call and starve the small pool (#92).
+      const matches = await withUserDb(userId, () => findContactIdentityCandidates(raw));
+      if (matches.length > 1) {
+        return { matches, sourceText: raw };
+      }
+    } catch (error) {
+      logActionError("extractQuickAdd", error);
+      return { error: SAVE_RETRY_MESSAGE };
     }
   }
   const result = await extractContactFromText(userId, raw);
@@ -57,10 +68,17 @@ export async function attachCapturedNoteAction(formData: FormData): Promise<void
   const contactId = String(formData.get("contactId") ?? "");
   const raw = String(formData.get("raw") ?? "").trim();
   if (!contactId || !raw) return;
-  const detail = await getContact(contactId);
+  // Short scopes on either side of the extraction LLM call: the target read and
+  // the note+embedding write each pin (and release) one tenant connection, so
+  // none is held across the ~minute-long model call (#92). extractAndApplyNote
+  // manages its own scoped DB the same way — mirrors note-extraction/index.ts.
+  const detail = await withUserDb(userId, () => getContact(contactId));
   if (!detail || detail.contact.source === "mentioned") return;
-  const noteId = await addNote(contactId, "voice", raw);
-  await upsertEmbedding("note", noteId, contactId, raw);
+  const noteId = await withUserDb(userId, async () => {
+    const id = await addNote(contactId, "voice", raw);
+    await upsertEmbedding("note", id, contactId, raw);
+    return id;
+  });
   await extractAndApplyNote(
     userId,
     contactId,
@@ -104,7 +122,9 @@ export async function scanCardAction(
   if (result.error || !result.contact) {
     return { error: result.error ?? "The scan failed." };
   }
-  const storePhoto = await shouldStoreCardPhotos();
+  // Read the setting in its own short scope — the scan (vision LLM) has already
+  // returned, so no connection is ever held across the model call.
+  const storePhoto = await withUserDb(userId, () => shouldStoreCardPhotos());
   return {
     contact: result.contact,
     via: "ai",

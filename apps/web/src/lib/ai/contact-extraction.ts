@@ -7,6 +7,7 @@ import {
   heuristicContactParse,
   type ExtractedContact,
 } from "@dhaga/core";
+import { withUserDb } from "@/lib/db/request-scope";
 import { AiBudgetError, assertAiBudget, recordAiAction } from "./metering";
 
 export interface ContactExtractionResult {
@@ -33,14 +34,21 @@ export async function extractContactFromText(
     };
   }
   try {
-    await assertAiBudget(userId);
+    // Budget check and usage-record each in their OWN short scope, released
+    // before/after the LLM call, so no tenant connection is held across the
+    // multi-second Anthropic round-trip (GOAL 1b / SCALING.md lever 2). Left
+    // unscoped in a server action, these getDb()-acquiring calls pin the
+    // request-scoped connection across the whole extract() — the #92 pool bug.
+    await withUserDb(userId, () => assertAiBudget(userId));
     const result = await getLLMClient().extract({
       schema: extractedContactSchema,
       system: CONTACT_PARSE_SYSTEM,
       prompt: buildContactParsePrompt(rawText),
       tier: "extract",
     });
-    await recordAiAction("contact_parse", result.model, result.usage);
+    await withUserDb(userId, () =>
+      recordAiAction("contact_parse", result.model, result.usage),
+    );
     return { contact: result.data, via: "ai" };
   } catch (error) {
     const reason =

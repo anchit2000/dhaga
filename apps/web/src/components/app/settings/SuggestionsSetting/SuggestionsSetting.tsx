@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { ActionForm } from "@/components/app/ActionForm";
 import { Input } from "@/components/ui/input";
-import { PrefToggle, SaveButton } from "@/components/app/settings/SuggestionsToggles";
+import { SaveButton } from "@/components/app/settings/SuggestionsToggles";
 import {
   setConfirmationsDigestEnabledAction,
   setDailyDigestEnabledAction,
@@ -14,6 +15,7 @@ import {
   MAX_DAILY_SUGGESTION_COUNT,
   MIN_DAILY_SUGGESTION_COUNT,
 } from "@/utils/constants/suggestions";
+import { DigestToggle } from "./DigestToggle";
 
 const fieldLabel = "block text-xs text-fog";
 const fieldBox = "mt-1 w-full";
@@ -50,7 +52,11 @@ export function SuggestionsSetting({
         </p>
       </div>
 
-      <form action={setSuggestionSettingsAction} className="space-y-4">
+      <ActionForm
+        action={setSuggestionSettingsAction}
+        errorMessage="Couldn't save your suggestion settings — try again."
+        className="space-y-4"
+      >
         <input ref={offsetRef} type="hidden" name="utcOffsetMinutes" defaultValue={prefs.utcOffsetMinutes} />
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <label className={fieldLabel}>
@@ -85,45 +91,31 @@ export function SuggestionsSetting({
           </label>
         </div>
         <SaveButton />
-      </form>
+      </ActionForm>
 
-      <form action={setDailyDigestEnabledAction} className="flex items-start justify-between gap-4 border-t border-seam pt-4">
-        <input type="hidden" name="enabled" value={digestEnabled ? "off" : "on"} />
-        <div>
-          <p className="text-sm font-medium text-paper">Daily email digest</p>
-          <p className="mt-1 text-sm text-fog">
-            Get the morning list by email. Requires email to be configured on your server.
-          </p>
-        </div>
-        <PrefToggle enabled={digestEnabled} label="Daily email digest" />
-      </form>
+      <DigestToggle
+        enabled={digestEnabled}
+        action={setDailyDigestEnabledAction}
+        label="Daily email digest"
+        title="Daily email digest"
+        description="Get the morning list by email. Requires email to be configured on your server."
+      />
 
-      <form
+      <DigestToggle
+        enabled={confirmationsDigestEnabled}
         action={setConfirmationsDigestEnabledAction}
-        className="flex items-start justify-between gap-4 border-t border-seam pt-4"
-      >
-        <input type="hidden" name="enabled" value={confirmationsDigestEnabled ? "off" : "on"} />
-        <div>
-          <p className="text-sm font-medium text-paper">Confirmations digest</p>
-          <p className="mt-1 text-sm text-fog">
-            Email a summary of pending confirmations waiting for your review. Requires email to be
-            configured on your server.
-          </p>
-        </div>
-        <PrefToggle enabled={confirmationsDigestEnabled} label="Confirmations digest" />
-      </form>
+        label="Confirmations digest"
+        title="Confirmations digest"
+        description="Email a summary of pending confirmations waiting for your review. Requires email to be configured on your server."
+      />
 
-      <form action={setMorningReminderEnabledAction} className="flex items-start justify-between gap-4 border-t border-seam pt-4">
-        <input type="hidden" name="enabled" value={reminderEnabled ? "off" : "on"} />
-        <div>
-          <p className="text-sm font-medium text-paper">Morning follow-up reminders</p>
-          <p className="mt-1 text-sm text-fog">
-            A daily nudge to open Dhaga when you have follow-ups or check-ins waiting.
-            Requires email to be configured on your server.
-          </p>
-        </div>
-        <PrefToggle enabled={reminderEnabled} label="Morning follow-up reminders" />
-      </form>
+      <DigestToggle
+        enabled={reminderEnabled}
+        action={setMorningReminderEnabledAction}
+        label="Morning follow-up reminders"
+        title="Morning follow-up reminders"
+        description="A daily nudge to open Dhaga when you have follow-ups or check-ins waiting. Requires email to be configured on your server."
+      />
     </section>
   );
 }

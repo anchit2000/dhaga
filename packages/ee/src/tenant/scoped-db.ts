@@ -1,4 +1,5 @@
-import { drizzle } from "drizzle-orm/node-postgres";
+import { sql } from "drizzle-orm";
+import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { PoolClient } from "pg";
 import { getPool, releaseScoped } from "../db/pool";
 import { connectWithRetry } from "../db/connect-retry";
@@ -6,14 +7,35 @@ import { ensureEeSchema } from "../db/bootstrap";
 
 /**
  * A dedicated (not concurrently-shared) client per tenant-scoped connection.
- * `SELECT set_config(...)` is used instead of a raw `SET app.x = <value>`
- * statement so the user id is a bound query parameter, not string-
- * interpolated SQL. On release the client is reset (`RESET ALL`, see
- * releaseScoped) and returned to the pool for reuse: the tenant GUC never
- * survives into another checkout, so reuse is as safe as discarding was, and
- * it avoids a fresh TCP+auth handshake on every request — the churn a tiny
- * pool would otherwise pay under load. Reuse is only sound under session-mode
- * pooling (one backend pinned per client), which bootstrap.ts enforces.
+ * Tenant scoping is TRANSACTION-scoped: each unit of work runs inside one
+ * `BEGIN … COMMIT` whose first statement is
+ * `SELECT set_config('app.current_user_id', $1, true)` — a bound query
+ * parameter (never string-interpolated) set TRANSACTION-LOCAL (`is_local =
+ * true`). Because the setting is transaction-local it is discarded the instant
+ * the transaction ends, so:
+ *   - a client reused for the next checkout can never carry the previous
+ *     tenant's scope (no `RESET ALL` needed on release — see releaseScoped),
+ *     and
+ *   - the exact same code is correct on a session-mode pooler (one backend
+ *     pinned per client, port 5432) AND a transaction-mode pooler (a backend
+ *     per transaction, port 6543): the scope lives entirely inside one
+ *     transaction, so the pooler never has a chance to run it unscoped or leak
+ *     it. Flipping between the two is a DATABASE_URL change, no code change.
+ *
+ * Two ways to run inside that transaction, for two lifecycles:
+ *   - `run(fn)` — a bounded unit of work (withUserDb, and via cachePerUser every
+ *     cached read). drizzle manages BEGIN/COMMIT/ROLLBACK; the tenant GUC is the
+ *     first statement in the txn, and a throw rolls back and rethrows.
+ *   - `begin()` — a request-lifetime pin (RSC page reads via
+ *     getRequestScopedDb), where there is no single callback to wrap. It opens
+ *     the transaction, sets the local GUC, and returns the db held open until
+ *     release() commits it. Every read on that db runs inside the one
+ *     transaction, so each is RLS-scoped even on a transaction-mode pooler.
+ *     Invariant: do NOT open a nested top-level `db.transaction()` on the
+ *     begin() db — it would COMMIT this scope's transaction early. (Fails
+ *     CLOSED if ever violated: with the GUC gone, RLS returns no rows, never
+ *     another tenant's.) Holds today — writes/transactions run under run(), not
+ *     RSC render.
  */
 export async function openTenantConnection(userId: string) {
   await ensureEeSchema(getPool());
@@ -32,14 +54,53 @@ export async function openTenantConnection(userId: string) {
   if (process.env.DB_TIMING_LOG) {
     console.log(`[db-timing] tenant connect acquire=${Math.round(performance.now() - acquireStartedMs)}ms`);
   }
-  try {
-    await client.query("SELECT set_config('app.current_user_id', $1, false)", [userId]);
-  } catch (error) {
-    client.release(true);
-    throw error;
-  }
+  // `drizzle(client)` is bound to this one checked-out client (not the pool),
+  // so its `.transaction()` runs BEGIN/COMMIT on THIS backend — the whole scope
+  // stays on one connection.
+  const scopedDb = drizzle(client);
+  let heldTxnOpen = false;
+
   return {
-    db: drizzle(client),
-    release: () => releaseScoped(client),
+    async run<T>(fn: (scopedDb: NodePgDatabase) => Promise<T>): Promise<T> {
+      return scopedDb.transaction(async (tx) => {
+        await tx.execute(sql`select set_config('app.current_user_id', ${userId}, true)`);
+        return fn(tx);
+      });
+    },
+    async begin(): Promise<NodePgDatabase> {
+      await client.query("BEGIN");
+      try {
+        await client.query("SELECT set_config('app.current_user_id', $1, true)", [userId]);
+      } catch (error) {
+        try {
+          await client.query("ROLLBACK");
+        } catch {
+          /* connection already unusable — the destroy below is what matters */
+        }
+        client.release(true);
+        throw error;
+      }
+      heldTxnOpen = true;
+      return scopedDb;
+    },
+    async release(): Promise<void> {
+      if (heldTxnOpen) {
+        heldTxnOpen = false;
+        try {
+          // COMMIT ends the held begin() transaction. On an aborted txn (a read
+          // errored mid-render) Postgres treats COMMIT as ROLLBACK, so this
+          // closes it cleanly either way.
+          await client.query("COMMIT");
+        } catch {
+          try {
+            await client.query("ROLLBACK");
+          } catch {
+            client.release(true); // can't end the txn — never return it dirty
+            return;
+          }
+        }
+      }
+      releaseScoped(client);
+    },
   };
 }

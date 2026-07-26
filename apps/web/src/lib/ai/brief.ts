@@ -46,8 +46,16 @@ export async function generateBrief(
   const { detail, facts, notes, events, followUps } = bundle;
 
   try {
-    await requireFeature(userId, "pre_meeting_brief");
-    await assertAiBudget(userId);
+    // Pre-LLM DB work (entitlement + budget checks) in ONE short scope,
+    // released BEFORE the LLM call so no tenant connection is held across that
+    // multi-second Anthropic round-trip (GOAL 1b / SCALING.md lever 2). Left
+    // unscoped, these getDb()-acquiring reads pin the request-scoped connection
+    // until request end — i.e. across the whole LLM call, the pool-saturation
+    // bug (#92).
+    await withUserDb(userId, async () => {
+      await requireFeature(userId, "pre_meeting_brief");
+      await assertAiBudget(userId);
+    });
     const lastTouch =
       detail.contact.lastReachedOutAt ?? detail.contact.createdAt;
     const result = await getLLMClient().complete({
@@ -68,7 +76,11 @@ export async function generateBrief(
       }),
       tier: "reason",
     });
-    await recordAiAction("brief", result.model, result.usage);
+    // Post-LLM metering write in its own short scope — again, no connection
+    // held across the LLM call above.
+    await withUserDb(userId, () =>
+      recordAiAction("brief", result.model, result.usage),
+    );
     const brief = result.data.trim();
     if (!brief) return { error: "The brief came back empty — try again." };
     return { brief };

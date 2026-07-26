@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { hasLLM } from "@dhaga/core";
 import { requireUserId } from "@/lib/auth/guard";
+import { withUserDb } from "@/lib/db/request-scope";
 import { SAVE_RETRY_MESSAGE, logActionError } from "@/lib/actions/resilience";
 import { getContact } from "@/lib/repo/contacts";
 import { createExtractionJob } from "@/lib/repo/extraction-jobs";
@@ -29,11 +30,19 @@ export async function enrichContactAction(
   const contactId = String(formData.get("contactId") ?? "");
   if (!contactId) return { error: "Missing contact." };
   if (!hasLLM()) return { error: "Configure an LLM provider to enable enrichment." };
-  if (!(await getContact(contactId))) return { error: "Contact not found." };
+  // Each getDb() below runs inside a withUserDb scope pinned to one tenant-pool
+  // connection: a server action gets no React cache() getDb() dedupe, so the
+  // getContact + entitlement/budget reads + job insert would otherwise each check
+  // out their own connection (max 3) and exhaust it under load.
+  if (!(await withUserDb(userId, () => getContact(contactId)))) {
+    return { error: "Contact not found." };
+  }
 
   try {
-    await requireFeature(userId, "enrichment");
-    await assertAiBudget(userId);
+    await withUserDb(userId, async () => {
+      await requireFeature(userId, "enrichment");
+      await assertAiBudget(userId);
+    });
   } catch (error) {
     if (error instanceof AiBudgetError) return { error: error.message };
     if (error instanceof FeatureNotEntitledError) {
@@ -44,7 +53,7 @@ export async function enrichContactAction(
   }
 
   try {
-    await createExtractionJob({ contactId, kind: "enrichment" });
+    await withUserDb(userId, () => createExtractionJob({ contactId, kind: "enrichment" }));
   } catch (error) {
     logActionError("enrich", error);
     return { error: SAVE_RETRY_MESSAGE };

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "@/lib/auth/guard";
+import { withUserDb } from "@/lib/db/request-scope";
 import { addContactToEvent, createEvent, removeContactFromEvent } from "@/lib/repo/events";
 
 export interface EventMembershipState {
@@ -35,11 +36,17 @@ export async function createEventAndAttachAction(
   name: string,
   contactId: string,
 ): Promise<EventMembershipState & { eventId?: string }> {
-  await requireUserId();
+  const userId = await requireUserId();
   const trimmed = name.trim();
   if (!trimmed || !contactId) return { error: "Give the group a name." };
-  const eventId = await createEvent(trimmed);
-  await addContactToEvent(eventId, contactId);
+  // One scoped connection for both writes: a server action gets no React cache()
+  // getDb() dedupe, so createEvent + addContactToEvent would otherwise each check
+  // out a separate tenant-pool connection (max 3) and exhaust it under load.
+  const eventId = await withUserDb(userId, async () => {
+    const id = await createEvent(trimmed);
+    await addContactToEvent(id, contactId);
+    return id;
+  });
   revalidateMembership(eventId, contactId);
   return { eventId };
 }

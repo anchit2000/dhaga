@@ -1,11 +1,12 @@
 import { FACT_TYPES } from "@dhaga/core";
-import { formatDate } from "@/utils/format-date";
 import type { FactWithReceipt } from "@/lib/repo/notes";
-import { FactItem } from "./FactItem";
-import { AddFactForm } from "./AddFactForm";
+import { FactListClient } from "./FactListClient";
 
 /** AI-derived facts, each with its receipt (the note it came from) — plus a
- *  manual "Add fact" path so the graph is usable without any extraction. */
+ *  manual "Add fact" path so the graph is usable without any extraction.
+ *  FACT_TYPES is read here (server-safe) and handed to the client list as a
+ *  prop, so the interactive layer never pulls @dhaga/core's runtime into the
+ *  bundle. */
 export function FactList({
   contactId,
   facts,
@@ -13,32 +14,5 @@ export function FactList({
   contactId: string;
   facts: FactWithReceipt[];
 }) {
-  return (
-    <div className="space-y-2.5">
-      {facts.length === 0 ? (
-        <p className="text-sm text-fog">
-          No facts yet — jot one down below, or add a note and they get extracted automatically.
-        </p>
-      ) : (
-        <ul className="space-y-1.5">
-          {facts.map((fact) => (
-            <FactItem
-              key={fact.id}
-              contactId={contactId}
-              factId={fact.id}
-              text={fact.text}
-              type={fact.type}
-              unverified={fact.unverified}
-              receipt={
-                fact.noteCreatedAt
-                  ? `from note, ${formatDate(fact.noteCreatedAt)}`
-                  : null
-              }
-            />
-          ))}
-        </ul>
-      )}
-      <AddFactForm contactId={contactId} factTypes={FACT_TYPES} />
-    </div>
-  );
+  return <FactListClient contactId={contactId} facts={facts} factTypes={FACT_TYPES} />;
 }

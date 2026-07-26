@@ -7,10 +7,15 @@ import { toast } from "sonner";
  *  error message that triggers rollback + a Retry toast. */
 export type SubmitResult = string | null;
 
+/** One optimistic edit to the list: append an item or drop one. */
+type ListChange<TItem> =
+  | { kind: "add"; item: TItem }
+  | { kind: "remove"; item: TItem };
+
 export interface OptimisticList<TItem> {
-  /** Server truth plus any in-flight optimistic additions, in render order. */
+  /** Server truth plus any in-flight optimistic edits, in render order. */
   items: TItem[];
-  /** True while at least one add is mid-flight (optimistic → reconciled). */
+  /** True while at least one edit is mid-flight (optimistic → reconciled). */
   pending: boolean;
   /**
    * Show `item` immediately, then run `submit` and reconcile. `submit` MUST
@@ -20,15 +25,22 @@ export interface OptimisticList<TItem> {
    * offers Retry, which replays the exact same add.
    */
   add: (item: TItem, submit: () => Promise<SubmitResult>) => void;
+  /**
+   * Drop `item` immediately (identity match against the current items), then run
+   * `submit` and reconcile — the mirror of `add` for completing/dismissing a
+   * row. Same revalidation contract; on failure the row reappears and a Retry
+   * toast replays the removal.
+   */
+  remove: (item: TItem, submit: () => Promise<SubmitResult>) => void;
 }
 
 /**
- * Optimistic add for a server-backed list — the list-shaped sibling of
+ * Optimistic add/remove for a server-backed list — the list-shaped sibling of
  * `useOptimisticToggle`. The hosting component owns the server `items`; each
- * add appends instantly, awaits the server inside one transition (so the
- * optimistic row holds until the revalidated data lands — no flash), and rolls
- * back with a Retry toast on error. Reuse existing server actions unchanged;
- * the caller only wraps one in `submit`.
+ * edit applies instantly, awaits the server inside one transition (so the
+ * optimistic state holds until the revalidated data lands — no flash), and
+ * rolls back with a Retry toast on error. Reuse existing server actions
+ * unchanged; the caller only wraps one in `submit`.
  */
 export function useOptimisticList<TItem>({
   items,
@@ -37,17 +49,22 @@ export function useOptimisticList<TItem>({
   items: TItem[];
   errorMessage: string;
 }): OptimisticList<TItem> {
-  const [optimisticItems, appendItem] = useOptimistic(
+  const [optimisticItems, applyChange] = useOptimistic(
     items,
-    (current: TItem[], incoming: TItem): TItem[] => [...current, incoming],
+    (current: TItem[], change: ListChange<TItem>): TItem[] =>
+      change.kind === "add"
+        ? [...current, change.item]
+        : current.filter((existing) => existing !== change.item),
   );
   const [pending, startTransition] = useTransition();
-  const addRef = useRef<OptimisticList<TItem>["add"] | null>(null);
+  const mutateRef = useRef<
+    ((change: ListChange<TItem>, submit: () => Promise<SubmitResult>) => void) | null
+  >(null);
 
-  const add = useCallback(
-    (item: TItem, submit: () => Promise<SubmitResult>): void => {
+  const mutate = useCallback(
+    (change: ListChange<TItem>, submit: () => Promise<SubmitResult>): void => {
       startTransition(async () => {
-        appendItem(item);
+        applyChange(change);
         let error: SubmitResult;
         try {
           error = await submit();
@@ -56,20 +73,31 @@ export function useOptimisticList<TItem>({
         }
         if (error) {
           // The transition ends without `items` changing, so React drops the
-          // optimistic row — rollback is automatic. Offer a one-tap Retry.
+          // optimistic edit — rollback is automatic. Offer a one-tap Retry.
           toast.error(error, {
-            action: { label: "Retry", onClick: () => addRef.current?.(item, submit) },
+            action: { label: "Retry", onClick: () => mutateRef.current?.(change, submit) },
           });
         }
       });
     },
-    [appendItem, errorMessage],
+    [applyChange, errorMessage],
   );
-  // Latest-ref so the Retry closure can replay `add` without making `add`
-  // depend on itself (which would defeat its memoization).
+  // Latest-ref so the Retry closure can replay `mutate` without making it depend
+  // on itself (which would defeat its memoization).
   useEffect(() => {
-    addRef.current = add;
-  }, [add]);
+    mutateRef.current = mutate;
+  }, [mutate]);
 
-  return { items: optimisticItems, pending, add };
+  const add = useCallback(
+    (item: TItem, submit: () => Promise<SubmitResult>): void =>
+      mutate({ kind: "add", item }, submit),
+    [mutate],
+  );
+  const remove = useCallback(
+    (item: TItem, submit: () => Promise<SubmitResult>): void =>
+      mutate({ kind: "remove", item }, submit),
+    [mutate],
+  );
+
+  return { items: optimisticItems, pending, add, remove };
 }

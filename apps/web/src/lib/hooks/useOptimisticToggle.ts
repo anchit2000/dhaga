@@ -16,7 +16,7 @@ interface OptimisticToggle<T> {
  * prop matches, and on failure React auto-reverts to `value` and we toast.
  *
  * Canonical shape for the fast, predictable mutations (watch on/off, cadence).
- * List add/remove needs a different shape and is handled at each call site.
+ * List add/remove needs a different shape and lives in `useOptimisticList`.
  */
 export function useOptimisticToggle<T>({
   value,

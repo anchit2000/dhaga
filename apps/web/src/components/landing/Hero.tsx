@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { GITHUB_URL, HERO } from "@/utils/constants/landing";
+import { HeroFlow } from "./HeroFlow";
 import { HeroSubline } from "./HeroSubline";
 import { ThreadCanvas } from "./ThreadCanvas";
 import { AppWindow } from "./AppWindow";
@@ -55,9 +56,15 @@ export function Hero() {
             {HERO.secondaryCta}
           </Button>
         </div>
-        <p
-          className={`mt-5 text-sm ${RISE}`}
+        <div
+          className={`mt-9 ${RISE}`}
           style={{ animationDelay: "0.46s" }}
+        >
+          <HeroFlow />
+        </div>
+        <p
+          className={`mt-6 text-sm ${RISE}`}
+          style={{ animationDelay: "0.52s" }}
         >
           <Link
             href="/blog/general/why-i-built-dhaga"
@@ -68,13 +75,13 @@ export function Hero() {
         </p>
         <p
           className={`mt-4 text-sm text-fog ${RISE}`}
-          style={{ animationDelay: "0.52s" }}
+          style={{ animationDelay: "0.58s" }}
         >
           Free to start · Self-hostable & private · AGPL-3.0
         </p>
         <p
           className={`mt-6 text-sm text-fog/70 ${RISE}`}
-          style={{ animationDelay: "0.62s" }}
+          style={{ animationDelay: "0.64s" }}
         >
           <span className="text-paper/80">{HERO.tagline}</span>{" "}
           {HERO.taglineNote}

@@ -35,6 +35,17 @@ export const HERO = {
   secondaryCta: "Read the code",
 } as const;
 
+/**
+ * The above-the-fold "how it works" strip, one entry per step. Order and icons
+ * mirror {@link HOW_IT_WORKS} (capture → graph → ask) via `STEP_ICONS`, so the
+ * hero flow and the full section read as the same three moves.
+ */
+export const HERO_FLOW = [
+  { label: "Capture", caption: "card, badge, or voice" },
+  { label: "Connect", caption: "the graph builds itself" },
+  { label: "Ask", caption: "in plain language" },
+] as const;
+
 export const STATS = [
   { num: "47", cap: "people you met at your last conference" },
   { num: "5", cap: "you actually followed up with" },

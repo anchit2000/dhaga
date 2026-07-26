@@ -41,6 +41,7 @@ export function EntityCombobox({
   onCreate,
   createLabel = "Create",
   inputClassName,
+  preloadOnOpen = false,
 }: {
   kinds: readonly GraphTargetKind[];
   onSelect: (target: GraphTarget) => void;
@@ -54,6 +55,7 @@ export function EntityCombobox({
   onCreate?: (name: string) => void;
   createLabel?: string;
   inputClassName?: string;
+  preloadOnOpen?: boolean;
 }): React.ReactElement {
   const [open, setOpen] = useState(false);
   const [internalQuery, setInternalQuery] = useState("");
@@ -66,7 +68,7 @@ export function EntityCombobox({
     return onInputValueChange ? onInputValueChange(value) : setInternalQuery(value);
   };
 
-  const results = useTargetSearch(query, { kinds, enabled: open }).filter(
+  const results = useTargetSearch(query, { kinds, enabled: open, preload: preloadOnOpen }).filter(
     (target) => !excludeIds?.has(target.id),
   );
   const trimmed = query.trim();
@@ -134,7 +136,9 @@ export function EntityCombobox({
           )}
         </ComboboxList>
         {results.length === 0 && !showCreate ? (
-          <ComboboxEmpty>{trimmed ? "No matches." : "Type to search…"}</ComboboxEmpty>
+          <ComboboxEmpty>
+            {trimmed ? "No matches." : preloadOnOpen ? "No matches yet." : "Type to search…"}
+          </ComboboxEmpty>
         ) : null}
         {showCreate ? (
           <button

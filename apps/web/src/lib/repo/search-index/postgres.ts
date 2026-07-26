@@ -48,10 +48,9 @@ export class PostgresSearchIndex implements SearchIndex {
 
   async search(query: SearchQuery): Promise<SearchIndexResult[]> {
     const text = query.text.trim();
-    if (!text) return [];
-    return query.matchMode === "prefix" || query.matchMode === "exact"
-      ? this.searchTargets(query, text)
-      : this.searchContacts(query, text);
+    const isPrefix = query.matchMode === "prefix" || query.matchMode === "exact";
+    if (!text && !(isPrefix && query.listWhenEmpty)) return [];
+    return isPrefix ? this.searchTargets(query, text) : this.searchContacts(query, text);
   }
 
   /** Fuzzy relevance path: hybrid keyword + semantic, contact-scored. */
@@ -71,7 +70,9 @@ export class PostgresSearchIndex implements SearchIndex {
   /** Prefix typeahead path: multi-kind label search over graph nodes. */
   private async searchTargets(query: SearchQuery, text: string): Promise<SearchIndexResult[]> {
     const kinds = query.kinds?.filter(isGraphTargetKind);
-    const targets = kinds ? await searchGraphTargets(text, kinds) : await searchGraphTargets(text);
+    const targets = kinds
+      ? await searchGraphTargets(text, kinds, { listWhenEmpty: query.listWhenEmpty })
+      : await searchGraphTargets(text, undefined, { listWhenEmpty: query.listWhenEmpty });
     // Targets arrive in a deliberate round-robin rank order; a descending score
     // by position keeps that order under any score-based re-sort downstream.
     const results = targets.map((target, index): SearchIndexResult => ({

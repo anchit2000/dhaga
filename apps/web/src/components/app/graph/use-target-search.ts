@@ -14,21 +14,23 @@ export function useTargetSearch(
   {
     kinds,
     enabled = true,
-  }: { kinds?: readonly string[]; enabled?: boolean } = {},
+    preload = false,
+  }: { kinds?: readonly string[]; enabled?: boolean; preload?: boolean } = {},
 ): GraphTarget[] {
   const normalized = query.trim();
   const debounced = useDebouncedValue(normalized, GRAPH_TARGET_SEARCH_DEBOUNCE_MS);
   const settled = debounced === normalized;
   const { data } = useAsyncData<{ targets: GraphTarget[] }>({
-    key: ["graph-targets", debounced, kinds ? kinds.join(",") : "all"],
+    key: ["graph-targets", debounced, kinds ? kinds.join(",") : "all", preload ? "list" : "typed"],
     fetcher: async (signal) => {
       const params = new URLSearchParams({ q: debounced });
       if (kinds) params.set("kinds", kinds.join(","));
+      if (preload) params.set("list", "1");
       const res = await fetch(`/api/graph/targets?${params}`, { signal });
       if (!res.ok) throw new Error(`graph target search failed (${res.status})`);
       return (await res.json()) as { targets: GraphTarget[] };
     },
-    enabled: enabled && settled && debounced.length > 0,
+    enabled: enabled && settled && (preload || debounced.length > 0),
     staleMs: 30_000,
   });
   if (!enabled || !settled || !data) return [];

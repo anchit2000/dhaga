@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "@/lib/auth/guard";
+import { withUserDb } from "@/lib/db/request-scope";
 import { SAVE_RETRY_MESSAGE, logActionError } from "@/lib/actions/resilience";
 import { getContact } from "@/lib/repo/contacts";
 import { getEntity } from "@/lib/repo/entities";
@@ -40,22 +41,28 @@ export async function addNoteAction(
   if (!contactId) return { error: "Missing contact." };
   if (!body) return { error: "Write something first." };
 
-  const detail = await getContact(contactId);
+  const detail = await withUserDb(userId, () => getContact(contactId));
   if (!detail) return { error: "Contact not found." };
 
   const kind = formData.get("kind") === "voice" ? "voice" : "text";
   // Wrap the writes so a transient DB failure returns an inline error (the
   // compose box keeps the user's typed note) instead of throwing to the boundary.
+  // withUserDb pins ONE scoped connection for the whole sequence: a server action
+  // gets no React cache() getDb() dedupe, so each getDb() would otherwise check
+  // out its own tenant-pool connection (max 3) and exhaust it under load.
   let budgeted = false;
   try {
-    const noteId = await addNote(contactId, kind, body);
-    // Free tier (cap 0) / an exhausted paid month has no AI budget: skip enqueuing
-    // a job that would only fail, and surface a calm paid-feature notice instead
-    // of "extracting facts…". The note is still saved either way.
-    budgeted = await hasMonthlyAiBudget(userId);
-    if (budgeted) {
-      await createExtractionJob({ contactId, kind: "note_extraction", noteId });
-    }
+    budgeted = await withUserDb(userId, async () => {
+      const noteId = await addNote(contactId, kind, body);
+      // Free tier (cap 0) / an exhausted paid month has no AI budget: skip enqueuing
+      // a job that would only fail, and surface a calm paid-feature notice instead
+      // of "extracting facts…". The note is still saved either way.
+      const hasBudget = await hasMonthlyAiBudget(userId);
+      if (hasBudget) {
+        await createExtractionJob({ contactId, kind: "note_extraction", noteId });
+      }
+      return hasBudget;
+    });
   } catch (error) {
     logActionError("addNote", error);
     return { error: SAVE_RETRY_MESSAGE };
@@ -84,14 +91,17 @@ export async function reprocessNoteAction(formData: FormData): Promise<void> {
   const noteId = String(formData.get("noteId") ?? "");
   const contactId = String(formData.get("contactId") ?? "");
   if (!noteId || !contactId) return;
+  // Each getDb() below runs inside a withUserDb scope pinned to one tenant-pool
+  // connection — a server action gets no React cache() getDb() dedupe, so the
+  // reads/insert would otherwise each check out their own connection (max 3).
   // RLS scopes getNote to this user; a note they don't own reads back null.
-  const note = await getNote(noteId);
+  const note = await withUserDb(userId, () => getNote(noteId));
   if (!note || note.contactId !== contactId) return;
   // Only trusted user captures re-extract in "note" mode (see REPROCESSABLE_NOTE_KINDS).
   if (!(REPROCESSABLE_NOTE_KINDS as readonly string[]).includes(note.kind)) return;
   // No AI budget → don't enqueue a doomed re-extraction (same guard as addNote).
-  if (!(await hasMonthlyAiBudget(userId))) return;
-  await createExtractionJob({ contactId, kind: "note_extraction", noteId });
+  if (!(await withUserDb(userId, () => hasMonthlyAiBudget(userId)))) return;
+  await withUserDb(userId, () => createExtractionJob({ contactId, kind: "note_extraction", noteId }));
   revalidatePath(`/app/people/${contactId}`);
 }
 
@@ -144,13 +154,17 @@ export async function deleteFactAction(formData: FormData): Promise<void> {
 }
 
 export async function updateFactAction(formData: FormData): Promise<void> {
-  await requireUserId();
+  const userId = await requireUserId();
   const factId = String(formData.get("factId") ?? "");
   const contactId = String(formData.get("contactId") ?? "");
   const text = String(formData.get("text") ?? "").trim();
   if (!factId || !text) return;
-  await updateFactText(factId, text);
-  await upsertEmbedding("fact", factId, contactId, text);
+  // One scoped connection for the update + local-embed index (see request-scope):
+  // a server action gets no React cache() getDb() dedupe.
+  await withUserDb(userId, async () => {
+    await updateFactText(factId, text);
+    await upsertEmbedding("fact", factId, contactId, text);
+  });
   revalidatePath(`/app/people/${contactId}`);
 }
 

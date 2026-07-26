@@ -3,8 +3,12 @@ import type { MetadataRoute } from "next";
 // Canonical public site URL — the single source of truth for absolute URLs
 // across metadata, sitemap, robots, JSON-LD, and share links. Overridable per
 // environment via NEXT_PUBLIC_SITE_URL; falls back to the production deployment.
-export const SITE_URL: string =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.dhaga.app";
+// Any trailing slash is stripped: this is an origin that gets `/path` appended
+// by raw concatenation (e.g. share links `${SITE_URL}/r/<code>`), so a trailing
+// slash from the env var would produce a double slash (`//r/...`).
+export const SITE_URL: string = (
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.dhaga.app"
+).replace(/\/+$/, "");
 
 export const SITE_NAME = "Dhaga";
 

@@ -101,7 +101,7 @@ export function QuickAddForm({
 
   const resultDialog = state.contact ? (
     <Dialog open={resultOpen} onOpenChange={(open) => { if (!open) dismissResult(); }}>
-      <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto">
+      <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
         <DialogTitle>Review scanned contact</DialogTitle>
         <QuickAddResult
           contact={state.contact}
@@ -150,6 +150,15 @@ export function QuickAddForm({
           captureOpen={captureOpen}
           onCaptureToggle={() => setCaptureOpen(true)}
         />
+      ) : null}
+      {/* Dock capture (camera/upload) submits straight to the action while the
+          capture dialog is closed, so the in-form loader is hidden. Surface a
+          branded scanning state so the wait has feedback instead of looking
+          like nothing happened. (When the dialog is open its own overlay runs.) */}
+      {pending && !captureOpen ? (
+        <div className="dark fixed inset-0 z-50 flex items-center justify-center bg-ink/80 backdrop-blur-sm">
+          <ThreadLoader messages={CARD_SCAN_MESSAGES} />
+        </div>
       ) : null}
       {resultDialog}
     </div>

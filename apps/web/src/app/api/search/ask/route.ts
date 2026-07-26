@@ -36,16 +36,23 @@ export async function POST(request: Request): Promise<Response> {
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
-    // Runs synchronously during construction inside this handler, so the
-    // request context (and its request-scoped DB) stays live for the whole pump.
+    // Runs synchronously during construction inside this handler, so the request
+    // context stays live for the whole pump. The generator opens its own
+    // short-lived DB scopes (withUserDb) and never pins a connection across the
+    // answer stream, so no request-scoped connection is held here.
     async start(controller) {
       try {
         for await (const event of streamSearchAnswer(userId, query)) {
           controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
         }
-      } catch {
+      } catch (error) {
         // Anything the generator didn't already turn into a notice still ends
         // the stream with a clean line so the client's reader loop terminates.
+        // Log PII-free so an unexpected stream abort isn't silently swallowed.
+        console.error("[ask-dhaga] stream aborted", {
+          name: error instanceof Error ? error.name : typeof error,
+          code: (error as { code?: unknown } | null)?.code,
+        });
         controller.enqueue(
           encoder.encode(
             `${JSON.stringify({

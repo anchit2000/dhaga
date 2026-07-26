@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUserId } from "@/lib/auth/guard";
+import { withUserDb } from "@/lib/db/request-scope";
 import { SAVE_RETRY_MESSAGE, logActionError } from "@/lib/actions/resilience";
 import {
   createContactProfile,
@@ -81,7 +82,7 @@ export async function createContactAction(
   _previous: ContactFormState,
   formData: FormData,
 ): Promise<ContactFormState> {
-  await requireUserId();
+  const userId = await requireUserId();
   const parsed = parseProfilePayload(formData);
   if (!parsed.ok) return { error: parsed.error };
 
@@ -89,39 +90,46 @@ export async function createContactAction(
   // Wrap the writes so a transient DB/connection failure returns an inline error
   // (the form stays mounted with everything the user typed) instead of throwing
   // to the error boundary. redirect() stays OUTSIDE the try — it works by
-  // throwing NEXT_REDIRECT, which the catch must not swallow.
+  // throwing NEXT_REDIRECT, which the catch must not swallow. withUserDb pins a
+  // single scoped connection across every write below: createContactProfile
+  // fans out a getDb() per distinct company, and the note/embedding/image/event
+  // writes each open their own — enough to exhaust the max-3 tenant pool and
+  // time out the save (a server action gets no cache() getDb() dedupe).
   let id = "";
   try {
-    id = await createContactProfile(parsed.profile, source);
+    id = await withUserDb(userId, async () => {
+      const contactId = await createContactProfile(parsed.profile, source);
 
-    // Quick-add receipts: the pasted text becomes the contact's first note.
-    const sourceText = field(formData, "sourceText");
-    let noteId: string | null = null;
-    if (sourceText) {
-      noteId = await addNote(id, "capture_source", sourceText);
-      await upsertEmbedding("note", noteId, id, sourceText);
-    }
+      // Quick-add receipts: the pasted text becomes the contact's first note.
+      const sourceText = field(formData, "sourceText");
+      let noteId: string | null = null;
+      if (sourceText) {
+        noteId = await addNote(contactId, "capture_source", sourceText);
+        await upsertEmbedding("note", noteId, contactId, sourceText);
+      }
 
-    // Card scans carry every photo through the review form; store each as a
-    // visual receipt (re-check the setting — it may have changed since scan).
-    const capturedImages = parseCapturedImages(formData);
-    if (capturedImages.length > 0 && (await shouldStoreCardPhotos())) {
-      await saveCardImages(
-        id,
-        noteId,
-        capturedImages.map((image) => ({
-          mediaType: image.imageType,
-          dataBase64: image.imageBase64,
-        })),
-      );
-    }
+      // Card scans carry every photo through the review form; store each as a
+      // visual receipt (re-check the setting — it may have changed since scan).
+      const capturedImages = parseCapturedImages(formData);
+      if (capturedImages.length > 0 && (await shouldStoreCardPhotos())) {
+        await saveCardImages(
+          contactId,
+          noteId,
+          capturedImages.map((image) => ({
+            mediaType: image.imageType,
+            dataBase64: image.imageBase64,
+          })),
+        );
+      }
 
-    const newEventName = field(formData, "newEventName");
-    const eventId =
-      newEventName != null
-        ? await createEvent(newEventName)
-        : field(formData, "eventId");
-    if (eventId) await addContactToEvent(eventId, id);
+      const newEventName = field(formData, "newEventName");
+      const eventId =
+        newEventName != null
+          ? await createEvent(newEventName)
+          : field(formData, "eventId");
+      if (eventId) await addContactToEvent(eventId, contactId);
+      return contactId;
+    });
   } catch (error) {
     logActionError("createContact", error);
     return { error: SAVE_RETRY_MESSAGE };
@@ -135,14 +143,19 @@ export async function updateContactAction(
   _previous: ContactFormState,
   formData: FormData,
 ): Promise<ContactFormState> {
-  await requireUserId();
+  const userId = await requireUserId();
   const contactId = field(formData, "contactId");
   if (!contactId) return { error: "Missing contact." };
   const parsed = parseProfilePayload(formData);
   if (!parsed.ok) return { error: parsed.error };
 
   try {
-    await updateContact(contactId, parsed.profile);
+    // Pin one scoped connection for the whole write. updateContact fans out a
+    // getDb() per distinct company (findOrCreateCompany), and a server action
+    // gets no cache() getDb() dedupe — so a contact with ≥3 distinct employers
+    // opened >3 connections and exhausted the max-3 tenant pool, timing out the
+    // save. withUserDb makes every getDb() below resolve to the same connection.
+    await withUserDb(userId, () => updateContact(contactId, parsed.profile));
   } catch (error) {
     logActionError("updateContact", error);
     return { error: SAVE_RETRY_MESSAGE };

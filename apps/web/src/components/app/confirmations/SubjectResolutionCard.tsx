@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { toast } from "sonner";
+import { toastError } from "@/components/app/feedback";
 import { EntityCombobox } from "@/components/app/EntityCombobox";
 import {
   dismissConfirmationAction,
@@ -37,7 +37,9 @@ export function SubjectResolutionCard({
       try {
         await resolveConfirmationAction(id, { subjectContactId }, contactId);
       } catch {
-        toast.error("Couldn't resolve that. Please try again.");
+        toastError("Couldn't resolve that. Please try again.", () =>
+          resolveSubject(subjectContactId),
+        );
       }
     });
   }

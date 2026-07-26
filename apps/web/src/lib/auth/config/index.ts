@@ -32,6 +32,28 @@ async function buildAuth() {
     // baseURL + BETTER_AUTH_TRUSTED_ORIGINS are trusted natively; this adds the
     // current Vercel preview deployment's own URLs. See ./trusted-origins.
     trustedOrigins: previewTrustedOrigins(),
+    session: {
+      // getCurrentUser() (lib/auth/guard.ts) calls auth.api.getSession() on
+      // every /app request, which otherwise reads the `session` row from
+      // Postgres. cookieCache lets better-auth trust a short-lived, HMAC-signed
+      // `session_data` cookie instead, so the common case costs zero DB
+      // round-trips — real relief on the small per-tenant pool + free tier.
+      //
+      // Tradeoff: while the cached cookie is valid, a server-side revoke isn't
+      // observed. We set `revokeSessionsOnPasswordReset: true`, so a
+      // reset/rotated session on another device stays trusted until the cache
+      // expires. maxAge is therefore held to 60s — long enough that the many
+      // requests a single page load / navigation burst fires are nearly all
+      // served from the cookie, short enough that a revoked session can't be
+      // trusted for more than a minute. (better-auth default is 300s; 60s is the
+      // conservative floor that still eliminates the per-request read.) When the
+      // cache expires better-auth falls back to a single DB read and refreshes
+      // it. The custom `isAdmin` field flows through unchanged — better-auth
+      // runs the cached user through parseUserOutput, which includes
+      // user.additionalFields — and admin gating reads isAdmin from the DB by
+      // user.id anyway (lib/cache/app-navigation.ts), so it can't go stale here.
+      cookieCache: { enabled: true, maxAge: 60 },
+    },
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: true,

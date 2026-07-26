@@ -10,6 +10,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { FormError } from "@/components/app/feedback";
 import { SubmitButton } from "../SubmitButton";
 import { MethodSection, PositionSection } from "./sections";
 import { AddressSection, CustomFieldSection, DateSection } from "./more-sections";
@@ -132,11 +133,7 @@ export function ContactForm({
       </Accordion>
 
       {children}
-      {state.error ? (
-        <p className="text-sm text-red-400" role="alert">
-          {state.error}
-        </p>
-      ) : null}
+      <FormError message={state.error} />
       <SubmitButton>{submitLabel}</SubmitButton>
     </form>
   );

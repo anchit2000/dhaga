@@ -1,9 +1,35 @@
 "use client";
 
+import { useFormStatus } from "react-dom";
 import Link from "next/link";
+import { Loader2 } from "lucide-react";
 import { ActionForm } from "@/components/app/ActionForm";
 import { Button } from "@/components/ui/button";
 import { addSignalAsNoteAction, dismissSignalAction } from "@/lib/actions/signals";
+import { cn } from "@/lib/utils";
+
+/**
+ * Pill submit with an in-flight spinner. Add-as-note runs an LLM extraction and
+ * can take a moment — without this the user gets no feedback that the click
+ * landed. A transient throw is still turned into a toast by the surrounding
+ * ActionForm; this only adds the pending affordance.
+ */
+function PillSubmit({ label, className }: { label: string; className: string }) {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className={cn(
+        "inline-flex items-center justify-center gap-1 disabled:pointer-events-none disabled:opacity-60",
+        className,
+      )}
+    >
+      {pending ? <Loader2 className="size-3 animate-spin" /> : null}
+      {label}
+    </button>
+  );
+}
 
 export interface SignalCardData {
   id: string;
@@ -84,12 +110,10 @@ export function SignalCard({
             <input type="hidden" name="signalId" value={signal.id} />
             <input type="hidden" name="contactId" value={signal.contactId} />
             <input type="hidden" name="contactName" value={signal.contactName} />
-            <button
-              type="submit"
+            <PillSubmit
+              label="Add as note"
               className="rounded-full border border-amber/40 px-2.5 py-1 text-[11px] text-ember transition-colors hover:bg-amber/10"
-            >
-              Add as note
-            </button>
+            />
           </ActionForm>
           <ActionForm
             action={dismissSignalAction}
@@ -97,12 +121,10 @@ export function SignalCard({
           >
             <input type="hidden" name="signalId" value={signal.id} />
             <input type="hidden" name="contactId" value={signal.contactId} />
-            <button
-              type="submit"
+            <PillSubmit
+              label="Dismiss"
               className="rounded-full border border-seam px-2.5 py-1 text-[11px] text-fog transition-colors hover:bg-wash/[0.04]"
-            >
-              Dismiss
-            </button>
+            />
           </ActionForm>
         </div>
       </div>

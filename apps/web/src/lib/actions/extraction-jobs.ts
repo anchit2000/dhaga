@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireUserId } from "@/lib/auth/guard";
+import { mutation } from "@/lib/actions/mutation";
 import { retryExtractionJob } from "@/lib/repo/extraction-jobs";
 
 /**
@@ -11,10 +11,10 @@ import { retryExtractionJob } from "@/lib/repo/extraction-jobs";
  * page's poller notices and fires the worker route, exactly as for a new job.
  */
 export async function retryExtractionJobAction(formData: FormData): Promise<void> {
-  await requireUserId();
   const jobId = String(formData.get("jobId") ?? "");
   const contactId = String(formData.get("contactId") ?? "");
   if (!jobId) return;
-  await retryExtractionJob(jobId);
+  const r = await mutation("retryExtractionJob", () => retryExtractionJob(jobId));
+  if (!r.ok) throw new Error(r.error);
   revalidatePath(`/app/people/${contactId}`);
 }

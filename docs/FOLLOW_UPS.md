@@ -5,6 +5,55 @@ a known, currently-exploitable security vulnerability — tenant isolation was
 reviewed (see [`SECURITY.md`](../SECURITY.md)); these are functional gaps,
 hardening, and correctness items. Grouped by area.
 
+## Connection-hygiene + optimistic-UX sweep (2026-07-26)
+
+App-wide pass: every DB-mutating server action now runs in ONE scoped connection
+(`mutation()` / short-scope `withUserDb`), mutation surfaces are optimistic +
+resilient (canonical `FormError`/`toastError`, never the error boundary), session
+`cookieCache` is on, and RLS scoping is transaction-local so the same code runs
+on the session pooler (5432) and the transaction pooler (6543) — see
+[`SCALING.md`](SCALING.md) §1–§2. This **resolves** the write-path half of
+"Concurrent `getDb()` fan-out" below (now enforced by
+`lib/__tests__/action-db-scope.guard.test.ts`) and two sub-points of "Per-request
+fixed overhead" (session validation is `cookieCache`d; `RESET ALL` is gone from
+release). Remaining from this sweep:
+
+- **`importCsvBatchAction` holds its one connection across the end-of-batch
+  webhook.** The `mutation()` wrap fixed the per-row fan-out, but the candidate
+  loop + `emitWebhook` live inside `repo/import.ts`'s `importContacts`. Give it a
+  `skipWebhook` option (like `createContactProfile` has) and return `{created,
+  skipped, format}` so the action emits `contacts.imported` AFTER the scope
+  closes. Only bites when `DHAGA_WEBHOOK_URL` is set (best-effort, 5s timeout).
+- **Worker-path metering not short-scoped.** `lib/ai/enrich.ts` holds the
+  AI-budget connection across the enrichment LLM/web-search — but in the batch
+  worker (off the request path), so lower priority than the request-path fixes
+  already applied (`brief.ts`, `draft.ts`, `contact-extraction.ts`,
+  `card-scan.ts`). Apply the same short-scope if it ever runs where pool pressure
+  matters.
+- **Typed repo errors for create-with-unique-name.** `createNodeType` /
+  `createRelationshipType` (`repo/node-types.ts`, `relationship-types.ts`) throw a
+  plain `Error` for BOTH a duplicate-name precondition and a real infra failure;
+  the actions surface the message to preserve the duplicate copy, so a transient
+  failure there shows its raw message instead of the standard retry copy (matches
+  prior behavior — not a regression). Give them a sentinel/typed error so the
+  action can distinguish precondition from transient.
+- **Verify the transaction-scope change on a real pooled DB before Pro.** The EE
+  integration suite (`tenant-reuse.integration.test.ts`) is skip-guarded without
+  `DATABASE_URL`; run it against a real session-pooled DB, and ideally the 6543
+  transaction pooler, before flipping `DATABASE_URL` at Supabase Pro.
+- **Stale pooling prose** still describing the old session-mode-required /
+  `RESET ALL` behavior: `docs/DEPLOYING.md`,
+  `apps/web/content/docs/self-hosting/{deploy,index}.mdx`, `SECURITY.md`, and
+  `apps/web/content/blog/engineering/tenant-isolation-serverless-postgres.mdx`.
+- **Pre-existing >150-line files nudged by the sweep (directory-split deferred —
+  surgical scope):** `lib/actions/notes.ts` (169), `contacts.ts` (196),
+  `import.ts` (165), `lib/hosted/gate.ts` (168),
+  `components/app/home/TodaySuggestions.tsx`.
+- **Optional (surfaced, not adopted):** cache the home `StatStrip` (2
+  round-trips) via `cachePerUserVersioned` keyed by an 8-table stats version + a
+  daily time bucket — rejected because it adds ~24h staleness to a decorative
+  sparkline; and a shared `OptimisticSwitch` to de-dupe the amber toggle markup.
+
 ## Hosted (Dhaga Cloud) multi-tenant
 
 - **Signals / watchlist generation in hosted mode.** The nightly

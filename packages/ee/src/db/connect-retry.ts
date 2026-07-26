@@ -7,10 +7,12 @@ import type { Pool, PoolClient } from "pg";
  * Vercel instance (see pool.ts). When several instances are warm at once the
  * sum of their per-instance draws can momentarily exceed 15 and Supavisor
  * rejects a new backend — but a slot frees within milliseconds, so the right
- * response is a short backoff-and-retry, not a 500. Session mode itself cannot
- * change (tenant scoping rides on session-level GUCs; bootstrap.ts enforces
- * port 5432), so retry is the graceful lever; raising Supabase's pool_size is
- * the durable one (see docs/SCALING.md).
+ * response is a short backoff-and-retry, not a 500. On the session pooler
+ * (5432, today) retry is the graceful lever for a momentary pool_size
+ * overshoot; raising Supabase's pool_size is the durable one (see
+ * docs/SCALING.md). Pooling MODE is no longer constrained — RLS scoping is
+ * transaction-local now (tenant/scoped-db.ts), so the transaction pooler (6543)
+ * is equally safe and this retry applies there too.
  */
 
 /** Max acquisition attempts (incl. the first); override with DB_CONNECT_RETRY_MAX. */

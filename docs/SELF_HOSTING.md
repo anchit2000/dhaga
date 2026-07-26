@@ -221,24 +221,25 @@ app needs from the database:
   set `DHAGA_VECTOR_STORE` to a registered external vector store (see
   [PROVIDERS.md](PROVIDERS.md)); the boot DDL skips the vector schema
   entirely in that case.
-- **Session-scoped pooling** (hosted mode only) — tenant scoping works via
-  session-level `set_config('app.current_user_id', …)`, which
-  transaction-mode poolers (e.g. Supabase's port 6543, PgBouncer, Supavisor,
-  Neon's `-pooler` endpoint) silently break by swapping the server backend
-  between queries: RLS intermittently returns zero rows *and* the tenant
-  setting can leak onto a backend later handed to another user. Use a direct
-  connection or a session-mode pooler; the boot guard in
-  `packages/ee/src/db/bootstrap.ts` fails loud when the connection string
-  looks like a transaction pooler (a `pooler`/`pgbouncer` hostname,
-  `pgbouncer=true`, or Supabase's `:6543`). If that heuristic false-positives
-  on a pooler you have confirmed is session-scoped, set
-  `DHAGA_ALLOW_TRANSACTION_POOLER=true` to downgrade the fail-loud throw to a
-  one-time warning. Co-locating compute and the DB in one region is the
-  recommended setup — a co-located DB makes the cold connection handshake ~ms and
-  sidesteps the timeout tuning entirely; a cross-region `DATABASE_URL` instead
-  needs a larger `connectionTimeoutMillis` (the default is 10s) to absorb that
-  handshake. Both pool timeouts are env-overridable without a redeploy —
-  `DB_POOL_CONNECTION_TIMEOUT_MS` and `DB_POOL_IDLE_TIMEOUT_MS`.
+- **Any pooling mode — session or transaction** (hosted mode only) — tenant
+  scoping is transaction-scoped: each unit of work runs inside one
+  `BEGIN…COMMIT` whose first statement sets `app.current_user_id` transaction-
+  local (`packages/ee/src/tenant/scoped-db.ts`; admin bypass likewise in
+  `admin-db.ts`), and the connection is returned to the pool with no session
+  reset (`pool.ts`). Because the whole scope lives in one transaction that sets
+  its own setting first, it is never run unscoped and never leaks across
+  backends — so **both** a session-mode pooler (Supabase port 5432) and a
+  transaction-mode pooler (Supabase port 6543, PgBouncer, Supavisor, Neon's
+  `-pooler` endpoint) are safe, as is a direct connection. There is no
+  pooling-mode boot guard (the earlier session-mode-only guard and its
+  `DHAGA_ALLOW_TRANSACTION_POOLER` override were removed); switching pooler is a
+  `DATABASE_URL` change only. Co-locating compute and the DB in one region is
+  still the recommended setup — a co-located DB makes the cold connection
+  handshake ~ms and sidesteps the timeout tuning entirely; a cross-region
+  `DATABASE_URL` instead needs a larger `connectionTimeoutMillis` (the default
+  is 10s) to absorb that handshake. Both pool timeouts are env-overridable
+  without a redeploy — `DB_POOL_CONNECTION_TIMEOUT_MS` and
+  `DB_POOL_IDLE_TIMEOUT_MS`.
 - **A role without `BYPASSRLS` or `SUPERUSER`** (hosted mode only) — either
   attribute makes the role ignore RLS (a superuser bypasses it unconditionally
   even while `rolbypassrls` reads false), and the boot guard rejects both. Run

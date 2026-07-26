@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toastError } from "@/components/app/feedback";
 import {
   confirmClusterCompanyAction,
   confirmClusterTagAction,
@@ -41,7 +42,7 @@ export function SuggestionsPanel({ clusters }: { clusters: NameCluster[] }) {
           : await dismissClusterAction({ key: cluster.key });
     setPending(null);
     if (result.error) {
-      toast.error(result.error);
+      toastError(result.error, () => void run(cluster, kind));
       return;
     }
     if (kind === "tag") toast.success(`Tagged ${cluster.contactIds.length} people “${cluster.key}”`);

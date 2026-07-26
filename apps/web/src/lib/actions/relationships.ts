@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireUserId } from "@/lib/auth/guard";
 import {
   createRelationshipEdge,
   deleteRelationshipEdge,
@@ -9,6 +8,7 @@ import {
   type RelationshipInput,
   type RelationshipEndpointKind,
 } from "@/lib/repo/relationships";
+import { mutation } from "@/lib/actions/mutation";
 import type { ActionResult } from "./types";
 
 /** Each endpoint's detail page lists the new edge — refresh whichever exists. */
@@ -22,23 +22,23 @@ function revalidateEndpoint(kind: RelationshipEndpointKind, id: string): void {
 export async function createRelationshipAction(
   input: RelationshipInput,
 ): Promise<ActionResult> {
-  await requireUserId();
   const invalid = validateRelationshipInput(input);
   if (invalid) return { error: invalid };
-  const id = await createRelationshipEdge(input);
+  const r = await mutation("createRelationship", () => createRelationshipEdge(input));
+  if (!r.ok) return { error: r.error };
   revalidatePath("/app/graph");
   revalidateEndpoint(input.srcKind, input.srcId);
   revalidateEndpoint(input.dstKind, input.dstId);
-  return { id };
+  return { id: r.data };
 }
 
 /** Tombstone — the edge stays recoverable, matching note-derived edge deletes. */
 export async function deleteRelationshipAction(
   edgeId: string,
 ): Promise<ActionResult> {
-  await requireUserId();
   if (!edgeId) return { error: "Missing relationship." };
-  await deleteRelationshipEdge(edgeId);
+  const r = await mutation("deleteRelationship", () => deleteRelationshipEdge(edgeId));
+  if (!r.ok) return { error: r.error };
   revalidatePath("/app/graph");
   return {};
 }

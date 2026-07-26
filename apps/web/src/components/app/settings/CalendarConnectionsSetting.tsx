@@ -2,6 +2,7 @@
 
 import { useFormStatus } from "react-dom";
 import { Calendar, Loader2, X } from "lucide-react";
+import { ActionForm } from "@/components/app/ActionForm";
 import { Button } from "@/components/ui/button";
 import { disconnectCalendarAction } from "@/lib/actions/calendar";
 import type { CalendarProviderInfo } from "@dhaga/core";
@@ -65,10 +66,13 @@ export function CalendarConnectionsSetting({
                   {connection.status === "needs_reconnect" ? " · needs reconnect" : ""}
                 </p>
               </div>
-              <form action={disconnectCalendarAction}>
+              <ActionForm
+                action={disconnectCalendarAction}
+                errorMessage="Couldn't disconnect that calendar — try again."
+              >
                 <input type="hidden" name="id" value={connection.id} />
                 <DisconnectButton />
-              </form>
+              </ActionForm>
             </li>
           ))}
         </ul>

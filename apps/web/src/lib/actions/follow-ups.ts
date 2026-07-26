@@ -1,15 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireUserId } from "@/lib/auth/guard";
+import { mutation } from "@/lib/actions/mutation";
 import { setFollowUpStatus, updateFollowUp } from "@/lib/repo/notes";
 
 export async function completeFollowUpAction(formData: FormData): Promise<void> {
-  await requireUserId();
   const followUpId = String(formData.get("followUpId") ?? "");
   const contactId = String(formData.get("contactId") ?? "");
   if (!followUpId) return;
-  await setFollowUpStatus(followUpId, "done");
+  const r = await mutation("completeFollowUp", () => setFollowUpStatus(followUpId, "done"));
+  if (!r.ok) throw new Error(r.error);
   revalidatePath(`/app/people/${contactId}`);
   revalidatePath("/app");
 }
@@ -20,7 +20,6 @@ export async function completeFollowUpAction(formData: FormData): Promise<void> 
  * carries the DatePicker's hidden field, so an empty value clears the date.
  */
 export async function updateFollowUpAction(formData: FormData): Promise<void> {
-  await requireUserId();
   const followUpId = String(formData.get("followUpId") ?? "");
   const contactId = String(formData.get("contactId") ?? "");
   const action = String(formData.get("action") ?? "").trim();
@@ -28,7 +27,10 @@ export async function updateFollowUpAction(formData: FormData): Promise<void> {
   const dueRaw = String(formData.get("dueDate") ?? "").trim();
   const parsedDue = dueRaw ? new Date(dueRaw) : null;
   const dueDate = parsedDue && !Number.isNaN(parsedDue.getTime()) ? parsedDue : null;
-  await updateFollowUp(followUpId, { action, dueDate });
+  const r = await mutation("updateFollowUp", () =>
+    updateFollowUp(followUpId, { action, dueDate }),
+  );
+  if (!r.ok) throw new Error(r.error);
   revalidatePath(`/app/people/${contactId}`);
   revalidatePath("/app");
 }
@@ -40,11 +42,11 @@ export async function updateFollowUpAction(formData: FormData): Promise<void> {
  * consistent with how the rest of the app retires workflow items.
  */
 export async function dismissFollowUpAction(formData: FormData): Promise<void> {
-  await requireUserId();
   const followUpId = String(formData.get("followUpId") ?? "");
   const contactId = String(formData.get("contactId") ?? "");
   if (!followUpId) return;
-  await setFollowUpStatus(followUpId, "dismissed");
+  const r = await mutation("dismissFollowUp", () => setFollowUpStatus(followUpId, "dismissed"));
+  if (!r.ok) throw new Error(r.error);
   revalidatePath(`/app/people/${contactId}`);
   revalidatePath("/app");
 }

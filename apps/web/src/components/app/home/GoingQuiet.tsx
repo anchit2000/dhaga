@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { HomeTile } from "./HomeTile";
-import { ActionForm } from "@/components/app/ActionForm";
 import { Button } from "@/components/ui/button";
 import { markReachedOutAction } from "@/lib/actions/reminders";
+import { useOptimisticList } from "@/lib/hooks/useOptimisticList";
 import { QUIET_FEED_LIMIT } from "@/utils/constants/app";
 import type { QuietContact } from "@/lib/repo/strength";
 
@@ -25,9 +25,15 @@ export function GoingQuiet({
   contacts: QuietContact[];
   onSelectContact: (id: string) => void;
 }) {
-  if (contacts.length === 0) return null;
-  const shown = contacts.slice(0, QUIET_FEED_LIMIT);
-  const overflow = contacts.length - shown.length;
+  // Marking someone reached out drops them from the fading feed instantly; the
+  // row returns with a Retry toast if the server rejects it.
+  const { items, remove } = useOptimisticList<QuietContact>({
+    items: contacts,
+    errorMessage: "Couldn't mark that as reached out.",
+  });
+  if (items.length === 0) return null;
+  const shown = items.slice(0, QUIET_FEED_LIMIT);
+  const overflow = items.length - shown.length;
 
   return (
     <HomeTile
@@ -62,19 +68,20 @@ export function GoingQuiet({
             <span className="shrink-0 rounded-full border border-seam px-2 py-0.5 text-[11px] text-fog">
               {person.strength.label} · {person.strength.score}
             </span>
-            <ActionForm
-              action={markReachedOutAction}
-              errorMessage="Couldn't mark that as reached out."
-              className="shrink-0"
+            <button
+              type="button"
+              onClick={() =>
+                remove(person, async () => {
+                  const formData = new FormData();
+                  formData.set("contactId", person.id);
+                  await markReachedOutAction(formData);
+                  return null;
+                })
+              }
+              className="shrink-0 rounded-full border border-amber/40 px-3 py-1.5 text-xs text-ember transition-colors hover:bg-amber/10"
             >
-              <input type="hidden" name="contactId" value={person.id} />
-              <button
-                type="submit"
-                className="rounded-full border border-amber/40 px-3 py-1.5 text-xs text-ember transition-colors hover:bg-amber/10"
-              >
-                I reached out ✓
-              </button>
-            </ActionForm>
+              I reached out ✓
+            </button>
           </li>
         ))}
       </ul>

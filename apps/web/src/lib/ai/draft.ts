@@ -42,7 +42,11 @@ export async function generateFollowUpDraft(
   const { detail, contactFacts, contactNotes, contactEvents } = bundle;
 
   try {
-    await assertAiBudget(userId);
+    // Budget check in its own short scope, released BEFORE the LLM call so no
+    // tenant connection is held across that multi-second Anthropic round-trip
+    // (GOAL 1b / SCALING.md lever 2). Left unscoped it pins the request-scoped
+    // connection until request end — the pool-saturation bug (#92).
+    await withUserDb(userId, () => assertAiBudget(userId));
     const result = await getLLMClient().complete({
       system: DRAFT_SYSTEM,
       prompt: buildDraftPrompt({
@@ -59,7 +63,11 @@ export async function generateFollowUpDraft(
       }),
       tier: "reason",
     });
-    await recordAiAction("draft", result.model, result.usage);
+    // Post-LLM metering write in its own short scope — nothing held across the
+    // LLM call above.
+    await withUserDb(userId, () =>
+      recordAiAction("draft", result.model, result.usage),
+    );
     const draft = result.data.trim();
     if (!draft) return { error: "The draft came back empty — try again." };
     return { draft };

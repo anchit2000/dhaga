@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireUserId } from "@/lib/auth/guard";
+import { mutation } from "@/lib/actions/mutation";
 import {
   setConfirmationsDigestEnabled,
   setDailyDigestEnabled,
@@ -28,37 +28,46 @@ function numberField(raw: FormDataEntryValue | null, fallback: number): number {
 
 /** Saves the daily count + scheduling window in one form submit. */
 export async function setSuggestionSettingsAction(formData: FormData): Promise<void> {
-  await requireUserId();
   const count = Number(formData.get("count"));
-  if (Number.isFinite(count)) await setDailySuggestionCount(count); // repo clamps range
   const startHour = clamp(numberField(formData.get("startHour"), 9), 0, 23);
   const endHour = clamp(numberField(formData.get("endHour"), 17), 1, 24);
   const overloadThreshold = clamp(numberField(formData.get("overloadThreshold"), 5), 1, 24);
   const utcOffsetMinutes = clamp(numberField(formData.get("utcOffsetMinutes"), 0), -840, 840);
-  await setSchedulePrefs({
-    startHour,
-    endHour: Math.max(endHour, startHour + 1),
-    overloadThreshold,
-    utcOffsetMinutes,
+  // Both writes share ONE scoped connection so the two setSetting() calls don't
+  // fan out getDb() across the small tenant pool.
+  const r = await mutation("setSuggestionSettings", async () => {
+    if (Number.isFinite(count)) await setDailySuggestionCount(count); // repo clamps range
+    await setSchedulePrefs({
+      startHour,
+      endHour: Math.max(endHour, startHour + 1),
+      overloadThreshold,
+      utcOffsetMinutes,
+    });
   });
+  if (!r.ok) throw new Error(r.error);
   revalidatePath("/app");
   revalidatePath("/app/settings");
 }
 
 export async function setDailyDigestEnabledAction(formData: FormData): Promise<void> {
-  await requireUserId();
-  await setDailyDigestEnabled(formData.get("enabled") === "on");
+  const enabled = formData.get("enabled") === "on";
+  const r = await mutation("setDailyDigestEnabled", () => setDailyDigestEnabled(enabled));
+  if (!r.ok) throw new Error(r.error);
   revalidatePath("/app/settings");
 }
 
 export async function setConfirmationsDigestEnabledAction(formData: FormData): Promise<void> {
-  await requireUserId();
-  await setConfirmationsDigestEnabled(formData.get("enabled") === "on");
+  const enabled = formData.get("enabled") === "on";
+  const r = await mutation("setConfirmationsDigestEnabled", () =>
+    setConfirmationsDigestEnabled(enabled),
+  );
+  if (!r.ok) throw new Error(r.error);
   revalidatePath("/app/settings");
 }
 
 export async function setMorningReminderEnabledAction(formData: FormData): Promise<void> {
-  await requireUserId();
-  await setMorningReminderEnabled(formData.get("enabled") === "on");
+  const enabled = formData.get("enabled") === "on";
+  const r = await mutation("setMorningReminderEnabled", () => setMorningReminderEnabled(enabled));
+  if (!r.ok) throw new Error(r.error);
   revalidatePath("/app/settings");
 }

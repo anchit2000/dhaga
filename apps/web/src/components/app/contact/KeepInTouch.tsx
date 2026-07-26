@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { useFormStatus } from "react-dom";
 import { Loader2 } from "lucide-react";
 import { markReachedOutAction, setCadenceAction } from "@/lib/actions/reminders";
 import { ActionForm } from "@/components/app/ActionForm";
+import { useOptimisticToggle } from "@/lib/hooks/useOptimisticToggle";
 import { Select } from "@/components/ui/select";
 import { CADENCE_OPTIONS } from "@/utils/constants/app";
 
@@ -34,19 +34,23 @@ export function KeepInTouch({
   lastTouch: string;
   due: boolean;
 }) {
-  // Controlled, not defaultValue: after the save action React 19 auto-resets
-  // the form, and an uncontrolled <select> can snap back to its stale mount
-  // default (showing "No reminder" until a refresh) when the revalidated
-  // re-render hasn't landed. A state-backed value survives the reset. Re-sync
-  // during render (not an effect) whenever the server value changes — after a
-  // save, or when navigating between contacts reuses this component instance.
-  const serverDays = everyDays ? String(everyDays) : "";
-  const [days, setDays] = useState(serverDays);
-  const [seenEveryDays, setSeenEveryDays] = useState(everyDays);
-  if (everyDays !== seenEveryDays) {
-    setSeenEveryDays(everyDays);
-    setDays(serverDays);
-  }
+  // Optimistic cadence: the picker flips to the chosen value instantly on
+  // change (no Save round-trip) and reverts — with a toast — only if the server
+  // rejects it. useOptimistic re-syncs to the fresh `everyDays` prop after each
+  // revalidation and when navigating between contacts reuses this instance, so
+  // the manual state-sync the controlled <select> used to need is gone. The
+  // status line below still reads the server truth (`everyDays`), catching up
+  // when the revalidated data lands.
+  const { value: days, pending, set } = useOptimisticToggle<string>({
+    value: everyDays ? String(everyDays) : "",
+    mutate: async (next) => {
+      const formData = new FormData();
+      formData.set("contactId", contactId);
+      formData.set("days", next);
+      await setCadenceAction(formData);
+    },
+    errorMessage: "Couldn't update the reminder — try again.",
+  });
 
   return (
     <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-seam bg-panel p-4">
@@ -60,28 +64,20 @@ export function KeepInTouch({
             : "No reminder set."}
         </p>
       </div>
-      <ActionForm
-        action={setCadenceAction}
-        errorMessage="Couldn't update the reminder — try again."
-        className="flex items-center gap-2"
+      <Select
+        value={days}
+        onChange={(event) => set(event.target.value)}
+        disabled={pending}
+        className="h-8 w-36 text-xs"
+        aria-label="Reach-out cadence"
       >
-        <input type="hidden" name="contactId" value={contactId} />
-        <Select
-          name="days"
-          value={days}
-          onChange={(event) => setDays(event.target.value)}
-          className="h-8 w-36 text-xs"
-          aria-label="Reach-out cadence"
-        >
-          <option value="">No reminder</option>
-          {CADENCE_OPTIONS.map((option) => (
-            <option key={option.days} value={option.days}>
-              {option.label}
-            </option>
-          ))}
-        </Select>
-        <SmallSubmit label="Save" />
-      </ActionForm>
+        <option value="">No reminder</option>
+        {CADENCE_OPTIONS.map((option) => (
+          <option key={option.days} value={option.days}>
+            {option.label}
+          </option>
+        ))}
+      </Select>
       {everyDays ? (
         <ActionForm
           action={markReachedOutAction}

@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { emailDigestAction, type DigestState } from "@/lib/actions/events";
+import { FormError } from "@/components/app/feedback";
 import { SubmitButton } from "./SubmitButton";
 
 /** v1.2 post-event digest — user-triggered, template-based, zero AI cost. */
@@ -22,11 +23,7 @@ export function EmailDigestButton({ eventId }: { eventId: string }) {
           Sent — check your inbox.
         </p>
       ) : null}
-      {state.error ? (
-        <p className="text-xs text-red-400" role="alert">
-          {state.error}
-        </p>
-      ) : null}
+      <FormError message={state.error} />
     </div>
   );
 }

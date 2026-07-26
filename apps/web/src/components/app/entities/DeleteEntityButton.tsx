@@ -3,8 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
 import { deleteEntityAction } from "@/lib/actions/entities";
+import { toastError } from "@/components/app/feedback";
 
 /** Destructive page-bottom action, styled after ForgetButton on the contact page. */
 export function DeleteEntityButton({
@@ -28,7 +28,7 @@ export function DeleteEntityButton({
     startTransition(async () => {
       const result = await deleteEntityAction(entityId);
       if (result.error) {
-        toast.error(result.error);
+        toastError(result.error);
         return;
       }
       router.push("/app/entities");

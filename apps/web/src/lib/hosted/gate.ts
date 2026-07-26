@@ -12,13 +12,35 @@ import type { DhagaDb } from "@/lib/db";
  * permissive default below.
  */
 export interface ScopedConnection {
-  db: DhagaDb;
-  /** Must be called once the request is done with `db` (resets session state
-   *  and returns the underlying Postgres connection to the pool). Awaitable:
-   *  the reset must finish before the connection can be safely reused, so
-   *  await it wherever the caller might otherwise suspend first. EE owns
-   *  Postgres connection mechanics and stays framework-agnostic; the
-   *  Next.js-specific "when" (after()) is the caller's job — see
+  /** Run `fn` inside ONE tenant-scoped transaction on the pinned backend and
+   *  commit — or roll back and rethrow if it throws. The tenant id is applied
+   *  as a TRANSACTION-LOCAL Postgres setting (the transaction's first
+   *  statement), so it is gone the moment the transaction ends: nothing leaks
+   *  into the next checkout, and no session-level reset is needed. This is the
+   *  path withUserDb (and, via cachePerUser, every cached read) takes, and it
+   *  is what makes the same code correct on both a session-mode pooler (5432)
+   *  and a transaction-mode pooler (6543) — flipping pooler is a DATABASE_URL
+   *  change, no code change. EE owns the Postgres mechanics and stays
+   *  framework-agnostic; putting `scopedDb` into the ambient store so repo
+   *  getDb() resolves to it is the caller's job — see db/request-scope.ts. */
+  run<T>(fn: (scopedDb: DhagaDb) => Promise<T>): Promise<T>;
+  /** Open the tenant transaction now and return its db, held open until
+   *  release(). For the request-lifetime pin (RSC page reads via
+   *  getRequestScopedDb), where there is no single callback to wrap in run().
+   *  Same transaction-local tenant setting as run(); every read on the returned
+   *  db runs inside that one transaction, so each is RLS-scoped even on a
+   *  transaction-mode pooler (an autocommit statement would otherwise land on a
+   *  backend with no tenant setting — RLS then returns no rows, failing closed,
+   *  never leaking). The returned db is a live transaction: do NOT open a
+   *  nested top-level `db.transaction()` on it (it would end the scope's
+   *  transaction early). */
+  begin(): Promise<DhagaDb>;
+  /** Return the pinned Postgres connection to the pool once run()/begin() is
+   *  done. No session reset — the transaction-local setting self-cleared at
+   *  COMMIT/ROLLBACK — so this is safe under session- AND transaction-mode
+   *  pooling. Awaitable: for begin() it commits the held transaction first, so
+   *  await it wherever the caller might otherwise suspend. EE owns the Postgres
+   *  mechanics; the Next.js-specific "when" (after()) is the caller's job — see
    *  db/request-scope.ts. */
   release(): void | Promise<void>;
 }

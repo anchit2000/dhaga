@@ -3,6 +3,7 @@
 import { after } from "next/server";
 import type { SearchIndexResult } from "@dhaga/core";
 import { requireUserId } from "@/lib/auth/guard";
+import { mutation } from "@/lib/actions/mutation";
 import { invalidateAppNavigation } from "@/lib/cache/app-navigation";
 import type { AiAnswerResult } from "@/lib/ai/search";
 import { getSearchIndex } from "@/lib/repo/search-index";
@@ -46,7 +47,9 @@ export async function searchAction(
  * searchAction's own `weights` field instead.
  */
 export async function saveSearchWeightsAction(weights: SearchWeights): Promise<void> {
-  const userId = await requireUserId();
-  await setSearchWeights(weights);
-  invalidateAppNavigation(userId);
+  const r = await mutation("saveSearchWeights", async (userId) => {
+    await setSearchWeights(weights);
+    invalidateAppNavigation(userId);
+  });
+  if (!r.ok) throw new Error(r.error);
 }

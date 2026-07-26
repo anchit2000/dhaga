@@ -1,11 +1,13 @@
 "use server";
 
 import { requireUserId } from "@/lib/auth/guard";
+import { withUserDb } from "@/lib/db/request-scope";
 import {
   createRelationshipType,
   deleteRelationshipType,
   listRelationshipTypes,
 } from "@/lib/repo/relationship-types";
+import { MutationError, mutation } from "@/lib/actions/mutation";
 import { PREDICATE_SLUG_PATTERN } from "@/utils/constants/graph";
 import { toSlug } from "@/utils/slug";
 import type { ActionResult } from "./types";
@@ -21,10 +23,11 @@ export interface RelationshipTypeOption {
 }
 
 /** The user's custom predicates, for client pickers (AddRelationshipDialog)
- *  that can't receive them as server-component props. */
+ *  that can't receive them as server-component props. A read — one scoped
+ *  connection, so it never fans out getDb() across the tenant pool. */
 export async function listRelationshipTypesAction(): Promise<RelationshipTypeOption[]> {
-  await requireUserId();
-  const rows = await listRelationshipTypes();
+  const userId = await requireUserId();
+  const rows = await withUserDb(userId, () => listRelationshipTypes());
   return rows.map((row) => ({
     id: row.id,
     slug: row.slug,
@@ -40,7 +43,6 @@ export async function createRelationshipTypeAction(input: {
   inverseLabel: string;
   slug?: string;
 }): Promise<RelationshipTypeActionResult> {
-  await requireUserId();
   const forwardLabel = input.forwardLabel?.trim() ?? "";
   const inverseLabel = input.inverseLabel?.trim() ?? "";
   if (!forwardLabel || !inverseLabel) {
@@ -50,19 +52,27 @@ export async function createRelationshipTypeAction(input: {
   if (!PREDICATE_SLUG_PATTERN.test(slug)) {
     return { error: "Predicate must be a snake_case slug (e.g. father_of)." };
   }
-  try {
-    const id = await createRelationshipType({ slug, forwardLabel, inverseLabel });
-    return { id, slug };
-  } catch (error) {
-    return { error: error instanceof Error ? error.message : "Could not create the type." };
-  }
+  const r = await mutation("createRelationshipType", async () => {
+    try {
+      return await createRelationshipType({ slug, forwardLabel, inverseLabel });
+    } catch (error) {
+      // createRelationshipType throws a hand-written, user-safe Error on a
+      // duplicate slug. Surface that as a specific outcome, not the generic
+      // transient retry copy.
+      throw new MutationError(
+        error instanceof Error ? error.message : "Could not create the type.",
+      );
+    }
+  });
+  if (!r.ok) return { error: r.error };
+  return { id: r.data, slug };
 }
 
 export async function deleteRelationshipTypeAction(
   id: string,
 ): Promise<RelationshipTypeActionResult> {
-  await requireUserId();
   if (!id) return { error: "Missing type." };
-  await deleteRelationshipType(id);
+  const r = await mutation("deleteRelationshipType", () => deleteRelationshipType(id));
+  if (!r.ok) return { error: r.error };
   return {};
 }

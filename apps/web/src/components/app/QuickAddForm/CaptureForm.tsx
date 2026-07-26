@@ -2,6 +2,7 @@
 
 import type { Dispatch, RefObject, SetStateAction } from "react";
 import { Textarea } from "@/components/ui/textarea";
+import { FormError } from "@/components/app/feedback";
 import { SubmitButton } from "../SubmitButton";
 import { VoiceNoteReview } from "../contact/VoiceNoteReview";
 import { CardPhotoCapture } from "./CardPhotoCapture";
@@ -110,11 +111,7 @@ export function CaptureForm({
         />
       )}
 
-      {error ? (
-        <p className="text-sm text-red-400" role="alert">
-          {error}
-        </p>
-      ) : null}
+      <FormError message={error} />
       {notice ? <p className="text-sm text-fog">{notice}</p> : null}
 
       <QuickAddDock

@@ -1,47 +1,34 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useTransition } from "react";
-import { Loader2, X } from "lucide-react";
-import { toast } from "sonner";
-import { deleteRelationshipAction } from "@/lib/actions/relationships";
+import { X } from "lucide-react";
 
 /** Per-row relationship delete (tombstone) with a confirm — the edge may have
- *  come from a note the user doesn't remember writing, so never delete silently. */
+ *  come from a note the user doesn't remember writing, so never delete silently.
+ *  The write itself is owned by the parent list (optimistic remove + Retry on
+ *  failure); this button just confirms and hands off. */
 export function RelationshipDeleteButton({
-  edgeId,
   name,
   role,
+  onDelete,
 }: {
-  edgeId: string;
   name: string;
   role: string;
+  onDelete: () => void;
 }) {
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
-
   function remove(): void {
     if (!confirm(`Remove “${name} — ${role}”? The relationship disappears from both pages and the graph.`)) return;
-    startTransition(async () => {
-      const result = await deleteRelationshipAction(edgeId);
-      if (result.error) {
-        toast.error(result.error);
-        return;
-      }
-      router.refresh();
-    });
+    onDelete();
   }
 
   return (
     <button
       type="button"
       onClick={remove}
-      disabled={pending}
       aria-label={`Remove relationship with ${name}`}
       title={`Remove relationship with ${name}`}
-      className="rounded-full p-1 text-fog/60 transition-colors hover:bg-wash/[0.06] hover:text-paper disabled:pointer-events-none"
+      className="rounded-full p-1 text-fog/60 transition-colors hover:bg-wash/[0.06] hover:text-paper"
     >
-      {pending ? <Loader2 className="size-3.5 animate-spin" /> : <X className="size-3.5" />}
+      <X className="size-3.5" />
     </button>
   );
 }

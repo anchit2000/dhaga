@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { toast } from "sonner";
+import { toastError } from "@/components/app/feedback";
 import { EntityCombobox } from "@/components/app/EntityCombobox";
 import { Select } from "@/components/ui/select";
 import {
@@ -50,7 +50,7 @@ export function EntityLinkCard({
           contactId,
         );
       } catch {
-        toast.error("Couldn't link that. Please try again.");
+        toastError("Couldn't link that. Please try again.", () => linkExisting(targetId));
       }
     });
   }

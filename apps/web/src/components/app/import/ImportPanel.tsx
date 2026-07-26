@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { isVcard, parseContactsCsv, parseContactsVcard } from "@/lib/import";
 import { importCsvBatchAction } from "@/lib/actions/import";
+import { toastError } from "@/components/app/feedback";
 import { ImportDropzone } from "./ImportDropzone";
 import { ImportReview } from "./ImportReview";
 import type { ImportCandidate, ImportFormat } from "@/lib/import";
@@ -40,11 +41,11 @@ export function ImportPanel() {
         ? parseContactsVcard(text)
         : parseContactsCsv(text);
     if (!result.ok) {
-      toast.error(result.error);
+      toastError(result.error);
       return;
     }
     if (result.candidates.length === 0) {
-      toast.error("No importable rows found in that file.");
+      toastError("No importable rows found in that file.");
       return;
     }
     if (result.candidates.length > LARGE_COUNT) {
@@ -78,8 +79,9 @@ export function ImportPanel() {
       const batch = picked.slice(start, start + BATCH_SIZE);
       const result = await importCsvBatchAction({ format, candidates: batch });
       if ("error" in result) {
-        toast.error(result.error);
         setImporting(false);
+        // Re-import is dedup-safe (already-created rows skip), so offer Retry.
+        toastError(result.error, () => void runImport());
         return;
       }
       created += result.created;

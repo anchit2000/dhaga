@@ -1,0 +1,68 @@
+---
+title: Bulk actions & merging
+description: Act on many people at once from the People table — merge duplicates into one record, add a company, tag, star, or forget in a batch — and let Dhaga surface likely duplicates for you.
+---
+
+Your **People** list isn't only for browsing. Select several people and act on
+them in one go, or fold two records of the same person into a single one.
+
+## Select people
+
+On **`/app/people`**, every row has a checkbox, and the header checkbox selects
+everyone on the current page. Your selection **sticks as you page through** the
+table, so you can gather people across several pages before acting. The moment
+one person is selected, a **bulk-action bar** appears.
+
+![The People table with three rows selected and the bulk-action bar above it showing Merge, Add to company, Tag, Star, Unstar, and Delete](/docs/guide/people-bulk-actions.png)
+
+## Act on the selection
+
+With people selected, the bar offers:
+
+- **Merge** — combine two or more records of the same person into one (needs at
+  least two selected). See below.
+- **Add to company** — attach everyone to a company at once; pick an existing
+  one or create it inline.
+- **Tag** — add or remove a tag across the whole selection.
+- **Star** / **Unstar** — flag or unflag people for your Saved list.
+- **Delete** — forget the selected people. This cascades — their notes, facts,
+  edges, and embeddings go too — exactly like "forget this person" on a single
+  profile.
+
+## Merge duplicate contacts
+
+Met the same person twice — a card scan and a LinkedIn import, say — and now
+they're two records? **Merge** folds them into one:
+
+1. Select the records and click **Merge** (or start from **Find duplicates**,
+   below).
+2. **Pick the survivor** — the record everything else folds into.
+3. **Resolve conflicts.** Where records disagree on a single-value field —
+   **name**, **nickname**, or **location** — you choose which value wins. Fields
+   where they already agree don't ask.
+4. Everything that can hold more than one value is **combined** onto the
+   survivor: emails, phones, links, addresses, important dates, custom fields,
+   tags, jobs, notes, facts, and relationship edges. Nothing is dropped.
+
+The other records are then **permanently deleted**. It all happens in a single
+step — either the whole merge lands or nothing changes.
+
+<Callout type="warn" title="Merging can't be undone">
+The records you merge away are hard-deleted, with no undo — the same model as
+"forget this person." Their data lives on in the survivor, but the separate
+records are gone. Make sure you've picked the right survivor first.
+</Callout>
+
+## Find duplicates
+
+You don't have to spot duplicates yourself. The **Find duplicates** link in the
+People page header opens **`/app/people/duplicates`**, which groups likely
+duplicates it notices — by a **shared email**, a **shared phone**, or a
+**similar name** — into clusters. Each cluster has a **Review & merge** button
+that opens the merge dialog prefilled with that group, so cleaning up is two
+clicks.
+
+![The Find duplicates page listing contact clusters grouped by a shared email, each cluster showing the matching people with a Review & merge button](/docs/guide/people-duplicates.png)
+
+Companies have the same tools — view, merge, and dedupe them on the
+[Companies](/docs/guide/companies) page.

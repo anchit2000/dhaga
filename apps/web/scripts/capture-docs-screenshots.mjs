@@ -21,6 +21,10 @@ const EVENT_ID = process.env.EVENT_ID ?? "7f13a1f7-2f6d-48f3-a8ed-e5eaeec8d673";
 const OUT_DIR = resolve("public/docs/guide");
 const manifest = [];
 
+// Optional allow-list: `ONLY=a.png,b.png` regenerates just those files (keeps
+// the rest untouched — handy when adding a few new shots without re-shooting all).
+const ONLY = process.env.ONLY ? new Set(process.env.ONLY.split(",").map((s) => s.trim())) : null;
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function login(page) {
@@ -43,6 +47,7 @@ async function shoot(file) {
 }
 
 async function capture(file, route, shows, fn) {
+  if (ONLY && !ONLY.has(file)) return;
   try {
     await fn();
     await shoot(file);
@@ -221,6 +226,38 @@ await capture("ask-dhaga.png", "/app (⌘K → Ask)", "The command palette on th
   }
   await page.getByRole("tab", { name: /Ask Dhaga/i }).click();
   await sleep(1200);
+});
+
+// 17. people-bulk-actions.png — rows selected + the bulk-action bar
+await capture("people-bulk-actions.png", "/app/people", "The People table with several rows selected and the bulk-action bar (Merge, Add to company, Tag, Star/Unstar, Delete) above it.", async () => {
+  await page.goto(`${BASE}/app/people`, { waitUntil: "networkidle" });
+  await sleep(1000);
+  const boxes = page.getByRole("checkbox", { name: "Select row" });
+  for (const i of [0, 1, 2]) await boxes.nth(i).click();
+  await page.getByText(/\d+ selected/).first().waitFor({ timeout: 8000 });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await sleep(500);
+});
+
+// 18. people-duplicates.png — duplicate-contact clusters
+await capture("people-duplicates.png", "/app/people/duplicates", "The duplicate-contact suggestions page: clusters grouped by shared email / phone / similar name, each with Review & merge.", async () => {
+  await page.goto(`${BASE}/app/people/duplicates`, { waitUntil: "networkidle" });
+  await sleep(1200);
+  await page.evaluate(() => window.scrollTo(0, 0));
+});
+
+// 19. companies-list.png — the Companies management table
+await capture("companies-list.png", "/app/companies", "The Companies management page: companies with contact counts, plus create/rename/delete and multi-select for merge.", async () => {
+  await page.goto(`${BASE}/app/companies`, { waitUntil: "networkidle" });
+  await sleep(1000);
+  await page.evaluate(() => window.scrollTo(0, 0));
+});
+
+// 20. companies-duplicates.png — duplicate-company clusters
+await capture("companies-duplicates.png", "/app/companies/duplicates", "The duplicate-company suggestions page: companies clustered by normalized name (legal suffixes stripped), each with Review & merge.", async () => {
+  await page.goto(`${BASE}/app/companies/duplicates`, { waitUntil: "networkidle" });
+  await sleep(1200);
+  await page.evaluate(() => window.scrollTo(0, 0));
 });
 
 await context.close();

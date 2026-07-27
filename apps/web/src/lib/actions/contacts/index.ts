@@ -6,4 +6,11 @@ export {
   mergeMentionedContactAction,
   promoteMentionedContactAction,
 } from "./lifecycle";
+export { loadContactsForMergeAction, mergeContactsAction } from "./merge";
+export {
+  addContactsToCompanyAction,
+  bulkForgetContactsAction,
+  bulkStarContactsAction,
+  bulkTagContactsAction,
+} from "./bulk";
 export type { ContactFormState } from "./form";

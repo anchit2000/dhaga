@@ -153,7 +153,8 @@ docs/BRD.md      Full product requirements, roadmap, competitor analysis
 **Pre-launch.** The full MVP loop is built — card/badge scan, voice + text notes,
 entity extraction, the knowledge graph, natural-language search, AI follow-up
 drafts, and export — plus v1.1+ features (web quick-add, browser extension,
-Telegram capture, events, reminders), real multi-user accounts, and a verified
+Telegram capture, events, reminders, contact merge + duplicate detection, and
+company management), real multi-user accounts, and a verified
 `docker compose up` production path (multi-stage `Dockerfile` + pgvector
 `compose.yml`, boot-tested against both Postgres and the zero-config embedded
 PGlite mode). Not yet done: the mobile app and a live-tested Stripe billing flow

@@ -161,12 +161,12 @@ The MVP must prove one loop end-to-end:
 
 ### 5.4 Considered features backlog (2026-07 review)
 
-A July 2026 competitive review surfaced feature gaps. The genuinely-additive ones (deduped against existing scope) are captured below as **backlog — considered, not committed, and unbuilt.** They inherit Dhaga's constraints: own-graph-first, no scraping, privacy by default (§6.7). Tracked as unchecked items in [checklist.md](/docs/roadmap/checklist) §20.
+A July 2026 competitive review surfaced feature gaps. The genuinely-additive ones (deduped against existing scope) are captured below as **backlog — considered, not committed, and (except where a Notes cell says otherwise) unbuilt.** They inherit Dhaga's constraints: own-graph-first, no scraping, privacy by default (§6.7). Tracked as unchecked items in [checklist.md](/docs/roadmap/checklist) §20.
 
 | Candidate | Notes |
 |---|---|
 | **Personal MCP server** — expose the user's own graph (read-only) to external AI clients (Claude Desktop/Code, Cursor) so any assistant can query their private network | Backlog. Self-host-friendly; read-only, user-scoped, nothing leaves the user's instance beyond the connected client |
-| **Duplicate-contact detection & merge (entity resolution)** across import sources | Backlog. Distinct from the team-graph cross-user dedup in §5.3 — this is per-user resolution across LinkedIn/vCard/Google/manual sources |
+| **Duplicate-contact detection & merge (entity resolution)** across import sources | **Built 2026-07-27 (web).** `/app/people/duplicates` clusters likely duplicates (shared email / phone / similar name), each with a per-field **Merge** that folds all multi-value data onto a chosen survivor in one atomic transaction; the same batch shipped **companies management** + company merge/dedup (`/app/companies`, `/app/companies/duplicates`). No schema change. Distinct from the team-graph cross-user dedup in §5.3 — this is per-user resolution across LinkedIn/vCard/Google/manual sources. See checklist §4/§20. Mobile parity pending |
 | **AI-suggested connections** — surface likely graph edges from shared company/school/city/event | Backlog. Own-graph inference only; suggested, never auto-linked (mirrors the confirm-inbox pattern) |
 | **Relationship analytics dashboard** — most-connected, longest-known, city clusters, network growth | Backlog. Read-only stats over the user's own graph; no external data |
 | **Profile-completeness scoring + enrichment nudges** | Backlog. Nudge to fill gaps; enrichment stays user-triggered per §7.5 |

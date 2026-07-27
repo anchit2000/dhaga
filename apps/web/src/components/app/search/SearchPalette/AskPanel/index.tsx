@@ -3,7 +3,6 @@ import { ThreadLoader } from "@/components/brand/ThreadLoader";
 import { ASK_MESSAGES } from "@/utils/constants/loader-messages";
 import type { AskStreamState } from "../useAskStream";
 import { AskNotice } from "./AskNotice";
-import { Receipts } from "./Receipts";
 import { StepChecklist } from "./StepChecklist";
 
 /**
@@ -26,7 +25,7 @@ export function AskPanel({
   formId: string;
   onNavigate: () => void;
 }) {
-  const { steps, answer, receipts, notice } = state;
+  const { steps, answer, notice } = state;
 
   return (
     <div className="space-y-3">
@@ -63,8 +62,6 @@ export function AskPanel({
           {answer}
         </p>
       ) : null}
-
-      {receipts.length > 0 ? <Receipts receipts={receipts} onNavigate={onNavigate} /> : null}
 
       {notice ? (
         <AskNotice

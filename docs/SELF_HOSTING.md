@@ -265,6 +265,79 @@ Requires `CRON_SECRET` and `FIRECRAWL_API_KEY` (or another `SEARCH_PROVIDER`)
 set — see `.env.example`. Without `CRON_SECRET` the route always returns
 401, so it's safe to leave unconfigured if you don't want the feature.
 
+## Messaging capture (WhatsApp / Telegram)
+
+Forward a contact card, a note, or a voice note to a WhatsApp or Telegram bot
+and Dhaga turns it into people in your graph. Messages from one sender
+accumulate in a **session** until you reply **DONE** (or the session goes idle);
+then a positional batch processor creates and tags the contacts, keeps a receipt
+per message, and replies with a summary.
+
+**This is core / fully self-hostable (AGPL) — not an EE/cloud feature.** All of
+it lives in `apps/web` (webhooks, jobs, repo, the Settings UI) and
+`packages/core` (`src/messaging/` gateway, `src/transcription/` stub); it needs
+**no** `packages/ee`. Nothing here is added to the Level-2 `verify-without-ee`
+removal list above — that list is unchanged.
+
+### Set up a channel
+
+One bot / number per deployment. Set the vars for whichever channel(s) you want,
+then register the webhook URL with the provider:
+
+- **WhatsApp** (Meta Cloud API) — set `WHATSAPP_ACCESS_TOKEN`,
+  `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_VERIFY_TOKEN`, and `WHATSAPP_APP_SECRET`
+  (optionally `WHATSAPP_GRAPH_VERSION`; `WHATSAPP_BUSINESS_NUMBER` is display
+  only). Register the callback URL
+  `https://your-domain/api/messaging/whatsapp/webhook`. Meta's GET verification
+  handshake is answered with `WHATSAPP_VERIFY_TOKEN`; inbound POSTs are verified
+  by the `WHATSAPP_APP_SECRET` request signature and rejected when it's unset
+  (fails closed).
+- **Telegram** (@BotFather) — set `TELEGRAM_BOT_TOKEN` and
+  `TELEGRAM_WEBHOOK_SECRET` (both reused from the existing Telegram integration;
+  `TELEGRAM_BOT_USERNAME` is display only). Register the webhook:
+
+  ```
+  curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
+    -d "url=https://your-domain/api/messaging/telegram/webhook" \
+    -d "secret_token=$TELEGRAM_WEBHOOK_SECRET"
+  ```
+
+  Inbound POSTs are verified against `TELEGRAM_WEBHOOK_SECRET` and rejected when
+  it's unset (fails closed).
+
+Tune the idle window with `DHAGA_MESSAGING_IDLE_MINUTES` (default 15).
+
+### Linking a chat to an account
+
+Each user opens **Settings → Messaging**, generates a short-lived link token, and
+sends it to the bot to connect their chat. On a single-owner self-host, a chat
+that isn't linked falls back to the owner automatically (`DHAGA_OWNER_EMAIL`), so
+you can start forwarding before wiring up per-user linking.
+
+### Voice notes
+
+Server-side transcription is a pluggable gateway (`TRANSCRIPTION_PROVIDER`) that
+**ships no provider yet** — forwarded voice notes are stored "received, not
+transcribed" until one is registered. (This is separate from Dhaga Voice, the
+on-device browser dictation used in web quick-add.)
+
+### Idle auto-flush
+
+A session with no DONE is saved once it goes quiet. This runs on the daily cron
+(`/api/jobs/daily`) everywhere — the guaranteed floor. For ~15-min flushing,
+point a Vercel-Pro cron OR any system scheduler at the standalone worker route:
+
+```
+*/15 * * * * curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" \
+  https://your-domain/api/jobs/messaging/flush
+```
+
+Requires `CRON_SECRET`; without it the route always returns 401 (fails closed).
+**Do not** add a sub-daily entry to `apps/web/vercel.json` — Vercel Hobby caps
+crons at once per day and a more-frequent entry can break Hobby deploys. On Hobby
+the effective floor is therefore the daily auto-flush plus a "next-message"
+self-flush (a fresh forward from an idle chat closes the stale batch first).
+
 ## Self-host env var reference
 
 Everything below lives in `apps/web/.env.local` — see
@@ -282,10 +355,13 @@ None of the `packages/ee/.env.example` vars (`DHAGA_HOSTED_MODE`,
 | `ANTHROPIC_API_KEY` | No | AI features degrade to heuristic parsing / disabled without it |
 | `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `DHAGA_OWNER_EMAIL` | No | Event digests, reach-out digest, morning follow-up reminder + LinkedIn-export upload reminders (the day-1/3/6/7 nudge after "Get contacts from LinkedIn"). All degrade to a clean no-op when unset |
 | `MORNING_REMINDER_HOURLY` | No | Set `true` only if you drive `/api/jobs/daily` hourly — then the morning reminder lands at the recipient's local ~08:00; unset on the single Hobby cron |
-| `TELEGRAM_*` | No | Owner-only bot capture |
+| `TELEGRAM_*` | No | Owner-only bot capture; `TELEGRAM_BOT_TOKEN`/`TELEGRAM_WEBHOOK_SECRET` are reused by WhatsApp/Telegram messaging capture (see "Messaging capture" above) |
+| `WHATSAPP_*` | No | WhatsApp inbound messaging capture (Meta Cloud API) — see "Messaging capture" above |
+| `DHAGA_MESSAGING_IDLE_MINUTES` | No | Idle auto-flush window for messaging capture (default 15) |
+| `TRANSCRIPTION_PROVIDER` | No | STT gateway for forwarded voice notes — no provider ships yet |
 | `DHAGA_WEBHOOK_URL` | No | Outbound automation |
 | `SEARCH_PROVIDER`, `FIRECRAWL_API_KEY` | No | Job-change detection + news watchlist |
-| `CRON_SECRET` | No | Required to enable `/api/jobs/detect-signals` — see above |
+| `CRON_SECRET` | No | Bearer secret for the `/api/jobs/*` cron routes (`detect-signals`, `daily`, `messaging/flush`) — see above |
 | `DHAGA_AI_MONTHLY_CAP`, `DHAGA_DATA_DIR`, `DHAGA_EMBEDDINGS` | No | See `.env.example` for defaults |
 
 See [DEPLOYING.md](DEPLOYING.md) for the full deploy walkthrough (Vercel and

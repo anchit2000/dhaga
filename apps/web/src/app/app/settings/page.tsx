@@ -9,6 +9,7 @@ import {
   BillingSection,
   CalendarSection,
   CardPhotoSection,
+  MessagingSection,
   ProfileSection,
   SecuritySection,
   SuggestionsSection,
@@ -73,6 +74,11 @@ export default async function SettingsPage({
         calendar={
           <Suspense fallback={<ListSkeleton rows={2} />}>
             <CalendarSection searchParams={searchParams} />
+          </Suspense>
+        }
+        messaging={
+          <Suspense fallback={<ListSkeleton rows={3} />}>
+            <MessagingSection />
           </Suspense>
         }
         suggestions={

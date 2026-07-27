@@ -44,7 +44,7 @@ export const HOME_PREVIEW_LIMIT = 5;
  */
 export const FREE_TIER_AI_ACTIONS_PER_MONTH = 0;
 
-export const CONTACT_SOURCES = ["manual", "quick_add", "import"] as const;
+export const CONTACT_SOURCES = ["manual", "quick_add", "import", "messaging"] as const;
 export type ContactSource = (typeof CONTACT_SOURCES)[number];
 
 /** Accepted card-photo formats (scan input and stored visual receipts). */

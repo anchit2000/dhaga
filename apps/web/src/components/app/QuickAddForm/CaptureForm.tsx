@@ -26,6 +26,7 @@ export function CaptureForm({
   notice,
   captureOpen,
   onCaptureToggle,
+  onManual,
   inDialog = false,
 }: {
   mode: Mode;
@@ -42,6 +43,8 @@ export function CaptureForm({
   notice?: string;
   captureOpen: boolean;
   onCaptureToggle?: () => void;
+  /** Skip AI and type the person in by hand — shown under every capture mode. */
+  onManual: () => void;
   /** True when rendered inside the capture Dialog, where the dock must sit
    *  in-flow instead of floating (see QuickAddDock's `floating` prop). */
   inDialog?: boolean;
@@ -113,6 +116,19 @@ export function CaptureForm({
 
       <FormError message={error} />
       {notice ? <p className="text-sm text-fog">{notice}</p> : null}
+
+      {/* Escape hatch shown under every capture mode (paste AND card photo):
+          skip AI entirely and fill a blank contact form in by hand. */}
+      <div className="flex justify-center border-t border-seam/60 pt-3">
+        <button
+          type="button"
+          onClick={onManual}
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm text-fog transition-colors hover:text-paper"
+        >
+          Prefer to type it in?
+          <span className="font-medium text-amber">Add manually</span>
+        </button>
+      </div>
 
       <QuickAddDock
         formAction={formAction}

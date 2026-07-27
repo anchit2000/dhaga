@@ -8,6 +8,7 @@ import { SearchPalette } from "@/components/app/search/SearchPalette";
 import type { SearchWeights } from "@/utils/constants/search";
 import { MoreMenu } from "./MoreMenu";
 import { NavLinks } from "./NavLinks";
+import { NavQuickAdd } from "./NavQuickAdd";
 import { ProfileMenu } from "./ProfileMenu";
 
 /** App-shell header: brand, section nav, centered search, more/profile menus. */
@@ -55,6 +56,7 @@ export function AppNav({
           </div>
 
           <div className="flex shrink-0 items-center gap-1">
+            <NavQuickAdd />
             <ModeToggle />
             <MoreMenu />
             <ProfileMenu isAdmin={isAdmin} />

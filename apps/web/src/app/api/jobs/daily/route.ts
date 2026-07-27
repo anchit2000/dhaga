@@ -1,5 +1,6 @@
 import { runConfirmationsDigest } from "@/lib/jobs/confirmations-digest";
 import { runDailyDigest } from "@/lib/jobs/daily-digest";
+import { runLinkedinExportReminders } from "@/lib/jobs/linkedin-export-reminders";
 import { runMorningReminder } from "@/lib/jobs/morning-reminder";
 import { runSignalDetection } from "@/lib/jobs/detect-signals";
 
@@ -26,5 +27,6 @@ export async function GET(request: Request): Promise<Response> {
   const digest = await runDailyDigest();
   const confirmationsDigest = await runConfirmationsDigest();
   const reminder = await runMorningReminder();
-  return Response.json({ signals, digest, confirmationsDigest, reminder });
+  const linkedinReminders = await runLinkedinExportReminders();
+  return Response.json({ signals, digest, confirmationsDigest, reminder, linkedinReminders });
 }

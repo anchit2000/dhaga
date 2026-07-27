@@ -1,4 +1,5 @@
 import { profileFromExtracted } from "@dhaga/core";
+import { LINKEDIN_IMPORT_RECEIPT_PREFIX } from "@/utils/constants/linkedin";
 import { rowToRecord } from "./types";
 import type { ImportCandidate } from "./types";
 
@@ -35,7 +36,7 @@ export function linkedInRowsToCandidates(
         links: record["URL"] ? [record["URL"]] : [],
         location: null,
       }),
-      receipt: `Imported from LinkedIn Connections export${
+      receipt: `${LINKEDIN_IMPORT_RECEIPT_PREFIX}${
         connectedOn ? ` · connected ${connectedOn}` : ""
       }`,
     });

@@ -107,6 +107,13 @@ gaps and the correctness/doc items below.
   for the self-host case. Give them the same per-tenant `withUserDb` fan-out the
   signal-detection job now uses (enumerate tenants from the non-RLS auth `user`
   table; do **not** give the sweep an RLS bypass on tenant tables).
+- **`hostedTenants()` vs the signals sweep's private copy.** The new
+  LinkedIn-export reminder job (`lib/jobs/linkedin-export-reminders.ts`) already
+  fans out per tenant via a shared `lib/hosted/tenants.ts` helper (id + account
+  email), so it works for real users in hosted mode — unlike the digest/reminder
+  jobs above. But `runSignalDetection` still carries its own id-only tenant
+  enumeration; fold it onto `hostedTenants()` so there is one tenant-enumeration
+  path (the shared helper returns email too, which the signals sweep can ignore).
 - **Telegram owner resolution.** Resolved (deterministic email-first + `orderBy`).
   Kept here only as a pointer; today's only impact was which admin's AI quota
   absorbed bot usage — no data-isolation consequence.

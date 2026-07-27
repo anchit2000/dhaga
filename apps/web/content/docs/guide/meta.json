@@ -3,6 +3,7 @@
   "pages": [
     "index",
     "capturing-people",
+    "messaging-capture",
     "importing-contacts",
     "merging-and-bulk-actions",
     "notes-and-facts",

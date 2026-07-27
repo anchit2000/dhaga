@@ -60,7 +60,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   {
     question: "iPhone and Android?",
     answer:
-      "A native mobile app (one React Native codebase for both) is on the roadmap, not out yet. Today, capture happens through the web app — quick-add by pasting an email or article, card/badge photo scan, voice notes — and a browser extension for one-click capture from any page.",
+      "A native mobile app (one React Native codebase for both) is on the roadmap, not out yet. Today, capture happens through the web app — quick-add by pasting an email or article, card/badge photo scan, voice notes — and a browser extension for one-click capture from any page. You can also capture from your phone with nothing installed: forward a contact card, note, or voice note to the Dhaga bot on WhatsApp or Telegram and reply DONE.",
   },
   {
     question: "Do the people I scan get contacted or scraped?",

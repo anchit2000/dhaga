@@ -1,0 +1,101 @@
+---
+title: Messaging capture (WhatsApp & Telegram)
+description: Forward a contact card, a note, or a voice note to Dhaga's WhatsApp or Telegram bot, reply DONE, and Dhaga saves the person into your graph — capture from your phone with nothing to install.
+---
+
+Dhaga can capture people straight from a chat you already have open. **Forward
+a contact card, a note, or a voice note** to the Dhaga bot on **WhatsApp** or
+**Telegram**, reply **`DONE`**, and Dhaga creates and tags the contact, keeps
+every forwarded message as a **receipt**, and replies with a summary. It's the
+fastest way to capture from your phone without any app install — hand someone's
+card straight into your graph while you're still standing at the booth.
+
+<FlowDiagram
+  caption="A forwarded batch becomes a contact — text and voice attach to the card that came before them."
+  stages={[
+    { label: "Forward", sub: "card, note, or voice to the bot" },
+    { label: "Batch", sub: "messages gather in one session" },
+    { label: "Reply DONE", sub: "or walk away — it auto-saves" },
+    { label: "Saved", sub: "contact + notes + facts, receipted" },
+  ]}
+/>
+
+This is a **core, fully self-hostable** feature — it needs no cloud tier. Setting
+up the bot (the webhook, the API keys) is a one-time admin job covered in
+[Self-hosting](/docs/self-hosting); this page is about *using* it once a channel
+is connected.
+
+## Connecting your chat
+
+There's one bot per deployment, so Dhaga has to know which account a chat
+belongs to before it saves anything.
+
+1. Open **Settings → Messaging** (`/app/settings`).
+2. Generate a **link token** — a short, single-use code that expires in a few
+   minutes.
+3. Send that code to the bot as a message. Dhaga links your chat to your
+   account and replies to confirm.
+
+From then on, anything you forward from that chat lands in *your* graph. A chat
+that isn't linked yet gets a friendly nudge back explaining how to link it.
+
+<Callout title="Self-hosting for one person">
+On a single-owner self-hosted instance, an unlinked chat falls back to the
+owner automatically (set by `DHAGA_OWNER_EMAIL`), so you can start forwarding
+before wiring up per-user linking.
+</Callout>
+
+## What you can forward
+
+- **Contact card** — a shared vCard becomes a new person (or updates a match).
+- **Text** — a message you type or forward becomes a note, and Dhaga
+  auto-extracts facts from it, each with a receipt back to the message.
+- **Voice note** — stored against the contact (see the caveat below).
+- **Location** or **image** — kept as a note on the current contact.
+
+## How a batch works
+
+Forwarding is **positional**, so the order you send things in is what Dhaga
+acts on — no guessing:
+
+- A **contact card or image** sets the *current contact*.
+- **Text and voice notes that follow** attach to that contact as notes and
+  facts.
+- A leading **text with no card** establishes the contact on its own, the same
+  way pasted text does in [quick-add](/docs/guide/capturing-people).
+- Forward **several cards** in one batch and you get several contacts — each one
+  collects the messages sent after it.
+
+## Closing a batch
+
+You never have to remember to finish — a batch is saved three ways, and nothing
+is ever lost:
+
+1. **Reply `DONE`** (or `finish`, `end`, `/done`) to save immediately.
+2. **Start a new forward** and any earlier open batch is saved first.
+3. **Walk away** — an idle batch auto-saves after about 15 minutes of quiet
+   (self-hosters can tune this with `DHAGA_MESSAGING_IDLE_MINUTES`).
+
+When a batch is saved, the bot replies with a summary of who and what it stored
+so you can open Dhaga and review.
+
+<Callout title="Voice notes aren't transcribed yet">
+Server-side transcription is a pluggable gateway that ships with no provider
+yet, so a forwarded voice note is stored as *"received, not transcribed"* until
+one is configured. (This is separate from **Dhaga Voice**, the on-device
+dictation used in web [quick-add](/docs/guide/capturing-people) — that one does
+transcribe.)
+</Callout>
+
+## More channels later
+
+WhatsApp and Telegram ship today, but the messaging layer is provider-agnostic:
+it mirrors Dhaga's [LLM and search gateways](/docs/extending), so a new channel
+is a self-contained plug-in with no changes to the capture flow above. If you
+self-host, see [Self-hosting](/docs/self-hosting) for the per-channel setup.
+
+---
+
+Next, see how forwarded notes turn into searchable facts in
+[Notes & facts](/docs/guide/notes-and-facts), or bring in an existing address
+book from [Importing contacts](/docs/guide/importing-contacts).

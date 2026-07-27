@@ -49,6 +49,15 @@ for its row models. That buys sorting, column visibility, and row selection
 The shadcn data-table pattern is the canonical integration — `DataTable`
 remains the single shared wrapper; call sites keep their column-def API.
 
+**Status — row selection + bulk actions (built).** The "future bulk actions"
+above are now wired. `DataTable` gained optional row selection — a per-row
+`Checkbox` plus a select-all-on-page header checkbox, with the selection
+preserved across pagination — surfaced through a shared `BulkActionBar`
+(`components/app/table/`). Two new primitives back it: `Checkbox` and
+`RadioGroup` (`components/ui/`). This powers **merge and bulk operations** on
+People (`/app/people`) and the new Companies page (`/app/companies`); the
+per-field merge resolver reuses `computeScalarConflicts` from `@dhaga/core`.
+
 ### 3. nuqs (URL state)
 
 **Replaces:** the manual `URLSearchParams` + `router.replace` wiring in

@@ -161,12 +161,12 @@ The MVP must prove one loop end-to-end:
 
 ### 5.4 Considered features backlog (2026-07 review)
 
-A July 2026 competitive review surfaced feature gaps. The genuinely-additive ones (deduped against existing scope) are captured below as **backlog — considered, not committed, and unbuilt.** They inherit Dhaga's constraints: own-graph-first, no scraping, privacy by default (§6.7). Tracked as unchecked items in [checklist.md](/docs/roadmap/checklist) §20.
+A July 2026 competitive review surfaced feature gaps. The genuinely-additive ones (deduped against existing scope) are captured below as **backlog — considered, not committed, and (except where a Notes cell says otherwise) unbuilt.** They inherit Dhaga's constraints: own-graph-first, no scraping, privacy by default (§6.7). Tracked as unchecked items in [checklist.md](/docs/roadmap/checklist) §20.
 
 | Candidate | Notes |
 |---|---|
 | **Personal MCP server** — expose the user's own graph (read-only) to external AI clients (Claude Desktop/Code, Cursor) so any assistant can query their private network | Backlog. Self-host-friendly; read-only, user-scoped, nothing leaves the user's instance beyond the connected client |
-| **Duplicate-contact detection & merge (entity resolution)** across import sources | Backlog. Distinct from the team-graph cross-user dedup in §5.3 — this is per-user resolution across LinkedIn/vCard/Google/manual sources |
+| **Duplicate-contact detection & merge (entity resolution)** across import sources | **Built 2026-07-27 (web).** `/app/people/duplicates` clusters likely duplicates (shared email / phone / similar name), each with a per-field **Merge** that folds all multi-value data onto a chosen survivor in one atomic transaction; the same batch shipped **companies management** + company merge/dedup (`/app/companies`, `/app/companies/duplicates`). No schema change. Distinct from the team-graph cross-user dedup in §5.3 — this is per-user resolution across LinkedIn/vCard/Google/manual sources. See checklist §4/§20. Mobile parity pending |
 | **AI-suggested connections** — surface likely graph edges from shared company/school/city/event | Backlog. Own-graph inference only; suggested, never auto-linked (mirrors the confirm-inbox pattern) |
 | **Relationship analytics dashboard** — most-connected, longest-known, city clusters, network growth | Backlog. Read-only stats over the user's own graph; no external data |
 | **Profile-completeness scoring + enrichment nudges** | Backlog. Nudge to fill gaps; enrichment stays user-triggered per §7.5 |
@@ -263,6 +263,13 @@ at our price point. Our channels, all user-initiated or opt-in:
 | X/Twitter capture | Extension capture of the viewed profile + user-triggered enrichment (web search reaches public X presence); no API monitoring | v1.1 |
 | Ambient auto-capture | Email/calendar OAuth (Gmail/Outlook) — the only ToS-clean *continuous* channel; explicit opt-in | v1.4 |
 | Relationship strength | Computed from the user's own graph (interaction recency/frequency, notes, events) — no external data at all | v1.2 |
+
+Two 2026-07 additions keep the LinkedIn-export path from stalling: a **Get contacts from LinkedIn**
+button opens LinkedIn's own data-export page and starts a day-1/3/6/7 email nudge to upload the
+`Connections.csv` once it arrives (email-configured instances only; stops as soon as it's imported
+or after a week), and the first-run onboarding walkthrough now routes new users to the import page.
+The on-LinkedIn export steps stay as in-app instructions — we can't guide the user on LinkedIn's own
+site (cross-origin).
 
 Hard lines: **no scraping, no session piggybacking, no bulk lookup of people who never consented,
 no SMS/call-log ingestion** (blocked by iOS entirely and by Play Store policy anyway). This is the

@@ -1,0 +1,58 @@
+---
+title: Companies
+description: View, create, rename, delete, and merge the companies in your graph — with duplicate detection — from a dedicated management page.
+---
+
+Companies are first-class nodes in your graph — the thread between everyone who
+works, or worked, somewhere. Manage them from their own page.
+
+Open **`/app/companies`** — it's in the nav **More** menu. The table lists every
+company with its **contact count**, so you can see at a glance where your
+network clusters.
+
+![The Companies page: a table of companies with domain, sector, and contact-count columns, per-row actions, and a New company button](/docs/guide/companies-list.png)
+
+## Create, rename, delete
+
+- **Create** a company inline from the page — handy when you want it to exist
+  before attaching anyone.
+- **Rename** one from its row actions.
+- **Delete** a company when it's noise. Deleting **detaches** its people and
+  their job history — everyone's **positions are kept, only the employer link is
+  cleared** — then removes the company. **It never deletes contacts.** Your
+  people stay; they just no longer point at that company.
+
+You can select several companies at once to delete or merge them together.
+
+## Merge companies
+
+Two entries for the same employer — "Acme" and "Acme Inc." — creep in easily
+across imports. Select two or more and **Merge**:
+
+1. **Pick the survivor.**
+2. **Resolve conflicts** on the single-value fields — **name**, **domain**, and
+   **sector** — wherever the entries disagree.
+3. All **contacts**, **positions**, and **relationship edges** from the others
+   are **re-pointed** onto the survivor, and the merged-away companies are
+   deleted.
+
+Like a contact merge, it's one atomic step.
+
+<Callout type="warn" title="Merging can't be undone">
+The merged-away companies are deleted with no undo. Their people, jobs, and
+edges move to the survivor first, so nothing is lost — but pick the survivor
+deliberately.
+</Callout>
+
+## Find duplicate companies
+
+**`/app/companies/duplicates`** groups companies that are probably the same by
+their **normalized name** — ignoring case, punctuation, and common legal
+suffixes (Inc, Ltd, LLC, GmbH, Pvt, and the like) — so "Acme, Inc." and
+"Acme LLC" land in the same cluster. Each has a **Review & merge** shortcut into
+the merge dialog.
+
+![The Duplicate companies page: Acme, Acme LLC, and Acme, Inc. grouped into one cluster normalised to "acme", with contact counts and a Review & merge button](/docs/guide/companies-duplicates.png)
+
+Companies appear on the [graph](/docs/guide/exploring-the-graph) too, as the
+nodes tying colleagues together.

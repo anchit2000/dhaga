@@ -11,6 +11,7 @@ import {
   positions,
   signals,
 } from "@/lib/db/schema";
+import type { DhagaDb } from "@/lib/db";
 import { deleteEmbeddingsByContact } from "../embeddings";
 import { deleteCardImagesByContact } from "../card-images";
 
@@ -70,43 +71,53 @@ export async function mergeMentionedContact(
  */
 export async function forgetContact(id: string): Promise<void> {
   const db = await getDb();
-  await db.transaction(async (tx) => {
-    // Rows derived from this contact's notes can reference other contacts —
-    // remove by source note first so no receipt outlives its note.
-    const noteIds = (
-      await tx.select({ id: notes.id }).from(notes).where(eq(notes.contactId, id))
-    ).map((row) => row.id);
-    if (noteIds.length > 0) {
-      await tx.delete(edges).where(inArray(edges.sourceNoteId, noteIds));
-      await tx.delete(facts).where(inArray(facts.sourceNoteId, noteIds));
-      await tx.delete(edgeSuggestions).where(inArray(edgeSuggestions.sourceNoteId, noteIds));
-      await tx.delete(followUps).where(inArray(followUps.sourceNoteId, noteIds));
-    }
-    await tx
-      .delete(edges)
-      .where(
-        or(
-          and(eq(edges.srcType, "contact"), eq(edges.srcId, id)),
-          and(eq(edges.dstType, "contact"), eq(edges.dstId, id)),
-        ),
-      );
-    await tx.delete(facts).where(eq(facts.contactId, id));
-    await tx.delete(followUps).where(eq(followUps.contactId, id));
-    // Pending relationship suggestions naming this contact as their source —
-    // src_contact_id is a NOT NULL RESTRICT FK to contacts.id, so any that
-    // survive (e.g. suggestions raised from another contact's note) would
-    // abort the final contacts delete. Those keyed to this contact's own
-    // notes were already dropped above by source note.
-    await tx.delete(edgeSuggestions).where(eq(edgeSuggestions.srcContactId, id));
-    // Employment history — a real FK to contacts.id with no onDelete cascade.
-    await tx.delete(positions).where(eq(positions.contactId, id));
-    // Watchlist hits (BRD §6.7) — a real FK to contacts.id with no
-    // onDelete: cascade, so this must run before the final contacts delete.
-    await tx.delete(signals).where(eq(signals.contactId, id));
-    await deleteCardImagesByContact(id, tx); // before notes — card_images FK note_id
-    await tx.delete(notes).where(eq(notes.contactId, id));
-    await tx.delete(eventContacts).where(eq(eventContacts.contactId, id));
-    await deleteEmbeddingsByContact(id, tx);
-    await tx.delete(contacts).where(eq(contacts.id, id));
-  });
+  await db.transaction((tx) => cascadeForget(tx, id));
+}
+
+/**
+ * Delete one contact and everything referencing it. Runs on the caller's
+ * transaction so the whole cascade is one atomic unit — both the single-contact
+ * forgetContact above and the batch forgetContacts (repo/contacts/bulk) share
+ * this exact list, so a table added here is cleaned up by both paths. Order
+ * matters where noted (source-note-derived rows first; card_images before
+ * notes, since card_images references notes.id).
+ */
+export async function cascadeForget(tx: DhagaDb, id: string): Promise<void> {
+  // Rows derived from this contact's notes can reference other contacts —
+  // remove by source note first so no receipt outlives its note.
+  const noteIds = (
+    await tx.select({ id: notes.id }).from(notes).where(eq(notes.contactId, id))
+  ).map((row) => row.id);
+  if (noteIds.length > 0) {
+    await tx.delete(edges).where(inArray(edges.sourceNoteId, noteIds));
+    await tx.delete(facts).where(inArray(facts.sourceNoteId, noteIds));
+    await tx.delete(edgeSuggestions).where(inArray(edgeSuggestions.sourceNoteId, noteIds));
+    await tx.delete(followUps).where(inArray(followUps.sourceNoteId, noteIds));
+  }
+  await tx
+    .delete(edges)
+    .where(
+      or(
+        and(eq(edges.srcType, "contact"), eq(edges.srcId, id)),
+        and(eq(edges.dstType, "contact"), eq(edges.dstId, id)),
+      ),
+    );
+  await tx.delete(facts).where(eq(facts.contactId, id));
+  await tx.delete(followUps).where(eq(followUps.contactId, id));
+  // Pending relationship suggestions naming this contact as their source —
+  // src_contact_id is a NOT NULL RESTRICT FK to contacts.id, so any that
+  // survive (e.g. suggestions raised from another contact's note) would
+  // abort the final contacts delete. Those keyed to this contact's own
+  // notes were already dropped above by source note.
+  await tx.delete(edgeSuggestions).where(eq(edgeSuggestions.srcContactId, id));
+  // Employment history — a real FK to contacts.id with no onDelete cascade.
+  await tx.delete(positions).where(eq(positions.contactId, id));
+  // Watchlist hits (BRD §6.7) — a real FK to contacts.id with no
+  // onDelete: cascade, so this must run before the final contacts delete.
+  await tx.delete(signals).where(eq(signals.contactId, id));
+  await deleteCardImagesByContact(id, tx); // before notes — card_images FK note_id
+  await tx.delete(notes).where(eq(notes.contactId, id));
+  await tx.delete(eventContacts).where(eq(eventContacts.contactId, id));
+  await deleteEmbeddingsByContact(id, tx);
+  await tx.delete(contacts).where(eq(contacts.id, id));
 }

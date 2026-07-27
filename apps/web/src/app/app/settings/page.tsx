@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { requireUserIdForPage } from "@/lib/auth/guard";
 import { ListSkeleton } from "@/components/app/skeletons";
 import { ImportPanel } from "@/components/app/import/ImportPanel";
+import { OnboardingTour } from "@/components/app/onboarding";
 import { SettingsTabs } from "@/components/app/settings/SettingsTabs";
 import {
   ApiKeysSection,
@@ -33,6 +34,9 @@ export default async function SettingsPage({
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
+      {/* Renders null; resumes the onboarding tour's import step when handed
+          off from Home (guarded by a sessionStorage flag). */}
+      <OnboardingTour autoStart={false} />
       <div>
         <h1 className="font-display text-2xl tracking-tight">Settings</h1>
         <p className="mt-1 text-sm text-fog">

@@ -1,5 +1,6 @@
 import { runConfirmationsDigest } from "@/lib/jobs/confirmations-digest";
 import { runDailyDigest } from "@/lib/jobs/daily-digest";
+import { runLinkedinExportReminders } from "@/lib/jobs/linkedin-export-reminders";
 import { runMessagingFlush } from "@/lib/jobs/messaging-flush";
 import { runMorningReminder } from "@/lib/jobs/morning-reminder";
 import { runSignalDetection } from "@/lib/jobs/detect-signals";
@@ -9,9 +10,9 @@ import { runSignalDetection } from "@/lib/jobs/detect-signals";
  * once-a-day work runs here: the messaging idle-flush (the guaranteed daily
  * floor for auto-saving quiet capture batches — a Vercel-Pro/system cron can
  * additionally drive api/jobs/messaging/flush every ~15 min), signal detection,
- * the reach-out digest, the confirmations digest, and the morning follow-up
- * reminder. It's a plain authenticated GET — Vercel Cron sends
- * `Authorization: Bearer $CRON_SECRET`
+ * the reach-out digest, the confirmations digest, the morning follow-up
+ * reminder, and the LinkedIn export reminders. It's a plain authenticated GET —
+ * Vercel Cron sends `Authorization: Bearer $CRON_SECRET`
  * (apps/web/vercel.json), and off Vercel ANY scheduler (system crontab, GitHub
  * Actions, a container sidecar) hits the same URL with the same header
  * (scripts/run-daily-jobs.sh, docs/SELF_HOSTING.md). Fails closed: no secret set
@@ -31,5 +32,6 @@ export async function GET(request: Request): Promise<Response> {
   const digest = await runDailyDigest();
   const confirmationsDigest = await runConfirmationsDigest();
   const reminder = await runMorningReminder();
-  return Response.json({ messagingFlush, signals, digest, confirmationsDigest, reminder });
+  const linkedinReminders = await runLinkedinExportReminders();
+  return Response.json({ messagingFlush, signals, digest, confirmationsDigest, reminder, linkedinReminders });
 }

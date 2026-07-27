@@ -36,11 +36,21 @@ export function MessagingLinkPanel({
   const token = generated ?? activeToken;
 
   // Show the real time remaining, not the full TTL, for a token minted earlier.
-  // Deferred to an effect so SSR and first client render agree (no #418).
+  // First render uses `ttlMinutes` so SSR and client agree (no hydration #418);
+  // the real value is computed only inside timer callbacks (never synchronously
+  // in the effect body — which would trip react-hooks/set-state-in-effect) and
+  // then ticks down while the panel stays open.
   useEffect(() => {
     if (!token) return;
-    const ms = new Date(token.expiresAt).getTime() - Date.now();
-    setMinutesLeft(Math.max(1, Math.ceil(ms / 60000)));
+    const expiresAt = new Date(token.expiresAt).getTime();
+    const update = (): void =>
+      setMinutesLeft(Math.max(1, Math.ceil((expiresAt - Date.now()) / 60000)));
+    const initial = window.setTimeout(update, 0);
+    const interval = window.setInterval(update, 30000);
+    return () => {
+      window.clearTimeout(initial);
+      window.clearInterval(interval);
+    };
   }, [token]);
 
   function handleGenerate(): void {

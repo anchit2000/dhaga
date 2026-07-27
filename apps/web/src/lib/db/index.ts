@@ -24,6 +24,12 @@ import { extractionJobs } from "./schema/jobs";
 import { signals } from "./schema/signals";
 import { calendarConnections } from "./schema/calendar";
 import { aiActions, settings, voiceVocab } from "./schema/meta";
+import {
+  messagingIdentities,
+  messagingLinkTokens,
+  messagingSessions,
+  messagingSessionItems,
+} from "./schema/messaging";
 import { graphLayouts } from "./schema/graph-layouts";
 import { cardImages } from "./schema/card-images";
 import {
@@ -57,6 +63,10 @@ const schema = {
   aiActions,
   settings,
   voiceVocab,
+  messagingIdentities,
+  messagingLinkTokens,
+  messagingSessions,
+  messagingSessionItems,
   graphLayouts,
   cardImages,
   user: authUser,

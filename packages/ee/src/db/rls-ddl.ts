@@ -26,6 +26,12 @@ const TENANT_TABLES = [
   "relationship_types",
   "graph_layouts",
   "voice_vocab",
+  // Forwarded messaging content (contact cards / notes awaiting processing) —
+  // per-tenant PII, RLS-scoped. The routing tables (messaging_identities,
+  // messaging_link_tokens) are deliberately NOT here: the webhook reads them
+  // cross-tenant to resolve which user an inbound message belongs to.
+  "messaging_sessions",
+  "messaging_session_items",
 ] as const;
 
 /**

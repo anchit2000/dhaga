@@ -4,6 +4,7 @@ export const SETTINGS_TABS = [
   { value: "account", label: "Account" },
   { value: "capture", label: "Capture" },
   { value: "calendar", label: "Calendar" },
+  { value: "messaging", label: "Messaging" },
   { value: "suggestions", label: "Suggestions" },
   { value: "import", label: "Import" },
 ] as const;
@@ -23,6 +24,7 @@ export const SETTINGS_HASH_TO_TAB: Record<string, SettingsTab> = {
   "voice-dictation": "capture",
   "voice-teaching": "capture",
   calendar: "calendar",
+  messaging: "messaging",
   suggestions: "suggestions",
   import: "import",
 };

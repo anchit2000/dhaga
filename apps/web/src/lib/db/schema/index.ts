@@ -33,6 +33,16 @@ export { extractionJobs, type ExtractionJobRow } from "./jobs";
 export { signals, type SignalRow } from "./signals";
 export { calendarConnections, type CalendarConnectionRow } from "./calendar";
 export { aiActions, settings, voiceVocab, type AiActionRow, type VoiceVocabRow } from "./meta";
+export {
+  messagingIdentities,
+  messagingLinkTokens,
+  messagingSessions,
+  messagingSessionItems,
+  type MessagingIdentityRow,
+  type MessagingLinkTokenRow,
+  type MessagingSessionRow,
+  type MessagingSessionItemRow,
+} from "./messaging";
 export { graphLayouts, type GraphLayoutRow } from "./graph-layouts";
 export { cardImages, type CardImageRow } from "./card-images";
 export {

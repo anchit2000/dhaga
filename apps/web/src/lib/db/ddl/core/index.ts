@@ -1,6 +1,7 @@
 import { GRAPH_DDL } from "./graph";
 import { EXTEND_DDL } from "./extend";
 import { META_DDL } from "./meta";
+import { MESSAGING_DDL } from "./messaging";
 
 /**
  * Idempotent schema DDL, applied on first DB open. Column names must stay in
@@ -10,5 +11,6 @@ import { META_DDL } from "./meta";
  * Split into ordered chunks per the 150-line rule: graph.ts (companies/contacts
  * and everything that FKs into them) must run before extend.ts and meta.ts,
  * which reference those tables — so the concatenation order is load-bearing.
+ * messaging.ts depends on nothing in graph, so it is appended last.
  */
-export const CORE_DDL = `${GRAPH_DDL}${EXTEND_DDL}${META_DDL}`;
+export const CORE_DDL = `${GRAPH_DDL}${EXTEND_DDL}${META_DDL}${MESSAGING_DDL}`;

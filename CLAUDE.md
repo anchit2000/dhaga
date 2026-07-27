@@ -123,7 +123,10 @@ display + body, IBM Plex Mono for labels/code. Design tokens live in
 apps/web/          Next.js app: marketing, web quick-add, graph browser, API routes
 apps/mobile/       Expo app (SDK 57, dev-client) — M0 capture spike built; M1+ pending
 apps/extension/    Browser extension (MV3) — built, v1.1
-packages/core/     Shared: Zod schemas, extraction prompts, API client, types
+packages/core/     Shared: Zod schemas, extraction prompts, API client, types;
+                   messaging/ = provider-agnostic WhatsApp/Telegram inbound-
+                   capture gateway; transcription/ = STT gateway stub (no
+                   provider yet — voice notes stored "received, not transcribed")
 packages/ee/       Dhaga Cloud only: multi-tenant RLS, billing, admin, early
                    access — source-available (PolyForm Shield 1.0.0), not
                    AGPL; self-hosting needs none of it, see docs/SELF_HOSTING.md
@@ -177,6 +180,13 @@ packages/ee/       Dhaga Cloud only: multi-tenant RLS, billing, admin, early
 - `packages/core/search/firecrawl-client.ts` — `FirecrawlSearchClient implements SearchClient` (default provider)
 - `packages/core/search/index.ts` — `getSearchClient()` factory, keyed off `SEARCH_PROVIDER`
 - Adding Brave/SerpAPI/a self-hosted SearXNG instance = new implementation of `SearchClient` + one case in the factory, zero changes to callers
+
+**Messaging gateway pattern (same shape — inbound WhatsApp/Telegram capture is provider-agnostic too; CORE/AGPL, no `packages/ee`):**
+- `packages/core/src/messaging/types.ts` — `MessagingClient` / `MessagingProvider` interfaces (the contract: verify webhook, parse inbound → normalized messages, download media, send reply)
+- `packages/core/src/messaging/whatsapp-client/`, `telegram-client/` — per-provider `MessagingClient` implementations
+- `packages/core/src/messaging/index.ts` — a registry keyed by provider id (`getMessagingClient(id)` / `getMessagingProvider(id)` / `hasMessagingProvider(id)`); providers self-register via `registerMessagingProvider(provider)`
+- Adding Signal/iMessage/etc. later = new `MessagingClient` impl + one `registerMessagingProvider()` call, zero changes to callers
+- Voice notes ride a sibling stub gateway (`packages/core/src/transcription/`: `TranscriptionClient` contract + `registerTranscriptionProvider()` / `getTranscriptionClient()`, keyed off `TRANSCRIPTION_PROVIDER`) — the contract ships but no provider does yet, so audio is stored "received, not transcribed" until one is registered
 
 ---
 

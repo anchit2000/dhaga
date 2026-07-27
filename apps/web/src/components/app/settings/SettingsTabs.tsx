@@ -28,6 +28,7 @@ export function SettingsTabs({
   account,
   capture,
   calendar,
+  messaging,
   suggestions,
   importPanel,
 }: {
@@ -35,6 +36,7 @@ export function SettingsTabs({
   account: ReactNode;
   capture: ReactNode;
   calendar: ReactNode;
+  messaging: ReactNode;
   suggestions: ReactNode;
   importPanel: ReactNode;
 }) {
@@ -65,6 +67,7 @@ export function SettingsTabs({
     account,
     capture,
     calendar,
+    messaging,
     suggestions,
     import: importPanel,
   };

@@ -1,6 +1,6 @@
 /** App-shell constants (the product UI under /app, not the landing page). */
 
-import { BookOpen, CalendarDays, CirclePlus, Gift, Home, Inbox, Newspaper, Shapes, Sparkles, Star, Upload, Users, Waypoints } from "lucide-react";
+import { BookOpen, Building2, CalendarDays, CirclePlus, Gift, Home, Inbox, Newspaper, Shapes, Sparkles, Star, Upload, Users, Waypoints } from "lucide-react";
 import type { CaptureImageType } from "@dhaga/core/src/api/capture";
 
 export const SESSION_COOKIE = "dhaga_session";
@@ -21,6 +21,7 @@ export const APP_NAV_LINKS = [
  */
 export const APP_MORE_LINKS = [
   { href: "/app/people", label: "People", icon: Users },
+  { href: "/app/companies", label: "Companies", icon: Building2 },
   { href: "/app/saved", label: "Saved", icon: Star },
   { href: "/app/events", label: "Events", icon: CalendarDays },
   { href: "/app/entities", label: "Entities", icon: Shapes },

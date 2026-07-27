@@ -4,6 +4,7 @@
     "index",
     "capturing-people",
     "importing-contacts",
+    "merging-and-bulk-actions",
     "notes-and-facts",
     "confirmations",
     "enrich-from-web",
@@ -11,6 +12,7 @@
     "exploring-the-graph",
     "search-and-ask",
     "entities",
+    "companies",
     "share-and-invite",
     "settings"
   ]

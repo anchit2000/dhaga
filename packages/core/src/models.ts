@@ -57,6 +57,14 @@ export {
   type SignalKind,
 } from "./schemas/signal";
 export {
+  contactMergeResolutionSchema,
+  companyMergeResolutionSchema,
+  computeScalarConflicts,
+  type ContactMergeResolution,
+  type CompanyMergeResolution,
+  type MergeConflict,
+} from "./schemas/merge";
+export {
   CONFIRMATION_TYPES,
   confirmationOptionSchema,
   insertEdgeApplySchema,

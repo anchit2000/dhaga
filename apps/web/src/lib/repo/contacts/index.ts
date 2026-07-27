@@ -27,3 +27,13 @@ export {
   promoteMentionedContact,
 } from "./mutations";
 export { setStarred } from "./star";
+export { mergeContacts } from "./merge";
+export { getContactsForMerge, type ContactMergeRecord } from "./merge-preview";
+export { findDuplicateContactClusters, type DuplicateContactCluster } from "./duplicates";
+export {
+  addContactsToCompany,
+  addTagToContacts,
+  forgetContacts,
+  removeTagFromContacts,
+  setContactsStarred,
+} from "./bulk";

@@ -90,8 +90,11 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Attach source text as first note (receipt for extracted fields)
 - [x] Manual add-contact form (no extraction path)
 - [x] People list with filter + contact detail page
+- [x] People bulk actions — multi-select on `/app/people` (per-row checkbox + select-all-on-page, selection persists across pagination) with a bulk bar: **Merge**, **Add to company**, **Tag** (add or remove), **Star**/**Unstar**, and **Delete** (forget, full cascade). Built 2026-07-27 (web); mobile parity pending
 - [x] Company auto-link: extracted company name → find-or-create `companies` row
 - [x] Jobs editor — create a new company inline when there's no match (reuses EntityCombobox create + `findOrCreateCompany`)
+- [x] Companies management page — `/app/companies` lists companies with contact counts; inline **create**, **rename**, **delete**, and multi-select (reached via the "Companies" entry in the nav "More" menu, `APP_MORE_LINKS`). Deleting a company detaches its contacts and positions (job history kept, only the employer link cleared) and never deletes contacts. Built 2026-07-27 (web); mobile parity pending
+- [x] Company merge + duplicate detection — per-field resolver (name/domain/sector) re-points all contacts, positions, and relationship edges onto the survivor in one atomic transaction, then hard-deletes the merged-away companies; `/app/companies/duplicates` clusters by normalized name (stripping legal suffixes like Inc/Ltd/LLC). Built 2026-07-27 (web); mobile parity pending
 - [x] User-triggered enrichment: web search → cited enrichment note → receipted facts
 - [x] LinkedIn Connections CSV import — user's own LinkedIn data export → bulk contacts, ToS-safe (BRD §6.7) (v1.1); `lib/import/linkedin.ts`, wired into `/app/import`, LinkedIn header format covered by `csv-import.test.ts`/`import-repo.test.ts`
 - [x] Google Contacts CSV import — user's own Google export (both header generations, `:::` multi-values) → bulk contacts (v1.1); `lib/import/google.ts`, wired into `/app/import`, covered by `csv-import.test.ts`/`import-repo.test.ts`
@@ -272,7 +275,7 @@ import + job-change detection + keep-in-touch nudges → §4/§14; WhatsApp capt
 declined (BRD §5.4).
 
 - [ ] Personal MCP server — expose the user's own graph (read-only, user-scoped) to external AI clients (Claude Desktop/Code, Cursor)
-- [ ] Duplicate-contact detection & merge (entity resolution) across import sources — per-user, distinct from team cross-user dedup
+- [x] Duplicate-contact detection & merge (entity resolution) — per-user, distinct from team cross-user dedup — built 2026-07-27 (web). `/app/people/duplicates` clusters likely duplicates by shared email, shared phone, or similar name, each with a **Review & merge** action; the **Merge** flow (also on the People bulk bar) picks a surviving contact, resolves conflicting single-value fields (name/nickname/location), unions every multi-value field (emails, phones, links, addresses, important dates, custom fields, tags, positions, notes, facts, relationship edges) onto the survivor, then hard-deletes the rest — one atomic transaction, no undo (same model as "forget this person"). Shared merge types + `computeScalarConflicts` live in `@dhaga/core`; no schema/DDL change. Mobile parity pending
 - [ ] AI-suggested connections — surface likely edges from shared company/school/city/event; suggested, never auto-linked
 - [ ] Relationship analytics dashboard — network stats (most-connected, longest-known, city clusters, network growth), own-graph only
 - [ ] Contact/profile completeness scoring + enrichment nudges (enrichment stays user-triggered)

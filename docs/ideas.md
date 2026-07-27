@@ -33,4 +33,13 @@
    integrations section once real third-party integrations ship (e.g.
    Google Contacts, LinkedIn CSV, calendar sync from idea #4 above) — orbit
    real integration logos instead of generic capture-method glyphs.
-8. I should be able to view, add, delete and merge companies also
+8. I should be able to view, add, delete and merge companies also — built
+   2026-07-27 (web). `/app/companies` lists companies with contact counts and
+   supports inline **create**, **rename**, **delete** (detaches its contacts and
+   positions — job history is kept, only the employer link is cleared; contacts
+   are never deleted), **multi-select**, and a per-field **merge** (name / domain
+   / sector) that re-points all contacts, positions, and relationship edges onto
+   the survivor in one transaction. `/app/companies/duplicates` clusters likely
+   duplicates by normalized name (stripping Inc/Ltd/LLC-style suffixes). The same
+   batch added **contact** merge + bulk actions (`/app/people`) and
+   `/app/people/duplicates`. Mobile parity pending.

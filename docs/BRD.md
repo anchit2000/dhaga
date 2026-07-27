@@ -255,6 +255,13 @@ at our price point. Our channels, all user-initiated or opt-in:
 | Ambient auto-capture | Email/calendar OAuth (Gmail/Outlook) — the only ToS-clean *continuous* channel; explicit opt-in | v1.4 |
 | Relationship strength | Computed from the user's own graph (interaction recency/frequency, notes, events) — no external data at all | v1.2 |
 
+Two 2026-07 additions keep the LinkedIn-export path from stalling: a **Get contacts from LinkedIn**
+button opens LinkedIn's own data-export page and starts a day-1/3/6/7 email nudge to upload the
+`Connections.csv` once it arrives (email-configured instances only; stops as soon as it's imported
+or after a week), and the first-run onboarding walkthrough now routes new users to the import page.
+The on-LinkedIn export steps stay as in-app instructions — we can't guide the user on LinkedIn's own
+site (cross-origin).
+
 Hard lines: **no scraping, no session piggybacking, no bulk lookup of people who never consented,
 no SMS/call-log ingestion** (blocked by iOS entirely and by Play Store policy anyway). This is the
 privacy moat stated as engineering policy — the marketing claim is "one click, one file, nothing

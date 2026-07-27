@@ -43,7 +43,9 @@ export function AppNav({
               className="flex shrink-0 items-center gap-2 font-display text-lg tracking-tight text-paper"
             >
               <ThreadMark size={20} />
-              dhaga
+              {/* Wordmark yields to the icon-only pills on mobile; the mark
+                  stays. Kept in the a11y tree so the home link keeps its name. */}
+              <span className="sr-only sm:not-sr-only">dhaga</span>
             </Link>
             <NavLinks confirmationsCount={confirmationsCount} />
           </div>

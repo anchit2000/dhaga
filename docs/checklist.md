@@ -39,7 +39,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 
 - [ ] Auth: real accounts (better-auth email/password), signed httpOnly session cookie — typecheck/lint/build/test all pass; manual browser click-through + push still pending
 - [x] Every `/app` page + server action validates the session (guard helpers)
-- [x] App layout: nav (People / Events / Search / Quick-add), mobile-first at 375px
+- [x] App layout: nav (People / Events / Search / Quick-add), mobile-first at 375px — primary pills collapse to icon-only below `sm` (label kept in the a11y tree via `sr-only`) and the brand wordmark yields to the mark, so the pill row fits at 375px with no hidden horizontal-scroll overflow; labels return unchanged at `sm`+ (2026-07-28)
 - [x] Empty states + error states; submit buttons have loading spinners
 - [x] Loading skeletons on data-heavy screens (route `loading.tsx` files)
 - [x] Dark warm theme reused from landing tokens

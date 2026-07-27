@@ -11,6 +11,7 @@ import { ThreadLoader } from "@/components/brand/ThreadLoader";
 import { CARD_SCAN_MESSAGES, QUICK_ADD_MESSAGES } from "@/utils/constants/loader-messages";
 import type { EventOption } from "../EventPicker";
 import { downscalePhoto } from "../downscalePhoto";
+import { captureDialogState } from "./capture-dialog-state";
 import { CaptureForm } from "./CaptureForm";
 import { DisambiguationPanel } from "./DisambiguationPanel";
 import { QuickAddDock } from "./QuickAddDock";
@@ -54,14 +55,13 @@ export function QuickAddForm({
     {},
   );
 
-  // A parsed capture opens the review form in a dialog (not inline at the page
-  // bottom). Derive open-ness from the action result rather than setState-in-an-
-  // effect: the review shows whenever there's a contact the user hasn't
-  // dismissed; dismissing marks it so a later scan (a new object) re-opens.
-  const [dismissedContact, setDismissedContact] = useState<QuickAddState["contact"]>(undefined);
-  const resultOpen = Boolean(state.contact) && state.contact !== dismissedContact;
+  // A parsed capture opens the review dialog; a dock scan that fails opens the
+  // capture dialog so its error is visible (see capture-dialog-state). Both are
+  // derived from the action result, dismissible via a per-result token.
+  const [dismissed, setDismissed] = useState<QuickAddState | undefined>(undefined);
+  const { resultOpen, captureErrorOpen } = captureDialogState(state, dismissed, homeDock);
   const dismissResult = (): void => {
-    setDismissedContact(state.contact);
+    setDismissed(state);
     if (homeDock) setCaptureOpen(false);
   };
 
@@ -132,7 +132,10 @@ export function QuickAddForm({
           Dialog, so unmounting this one mid-open would leave Base UI's modal
           manager wedged and the result Dialog would never paint. Letting `open`
           go false runs the normal close→open handoff between the two dialogs. */}
-      <Dialog open={captureOpen && !resultOpen} onOpenChange={setCaptureOpen}>
+      <Dialog
+        open={(captureOpen || captureErrorOpen) && !resultOpen}
+        onOpenChange={(open) => (open ? setCaptureOpen(true) : dismissResult())}
+      >
         <DialogContent className="max-w-lg">
           <DialogTitle>Capture someone</DialogTitle>
           <DialogDescription>
@@ -142,7 +145,7 @@ export function QuickAddForm({
           {captureForm}
         </DialogContent>
       </Dialog>
-      {!captureOpen && !resultOpen ? (
+      {!captureOpen && !captureErrorOpen && !resultOpen ? (
         <QuickAddDock
           formAction={formAction}
           onVoiceStart={() => { setCaptureOpen(true); setMode("paste"); }}

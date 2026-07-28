@@ -36,6 +36,14 @@ export const SEARCH_WEIGHT_MAX = 20;
  *  of relying on that GUC. */
 export const NAME_FUZZY_MATCH_THRESHOLD = 0.3;
 
+/** Minimum query-word length to attempt a fuzzy/typo NAME match. Below this a
+ *  token shares trigrams with too many unrelated names to be a real signal —
+ *  "mit" (from "Who do I know in MIT") word_similarity-matches "Mittal",
+ *  "Amit", "Sumit"; weighted as identity (the highest bucket) that coincidence
+ *  buried the genuine MIT contacts. Short tokens still match a name via the
+ *  exact tsvector/prefix path — only the fuzzy trigram bonus is length-gated. */
+export const NAME_FUZZY_MIN_TOKEN_LEN = 4;
+
 /** Order + labels for the tuning panel, one slider per hybridSearch source. */
 export const SEARCH_WEIGHT_FIELDS: { key: keyof SearchWeights; label: string }[] = [
   { key: "semantic", label: "Semantic similarity" },

@@ -101,7 +101,12 @@ export function useVoiceSession(onFinalText: (text: string) => void): DictationS
 }
 
 /** Probe WebGPU once on mount: null while probing, then true/false. Drives the
- *  useDictation Moonshine-vs-browser-fallback decision. */
+ *  useDictation gate. Starts null (not false) to keep the SSR/hydration render
+ *  stable — the probe runs post-mount. On iOS Safari (`navigator.gpu` absent)
+ *  `isWebGpuAvailable()` resolves false in a single microtask WITHOUT an adapter
+ *  probe, so it never stays stuck "probing"; while it is null the useDictation
+ *  gate already treats voice as not-ready, so a mistimed tap can't load a
+ *  model regardless of how fast the probe settles. */
 export function useWebGpuAvailable(): boolean | null {
   const [available, setAvailable] = useState<boolean | null>(null);
   useEffect(() => {

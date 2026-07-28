@@ -1,18 +1,17 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { type QuickAddState } from "@/lib/actions/quick-add";
 import { ConfirmationCard } from "@/components/app/confirmations/ConfirmationCard";
 import { ThreadLoader } from "@/components/brand/ThreadLoader";
 import { CARD_SCAN_MESSAGES, QUICK_ADD_MESSAGES } from "@/utils/constants/loader-messages";
 import type { EventOption } from "../EventPicker";
-import { captureDialogState } from "./capture-dialog-state";
 import { DEFAULT_CAPTURE_MODE, showsManualSurface, type CaptureMode } from "./capture-mode";
 import { CaptureForm } from "./CaptureForm";
 import { DisambiguationPanel } from "./DisambiguationPanel";
 import { HomeDockCapture } from "./HomeDockCapture";
 import { QuickAddManual, type SubTab } from "./QuickAddManual";
 import { QuickAddResultDialog } from "./QuickAddResultDialog";
+import { useCaptureDialog } from "./useCaptureDialog";
 import { useQuickAdd } from "./useQuickAdd";
 
 /** Capture (manual, paste, card photo, voice, or live webcam) → review-and-save
@@ -38,14 +37,10 @@ export function QuickAddForm({
   const { state, formAction, pending } = useQuickAdd();
 
   // A parsed capture opens the review dialog; a dock scan that fails opens the
-  // capture dialog so its error is visible (see capture-dialog-state). Both are
-  // derived from the action result, dismissible via a per-result token.
-  const [dismissed, setDismissed] = useState<QuickAddState | undefined>(undefined);
-  const { resultOpen, captureErrorOpen } = captureDialogState(state, dismissed, homeDock);
-  const dismissResult = (): void => {
-    setDismissed(state);
-    if (homeDock) setCaptureOpen(false);
-  };
+  // scan-error dialog. Both are derived from the action result (see
+  // useCaptureDialog / capture-dialog-state), dismissible via a per-result token.
+  const { resultOpen, captureErrorOpen, dismissResult, reopenAfterScanError, onDialogClose, onVoiceStart } =
+    useCaptureDialog(state, homeDock, setMode, setCaptureOpen);
 
   if (state.matches && state.matches.length > 1 && state.sourceText) {
     return (
@@ -139,14 +134,11 @@ export function QuickAddForm({
       setCaptureOpen={setCaptureOpen}
       captureErrorOpen={captureErrorOpen}
       resultOpen={resultOpen}
-      onDialogClose={() => {
-        setMode(DEFAULT_CAPTURE_MODE);
-        dismissResult();
-      }}
-      onVoiceStart={() => {
-        setCaptureOpen(true);
-        setMode("paste");
-      }}
+      onDialogClose={onDialogClose}
+      onVoiceStart={onVoiceStart}
+      error={state.error}
+      onScanRetry={() => reopenAfterScanError("photo")}
+      onScanManual={() => reopenAfterScanError("manual")}
       formAction={formAction}
       pasteTextareaRef={pasteTextareaRef}
       pending={pending}

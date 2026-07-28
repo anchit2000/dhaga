@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import {
   confirmationPayloadSchema,
   type ConfirmationOption,
@@ -35,7 +35,11 @@ export async function listPendingConfirmations(): Promise<ConfirmationView[]> {
     })
     .from(confirmations)
     .leftJoin(contacts, eq(contacts.id, confirmations.contactId))
-    .where(eq(confirmations.status, "pending"))
+    // Exclude note_subject: it's a synchronous, capture-time card resolved
+    // inline in quick-add (never rendered in the inbox, home tile, or digest),
+    // so it must not surface here. A row abandoned unresolved stays pending but
+    // stops inflating these surfaces. See countPendingConfirmations below.
+    .where(and(eq(confirmations.status, "pending"), ne(confirmations.type, "note_subject")))
     .orderBy(desc(confirmations.createdAt));
 
   const views: ConfirmationView[] = rows.map((row) => {
@@ -100,6 +104,8 @@ export async function countPendingConfirmations(): Promise<number> {
   const [row] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(confirmations)
-    .where(eq(confirmations.status, "pending"));
+    // Same note_subject exclusion as listPendingConfirmations — the nav badge
+    // must not count inline capture-time cards the inbox can't show.
+    .where(and(eq(confirmations.status, "pending"), ne(confirmations.type, "note_subject")));
   return row?.count ?? 0;
 }

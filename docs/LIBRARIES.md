@@ -64,6 +64,23 @@ per-field merge resolver reuses `computeScalarConflicts` from `@dhaga/core`.
 `DataTable`'s server mode (`navigate()`), and any future filter/tab/page state
 that belongs in the URL. Type-safe parsers, App Router native, 5.7 kB.
 
+### 12. FullCalendar v6 (follow-up calendar) — adopted 2026-07-27
+
+**Powers:** the `/app/calendar` follow-up view (month + agenda) with
+drag-to-reschedule.
+
+`@fullcalendar/react` + `@fullcalendar/core` + `@fullcalendar/daygrid` +
+`@fullcalendar/list` + `@fullcalendar/interaction` (all v6.1.x). Don't hand-roll
+month grids, keyboard nav, or touch drag math — FullCalendar is the mature,
+framework-agnostic calendar and its `interaction` plugin gives pointer + touch
+drag-to-reschedule out of the box. Follow-ups are all-day, single-date items, so
+we use the **dayGrid** (month) and **list** (agenda) views only — no time-grid.
+Themed to the amber/seam/panel design tokens via `--fc-*` CSS-variable overrides
+(no vendored FullCalendar theme CSS), the same "library themed to our tokens, no
+second design language" approach as react-day-picker (§11). react-big-calendar
+was not chosen — it needs moment/date-fns adapters and its Bootstrap-derived DOM
+is harder to bend to the bespoke look than FullCalendar's CSS-variable surface.
+
 ---
 
 ## Adopt when the milestone needs it
@@ -202,8 +219,11 @@ don't hand-roll month grids, keyboard nav, and date math.
   stack" reasoning as the Combobox (§8, Rule 7/Rule 11).
 - Themed to the amber/seam/panel palette via the `classNames` prop **only** — no
   `react-day-picker/style.css` global import — so `components/ui/date-picker.tsx`
-  stays self-contained and matches the repo's token approach. Its transitive
-  `date-fns` comes along; that's the one new dependency's cost.
+  stays self-contained and matches the repo's token approach. `date-fns` (which
+  arrived transitively here) is now a **direct** dependency — the reminders repo
+  (`lib/repo/reminders/`) uses it for the calendar's due-date math and relative
+  due labels (`isBefore`/`isToday`/`startOfDay`), so it's declared explicitly
+  rather than relied on transitively.
 - `DatePicker` supports plain server-action `<form>`s: when given a `name` it
   also emits a hidden ISO `<input>`, so the admin expiry form submits the chosen
   date without client wiring. **Used by:** follow-up due date + admin
@@ -236,5 +256,6 @@ don't hand-roll month grids, keyboard nav, and date math.
 - [FlashList](https://docs.expo.dev/versions/latest/sdk/flash-list/)
 - [react-easy-crop](https://www.npmjs.com/package/react-easy-crop)
 - [react-day-picker](https://daypicker.dev/) · [Base UI Popover](https://base-ui.com/react/components/popover)
+- [FullCalendar React](https://fullcalendar.io/docs/react) · [FullCalendar CSS variables](https://fullcalendar.io/docs/css-customization)
 - [shadcn Command / cmdk](https://ui.shadcn.com/docs/components/radix/command)
 - [rate-limiter-flexible](https://github.com/animir/node-rate-limiter-flexible) · [@upstash/ratelimit](https://github.com/upstash/ratelimit-js) · [@vercel/firewall rate limiting](https://vercel.com/docs/vercel-firewall/vercel-waf/rate-limiting) · [TanStack Pacer (client-side)](https://tanstack.com/pacer/latest/docs/guides/rate-limiting)

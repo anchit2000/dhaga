@@ -13,6 +13,16 @@ interface AdapterRequester {
   requestAdapter(): Promise<unknown | null>;
 }
 
+/**
+ * Synchronous presence check: is the WebGPU object exposed at all? SSR-false.
+ * Absence is DEFINITIVE (no adapter can exist), so a caller can resolve to
+ * "unavailable" immediately — no async `requestAdapter()` probe, no probing
+ * limbo. On iOS Safari (no `navigator.gpu`) this short-circuits the whole probe.
+ */
+export function isWebGpuObjectPresent(): boolean {
+  return typeof navigator !== "undefined" && "gpu" in navigator;
+}
+
 export async function isWebGpuAvailable(): Promise<boolean> {
   if (typeof navigator === "undefined") return false;
   const gpu = (navigator as unknown as { gpu?: AdapterRequester }).gpu;

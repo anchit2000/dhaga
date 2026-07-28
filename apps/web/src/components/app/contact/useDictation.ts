@@ -2,6 +2,7 @@
 
 import { toast } from "sonner";
 import { useVoiceSession, useWebGpuAvailable } from "@/lib/voice/use-voice-session";
+import { resolveDictationState } from "./dictation-gate";
 
 export { isWebGpuAvailable } from "@/lib/voice/capability";
 
@@ -15,7 +16,7 @@ export { isWebGpuAvailable } from "@/lib/voice/capability";
  */
 
 const NO_WEBGPU_MESSAGE =
-  "Voice needs WebGPU, which isn't available in this browser. Try Chrome or Edge on a device with WebGPU.";
+  "Voice notes need a browser with WebGPU (try Chrome on desktop). On this device, just type your note instead.";
 
 export interface DictationState {
   supported: boolean;
@@ -34,27 +35,16 @@ export interface DictationState {
   notice?: string | null;
 }
 
-/** Dhaga Voice (Moonshine) dictation. WebGPU-only: when it's unavailable the
- *  Voice button stays visible but inert, warning why on tap — no CPU/WASM or
- *  browser-engine fallback. */
+/** Dhaga Voice (Moonshine) dictation. WebGPU-only: the real engine is handed
+ *  out ONLY once the WebGPU probe confirms an adapter (webgpu === true). While
+ *  probing (null) voice is not-ready and start is inert, so a tap can't race the
+ *  model loader (which would otherwise hit onnxruntime's "no available backend"
+ *  on iOS Safari); when unavailable (false) the button stays visible but inert,
+ *  warning why on tap — no CPU/WASM or browser-engine fallback. See
+ *  ./dictation-gate for the pure decision + its tests. */
 export function useDictation(onFinalText: (text: string) => void): DictationState {
-  // Both hooks run unconditionally (rules-of-hooks) before we branch.
+  // Both hooks run unconditionally (rules-of-hooks) before we gate.
   const moonshine = useVoiceSession(onFinalText);
   const webgpu = useWebGpuAvailable();
-  // No WebGPU → keep the button visible but inert, explaining why on tap.
-  if (webgpu === false) {
-    return {
-      supported: true,
-      listening: false,
-      transcribing: false,
-      loadingProgress: null,
-      partialText: null,
-      start: () => toast.warning(NO_WEBGPU_MESSAGE),
-      stop: () => {},
-      notice: null,
-    };
-  }
-  // Still probing (null) or available (true): hand back the Moonshine state
-  // directly — its own start() guards against running before it's ready.
-  return moonshine;
+  return resolveDictationState(webgpu, moonshine, () => toast.warning(NO_WEBGPU_MESSAGE));
 }

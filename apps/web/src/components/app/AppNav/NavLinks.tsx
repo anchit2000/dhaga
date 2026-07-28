@@ -24,8 +24,12 @@ export function NavLinks({ confirmationsCount }: { confirmationsCount: number })
             key={link.href}
             href={link.href}
             data-tour={link.href === "/app/graph" ? "graph" : undefined}
+            title={link.label}
             className={cn(
-              "flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-sm transition-colors",
+              "relative flex items-center justify-center rounded-full text-sm transition-colors",
+              // Mobile: icon-only, 44×44 touch target. sm+: revert to the
+              // labelled pill (whitespace/padding/gap/alignment as before).
+              "size-11 sm:size-auto sm:justify-start sm:gap-1.5 sm:whitespace-nowrap sm:px-3 sm:py-1.5",
               pending ? "pointer-events-none opacity-70" : null,
               active
                 ? "bg-amber/15 font-medium text-ember"
@@ -33,13 +37,18 @@ export function NavLinks({ confirmationsCount }: { confirmationsCount: number })
             )}
           >
             {pending ? (
-              <Loader2 className="size-3.5 animate-spin" />
+              <Loader2 className="size-5 animate-spin sm:size-3.5" />
             ) : (
-              <Icon className="size-3.5" />
+              <Icon className="size-5 sm:size-3.5" />
             )}
-            {link.label}
+            {/* Kept in the a11y tree at every width (screen readers still
+                announce the label); only visually hidden on mobile. */}
+            <span className="sr-only sm:not-sr-only">{link.label}</span>
             {link.href === "/app/confirmations" ? (
-              <NavBadge count={confirmationsCount} />
+              <NavBadge
+                count={confirmationsCount}
+                className="absolute right-1 top-1 sm:static"
+              />
             ) : null}
           </Link>
         );

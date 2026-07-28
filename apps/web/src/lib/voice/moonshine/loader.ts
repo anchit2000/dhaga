@@ -9,6 +9,7 @@
  */
 import type { AutomaticSpeechRecognitionPipeline } from "@huggingface/transformers";
 import { SAMPLE_RATE, type LoadProgress } from "@dhaga/core/src/voice/types";
+import { isWebGpuObjectPresent } from "@/lib/voice/capability";
 import type { Backend, ModelProgress } from "./constants";
 import { DTYPE_BY_DEVICE, TINY_MODEL } from "./constants";
 import { aggregateProgress, onnxDevice } from "./streaming";
@@ -62,24 +63,28 @@ async function loadOn(
 }
 
 /**
- * Load the tiny Moonshine model, preferring WebGPU and falling back to WASM
- * (same model, on CPU — slower, not a smaller model). Returns the pipeline and
- * which backend was obtained.
+ * Load the tiny Moonshine model. WebGPU is REQUIRED: callers (useDictation) only
+ * reach here after a WebGPU adapter is confirmed, and we guard again so a model
+ * load can never fall through to onnxruntime's WASM backend on a device without
+ * WebGPU (e.g. iOS Safari), where it throws an opaque "no available backend".
+ * The WASM branch below is kept only as a same-device fallback for the rare case
+ * where a *confirmed* adapter still fails to initialize — never for absent gpu.
  */
 export async function loadTiny(
   bytesByFile: BytesByFile,
   onProgress?: (p: LoadProgress) => void,
 ): Promise<LoadedModel> {
+  if (!isWebGpuObjectPresent()) {
+    throw new Error("Voice needs a browser with WebGPU — none is available here.");
+  }
   const { pipeline, env } = await import("@huggingface/transformers");
   env.allowLocalModels = false;
 
-  if (typeof navigator !== "undefined" && "gpu" in navigator) {
-    try {
-      return { pipeline: await loadOn("webgpu", pipeline, bytesByFile, onProgress), backend: "webgpu" };
-    } catch (err) {
-      console.warn("WebGPU ASR init failed; falling back to WASM.", err);
-      bytesByFile.clear();
-    }
+  try {
+    return { pipeline: await loadOn("webgpu", pipeline, bytesByFile, onProgress), backend: "webgpu" };
+  } catch (err) {
+    console.warn("WebGPU ASR init failed; falling back to WASM.", err);
+    bytesByFile.clear();
   }
   return { pipeline: await loadOn("wasm", pipeline, bytesByFile, onProgress), backend: "wasm" };
 }

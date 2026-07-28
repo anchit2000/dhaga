@@ -1,12 +1,13 @@
 "use client";
 
 import { Mic, Search, SlidersHorizontal, Sparkles, Square, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Dialog, DialogClose, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DEFAULT_SEARCH_WEIGHTS, type SearchWeights } from "@/utils/constants/search";
-import { SearchResults } from "./SearchResults";
-import { AskPanel } from "./AskPanel";
+import { PaletteBody } from "./PaletteBody";
+import { SearchTrigger } from "./SearchTrigger";
 import { WeightTuner } from "./WeightTuner";
 import { useSearchPalette, type SearchMode } from "./useSearchPalette";
 import { DictationProgress } from "@/components/app/contact/DictationProgress";
@@ -24,23 +25,16 @@ export function SearchPalette({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => p.setOpen(true)}
-        aria-label="Search your network"
-        className="flex h-9 w-9 items-center justify-center rounded-full border border-seam bg-panel-2/60 text-fog transition-colors hover:border-wash/30 hover:text-paper sm:w-full sm:max-w-2xl sm:justify-start sm:gap-2 sm:rounded-full sm:px-3"
-      >
-        <Search className="size-4 shrink-0" />
-        <span className="hidden flex-1 text-left text-sm sm:inline">
-          Search your network…
-        </span>
-        <kbd className="hidden shrink-0 rounded border border-seam bg-well px-1.5 py-0.5 font-mono text-[10px] text-fog sm:inline">
-          ⌘K
-        </kbd>
-      </button>
+      <SearchTrigger onOpen={() => p.setOpen(true)} />
 
       <Dialog open={p.open} onOpenChange={p.setOpen}>
-        <DialogContent showCloseButton={false} className="max-w-lg gap-0 p-0 sm:max-w-lg">
+        <DialogContent
+          showCloseButton={false}
+          className={cn(
+            "max-w-lg gap-0 p-0 sm:max-w-lg",
+            p.wide && "sm:max-w-3xl lg:max-w-4xl",
+          )}
+        >
           <DialogTitle className="sr-only">Search</DialogTitle>
 
           <div className="space-y-2 border-b border-seam p-3">
@@ -130,24 +124,16 @@ export function SearchPalette({
             <WeightTuner weights={p.weights} onChange={p.setWeights} onCommit={p.commitWeights} />
           ) : null}
 
-          <div className="max-h-[60vh] overflow-y-auto p-3">
-            {p.mode === "search" ? (
-              <SearchResults
-                state={p.search.state}
-                query={p.query}
-                pending={p.search.pending}
-                onNavigate={() => p.setOpen(false)}
-              />
-            ) : (
-              <AskPanel
-                state={p.ask.state}
-                pending={p.ask.pending}
-                hasQuery={p.query.trim().length > 0}
-                formId={p.formId}
-                onNavigate={() => p.setOpen(false)}
-              />
-            )}
-          </div>
+          <PaletteBody
+            wide={p.wide}
+            mode={p.mode}
+            query={p.query}
+            search={p.search}
+            ask={p.ask}
+            formId={p.formId}
+            onNavigate={() => p.setOpen(false)}
+            onAsk={p.runAsk}
+          />
         </DialogContent>
       </Dialog>
     </>

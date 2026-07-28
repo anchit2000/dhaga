@@ -11,7 +11,7 @@ import { DEFAULT_CAPTURE_MODE, showsManualSurface, type CaptureMode } from "./ca
 import { CaptureForm } from "./CaptureForm";
 import { DisambiguationPanel } from "./DisambiguationPanel";
 import { HomeDockCapture } from "./HomeDockCapture";
-import { QuickAddManual } from "./QuickAddManual";
+import { QuickAddManual, type SubTab } from "./QuickAddManual";
 import { QuickAddResultDialog } from "./QuickAddResultDialog";
 import { useQuickAdd } from "./useQuickAdd";
 
@@ -31,6 +31,7 @@ export function QuickAddForm({
   aiUsage?: string;
 }) {
   const [mode, setMode] = useState<CaptureMode>(DEFAULT_CAPTURE_MODE);
+  const [manualTab, setManualTab] = useState<SubTab>("person");
   const [captureOpen, setCaptureOpen] = useState(!homeDock);
   const [photos, setPhotos] = useState<File[]>([]);
   const pasteTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -93,7 +94,13 @@ export function QuickAddForm({
   // Manual is one of the three capture pills; its surface (the sibling's blank
   // ContactForm hub) takes over from CaptureForm. Back returns to the paste tab.
   const surface = showsManualSurface(mode) ? (
-    <QuickAddManual events={events} defaultEventId={defaultEventId} onBack={() => setMode("paste")} />
+    <QuickAddManual
+      events={events}
+      defaultEventId={defaultEventId}
+      tab={manualTab}
+      onTabChange={setManualTab}
+      onBack={() => setMode("paste")}
+    />
   ) : (
     captureForm
   );
@@ -124,6 +131,7 @@ export function QuickAddForm({
   return (
     <HomeDockCapture
       isManual={showsManualSurface(mode)}
+      wide={showsManualSurface(mode) && manualTab === "person"}
       aiUsage={aiUsage}
       surface={surface}
       resultDialog={resultDialog}

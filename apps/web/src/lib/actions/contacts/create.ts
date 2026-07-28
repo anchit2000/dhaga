@@ -76,6 +76,10 @@ export async function createContactAction(
     return { error: SAVE_RETRY_MESSAGE };
   }
 
+  // A write that resolves without throwing but yields no id would redirect to
+  // "/app/people/" (broken) and silently drop the contact — surface an error
+  // instead. redirect() stays OUTSIDE the try (it works by throwing NEXT_REDIRECT).
+  if (!id) return { error: SAVE_RETRY_MESSAGE };
   redirect(`/app/people/${id}`);
 }
 

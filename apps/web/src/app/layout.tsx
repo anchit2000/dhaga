@@ -92,7 +92,7 @@ export default function RootLayout({
         suppressHydrationWarning
         className="min-h-full flex flex-col bg-ink text-paper"
       >
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <NuqsAdapter>{children}</NuqsAdapter>
           <Toaster position="bottom-right" />
         </ThemeProvider>

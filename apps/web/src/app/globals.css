@@ -81,8 +81,8 @@
   --font-ui: ui-sans-serif, system-ui, -apple-system, sans-serif;
 }
 
-/* Light mode (/app/** default via next-themes). The marketing site forces
-   its own .dark ancestor and never sees these. */
+/* Light mode (/app/** opt-in via next-themes — dark is the default). The
+   marketing site forces its own .dark ancestor and never sees these. */
 :root {
   --brand-ink: #f2ebdc;
   --brand-panel: #fdfbf6;

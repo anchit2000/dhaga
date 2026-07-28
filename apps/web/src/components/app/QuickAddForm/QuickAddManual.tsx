@@ -1,15 +1,28 @@
 "use client";
 
-import type { ReactElement } from "react";
+import { useState, type ReactElement } from "react";
 import { ArrowLeft } from "lucide-react";
 import { emptyContactProfile } from "@dhaga/core";
+import { cn } from "@/lib/utils";
 import { ContactForm } from "../ContactForm";
 import { EventPicker, type EventOption } from "../EventPicker";
+import { ManualRelationshipForm } from "./manual/ManualRelationshipForm";
+import { ManualFactFollowUp } from "./manual/ManualFactFollowUp";
 
-/** Skip-AI path: a blank {@link ContactForm} (same one QuickAddResult renders,
- *  seeded empty) so the user types a person in by hand and saves via the normal
- *  createContactAction — no `source` field, so it lands as a "manual" contact.
- *  Reachable from every capture mode via CaptureForm's "Add manually" button. */
+type SubTab = "person" | "relationship" | "fact";
+
+// Local UI tab list (hoisted out of the component body, not a business
+// constant): the three no-AI quick adds, Person first.
+const MANUAL_SUB_TABS: readonly { value: SubTab; label: string }[] = [
+  { value: "person", label: "Person" },
+  { value: "relationship", label: "Relationship" },
+  { value: "fact", label: "Fact / follow-up" },
+];
+
+/** Skip-AI quick-add hub. Three no-AI sub-tabs, each reusing the same forms and
+ *  server actions the contact/graph pages use: Person (blank {@link ContactForm}
+ *  → createContactAction), Relationship (person↔person edge), and Fact /
+ *  follow-up. `onBack` returns to the AI capture tabs. */
 export function QuickAddManual({
   events,
   defaultEventId,
@@ -19,12 +32,35 @@ export function QuickAddManual({
   defaultEventId?: string;
   onBack: () => void;
 }): ReactElement {
+  const [tab, setTab] = useState<SubTab>("person");
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded-full border border-amber/30 bg-amber/10 px-2.5 py-1 font-mono text-[10px] uppercase tracking-widest text-amber">
-          Manual entry
-        </span>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div
+          role="tablist"
+          aria-label="Manual quick add"
+          className="flex items-center gap-1 overflow-x-auto rounded-full border border-seam bg-panel p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {MANUAL_SUB_TABS.map((item) => {
+            const active = item.value === tab;
+            return (
+              <button
+                key={item.value}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setTab(item.value)}
+                className={cn(
+                  "min-h-11 whitespace-nowrap rounded-full px-3.5 text-xs font-medium transition-colors sm:text-sm",
+                  active ? "bg-amber/15 text-amber" : "text-fog hover:text-paper",
+                )}
+              >
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
         <button
           type="button"
           onClick={onBack}
@@ -34,10 +70,17 @@ export function QuickAddManual({
           Back to capture
         </button>
       </div>
+
       <div className="rounded-2xl border border-seam bg-panel p-5 sm:p-6">
-        <ContactForm initial={emptyContactProfile()} submitLabel="Save person">
-          <EventPicker events={events} defaultEventId={defaultEventId} />
-        </ContactForm>
+        {tab === "person" ? (
+          <ContactForm initial={emptyContactProfile()} submitLabel="Save person">
+            <EventPicker events={events} defaultEventId={defaultEventId} />
+          </ContactForm>
+        ) : tab === "relationship" ? (
+          <ManualRelationshipForm />
+        ) : (
+          <ManualFactFollowUp />
+        )}
       </div>
     </div>
   );

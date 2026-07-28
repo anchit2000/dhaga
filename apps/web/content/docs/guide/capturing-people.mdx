@@ -14,13 +14,29 @@ fully usable for manual capture.
 
 ## Quick-add modes
 
-Open `/app/quick-add`. It defaults to **paste text** — drop in an email
-signature, the text off a business card, or a LinkedIn intro, and Dhaga pulls
-out the name, title, company, and contact methods.
+The capture panel opens on the **Manual** tab — the fastest, no-AI path, and the
+one that works on the free tier and self-hosted instances with no API key. Three
+pills across the top switch between **Manual**, **Paste text**, and **Card
+photo**.
+
+- **Manual** (the default) — type the person in by hand with no AI. Manual has
+  its own sub-tabs to add a **person**, a **relationship** between two people, or
+  a **fact / follow-up**. See [Adding someone manually](#adding-someone-manually)
+  below.
+
+![Dhaga manual add-person form with fields for name, jobs, emails, phones, and links](/docs/guide/add-person.png)
+
+Switch to an AI capture mode for however else you captured the person:
+
+- **Paste text** — drop in an email signature, the text off a business card, or a
+  LinkedIn intro, and Dhaga pulls out the name, title, company, and contact
+  methods. On this tab (outside the home dock) a **Voice** mic sits under the
+  box: tap it and describe who you met; the dictation streams live into the text
+  and is extracted the same way. With Dhaga Voice the transcript comes back as
+  tappable word-chips — tap a mis-heard word to fix it, and Dhaga learns that
+  spelling for next time.
 
 ![Dhaga quick-add in paste-text mode, ready to accept an email signature or card text](/docs/guide/quick-add-paste.png)
-
-Switch modes for however you captured the person:
 
 - **Card photo** — take or upload a photo of a business card. Dhaga runs OCR and
   also reads a LinkedIn QR code if one is on the card. You're not limited to one
@@ -29,10 +45,9 @@ Switch modes for however you captured the person:
   before scanning. On desktop you can also shoot straight from a live webcam,
   capturing multiple frames in one sitting. Every image you add merges into a
   **single** contact, and each photo is kept as its own source receipt.
-- **Voice** — tap the mic and describe who you met; the dictation is
-  transcribed and extracted. With Dhaga Voice, the transcript comes back as
-  tappable word-chips — tap a mis-heard word to fix it, and Dhaga learns that
-  spelling for next time.
+
+The capture dock at the bottom of the screen adds two more shortcuts:
+
 - **Camera** — grab a shot straight from your webcam.
 - **Upload** — attach an image or file you already have.
 
@@ -65,11 +80,10 @@ so you can correct them before the person lands in your graph:
 
 ## Adding someone manually
 
-You don't have to leave the capture screen for this. Under **every** capture
-mode — both **Paste text** and **Card photo** — a **"Prefer to type it in? Add
-manually"** link swaps the extractor for a blank contact form, so you can enter
-someone by hand with no AI. Or go straight to **`/app/people/new`**. Either way
-you can add multiple jobs, several labelled emails and phones, and links, then
-save.
-
-![Dhaga manual add-person form with fields for name, jobs, emails, phones, and links](/docs/guide/add-person.png)
+Manual is the **default** tab — the capture panel opens on it, so typing a person
+in by hand (no AI, no API key) is the zero-click path. Its sub-tabs let you add a
+**person**, record a **relationship** between two people you already have, or log
+a **fact / follow-up** against a contact. Switch to **Paste text** or **Card
+photo** whenever you'd rather have Dhaga extract from captured input, or go
+straight to **`/app/people/new`** for the full person form. Either way you can
+add multiple jobs, several labelled emails and phones, and links, then save.

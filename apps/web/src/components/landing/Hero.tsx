@@ -22,10 +22,10 @@ export function Hero() {
         <p className={`font-mono text-xs uppercase tracking-[0.22em] text-ember ${RISE}`}>
           {HERO.eyebrow}
         </p>
-        <h1
-          className={`mx-auto mt-6 max-w-4xl text-balance font-display text-5xl leading-[1.04] font-medium sm:text-7xl ${RISE}`}
-          style={{ animationDelay: "0.12s" }}
-        >
+        {/* The headline is the LCP element — no rise animation here: starting at
+            opacity:0 defers Largest Contentful Paint. It paints immediately;
+            everything else still staggers in. */}
+        <h1 className="mx-auto mt-6 max-w-4xl text-balance font-display text-5xl leading-[1.04] font-medium sm:text-7xl">
           The best contact you made this year — what was their{" "}
           <em className="text-ember italic">name</em> again?
         </h1>

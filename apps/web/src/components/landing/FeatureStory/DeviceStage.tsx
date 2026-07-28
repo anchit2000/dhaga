@@ -1,14 +1,23 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { Shell } from "../AppWindow/Shell";
 import { PhoneShell } from "../devices/PhoneShell";
 import { ScanScreen } from "../devices/ScanScreen";
 import { AlertsScreen, IdleScreen, VoiceScreen } from "../devices/screens";
-import { GraphStage } from "./GraphStage";
 import { SearchPane } from "./panes";
 import { DraftPane } from "./panes";
 import { GRAPH_SCENES } from "@/utils/constants/landing/graph";
 import { PHONE_VISUALS, type StoryVisual } from "@/utils/constants/landing/story";
+
+// React Flow (@xyflow/react) + its stylesheet are heavy and only needed once a
+// graph scene actually renders, so they load as a separate chunk instead of
+// shipping in the landing page's initial bundle. ssr:false is safe here — this
+// is a Client Component, and the parent reserves the box height (no CLS).
+const GraphStage = dynamic(
+  () => import("./GraphStage").then((mod) => mod.GraphStage),
+  { ssr: false },
+);
 
 function graphScene(id: string) {
   const scene = GRAPH_SCENES.find((s) => s.id === id);

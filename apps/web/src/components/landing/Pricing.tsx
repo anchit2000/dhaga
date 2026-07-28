@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PRICING_PLANS } from "@/utils/constants/landing";
-import { Particles } from "./Particles";
+import { ParticlesLazy } from "./Particles/Lazy";
 import { Reveal } from "./Reveal";
 import { SectionHeading } from "./SectionHeading";
 import { SpotlightCard } from "./SpotlightCard";
@@ -11,9 +11,9 @@ export function Pricing() {
   return (
     <section className="relative overflow-hidden px-6 py-24" id="pricing">
       <div className="pointer-events-none absolute inset-0">
-        <Particles
+        <ParticlesLazy
           particleColors={["#e2a44c", "#a49a8a"]}
-          particleCount={10000}
+          particleCount={2500}
           particleSpread={14}
           particleBaseSize={45}
           speed={0.12}

@@ -38,6 +38,14 @@ Switch to an AI capture mode for however else you captured the person:
 
 ![Dhaga quick-add in paste-text mode, ready to accept an email signature or card text](/docs/guide/quick-add-paste.png)
 
+<Callout title="Voice needs WebGPU">
+Dhaga Voice dictation runs entirely on-device, so it needs **WebGPU** — available
+today in desktop Chrome and Edge. On iOS Safari and other browsers without WebGPU,
+Dhaga detects this up front and shows a clean "voice isn't supported on this
+device — type it in instead" message rather than failing mid-recording. Manual
+entry is always available.
+</Callout>
+
 - **Card photo** — take or upload a photo of a business card. Dhaga runs OCR and
   also reads a LinkedIn QR code if one is on the card. You're not limited to one
   shot: add several photos of the same card or leaflet — front and back, or
@@ -87,3 +95,5 @@ a **fact / follow-up** against a contact. Switch to **Paste text** or **Card
 photo** whenever you'd rather have Dhaga extract from captured input, or go
 straight to **`/app/people/new`** for the full person form. Either way you can
 add multiple jobs, several labelled emails and phones, and links, then save.
+
+![The Manual hub with its Person, Relationship, and Fact / follow-up sub-tabs](/docs/guide/quick-add-manual.png)

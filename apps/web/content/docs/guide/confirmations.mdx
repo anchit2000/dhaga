@@ -13,7 +13,7 @@ once you say yes.
 The **`/app/confirmations`** inbox is where those doubts collect. **Confirmations**
 sits in the left nav with a small amber count pill when any are waiting.
 
-![The Confirmations inbox at /app/confirmations (a top-nav item with a count badge) with pending questions grouped by type — "Links to confirm", each offering candidate contacts to pick from plus a search box and confirm/dismiss actions, and "Who is this about?"](/docs/guide/confirmations.png)
+![The Confirmations inbox at /app/confirmations (a top-nav item with a count badge) with pending questions grouped by type — "Links to confirm", each offering candidate contacts to pick from plus a search box and confirm/dismiss actions](/docs/guide/confirmations.png)
 
 ## The four kinds of doubt
 
@@ -46,6 +46,33 @@ A pending confirmation has written **no** edge, fact, or relationship to your
 graph. That's the point — ambiguous extraction waits for you instead of leaving
 you to clean up a wrong guess later.
 </Callout>
+
+## Who is this note about?
+
+Unlike the four above, this question never lands in the inbox — it appears
+**inline in quick-add**, the moment you capture the note. When a note you type
+reads as being about someone but Dhaga can't be sure who, the card pops up right
+there in the capture panel and you answer it on the spot, before anything is
+saved. (See
+[Capture a note from quick-add](/docs/guide/notes-and-facts#capture-a-note-from-quick-add)
+for how a typed note gets recognised in the first place.)
+
+The card shows the **note text** up top so you have the full context, then gives
+you two ways to place it:
+
+- **Pick a person** — contacts whose name matches the note's subject appear as
+  chips; tap one and the note attaches there, its facts and relationships
+  extracted as usual. You can also search for anyone else if the right person
+  wasn't surfaced.
+- **Create a new one** — a name field, prefilled with the name from the note,
+  lets you say *"no — this is a different Anchit, add them"*. Dhaga creates a
+  fresh contact and attaches the note to it. When nobody matched at all, the card
+  leads with this.
+
+![Confirming who a note is about](/docs/guide/note-capture-confirm.png)
+
+**Dismiss** drops the captured note without writing anything — the same rule as
+every other confirmation.
 
 ## Where they surface
 

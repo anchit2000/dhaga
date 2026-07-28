@@ -32,14 +32,31 @@ async function login(page) {
   await page.fill("#email", EMAIL);
   await page.fill("#password", PASSWORD);
   await page.click('button[type="submit"]');
-  await page.waitForURL("**/app**", { timeout: 45_000 });
-  await page.waitForLoadState("networkidle").catch(() => {});
+  // Resolve as soon as the /app navigation commits — waiting for the home route's
+  // full "load"/networkidle can exceed the timeout on a cold cross-region DB and
+  // while its WebGPU voice model downloads. A generous ceiling covers first-compile.
+  await page.waitForURL("**/app**", { timeout: 120_000, waitUntil: "commit" });
+  await page.waitForLoadState("domcontentloaded").catch(() => {});
 }
 
 // Wait for the Sigma/WebGL canvas to mount and the layout to settle.
 async function waitForGraph(page) {
   await page.waitForSelector("canvas", { timeout: 30_000 });
   await sleep(5000);
+}
+
+// Quick add opens on the Manual surface (default since #116). The AI capture
+// pills (Paste text / Card photo) live behind it, reached via "Back to capture".
+// Leaves the page on the Paste-text tab with its note textarea focused-and-ready.
+async function openPasteSurface(page) {
+  await page.goto(`${BASE}/app/quick-add`, { waitUntil: "networkidle" });
+  await sleep(800);
+  const back = page.getByRole("button", { name: /Back to capture/i });
+  if (await back.count()) await back.first().click();
+  const pastePill = page.getByRole("button", { name: "Paste text" });
+  if (await pastePill.count()) await pastePill.first().click();
+  await page.getByPlaceholder(/Paste anything with a person/i).waitFor({ timeout: 8000 });
+  await sleep(400);
 }
 
 async function shoot(file) {
@@ -153,10 +170,10 @@ await capture("person-facts-enrich.png", `/app/people/${CONTACT_ID}`, "The Facts
   await sleep(500);
 });
 
-// 9. quick-add-paste.png — default paste-text mode
-await capture("quick-add-paste.png", "/app/quick-add", "The quick-add page in default paste-text mode with the capture textarea.", async () => {
-  await page.goto(`${BASE}/app/quick-add`, { waitUntil: "networkidle" });
-  await sleep(800);
+// 9. quick-add-paste.png — the Paste-text tab. Manual is the default surface
+// now (#116), so this switches to the Paste pill before shooting the textarea.
+await capture("quick-add-paste.png", "/app/quick-add", "The quick-add Paste-text tab (reached from the default Manual surface) with the capture textarea.", async () => {
+  await openPasteSurface(page);
 });
 
 // 10. quick-add-capture.png — capture options (card photo / camera / upload / voice)
@@ -258,6 +275,91 @@ await capture("companies-duplicates.png", "/app/companies/duplicates", "The dupl
   await page.goto(`${BASE}/app/companies/duplicates`, { waitUntil: "networkidle" });
   await sleep(1200);
   await page.evaluate(() => window.scrollTo(0, 0));
+});
+
+// --- Shots for PRs #110/#112/#116/#118/#119 ----------------------------------
+
+// 21. calendar.png — FullCalendar month view populated with follow-ups.
+await capture("calendar.png", "/app/calendar", "The follow-up calendar: FullCalendar month view with dated follow-ups (overdue ones tinted amber) plus the draggable Unscheduled tray.", async () => {
+  await page.goto(`${BASE}/app/calendar`, { waitUntil: "networkidle" });
+  // FullCalendar is client-only (mounts after hydration); wait for a real event.
+  await page.waitForSelector(".fc-daygrid-day", { timeout: 20_000 });
+  await page.waitForSelector(".fc-event", { timeout: 20_000 });
+  await sleep(900);
+  await page.evaluate(() => window.scrollTo(0, 0));
+});
+
+// 22. quick-add-manual.png — the Manual hub (default surface since #116) with its
+// three no-AI sub-tabs (Person / Relationship / Fact / follow-up).
+await capture("quick-add-manual.png", "/app/quick-add", "The quick-add Manual hub (the default surface) with its Person / Relationship / Fact-or-follow-up sub-tabs.", async () => {
+  await page.goto(`${BASE}/app/quick-add`, { waitUntil: "networkidle" });
+  await page.getByRole("tablist", { name: /Manual quick add/i }).waitFor({ timeout: 10_000 });
+  await sleep(700);
+  await page.evaluate(() => window.scrollTo(0, 0));
+});
+
+// 23. ask-dhaga-rail.png — a reasoned Ask-Dhaga answer with its right-side
+// source-contacts (receipts) rail. Driven live (metered Sonnet); opened from
+// /app/people so it never mounts the home route's WebGPU voice model. Falls back
+// to whatever the Ask panel shows if a live answer doesn't stream in time.
+await capture("ask-dhaga-rail.png", "/app (⌘K → Ask Dhaga)", "An Ask-Dhaga answer with the right-side source-contacts (receipts) rail on wide screens.", async () => {
+  await page.goto(`${BASE}/app/people`, { waitUntil: "networkidle" });
+  await sleep(600);
+  await page.keyboard.press("Control+KeyK");
+  await page.waitForSelector('[role="dialog"] input[name="q"]', { timeout: 8000 });
+  await page.getByRole("tab", { name: /Ask Dhaga/i }).click();
+  await page.fill('[role="dialog"] input[name="q"]', "Who do I know in logistics, and how did I meet them?");
+  await page.getByRole("button", { name: /Ask Dhaga/i }).click();
+  // The two-pane rail (aside) appears once an answer starts streaming; then wait
+  // for the receipt links to land. If neither arrives, shoot the panel anyway.
+  const rail = await page
+    .waitForSelector('[role="dialog"] aside', { timeout: 90_000 })
+    .catch(() => null);
+  if (rail) {
+    await page
+      .waitForSelector('[role="dialog"] aside a[href^="/app/people/"]', { timeout: 45_000 })
+      .catch(() => {});
+  } else {
+    await page.waitForTimeout(3000);
+  }
+  await sleep(1500);
+});
+
+// 24. note-capture-confirm.png — the "Who is this note about?" (NoteSubjectCard)
+// inline confirmation. Driven live: a captured note naming "Priya" (many
+// matches) routes to the ambiguous-subject confirmation. Needs the metered LLM
+// classifier, so the dev server runs with AI budget.
+await capture("note-capture-confirm.png", "/app/quick-add (note capture)", "The inline 'Which Priya is this note about?' NoteSubjectCard: attach a captured note to an existing contact or create a new one.", async () => {
+  await openPasteSurface(page);
+  await page.fill(
+    'textarea[name="raw"]',
+    "Caught up with Priya over coffee this morning. She just closed her seed round and is hiring a founding engineer, and asked me for a warm intro to a fintech-focused angel. I should follow up next week with a couple of names.",
+  );
+  await page.getByRole("button", { name: /Extract contact/i }).click();
+  // The classifier + candidate lookup produce the inline NoteSubjectCard, whose
+  // "New contact name" input is unique to it.
+  await page.getByLabel("New contact name").waitFor({ timeout: 75_000 });
+  await sleep(900);
+  await page.evaluate(() => window.scrollTo(0, 0));
+});
+
+// 25. calendar-event.png (optional) — the follow-up details dialog from a grid event.
+await capture("calendar-event.png", "/app/calendar (event dialog)", "The follow-up details dialog opened from a calendar event (reschedule, mark done, open contact).", async () => {
+  await page.goto(`${BASE}/app/calendar`, { waitUntil: "networkidle" });
+  await page.waitForSelector(".fc-event", { timeout: 20_000 });
+  await sleep(700);
+  await page.locator(".fc-event").first().click();
+  await page.waitForSelector('[role="dialog"]', { timeout: 8000 });
+  await sleep(700);
+});
+
+// 26. nav-quick-add.png (optional) — the global nav "Add" capture dialog.
+await capture("nav-quick-add.png", "/app (nav Add)", "The global nav 'Add someone' dialog (shared QuickAddForm) opened from the app nav.", async () => {
+  await page.goto(`${BASE}/app/people`, { waitUntil: "networkidle" });
+  await sleep(600);
+  await page.getByRole("button", { name: "Add", exact: true }).first().click();
+  await page.getByRole("dialog").filter({ hasText: /Add someone/i }).waitFor({ timeout: 8000 });
+  await sleep(800);
 });
 
 await context.close();

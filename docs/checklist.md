@@ -85,6 +85,8 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Assign capture to an event (create/pick "Web Summit 2026")
 - [x] Attach source text as first note (receipt for extracted fields)
 - [x] Manual add-contact form (no extraction path)
+- [x] Quick-add reachable from the app nav on every screen — a global **Add** button (`NavQuickAdd`) opens the shared capture→review→save dialog (`QuickAddForm`) from any `/app` screen, the same flow the home dock uses; the fuller `/app/quick-add` page stays linked from the nav "More" menu. Built 2026-07-27 (web); mobile parity pending. **Known follow-up:** the nav dialog passes an empty events list, so attach-to-event is empty from the nav until the app layout threads the user's events through — event-attach still works from the home dock and `/app/quick-add`.
+- [x] Manual entry on every capture screen — a "Prefer to type it in? Add manually" affordance in `CaptureForm`, shown under **both** paste-text and card-photo modes, swaps to a blank `ContactForm` and saves as a normal manual contact (no extraction). Built 2026-07-27 (web); mobile parity pending.
 - [x] People list with filter + contact detail page
 - [x] People bulk actions — multi-select on `/app/people` (per-row checkbox + select-all-on-page, selection persists across pagination) with a bulk bar: **Merge**, **Add to company**, **Tag** (add or remove), **Star**/**Unstar**, and **Delete** (forget, full cascade). Built 2026-07-27 (web); mobile parity pending
 - [x] Company auto-link: extracted company name → find-or-create `companies` row

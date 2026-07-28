@@ -1,21 +1,18 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
-import {
-  extractQuickAddAction,
-  scanCardAction,
-  type QuickAddState,
-} from "@/lib/actions/quick-add";
+import { useRef, useState } from "react";
+import { type QuickAddState } from "@/lib/actions/quick-add";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { ThreadLoader } from "@/components/brand/ThreadLoader";
 import { CARD_SCAN_MESSAGES, QUICK_ADD_MESSAGES } from "@/utils/constants/loader-messages";
 import type { EventOption } from "../EventPicker";
-import { downscalePhoto } from "../downscalePhoto";
 import { captureDialogState } from "./capture-dialog-state";
 import { CaptureForm } from "./CaptureForm";
 import { DisambiguationPanel } from "./DisambiguationPanel";
 import { QuickAddDock } from "./QuickAddDock";
-import { QuickAddResult } from "./QuickAddResult";
+import { QuickAddManual } from "./QuickAddManual";
+import { QuickAddResultDialog } from "./QuickAddResultDialog";
+import { useQuickAdd } from "./useQuickAdd";
 
 type Mode = "paste" | "photo";
 
@@ -35,25 +32,11 @@ export function QuickAddForm({
 }) {
   const [mode, setMode] = useState<Mode>("paste");
   const [captureOpen, setCaptureOpen] = useState(!homeDock);
+  // Skip-AI escape hatch: swap the capture UI for a blank ContactForm.
+  const [manual, setManual] = useState(false);
   const [photos, setPhotos] = useState<File[]>([]);
   const pasteTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const [state, formAction, pending] = useActionState<QuickAddState, FormData>(
-    async (previous, formData) => {
-      const photoFiles = formData
-        .getAll("photo")
-        .filter((entry): entry is File => entry instanceof File && entry.size > 0);
-      if (photoFiles.length > 0) {
-        // Downscale each image before upload, then re-emit them all as `photo`
-        // entries (the server reads getAll("photo") and merges them into one).
-        const downscaled = await Promise.all(photoFiles.map((file) => downscalePhoto(file)));
-        formData.delete("photo");
-        for (const file of downscaled) formData.append("photo", file);
-        return scanCardAction(previous, formData);
-      }
-      return extractQuickAddAction(previous, formData);
-    },
-    {},
-  );
+  const { state, formAction, pending } = useQuickAdd();
 
   // A parsed capture opens the review dialog; a dock scan that fails opens the
   // capture dialog so its error is visible (see capture-dialog-state). Both are
@@ -88,6 +71,7 @@ export function QuickAddForm({
         notice={state.notice}
         captureOpen={captureOpen}
         onCaptureToggle={homeDock ? () => setCaptureOpen((open) => !open) : undefined}
+        onManual={() => setManual(true)}
         inDialog={homeDock}
       />
       {pending ? (
@@ -99,27 +83,32 @@ export function QuickAddForm({
     </div>
   );
 
+  const manualForm = (
+    <QuickAddManual
+      events={events}
+      defaultEventId={defaultEventId}
+      onBack={() => setManual(false)}
+    />
+  );
+
   const resultDialog = state.contact ? (
-    <Dialog open={resultOpen} onOpenChange={(open) => { if (!open) dismissResult(); }}>
-      <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
-        <DialogTitle>Review scanned contact</DialogTitle>
-        <QuickAddResult
-          contact={state.contact}
-          via={state.via}
-          notice={state.notice}
-          sourceText={state.sourceText}
-          images={state.images}
-          events={events}
-          defaultEventId={defaultEventId}
-        />
-      </DialogContent>
-    </Dialog>
+    <QuickAddResultDialog
+      open={resultOpen}
+      onDismiss={dismissResult}
+      contact={state.contact}
+      via={state.via}
+      notice={state.notice}
+      sourceText={state.sourceText}
+      images={state.images}
+      events={events}
+      defaultEventId={defaultEventId}
+    />
   ) : null;
 
   if (!homeDock) {
     return (
       <div className="pb-28">
-        {captureForm}
+        {manual ? manualForm : captureForm}
         {resultDialog}
       </div>
     );
@@ -134,15 +123,24 @@ export function QuickAddForm({
           go false runs the normal close→open handoff between the two dialogs. */}
       <Dialog
         open={(captureOpen || captureErrorOpen) && !resultOpen}
-        onOpenChange={(open) => (open ? setCaptureOpen(true) : dismissResult())}
+        onOpenChange={(open) => {
+          if (open) {
+            setCaptureOpen(true);
+          } else {
+            setManual(false);
+            dismissResult();
+          }
+        }}
       >
         <DialogContent className="max-w-lg">
-          <DialogTitle>Capture someone</DialogTitle>
+          <DialogTitle>{manual ? "Add someone manually" : "Capture someone"}</DialogTitle>
           <DialogDescription>
-            Paste an intro, speak a note, or scan a card. Dhaga keeps the source as a receipt.
+            {manual
+              ? "Type in what you know — no AI, saved straight to your graph."
+              : "Paste an intro, speak a note, or scan a card. Dhaga keeps the source as a receipt."}
           </DialogDescription>
-          {aiUsage ? <p className="font-mono text-[10px] uppercase tracking-wider text-fog/60">{aiUsage}</p> : null}
-          {captureForm}
+          {aiUsage && !manual ? <p className="font-mono text-[10px] uppercase tracking-wider text-fog/60">{aiUsage}</p> : null}
+          {manual ? manualForm : captureForm}
         </DialogContent>
       </Dialog>
       {!captureOpen && !captureErrorOpen && !resultOpen ? (

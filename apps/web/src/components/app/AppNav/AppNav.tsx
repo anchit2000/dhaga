@@ -8,6 +8,7 @@ import { SearchPalette } from "@/components/app/search/SearchPalette";
 import type { SearchWeights } from "@/utils/constants/search";
 import { MoreMenu } from "./MoreMenu";
 import { NavLinks } from "./NavLinks";
+import { NavQuickAdd } from "./NavQuickAdd";
 import { NotificationBell, type NotificationSummary } from "./NotificationBell";
 import { ProfileMenu } from "./ProfileMenu";
 
@@ -60,6 +61,7 @@ export function AppNav({
           </div>
 
           <div className="flex shrink-0 items-center gap-1">
+            <NavQuickAdd />
             <NotificationBell summary={notificationSummary} />
             <ModeToggle />
             <MoreMenu />

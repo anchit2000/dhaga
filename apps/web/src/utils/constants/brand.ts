@@ -9,10 +9,10 @@ export const BRAND_COLOR_FALLBACKS = {
   "--brand-paper": "#f3ede2",
   "--brand-fog": "#a49a8a",
   "--brand-amber": "#e2a44c",
-  "--brand-ember": "#c37731",
+  /* Dark pins `--brand-ember: var(--brand-amber)` in globals.css, so the dark
+     fallback for ember IS amber. Keep these two in step. */
+  "--brand-ember": "#e2a44c",
 } as const;
 
 /** Brand CSS custom-property names that resolve through `BRAND_COLOR_FALLBACKS`. */
 export type BrandColorVar = keyof typeof BRAND_COLOR_FALLBACKS;
-
-export const BRAND_COLOR_VARS = Object.keys(BRAND_COLOR_FALLBACKS) as BrandColorVar[];

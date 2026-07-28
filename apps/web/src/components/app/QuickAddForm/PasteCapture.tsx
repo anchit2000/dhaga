@@ -55,7 +55,7 @@ export function PasteCapture({
           aria-pressed={voice.listening}
           className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm transition-colors ${
             voice.listening
-              ? "border-amber/40 bg-amber/15 font-medium text-amber"
+              ? "border-amber/40 bg-amber/15 font-medium text-ember"
               : "border-seam text-fog hover:text-paper"
           }`}
         >

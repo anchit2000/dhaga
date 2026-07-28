@@ -4,18 +4,32 @@ import {
   relationshipRole,
   type RelationshipLabelMap,
 } from "@dhaga/core";
-import {
-  GRAPH_ENTITY_FALLBACK_COLOR,
-  GRAPH_NODE_COLORS,
-} from "@/utils/constants/graph";
-import type { FullGraphEdge, FullGraphNode, GraphNodeType } from "../types";
+import type { GraphNodePalette } from "../canvas/theme";
+import type { FullGraphEdge, FullGraphNode, GraphNodeKind, GraphNodeType } from "../types";
 
-/** Node fill by kind; entity nodes carry their user-chosen node-type colour. */
-export function nodeColor(node: FullGraphNode, typeColors: ReadonlyMap<string, string>): string {
+/** Node fill by kind; entity nodes carry their user-chosen node-type colour.
+ *  The palette is theme-resolved, so the same node reads differently on light
+ *  and dark — pass the palette the surface is drawing on. */
+export function nodeColor(
+  node: FullGraphNode,
+  typeColors: ReadonlyMap<string, string>,
+  palette: GraphNodePalette,
+): string {
   if (node.kind === "entity") {
-    return (node.typeId && typeColors.get(node.typeId)) || GRAPH_ENTITY_FALLBACK_COLOR;
+    return (node.typeId && typeColors.get(node.typeId)) || palette.entity;
   }
-  return GRAPH_NODE_COLORS[node.kind];
+  return palette[node.kind];
+}
+
+/** Which palette slot a node's fill came from, or undefined when it carries
+ *  the user's own node-type colour — that one is data, not theme, and must
+ *  survive a light/dark flip untouched (see applyThemeToGraph). */
+export function nodePaletteKey(
+  node: FullGraphNode,
+  typeColors: ReadonlyMap<string, string>,
+): GraphNodeKind | undefined {
+  if (node.kind === "entity" && node.typeId && typeColors.get(node.typeId)) return undefined;
+  return node.kind;
 }
 
 export function buildTypeColorMap(nodeTypes: readonly GraphNodeType[]): Map<string, string> {

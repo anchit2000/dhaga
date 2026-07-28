@@ -12,26 +12,26 @@ export function ProfileRail() {
         </div>
       </div>
 
-      <p className="mt-4 font-mono text-[10px] uppercase tracking-widest text-fog/70">
+      <p className="mt-4 font-mono text-[10px] uppercase tracking-widest text-fog">
         Facts · with receipts
       </p>
       <div className="mt-1.5 space-y-2">
         {MOCK_PROFILE_FACTS.map((fact) => (
           <div key={fact.text} className="border-l-2 border-amber/50 pl-2">
             <p className="text-[11px] leading-snug text-paper">{fact.text}</p>
-            <p className="text-[9px] italic text-fog/70">{fact.source}</p>
+            <p className="text-[9px] italic text-fog">{fact.source}</p>
           </div>
         ))}
       </div>
 
-      <p className="mt-4 font-mono text-[10px] uppercase tracking-widest text-fog/70">
+      <p className="mt-4 font-mono text-[10px] uppercase tracking-widest text-fog">
         Thread
       </p>
       <div className="mt-1.5 space-y-1.5">
         {MOCK_TIMELINE.map((entry) => (
           <div key={entry.label} className="flex items-baseline justify-between gap-2">
             <p className="text-[10px] text-fog">{entry.label}</p>
-            <span className="shrink-0 font-mono text-[9px] text-fog/60">{entry.date}</span>
+            <span className="shrink-0 font-mono text-[9px] text-fog">{entry.date}</span>
           </div>
         ))}
       </div>

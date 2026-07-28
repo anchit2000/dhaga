@@ -45,7 +45,7 @@ export function ContactDetailSheet({
       <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-md">
         {pending || !summary ? (
           error ? (
-            <p className="p-4 text-sm text-red-400" role="alert">
+            <p className="p-4 text-sm text-destructive" role="alert">
               {error}
             </p>
           ) : (
@@ -65,7 +65,7 @@ export function ContactDetailSheet({
         ) : (
           <div className="space-y-5 p-4">
             <div className="flex items-start gap-3">
-              <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-amber/15 font-display text-xl text-amber">
+              <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-amber/15 font-display text-xl text-ember">
                 {summary.name.charAt(0).toUpperCase()}
               </span>
               <div className="min-w-0 flex-1">
@@ -82,7 +82,7 @@ export function ContactDetailSheet({
                       <Link
                         key={event.id}
                         href={`/app/events/${event.id}`}
-                        className="rounded-full border border-amber/30 bg-amber/10 px-2.5 py-0.5 text-xs text-amber transition-colors hover:bg-amber/20"
+                        className="rounded-full border border-amber/30 bg-amber/10 px-2.5 py-0.5 text-xs text-ember transition-colors hover:bg-amber/20"
                       >
                         {event.name}
                       </Link>

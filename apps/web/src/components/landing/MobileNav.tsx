@@ -45,7 +45,7 @@ export function MobileNav({ isSignedIn }: MobileNavProps): ReactElement {
           <SheetTitle className="flex items-center gap-2 font-display text-lg text-paper">
             <ThreadMark size={20} />
             <span>
-              dhaga<span className="text-amber">.</span>
+              dhaga<span className="text-ember">.</span>
             </span>
           </SheetTitle>
         </SheetHeader>
@@ -76,7 +76,7 @@ export function MobileNav({ isSignedIn }: MobileNavProps): ReactElement {
                 onClick={closeMenu}
                 className="flex items-center gap-3 rounded-lg px-3 py-3 text-base text-fog transition-colors hover:bg-amber/5 hover:text-paper"
               >
-                <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg border border-seam bg-amber/10 text-amber">
+                <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg border border-seam bg-amber/10 text-ember">
                   <Icon className="size-4" aria-hidden="true" />
                 </span>
                 {item.title}

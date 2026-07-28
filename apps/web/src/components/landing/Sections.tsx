@@ -14,7 +14,7 @@ export function StatsBand() {
           You met 47 people at your last conference.{" "}
           <span className="text-ember">You&apos;ll remember 3.</span>
         </h2>
-        <p className="mt-4 text-center text-xs italic text-fog/70">
+        <p className="mt-4 text-center text-xs italic text-fog">
           A familiar story, not a stat we collected — picture your last conference.
         </p>
         <div className="mt-10 grid gap-10 sm:grid-cols-3">
@@ -55,7 +55,7 @@ export function HowItWorks() {
             y1="12"
             x2="84%"
             y2="12"
-            stroke="#e2a44c"
+            stroke="var(--brand-amber)"
             strokeOpacity="0.35"
             strokeWidth="1"
             strokeDasharray="4 5"
@@ -72,10 +72,10 @@ export function HowItWorks() {
                     className="group relative h-full rounded-2xl border border-seam bg-gradient-to-b from-panel to-panel-2/60 p-7 transition-all duration-300 hover:-translate-y-1 hover:border-amber/40 hover:shadow-[0_20px_60px_-24px_rgba(226,164,76,0.35)]"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="flex size-11 items-center justify-center rounded-full border border-amber/30 bg-amber/10 text-amber shadow-[0_0_24px_-6px_rgba(226,164,76,0.5)]">
+                      <span className="flex size-11 items-center justify-center rounded-full border border-amber/30 bg-amber/10 text-ember shadow-[0_0_24px_-6px_rgba(226,164,76,0.5)]">
                         <Icon />
                       </span>
-                      <span className="font-mono text-[11px] tracking-[0.18em] text-fog/70">
+                      <span className="font-mono text-[11px] tracking-[0.18em] text-fog">
                         {step.step}
                       </span>
                     </div>

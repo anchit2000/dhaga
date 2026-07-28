@@ -14,7 +14,9 @@ interface FeatureMatrixProps {
   caption?: string;
 }
 
-// Amber wash + top accent for the highlighted (Dhaga) column.
+// Amber wash + ember top accent for the highlighted (Dhaga) column. The wash is
+// a fill so it stays amber; the 2px accent is a thin rule, and amber is only
+// 2.0:1 on the light panel, so it uses ember (crisp in both themes).
 const HIGHLIGHT_BG: CSSProperties = {
   backgroundColor: "color-mix(in srgb, var(--color-amber) 9%, transparent)",
 };
@@ -24,7 +26,7 @@ const HIGHLIGHT_BG: CSSProperties = {
 const HEAD_BASE: CSSProperties = { borderTop: "2px solid transparent" };
 const HIGHLIGHT_HEAD: CSSProperties = {
   ...HIGHLIGHT_BG,
-  borderTop: "2px solid var(--color-amber)",
+  borderTop: "2px solid var(--color-ember)",
 };
 
 function renderValue(value: boolean | string): ReactElement {
@@ -32,7 +34,7 @@ function renderValue(value: boolean | string): ReactElement {
     return <span className="text-paper">{value}</span>;
   }
   if (value) {
-    return <Check className="mx-auto size-4 text-amber" role="img" aria-label="Yes" />;
+    return <Check className="mx-auto size-4 text-ember" role="img" aria-label="Yes" />;
   }
   return (
     <span className="text-fog" role="img" aria-label="No">
@@ -42,7 +44,7 @@ function renderValue(value: boolean | string): ReactElement {
 }
 
 // A responsive comparison grid. The highlighted column (Dhaga's) gets an amber
-// wash and an amber top accent; booleans render as an amber check or fog dash.
+// wash and an ember top accent; booleans render as an ember check or fog dash.
 export function FeatureMatrix({
   columns,
   rows,

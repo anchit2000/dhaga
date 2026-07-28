@@ -32,7 +32,7 @@ export function EventBadge({
       className={cn(
         "flex shrink-0 items-center justify-center rounded-full font-display",
         SIZES[size],
-        hex ? null : "bg-amber/15 text-amber",
+        hex ? null : "bg-amber/15 text-ember",
         className,
       )}
       style={hex ? { backgroundColor: `${hex}26`, color: hex } : undefined}

@@ -40,7 +40,7 @@ function ClearAllButton() {
       variant="ghost"
       size="sm"
       disabled={pending}
-      className="text-red-400/90 hover:bg-red-400/10 hover:text-red-400"
+      className="text-destructive/90 hover:bg-destructive/10 hover:text-destructive"
       onClick={(event) => {
         if (!confirm("Remove every taught term? There is no undo.")) event.preventDefault();
       }}

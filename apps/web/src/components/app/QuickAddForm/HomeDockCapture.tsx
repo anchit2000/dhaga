@@ -79,7 +79,7 @@ export function HomeDockCapture({
               : "Paste an intro, speak a note, or scan a card. Dhaga keeps the source as a receipt."}
           </DialogDescription>
           {aiUsage && !isManual ? (
-            <p className="font-mono text-[10px] uppercase tracking-wider text-fog/60">{aiUsage}</p>
+            <p className="font-mono text-[10px] uppercase tracking-wider text-fog">{aiUsage}</p>
           ) : null}
           {surface}
         </DialogContent>

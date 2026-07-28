@@ -48,7 +48,7 @@ export function CalendarConnectionsSetting({
       </div>
 
       {info ? (
-        <p className={`text-xs ${info.ok ? "text-amber" : "text-red-400/90"}`}>{info.text}</p>
+        <p className={`text-xs ${info.ok ? "text-ember" : "text-destructive/90"}`}>{info.text}</p>
       ) : null}
 
       {connections.length > 0 ? (

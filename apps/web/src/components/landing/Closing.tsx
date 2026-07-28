@@ -31,7 +31,7 @@ export function Footer() {
       <div className="mx-auto flex max-w-6xl flex-wrap items-start justify-between gap-10 px-6 py-14">
         <div className="max-w-xs">
           <p className="font-display text-xl">
-            dhaga<span className="text-amber">.</span>
+            dhaga<span className="text-ember">.</span>
           </p>
           <p className="mt-3 text-sm text-fog">
             धागा — thread. The one that ties your network together.
@@ -39,7 +39,7 @@ export function Footer() {
         </div>
         <div className="flex gap-16 text-sm">
           <div className="space-y-2.5">
-            <p className="font-mono text-[10px] uppercase tracking-widest text-fog/60">
+            <p className="font-mono text-[10px] uppercase tracking-widest text-fog">
               Product
             </p>
             {/* Root-relative anchors: the footer also renders on /pricing, where
@@ -51,7 +51,7 @@ export function Footer() {
             <FooterLink href="/docs" label="Docs" />
           </div>
           <div className="space-y-2.5">
-            <p className="font-mono text-[10px] uppercase tracking-widest text-fog/60">
+            <p className="font-mono text-[10px] uppercase tracking-widest text-fog">
               Open source
             </p>
             <FooterLink href={GITHUB_URL} label="GitHub" external />
@@ -61,7 +61,7 @@ export function Footer() {
         </div>
       </div>
       <div className="border-t border-seam/60">
-        <p className="mx-auto max-w-6xl px-6 py-5 text-xs text-fog/60">
+        <p className="mx-auto max-w-6xl px-6 py-5 text-xs text-fog">
           © 2026 Dhaga. Built in the open. Your data is yours — always exportable, always deletable.
         </p>
       </div>

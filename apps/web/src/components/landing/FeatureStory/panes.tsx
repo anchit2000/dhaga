@@ -53,7 +53,7 @@ export function DraftPane() {
       <div className="overflow-hidden rounded-xl border border-seam bg-panel shadow-lg">
         <div className="flex items-center justify-between border-b border-seam px-4 py-2.5">
           <span className="text-xs font-medium text-paper">New message</span>
-          <span className="font-mono text-[10px] text-fog/60">draft · 21:42</span>
+          <span className="font-mono text-[10px] text-fog">draft · 21:42</span>
         </div>
         <div className="space-y-2.5 px-4 py-3 text-xs">
           <p className="flex items-center gap-2 text-fog">
@@ -76,10 +76,10 @@ export function DraftPane() {
           </div>
         </div>
         <div className="flex items-center justify-between border-t border-seam px-4 py-2.5">
-          <span className="text-[10px] italic text-fog/70">
+          <span className="text-[10px] italic text-fog">
             built from your voice note · edit anything
           </span>
-          <span className="rounded-full bg-gradient-to-b from-[#f0bc6e] to-[#d18f36] px-4 py-1.5 text-[11px] font-semibold text-on-accent shadow">
+          <span className="rounded-full bg-gradient-to-b from-amber-lift to-amber-sink px-4 py-1.5 text-[11px] font-semibold text-on-accent shadow">
             Send
           </span>
         </div>

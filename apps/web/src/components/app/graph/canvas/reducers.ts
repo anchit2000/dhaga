@@ -5,6 +5,7 @@ import {
 } from "@/utils/constants/graph";
 import type { Attributes } from "graphology-types";
 import type { EdgeDisplayData, NodeDisplayData } from "sigma/types";
+import type { GraphNodeKind } from "../types";
 
 /**
  * Everything the reducers read per refresh, held in a mutable ref so hover
@@ -41,6 +42,9 @@ export interface NodeRenderAttributes extends Attributes {
   size: number;
   color: string;
   dimColor: string;
+  /** Palette slot `color` came from, so a theme flip can re-resolve it in
+   *  place; undefined when the fill is a user-chosen node-type colour. */
+  paletteKey?: GraphNodeKind;
 }
 
 export interface EdgeRenderAttributes extends Attributes {

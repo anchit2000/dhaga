@@ -30,7 +30,7 @@ export function LandingGraph(): React.ReactElement {
         <StatusOverlay error={error} />
       )}
 
-      <div className="pointer-events-none absolute left-3 top-3 z-30 select-none font-mono text-[10px] uppercase tracking-[0.18em] text-fog/70">
+      <div className="pointer-events-none absolute left-3 top-3 z-30 select-none font-mono text-[10px] uppercase tracking-[0.18em] text-fog">
         {SANDBOX_WATERMARK}
       </div>
     </div>

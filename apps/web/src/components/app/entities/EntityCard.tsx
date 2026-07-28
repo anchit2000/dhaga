@@ -14,7 +14,7 @@ export function EntityCard({ entity }: { entity: EntityWithType }) {
         />
         <span className="truncate text-sm font-medium text-paper">{entity.name}</span>
       </span>
-      <span className="font-mono text-[10px] uppercase tracking-wider text-fog/60">
+      <span className="font-mono text-[10px] uppercase tracking-wider text-fog">
         {entity.typeName}
       </span>
       {entity.description ? (

@@ -21,7 +21,7 @@ export function DetailChips({
   if (chips.length === 0) return null;
   return (
     <div>
-      <p className="mb-1.5 font-mono text-[10px] uppercase tracking-widest text-fog/70">
+      <p className="mb-1.5 font-mono text-[10px] uppercase tracking-widest text-fog">
         {label}
       </p>
       <div className="flex flex-wrap gap-1.5">
@@ -32,7 +32,7 @@ export function DetailChips({
           >
             {chip.value}
             {chip.tag ? (
-              <span className="ml-1.5 text-fog/60">{chip.tag}</span>
+              <span className="ml-1.5 text-fog">{chip.tag}</span>
             ) : null}
           </span>
         ))}

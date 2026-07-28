@@ -56,7 +56,7 @@ export function VoiceNoteReview({ text, onChange, onWordFix }: VoiceNoteReviewPr
 
   return (
     <div className="space-y-2 rounded-lg border border-seam bg-panel/60 p-3">
-      <p className="font-mono text-[10px] uppercase tracking-wider text-fog/70">
+      <p className="font-mono text-[10px] uppercase tracking-wider text-fog">
         Tap a word to fix it — Dhaga learns the spelling
       </p>
       <div className="flex flex-wrap items-center gap-1.5">
@@ -89,7 +89,7 @@ export function VoiceNoteReview({ text, onChange, onWordFix }: VoiceNoteReviewPr
               type="button"
               onClick={() => open(index, token)}
               title="Tap to fix & teach"
-              className="inline-flex min-h-[32px] items-center rounded-md border border-transparent px-2 py-1 text-sm text-paper transition-colors hover:border-amber/40 hover:bg-amber/10 hover:text-amber focus-visible:border-amber/50 focus-visible:bg-amber/10 focus-visible:text-amber focus-visible:outline-none"
+              className="inline-flex min-h-[32px] items-center rounded-md border border-transparent px-2 py-1 text-sm text-paper transition-colors hover:border-amber/40 hover:bg-amber/10 hover:text-ember focus-visible:border-amber/50 focus-visible:bg-amber/10 focus-visible:text-ember focus-visible:outline-none"
             >
               {token}
             </button>

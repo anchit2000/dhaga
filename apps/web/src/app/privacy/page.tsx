@@ -33,7 +33,7 @@ export default function PrivacyPage() {
   return (
     <main className="mx-auto max-w-2xl px-6 py-16">
       <Link href="/" className="font-display text-lg text-paper">
-        dhaga<span className="text-amber">.</span>
+        dhaga<span className="text-ember">.</span>
       </Link>
       <h1 className="mt-8 font-display text-3xl tracking-tight text-paper">
         Privacy

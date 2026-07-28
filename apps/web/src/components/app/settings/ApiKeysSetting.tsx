@@ -27,7 +27,7 @@ function DeleteSubmit() {
     <button
       type="submit"
       disabled={pending}
-      className="text-xs text-red-400/90 transition-colors hover:text-red-400 disabled:pointer-events-none"
+      className="text-xs text-destructive/90 transition-colors hover:text-destructive disabled:pointer-events-none"
     >
       {pending ? <Loader2 className="inline size-3 animate-spin" /> : "Revoke"}
     </button>

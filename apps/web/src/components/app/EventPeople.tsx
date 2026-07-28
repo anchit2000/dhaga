@@ -91,7 +91,7 @@ export function EventPeople({
                 href={`/app/people/${person.id}`}
                 className="flex min-w-0 flex-1 items-center gap-3 transition-opacity hover:opacity-80"
               >
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-amber/15 font-display text-sm text-amber">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-amber/15 font-display text-sm text-ember">
                   {person.name.charAt(0).toUpperCase()}
                 </span>
                 <span className="min-w-0 flex-1">
@@ -103,7 +103,7 @@ export function EventPeople({
                   </span>
                 </span>
               </Link>
-              <span className="hidden shrink-0 font-mono text-[10px] uppercase tracking-wider text-fog/60 sm:block">
+              <span className="hidden shrink-0 font-mono text-[10px] uppercase tracking-wider text-fog sm:block">
                 {person.scannedAt.toLocaleDateString()}
               </span>
               <Button
@@ -112,7 +112,7 @@ export function EventPeople({
                 onClick={() => detach(person)}
                 aria-label={`Remove ${person.name} from this event`}
                 title={`Remove ${person.name} from this event`}
-                className="shrink-0 text-fog/60 hover:text-paper"
+                className="shrink-0 text-fog hover:text-paper"
               >
                 <X aria-hidden />
               </Button>

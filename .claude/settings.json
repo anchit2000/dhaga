@@ -43,6 +43,55 @@
         ]
       }
     ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "timeout": 30,
+            "statusMessage": "Checking branch...",
+            "command": "# WHY: the project rule is a fresh branch off main for every change. Committing\n# straight onto main has bitten this repo before (a late fix landed on an\n# already-merging branch and was lost). Reads the hook payload from stdin and\n# ignores anything that is not a commit.\n$j = [Console]::In.ReadToEnd() | ConvertFrom-Json\nif ($j.tool_input.command -notlike '*git commit*') { exit 0 }\n$b = (git rev-parse --abbrev-ref HEAD 2>$null)\nif ($b -eq 'main' -or $b -eq 'master') {\n  $NL = [char]10\n  $msg = 'Refusing to commit directly on ' + $b + '.' + $NL +\n         'Branch off fresh main for every change:' + $NL +\n         '  git fetch origin main; git checkout -b <type>/<slug> origin/main'\n  @{hookSpecificOutput=@{hookEventName='PreToolUse';permissionDecision='deny';permissionDecisionReason=$msg}} | ConvertTo-Json -Compress\n}"
+          },
+          {
+            "type": "command",
+            "shell": "powershell",
+            "timeout": 60,
+            "statusMessage": "Checking colour tokens...",
+            "command": "# WHY: globals.css is the single source of colour. Two bypasses keep recurring\n# and both break light mode:\n#   - Tailwind palette literals (red-400 is 2.4:1 on the light ground)\n#   - text-amber used as TEXT (amber is a FILL; 1.83:1 on light, fails AA)\n# Scans only STAGED .ts/.tsx, skipping surfaces that legitimately hardcode\n# colour: OG/satori image routes and HTML email templates cannot read CSS vars.\n# text-amber-lift/-sink ARE tokens, so the lookahead excludes a trailing hyphen.\n$j = [Console]::In.ReadToEnd() | ConvertFrom-Json\nif ($j.tool_input.command -notlike '*git commit*') { exit 0 }\n$root = (git rev-parse --show-toplevel 2>$null)\nif (-not $root) { exit 0 }\n$bad = @()\nforeach ($f in @(git diff --cached --name-only --diff-filter=ACM)) {\n  if ($f -notmatch '[.](ts|tsx)$') { continue }\n  if ($f -match 'node_modules|__tests__|/email/|/og/|opengraph|constants/wrapped') { continue }\n  $fp = Join-Path $root $f\n  if (-not (Test-Path $fp)) { continue }\n  $pat = @('(text|bg|border|ring|from|to|via|decoration)-(red|zinc|neutral|gray|slate|stone)-[0-9]', 'text-amber(?![-a-zA-Z0-9])')\n  $hits = Select-String -Path $fp -Pattern $pat -AllMatches -ErrorAction SilentlyContinue\n  foreach ($h in $hits) { $bad += ('  ' + $f + ':' + $h.LineNumber + '  ' + $h.Line.Trim()) }\n}\nif ($bad.Count -gt 0) {\n  $NL = [char]10\n  $msg = 'Colour tokens bypassed in staged files. globals.css is the single source of colour.' + $NL + $NL +\n         ($bad -join $NL) + $NL + $NL +\n         'Fix: Tailwind palette colours -> text-destructive.' + $NL +\n         'Amber as TEXT -> text-ember (amber is a FILL; 1.83:1 on light, fails WCAG AA).'\n  @{hookSpecificOutput=@{hookEventName='PreToolUse';permissionDecision='deny';permissionDecisionReason=$msg}} | ConvertTo-Json -Compress\n}"
+          },
+          {
+            "type": "command",
+            "shell": "powershell",
+            "timeout": 30,
+            "statusMessage": "Checking llms.txt freshness...",
+            "command": "# WHY: public/llms.txt and llms-full.txt are GENERATED from content/**. They\n# previously went stale within six days (15 blog guides and 15 user-guide pages\n# missing). If content changed but the generated files did not, the commit is\n# shipping a stale AI-discoverability surface.\n$j = [Console]::In.ReadToEnd() | ConvertFrom-Json\nif ($j.tool_input.command -notlike '*git commit*') { exit 0 }\n$files = @(git diff --cached --name-only --diff-filter=ACMRD)\n$content = @($files | Where-Object { $_ -like 'apps/web/content/*' })\n$llms = @($files | Where-Object { $_ -like 'apps/web/public/llms*' })\nif ($content.Count -gt 0 -and $llms.Count -eq 0) {\n  $NL = [char]10\n  $msg = 'content/** changed but public/llms.txt + llms-full.txt were not regenerated.' + $NL +\n         'Changed: ' + (($content | Select-Object -First 6) -join ', ') + $NL + $NL +\n         'Run in apps/web:  npm run generate:llms-txt' + $NL +\n         'then stage public/llms.txt and public/llms-full.txt.' + $NL +\n         'Output is deterministic, so a clean tree means you are in sync.'\n  @{hookSpecificOutput=@{hookEventName='PreToolUse';permissionDecision='deny';permissionDecisionReason=$msg}} | ConvertTo-Json -Compress\n}"
+          },
+          {
+            "type": "command",
+            "shell": "powershell",
+            "timeout": 30,
+            "statusMessage": "Checking docs (Rule 13)...",
+            "command": "# WHY: Rule 13, docs track code. A merged change that leaves docs describing the\n# old behaviour is incomplete. This ASKS rather than denies, because some commits\n# are genuinely doc-neutral (pure refactor, test-only, formatting).\n$j = [Console]::In.ReadToEnd() | ConvertFrom-Json\nif ($j.tool_input.command -notlike '*git commit*') { exit 0 }\n$files = @(git diff --cached --name-only --diff-filter=ACMRD)\n$src = @($files | Where-Object { $_ -like 'apps/web/src/*' -or $_ -like 'packages/*' })\n$docs = @($files | Where-Object { $_ -like 'docs/*' -or $_ -like 'apps/web/content/*' -or $_ -match '[.]mdx?$' })\nif ($src.Count -gt 0 -and $docs.Count -eq 0) {\n  $NL = [char]10\n  $msg = 'Rule 13 (docs track code): ' + $src.Count + ' source file(s) staged, no doc change.' + $NL +\n         'Stale docs are a bug. Update the affected doc in the SAME commit:' + $NL +\n         '  docs/checklist.md, docs/TIMELINE.md, the BRD/architecture section,' + $NL +\n         '  SELF_HOSTING.md, README, or a code comment.' + $NL + $NL +\n         'Proceed only if this is genuinely doc-neutral.'\n  @{hookSpecificOutput=@{hookEventName='PreToolUse';permissionDecision='ask';permissionDecisionReason=$msg}} | ConvertTo-Json -Compress\n}"
+          },
+          {
+            "type": "command",
+            "shell": "powershell",
+            "timeout": 900,
+            "statusMessage": "Typecheck + lint before push...",
+            "command": "# WHY: push is the last cheap place to catch a broken build. Runs the two fast\n# gates (typecheck + lint) and BLOCKS on failure. Tests are deliberately NOT run\n# here: the suite is ~11 minutes, too slow to sit in front of every push, so it\n# is enforced at PR time instead. Resolves tsc/eslint from apps/web first and\n# then the repo root, since this is an npm-workspaces monorepo.\n$j = [Console]::In.ReadToEnd() | ConvertFrom-Json\nif ($j.tool_input.command -notlike '*git push*') { exit 0 }\n$root = (git rev-parse --show-toplevel 2>$null)\nif (-not $root) { exit 0 }\n$w = Join-Path $root 'apps/web'\nif (-not (Test-Path $w)) { exit 0 }\n$tsc = @((Join-Path $w 'node_modules/typescript/bin/tsc'), (Join-Path $root 'node_modules/typescript/bin/tsc')) | Where-Object { Test-Path $_ } | Select-Object -First 1\n$esl = @((Join-Path $w 'node_modules/eslint/bin/eslint.js'), (Join-Path $root 'node_modules/eslint/bin/eslint.js')) | Where-Object { Test-Path $_ } | Select-Object -First 1\n$NL = [char]10\n$problems = @()\nPush-Location $w\nif ($tsc) { $r = node $tsc --noEmit 2>&1 | Out-String; if ($LASTEXITCODE -ne 0) { $problems += ('TYPECHECK FAILED:' + $NL + $r) } }\nif ($esl) { $r = node $esl src 2>&1 | Out-String; if ($LASTEXITCODE -ne 0) { $problems += ('LINT FAILED:' + $NL + $r) } }\nPop-Location\nif ($problems.Count -gt 0) {\n  $msg = ($problems -join ($NL + $NL)) + $NL + $NL + 'Fix before pushing. Rule 12: do not report success if anything was skipped.'\n  @{hookSpecificOutput=@{hookEventName='PreToolUse';permissionDecision='deny';permissionDecisionReason=$msg}} | ConvertTo-Json -Compress\n}"
+          },
+          {
+            "type": "command",
+            "shell": "powershell",
+            "timeout": 60,
+            "statusMessage": "Pre-PR checklist...",
+            "command": "# WHY: the full verification suite is ~11 minutes, too slow to run inside a hook\n# without timing out. So this does not pretend to check for you -- it forces one\n# conscious confirmation that each step actually ran on THIS branch.\n# Rule 12: 'tests pass' is wrong if any were skipped.\n$j = [Console]::In.ReadToEnd() | ConvertFrom-Json\nif ($j.tool_input.command -notlike '*gh pr create*') { exit 0 }\n$NL = [char]10\n$msg = 'Pre-PR checklist (not auto-run -- confirm each actually passed on THIS branch):' + $NL + $NL +\n       '  1. npx tsc --noEmit      apps/web, plus packages/core + packages/ee if touched' + $NL +\n       '  2. npm run lint          0 errors' + $NL +\n       '  3. npx vitest run --no-file-parallelism   serial is the only trustworthy signal on Windows' + $NL +\n       '  4. npm run build         catches route/metadata errors tsc cannot' + $NL +\n       '  5. Docs updated (Rule 13); if content/** changed, llms.txt regenerated' + $NL +\n       '  6. UI change? verified in BOTH light and dark, and at 375px' + $NL + $NL +\n       'Answer no and go run them if unsure.'\n@{hookSpecificOutput=@{hookEventName='PreToolUse';permissionDecision='ask';permissionDecisionReason=$msg}} | ConvertTo-Json -Compress"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [

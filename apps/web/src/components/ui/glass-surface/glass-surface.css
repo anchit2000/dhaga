@@ -31,8 +31,8 @@
   box-shadow:
     0 0 2px 1px color-mix(in oklch, var(--color-paper), transparent 65%) inset,
     0 0 10px 4px color-mix(in oklch, var(--color-paper), transparent 85%) inset,
-    0px 8px 24px rgba(13, 11, 9, 0.35),
-    0px 16px 56px rgba(13, 11, 9, 0.25);
+    0px 8px 24px var(--shadow-cast),
+    0px 16px 56px var(--shadow-cast-soft);
 }
 
 .glass-surface--fallback {
@@ -41,7 +41,7 @@
   -webkit-backdrop-filter: blur(12px) saturate(1.4);
   border: 1px solid var(--color-seam);
   box-shadow:
-    0 8px 32px 0 rgba(13, 11, 9, 0.4),
+    0 8px 32px 0 var(--shadow-cast),
     inset 0 1px 0 0 color-mix(in oklch, var(--color-paper), transparent 80%);
 }
 
@@ -52,6 +52,6 @@
 }
 
 .glass-surface:focus-visible {
-  outline: 2px solid var(--color-amber);
+  outline: 2px solid var(--color-ember);
   outline-offset: 2px;
 }

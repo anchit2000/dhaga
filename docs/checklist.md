@@ -13,7 +13,9 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Git repo + GitHub (`anchit2000/dhaga`), AGPL-3.0 LICENSE, README
 - [x] CLAUDE.md project rules (stack, SOLID, security, file organization)
 - [x] Next.js app scaffold (`apps/web`) — App Router, TS strict, Tailwind v4
-- [x] Design tokens centralised (`globals.css` @theme: ink/panel/seam/paper/fog/amber)
+- [x] Design tokens centralised (`globals.css` @theme: ink/panel/seam/line/paper/fog/amber/ember)
+- [x] Light-mode palette contrast-audited to WCAG AA (fog/ember/seam darkened,
+      `--brand-line` added for control borders, ember focus rings; dark unchanged)
 - [x] Landing page (hero, scrollytelling feature story, pricing, FAQ, OSS section)
 - [x] npm workspaces (`apps/*`, `packages/*`) so `packages/core` is shareable
 - [x] `apps/web/.env.example` documenting every env var

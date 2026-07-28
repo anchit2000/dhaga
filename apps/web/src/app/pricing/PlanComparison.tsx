@@ -50,7 +50,7 @@ export function PlanComparison(): ReactElement {
                   <p className="mt-2 font-display text-2xl tabular-nums text-paper">
                     {plan.price}
                   </p>
-                  <p className="text-xs text-fog/80">{plan.per}</p>
+                  <p className="text-xs text-fog">{plan.per}</p>
                 </th>
               ))}
             </tr>
@@ -98,13 +98,13 @@ function PlanCell({ value }: { value: string }): ReactElement {
   return (
     <span className="flex items-start gap-2">
       {included ? (
-        <Check className="mt-0.5 size-4 shrink-0 text-amber" aria-hidden="true" />
+        <Check className="mt-0.5 size-4 shrink-0 text-ember" aria-hidden="true" />
       ) : (
         <Minus className="mt-0.5 size-4 shrink-0 text-fog/40" aria-hidden="true" />
       )}
       <span className="sr-only">{included ? "Included" : "Not included"}</span>
       {qualifier ? (
-        <span className={included ? "text-paper" : "text-fog/60"}>
+        <span className={included ? "text-paper" : "text-fog"}>
           {qualifier}
         </span>
       ) : null}

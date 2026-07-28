@@ -75,7 +75,7 @@ export function DataTable<Row>({ rows, columns, rowKey, emptyMessage = "No rows 
               return <TableHead key={column.id} aria-sort={direction === "asc" ? "ascending" : direction === "desc" ? "descending" : undefined}>
                 {direction === undefined ? column.label : <Button variant="ghost" size="xs" className="-ml-2" onClick={() => engine.toggleSort(column.id)}>
                   {column.label}
-                  {direction === "asc" ? <ArrowUp /> : direction === "desc" ? <ArrowDown /> : <ChevronsUpDown className="text-fog/50" />}
+                  {direction === "asc" ? <ArrowUp /> : direction === "desc" ? <ArrowDown /> : <ChevronsUpDown className="text-fog" />}
                 </Button>}
               </TableHead>;
             })}</TableRow>
@@ -83,7 +83,7 @@ export function DataTable<Row>({ rows, columns, rowKey, emptyMessage = "No rows 
               {selection ? <TableHead className="h-auto w-10 px-2 py-2" /> : null}
               {columns.map((column) => <TableHead key={column.id} className="h-auto px-2 py-2">
                   {column.filter === false ? null : column.options ? <Select value={filterValue(column.id)} onChange={(event) => updateFilter(column.id, event.target.value)} aria-label={`Filter by ${column.label}`} className="h-8 min-w-32 text-xs"><option value="">All {column.label.toLocaleLowerCase()}</option>{column.options.map((option) => <option key={option} value={option}>{option}</option>)}</Select> : <div className="relative min-w-32">
-                    <Search className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-fog/60" />
+                    <Search className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-fog" />
                     <Input value={filterValue(column.id)} onChange={(event) => server ? setDrafts((current) => ({ ...current, [column.id]: event.target.value })) : engine.setFilter(column.id, event.target.value)} onBlur={(event) => { if (server) updateFilter(column.id, event.target.value); }} onKeyDown={(event) => { if (server && event.key === "Enter") updateFilter(column.id, event.currentTarget.value); }} placeholder={`Search ${column.label.toLocaleLowerCase()}`} aria-label={`Filter by ${column.label}`} className="h-8 pl-7 text-xs" />
                   </div>}
               </TableHead>)}

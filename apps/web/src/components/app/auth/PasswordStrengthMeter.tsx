@@ -11,7 +11,7 @@ interface PasswordStrengthMeterProps {
 // already use for errors), amber — the one brand accent — carries fair/strong.
 // No third colour is introduced; strength reads from the filled-segment count.
 const FILL_CLASS = {
-  weak: "bg-red-400/80",
+  weak: "bg-destructive/80",
   fair: "bg-amber",
   strong: "bg-amber",
 } as const;
@@ -36,7 +36,7 @@ export function PasswordStrengthMeter({ password }: PasswordStrengthMeterProps) 
           />
         ))}
       </div>
-      <p className={cn("text-xs", level === "weak" ? "text-red-400" : "text-fog")}>
+      <p className={cn("text-xs", level === "weak" ? "text-destructive" : "text-fog")}>
         {label} password
       </p>
     </div>

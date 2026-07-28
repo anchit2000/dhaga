@@ -3,7 +3,7 @@ import { SectionHeading } from "./SectionHeading";
 import type { ComparisonRow } from "@/types";
 
 const BRANDS = [
-  { name: "Dhaga", sub: "that's us", us: true, marks: [{ letter: "d", color: "#e2a44c" }] },
+  { name: "Dhaga", sub: "that's us", us: true, marks: [{ letter: "d", color: "var(--brand-amber)" }] },
   { name: "Card apps", sub: "Blinq · HiHello", us: false, marks: [{ letter: "B", color: "#4d7fd6" }, { letter: "H", color: "#d66a3c" }] },
   { name: "Personal CRMs", sub: "Mesh · Dex", us: false, marks: [{ letter: "M", color: "#9a938a" }, { letter: "D", color: "#7c6fd6" }] },
   { name: "Enterprise", sub: "Affinity", us: false, marks: [{ letter: "A", color: "#4da8c9" }] },
@@ -15,7 +15,7 @@ export function Comparison() {
   return (
     <section className="mx-auto max-w-6xl px-6 py-24" id="compare">
       <SectionHeading eyebrow="Compare" heading="Everyone else stops at the contact." />
-      <div className="mt-12 overflow-x-auto rounded-2xl border border-wash/10 bg-panel/40 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.9)]">
+      <div className="mt-12 overflow-x-auto rounded-2xl border border-wash/10 bg-panel/40 shadow-[0_30px_80px_-40px_var(--shadow-cast)]">
         <table className="w-full min-w-[760px] border-collapse text-sm">
           <thead>
             <tr>
@@ -43,7 +43,7 @@ export function Comparison() {
                   <p className={`mt-2.5 font-medium ${brand.us ? "text-ember" : "text-paper"}`}>
                     {brand.name}
                   </p>
-                  <p className="text-xs text-fog/80">{brand.sub}</p>
+                  <p className="text-xs text-fog">{brand.sub}</p>
                 </th>
               ))}
             </tr>
@@ -71,7 +71,7 @@ export function Comparison() {
           </tbody>
         </table>
       </div>
-      <p className="mt-4 text-xs text-fog/70">
+      <p className="mt-4 text-xs text-fog">
         Competitor pricing as publicly listed, July 2026. Affinity from $2,000/user/year (published).
       </p>
     </section>
@@ -91,7 +91,7 @@ function Cell({ value, us }: { value: string; us: boolean }) {
   }
   if (value.startsWith("✗")) {
     return (
-      <span className="flex items-center gap-2 text-fog/60">
+      <span className="flex items-center gap-2 text-fog">
         <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-wash/[0.05] text-[10px]">
           —
         </span>

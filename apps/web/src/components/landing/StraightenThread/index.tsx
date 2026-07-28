@@ -106,7 +106,7 @@ export function StraightenThread() {
         <path
           ref={glowRef}
           fill="none"
-          stroke="#e2a44c"
+          stroke="var(--brand-amber)"
           strokeOpacity="0.14"
           strokeWidth="32"
           strokeLinecap="round"
@@ -122,7 +122,10 @@ export function StraightenThread() {
         />
         <text
           className="font-mono"
-          fill="#0d0b09"
+          /* Inscribed ON the fog-coloured ribbon, which is a mid-tone in both
+             themes — so this wants the dark "text on a fill" token, not the
+             page ground (which inverts to cream on light and would erase it). */
+          fill="var(--brand-on-accent)"
           fillOpacity="0.4"
           fontSize="14"
           letterSpacing="1"

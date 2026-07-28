@@ -68,7 +68,7 @@ export function TargetPicker({
                     <span className="block truncate text-xs text-fog">{target.sublabel}</span>
                   ) : null}
                 </span>
-                <span className="shrink-0 font-mono text-[9px] uppercase tracking-wider text-fog/70">
+                <span className="shrink-0 font-mono text-[9px] uppercase tracking-wider text-fog">
                   {RELATIONSHIP_KIND_LABELS[target.kind]}
                 </span>
               </button>
@@ -78,7 +78,7 @@ export function TargetPicker({
             <button
               type="button"
               onClick={() => setCreating(true)}
-              className="w-full px-2.5 py-1.5 text-left text-sm text-amber hover:bg-wash/[0.05]"
+              className="w-full px-2.5 py-1.5 text-left text-sm text-ember hover:bg-wash/[0.05]"
             >
               Add a new person…
             </button>

@@ -21,7 +21,7 @@ function VerifyButton() {
       disabled={pending}
       aria-label="Confirm fact"
       title="Confirm — looks right"
-      className="rounded-full p-1 text-amber/80 transition-colors hover:bg-amber/15 disabled:pointer-events-none"
+      className="rounded-full p-1 text-ember transition-colors hover:bg-amber/15 disabled:pointer-events-none"
     >
       {pending ? (
         <Loader2 className="size-3.5 animate-spin" />
@@ -89,13 +89,13 @@ export function FactItem({
         <>
           <div className="min-w-0 flex-1">
             <p className="text-sm leading-snug text-paper">{text}</p>
-            <p className="mt-0.5 flex flex-wrap items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-fog/60">
+            <p className="mt-0.5 flex flex-wrap items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-fog">
               <span>
                 {type}
                 {receipt ? ` · ${receipt}` : ""}
               </span>
               {unverified ? (
-                <span className="rounded-full bg-amber/15 px-1.5 py-px text-amber/90">
+                <span className="rounded-full bg-amber/15 px-1.5 py-px text-ember">
                   unverified
                 </span>
               ) : null}
@@ -116,7 +116,7 @@ export function FactItem({
             aria-label="Edit fact"
             title="Edit fact"
             onClick={() => setEditing(true)}
-            className="rounded-full p-1 text-fog/60 transition-colors hover:bg-wash/[0.06] hover:text-paper"
+            className="rounded-full p-1 text-fog transition-colors hover:bg-wash/[0.06] hover:text-paper"
           >
             <Pencil className="size-3.5" />
           </button>

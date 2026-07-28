@@ -4,8 +4,8 @@
 export function SectionHeader({ title, hint }: { title: string; hint?: string }) {
   return (
     <div className="flex items-baseline justify-between">
-      <h3 className="font-mono text-[10px] uppercase tracking-widest text-fog/70">{title}</h3>
-      {hint ? <span className="text-[11px] text-fog/50">{hint}</span> : null}
+      <h3 className="font-mono text-[10px] uppercase tracking-widest text-fog">{title}</h3>
+      {hint ? <span className="text-[11px] text-fog">{hint}</span> : null}
     </div>
   );
 }

@@ -22,7 +22,7 @@ export function ReprocessButton(): React.ReactElement {
       title={label}
       onMouseEnter={() => iconRef.current?.startAnimation()}
       onMouseLeave={() => iconRef.current?.stopAnimation()}
-      className="rounded-full p-1 text-fog/60 transition-colors hover:bg-amber/10 hover:text-amber disabled:pointer-events-none"
+      className="rounded-full p-1 text-fog transition-colors hover:bg-amber/10 hover:text-ember disabled:pointer-events-none"
     >
       {pending ? (
         <Loader2 className="size-3.5 animate-spin" />

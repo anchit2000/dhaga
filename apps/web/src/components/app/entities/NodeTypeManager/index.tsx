@@ -88,7 +88,7 @@ export function NodeTypeManager({ types }: { types: NodeTypeWithCount[] }) {
                       style={{ backgroundColor: type.color }}
                     />
                     <span className="min-w-0 flex-1 truncate text-sm text-paper">{type.name}</span>
-                    <span className="shrink-0 font-mono text-[10px] uppercase tracking-wider text-fog/60">
+                    <span className="shrink-0 font-mono text-[10px] uppercase tracking-wider text-fog">
                       {type.count === 1 ? "1 entity" : `${type.count} entities`}
                     </span>
                     <button
@@ -98,7 +98,7 @@ export function NodeTypeManager({ types }: { types: NodeTypeWithCount[] }) {
                         setEditingId(type.id);
                       }}
                       aria-label={`Edit ${type.name}`}
-                      className="rounded-full p-1 text-fog/60 transition-colors hover:bg-wash/[0.06] hover:text-paper"
+                      className="rounded-full p-1 text-fog transition-colors hover:bg-wash/[0.06] hover:text-paper"
                     >
                       <Pencil className="size-3.5" />
                     </button>
@@ -112,7 +112,7 @@ export function NodeTypeManager({ types }: { types: NodeTypeWithCount[] }) {
                           ? "This type still has entities. Delete or retype them first."
                           : `Delete ${type.name}`
                       }
-                      className="rounded-full p-1 text-fog/60 transition-colors hover:bg-wash/[0.06] hover:text-paper disabled:pointer-events-none disabled:opacity-40"
+                      className="rounded-full p-1 text-fog transition-colors hover:bg-wash/[0.06] hover:text-paper disabled:pointer-events-none disabled:opacity-40"
                     >
                       <X className="size-3.5" />
                     </button>

@@ -109,7 +109,7 @@ export function ShareModal({
               Download
             </Button>
             <Button onClick={copyLink} variant="outline" size="sm">
-              {copied ? <Check className="text-amber" /> : <Link2 />}
+              {copied ? <Check className="text-ember" /> : <Link2 />}
               {copied ? "Copied" : "Copy link"}
             </Button>
             {canNativeShare ? (

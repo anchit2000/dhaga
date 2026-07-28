@@ -53,7 +53,7 @@ export function FeatureStory() {
                 </p>
                 <h3
                   className={`mt-3 max-w-md text-balance font-display text-3xl transition-colors duration-500 sm:text-4xl ${
-                    active === i ? "text-paper" : "text-fog/60"
+                    active === i ? "text-paper" : "text-fog"
                   }`}
                 >
                   {step.title}

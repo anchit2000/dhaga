@@ -118,14 +118,14 @@ export function RelationshipSection({
               className="flex h-full items-center gap-1 rounded-xl border border-seam bg-panel py-2.5 pl-3 pr-2 transition-colors hover:bg-wash/[0.03]"
             >
               <Link href={hrefFor(row)} className="flex min-w-0 flex-1 items-center gap-2.5">
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-amber/15 font-display text-xs text-amber">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-amber/15 font-display text-xs text-ember">
                   {row.name.charAt(0).toUpperCase()}
                 </span>
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-medium text-paper">
                     {row.name}
                   </span>
-                  <span className="block truncate text-xs capitalize text-amber/80">
+                  <span className="block truncate text-xs capitalize text-ember">
                     {row.role}
                   </span>
                   {row.mentioned ? (
@@ -135,7 +135,7 @@ export function RelationshipSection({
                   ) : null}
                 </span>
                 {row.kind !== "contact" ? (
-                  <span className="ml-auto shrink-0 font-mono text-[9px] uppercase tracking-wider text-fog/60">
+                  <span className="ml-auto shrink-0 font-mono text-[9px] uppercase tracking-wider text-fog">
                     {RELATIONSHIP_KIND_LABELS[row.kind]}
                   </span>
                 ) : null}

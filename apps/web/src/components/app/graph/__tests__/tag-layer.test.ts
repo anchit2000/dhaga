@@ -1,12 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { GRAPH_NODE_COLORS } from "@/utils/constants/graph";
+import { graphNodePalette } from "../canvas/theme";
 import { nodeSizeForDegree, type GraphIndexes } from "../logic/indexes";
 import { mergeTagLayer, type TagRenderGraph } from "../logic/tag-layer";
 import { computeHiddenNodes } from "../logic/visibility";
 import { edge, node, payload, settledGraph } from "./helpers";
 import type { PositionMap, TagLayerPayload } from "../types";
 
-const THEME = { ink: "#0d0b09", seam: "#2b241b", amber: "#e2a44c" };
+const THEME = {
+  ink: "#0d0b09",
+  edge: "#2b241b",
+  edgeActive: "#e2a44c",
+  nodeColors: graphNodePalette("dark"),
+};
 
 /** A settled render graph: two clustered contacts, one far-away contact. */
 function setup(): { indexes: GraphIndexes; graph: TagRenderGraph; positions: PositionMap } {
@@ -43,7 +49,10 @@ describe("mergeTagLayer joins the lazy tag layer without re-layout", () => {
     expect(Math.abs((graph.getNodeAttribute("tag:ai", "x") as number) - 5)).toBeLessThanOrEqual(2.01);
     expect(Math.abs((graph.getNodeAttribute("tag:ai", "y") as number) - 2)).toBeLessThanOrEqual(2.01);
     expect(graph.getNodeAttribute("tag:ai", "size")).toBe(nodeSizeForDegree(2));
-    expect(graph.getNodeAttribute("tag:ai", "color")).toBe(GRAPH_NODE_COLORS.tag);
+    expect(graph.getNodeAttribute("tag:ai", "color")).toBe(GRAPH_NODE_COLORS.dark.tag);
+    // Tagged with its palette slot, so a light/dark flip re-resolves the fill
+    // instead of stranding a dark-tuned hub on the light canvas.
+    expect(graph.getNodeAttribute("tag:ai", "paletteKey")).toBe("tag");
     // No re-layout: the contacts stay exactly where the worker settled them.
     expect(graph.getNodeAttributes("c1")).toMatchObject({ x: 0, y: 0 });
     expect(graph.getNodeAttributes("c2")).toMatchObject({ x: 10, y: 4 });

@@ -18,7 +18,7 @@ export const docsBaseOptions: BaseLayoutProps = {
   nav: {
     title: (
       <span className="font-display text-lg tracking-tight">
-        dhaga<span className="text-amber">.</span>
+        dhaga<span className="text-ember">.</span>
         <span className="ml-2 font-mono text-[11px] uppercase tracking-widest text-fog">
           docs
         </span>
@@ -36,7 +36,7 @@ export const blogBaseOptions: BaseLayoutProps = {
   nav: {
     title: (
       <span className="font-display text-lg tracking-tight">
-        dhaga<span className="text-amber">.</span>
+        dhaga<span className="text-ember">.</span>
         <span className="ml-2 font-mono text-[11px] uppercase tracking-widest text-fog">
           blog
         </span>

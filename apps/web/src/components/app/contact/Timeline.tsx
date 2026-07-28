@@ -52,7 +52,7 @@ export function Timeline({
             />
             <p className="text-sm text-paper">
               {event.label}
-              <span className="ml-2 font-mono text-[10px] uppercase tracking-wider text-fog/60">
+              <span className="ml-2 font-mono text-[10px] uppercase tracking-wider text-fog">
                 {formatDate(event.at)}
               </span>
             </p>

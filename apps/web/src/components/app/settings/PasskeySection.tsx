@@ -41,7 +41,7 @@ export function PasskeySection() {
                 disabled={busy}
                 onClick={() => removePasskey(key.id)}
                 aria-label="Remove passkey"
-                className="text-fog hover:text-red-400"
+                className="text-fog hover:text-destructive"
               >
                 <Trash2 className="size-4" />
               </button>
@@ -56,7 +56,7 @@ export function PasskeySection() {
         Add a passkey
       </Button>
       {error ? (
-        <p className="text-sm text-red-400" role="alert">
+        <p className="text-sm text-destructive" role="alert">
           {error}
         </p>
       ) : null}

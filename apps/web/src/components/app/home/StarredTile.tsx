@@ -26,7 +26,7 @@ export function StarredTile({ rows }: { rows: ContactListItem[] }): React.ReactE
               <span className="block truncate text-sm text-paper">{person.name}</span>
               <span className="block truncate text-xs text-fog">{person.companyName || person.title || "No details yet"}</span>
             </span>
-            <ArrowRight className="size-3.5 shrink-0 text-fog/60" aria-hidden />
+            <ArrowRight className="size-3.5 shrink-0 text-fog" aria-hidden />
           </Link>
         ))}
       </div>

@@ -80,7 +80,7 @@ export function QuoteHighlighter({ url }: QuoteHighlighterProps): ReactElement |
         aria-label="Copy quote"
         className="px-2 py-1 text-xs text-fog hover:text-paper"
       >
-        {copied ? <Check className="size-4 text-amber" /> : "Copy"}
+        {copied ? <Check className="size-4 text-ember" /> : "Copy"}
       </button>
     </div>
   );

@@ -17,7 +17,7 @@ export function Header({ isSignedIn }: HeaderProps) {
         <Link href="/" className="flex items-center gap-2 font-display text-xl">
           <ThreadMark />
           <span>
-            dhaga<span className="text-amber">.</span>
+            dhaga<span className="text-ember">.</span>
           </span>
         </Link>
         <nav className="hidden items-center gap-1 rounded-full border border-seam bg-panel/80 px-2 py-1 backdrop-blur md:flex">

@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { edgeLabel, fadeColor, panelEdgeLabel } from "../logic/style";
-import { edge } from "./helpers";
+import {
+  GRAPH_ENTITY_FALLBACK_COLOR,
+  GRAPH_NODE_COLORS,
+} from "@/utils/constants/graph";
+import { graphNodePalette } from "../canvas/theme";
+import { edgeLabel, fadeColor, nodeColor, nodePaletteKey, panelEdgeLabel } from "../logic/style";
+import { edge, node } from "./helpers";
 
 describe("relationship labels", () => {
   it("reads an explicit edge from either seat — one stored row, both directions correct", () => {
@@ -22,6 +27,35 @@ describe("relationship labels", () => {
     const worksAt = edge("w", "anchit", "acme", "works_at", "works_at");
     expect(panelEdgeLabel(worksAt, true, {})).toBe("works at");
     expect(edgeLabel(worksAt, {})).toBe("works at");
+  });
+});
+
+describe("node fills", () => {
+  // The dark palette is 1.8–2.7:1 on the light canvas, so a fill that doesn't
+  // follow the theme is an unreadable node — every built-in kind must re-resolve.
+  it("resolves a built-in kind against the theme it's drawn on", () => {
+    const contact = node("c1", "contact");
+    expect(nodeColor(contact, new Map(), graphNodePalette("dark"))).toBe(
+      GRAPH_NODE_COLORS.dark.contact,
+    );
+    expect(nodeColor(contact, new Map(), graphNodePalette("light"))).toBe(
+      GRAPH_NODE_COLORS.light.contact,
+    );
+    expect(nodePaletteKey(contact, new Map())).toBe("contact");
+  });
+
+  // A node type's colour is the user's saved choice — theme must never rewrite it.
+  it("leaves a user's node-type colour alone on both themes, but themes the fallback", () => {
+    const entity = node("e1", "entity", { typeId: "t1" });
+    const typeColors = new Map([["t1", "#123456"]]);
+    expect(nodeColor(entity, typeColors, graphNodePalette("light"))).toBe("#123456");
+    expect(nodePaletteKey(entity, typeColors)).toBeUndefined();
+
+    // Type deleted mid-flight: the fallback is ours, so it does follow the theme.
+    expect(nodeColor(entity, new Map(), graphNodePalette("light"))).toBe(
+      GRAPH_ENTITY_FALLBACK_COLOR.light,
+    );
+    expect(nodePaletteKey(entity, new Map())).toBe("entity");
   });
 });
 

@@ -104,7 +104,7 @@ export function WarmPathPanel({
           <PathChip label="You" kind="you" />
           {path.nodes.map((node) => (
             <span key={node.id} className="flex items-center gap-1.5">
-              <MoveRight className="size-3 text-fog/60" aria-hidden />
+              <MoveRight className="size-3 text-fog" aria-hidden />
               <PathChip label={node.label} kind={node.kind} />
             </span>
           ))}

@@ -117,7 +117,7 @@ export function SignupForm({ socialProviders, defaultEmail }: SignupFormProps) {
           />
         )}
         {error ? (
-          <p className="text-sm text-red-400" role="alert">
+          <p className="text-sm text-destructive" role="alert">
             {error}
           </p>
         ) : null}

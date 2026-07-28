@@ -10,7 +10,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-gradient-to-b from-[#f0bc6e] to-[#d18f36] font-semibold text-on-accent shadow-[inset_0_1px_0_rgba(255,255,255,0.4),inset_0_-1px_0_rgba(0,0,0,0.2),0_1px_2px_rgba(0,0,0,0.4),0_12px_32px_-12px_rgba(226,164,76,0.55)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.4),inset_0_-1px_0_rgba(0,0,0,0.2),0_1px_2px_rgba(0,0,0,0.4),0_16px_40px_-12px_rgba(226,164,76,0.8)] hover:brightness-[1.06] active:brightness-95",
+          "bg-gradient-to-b from-amber-lift to-amber-sink font-semibold text-on-accent shadow-[inset_0_1px_0_rgba(255,255,255,0.4),inset_0_-1px_0_rgba(0,0,0,0.2),0_1px_2px_rgba(0,0,0,0.4),0_12px_32px_-12px_rgba(226,164,76,0.55)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.4),inset_0_-1px_0_rgba(0,0,0,0.2),0_1px_2px_rgba(0,0,0,0.4),0_16px_40px_-12px_rgba(226,164,76,0.8)] hover:brightness-[1.06] active:brightness-95",
         outline:
           "border-wash/15 bg-wash/[0.04] text-paper backdrop-blur-sm hover:border-wash/30 hover:bg-wash/[0.08]",
         secondary:
@@ -18,7 +18,7 @@ const buttonVariants = cva(
         ghost:
           "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
         destructive:
-          "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
+          "bg-destructive/10 text-[color-mix(in_oklch,var(--destructive),black_18%)] hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:text-destructive dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {

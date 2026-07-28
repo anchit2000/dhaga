@@ -58,7 +58,7 @@ export function ShareBar({ url, title }: ShareBarProps): ReactElement {
         className="ml-auto inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-seam px-4 py-2 text-sm text-fog transition hover:text-paper"
       >
         {copied ? (
-          <Check className="size-4 text-amber" />
+          <Check className="size-4 text-ember" />
         ) : (
           <Link2 className="size-4" />
         )}

@@ -89,7 +89,7 @@ export function CompaniesTable({
       render: (row) => (
         <div className="min-w-0">
           <span className="font-medium text-paper">{row.name}</span>
-          {row.domain ? <span className="block truncate font-mono text-xs text-fog/70">{row.domain}</span> : null}
+          {row.domain ? <span className="block truncate font-mono text-xs text-fog">{row.domain}</span> : null}
         </div>
       ),
     },

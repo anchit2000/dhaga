@@ -86,7 +86,7 @@ export default async function EntitiesPage({
                     style={{ backgroundColor: group.type.color }}
                   />
                   {group.type.name}
-                  <span className="font-mono text-[10px] uppercase tracking-wider text-fog/60">
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-fog">
                     {group.entities.length}
                   </span>
                 </h2>
@@ -121,7 +121,7 @@ function FilterChip({
       className={cn(
         "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs transition-colors",
         active
-          ? "border-amber/30 bg-amber/10 text-amber"
+          ? "border-amber/30 bg-amber/10 text-ember"
           : "border-seam text-fog hover:text-paper",
       )}
     >

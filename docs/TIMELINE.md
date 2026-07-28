@@ -188,6 +188,35 @@ growth, and multi-image scan all landed:
 - Mobile fixes: graceful voice fallback when WebGPU is unavailable (iOS
   Safari), a card-scan silent-fail fix, and decluttered mobile nav.
 
+## Light-mode palette, the logo, and AI discoverability (29 Jul)
+
+- **Light mode audited to WCAG AA and repaired.** The light palette itself was
+  the bug: secondary text sat at 4.03:1, control borders at 1.28:1, focus rings
+  at ~1.4:1, and `/docs` + `/blog` links rendered amber at **1.83:1**. Darkened
+  `--brand-fog`/`--brand-ember`/`--brand-seam`, added `--brand-line` for control
+  boundaries that clear 3:1, and moved focus rings to ember. Dark mode is
+  unchanged — verified by probing computed tokens in both themes.
+- **One rule, enforced everywhere:** amber is a *fill*, never light-mode text.
+  ~160 `text-amber` call sites became `text-ember`, and every Tailwind `red-*`
+  error colour became `text-destructive`. `.dark` now defines
+  `--brand-ember: var(--brand-amber)`, so a single declaration decides the
+  accent in both themes instead of each call site guessing.
+- **The logo is visible again.** `ThreadMark` hard-coded its two endpoint dots
+  to `#f3ede2` — the *dark*-mode cream — which is 1.03:1 on the light ground.
+  Now `currentColor`, so it inherits correctly at all 11 render sites.
+- **Colour is genuinely centralised.** The primary-button gradient moved out of
+  four components into `--brand-amber-lift`/`--brand-amber-sink`, and the
+  shadcn semantic layer is declared on `:root, .dark` rather than `:root` alone
+  — previously a forced-dark subtree (camera capture, photo cropper) inherited
+  *light* semantics, leaving focus rings invisible inside the overlay.
+- The knowledge graph got a per-theme node/edge palette (dark fills sat at
+  1.8–2.7:1 on the light canvas, and the whole edge mesh vanished at 1.28:1).
+- **`llms.txt`/`llms-full.txt` are now generated** from `content/**` by
+  `npm run generate:llms-txt` rather than hand-maintained — they had gone stale
+  within six days, missing 15 guides and 15 user-guide pages. `robots.ts` now
+  also excludes `/wrapped/` and `/r/`, and `theme-color` is media-scoped per
+  theme instead of pinned to the dark ink.
+
 ---
 
 That's four weeks. For what's shipped, in progress, and planned next, see the

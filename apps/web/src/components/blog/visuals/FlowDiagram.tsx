@@ -12,7 +12,7 @@ interface FlowDiagramProps {
   caption?: string;
 }
 
-// A staged pipeline: horizontal on sm+, stacked on mobile. Amber chevrons link
+// A staged pipeline: horizontal on sm+, stacked on mobile. Ember chevrons link
 // the stages — pointing right when laid out in a row, rotated down when stacked.
 export function FlowDiagram({ stages, caption }: FlowDiagramProps): ReactElement {
   return (
@@ -32,7 +32,7 @@ export function FlowDiagram({ stages, caption }: FlowDiagramProps): ReactElement
             {index < stages.length - 1 ? (
               <ChevronRight
                 aria-hidden="true"
-                className="mx-auto size-5 shrink-0 rotate-90 text-amber sm:mx-0 sm:rotate-0"
+                className="mx-auto size-5 shrink-0 rotate-90 text-ember sm:mx-0 sm:rotate-0"
               />
             ) : null}
           </li>

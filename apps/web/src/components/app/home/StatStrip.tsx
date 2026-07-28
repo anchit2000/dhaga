@@ -39,8 +39,8 @@ export async function StatStrip(): Promise<ReactElement | null> {
         <div key={tile.label} className="flex min-w-0 flex-col gap-1 rounded-2xl border border-seam bg-panel p-4">
           <span className="font-display text-3xl tabular-nums text-paper">{tile.value.toLocaleString()}</span>
           <span className="font-mono text-[10px] uppercase tracking-widest text-fog">{tile.label}</span>
-          {tile.sub ? <span className="text-[11px] text-fog/70">{tile.sub}</span> : null}
-          <Sparkline data={tile.series} className="mt-2 h-6 w-full text-amber/70" />
+          {tile.sub ? <span className="text-[11px] text-fog">{tile.sub}</span> : null}
+          <Sparkline data={tile.series} className="mt-2 h-6 w-full text-ember/70" />
         </div>
       ))}
     </section>

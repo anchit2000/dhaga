@@ -27,9 +27,9 @@ const CALENDAR_CLASS_NAMES: Partial<ClassNames> = {
   caption_label: "text-sm font-medium text-paper",
   nav: "absolute inset-x-0 top-0 flex h-11 items-center justify-between",
   button_previous:
-    "inline-flex size-9 items-center justify-center rounded-lg text-fog outline-none hover:bg-wash/[0.08] hover:text-paper focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-30",
+    "inline-flex size-9 items-center justify-center rounded-lg text-fog outline-none hover:bg-wash/[0.08] hover:text-paper focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
   button_next:
-    "inline-flex size-9 items-center justify-center rounded-lg text-fog outline-none hover:bg-wash/[0.08] hover:text-paper focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-30",
+    "inline-flex size-9 items-center justify-center rounded-lg text-fog outline-none hover:bg-wash/[0.08] hover:text-paper focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
   chevron: "size-4 fill-current",
   month_grid: "w-full border-collapse",
   weekdays: "flex",
@@ -38,11 +38,11 @@ const CALENDAR_CLASS_NAMES: Partial<ClassNames> = {
   day: "p-0 text-center",
   day_button:
     "inline-flex size-11 items-center justify-center rounded-lg text-sm text-paper outline-none hover:bg-wash/[0.08] focus-visible:ring-2 focus-visible:ring-ring/50",
-  today: "[&>button]:font-semibold [&>button]:text-amber",
+  today: "[&>button]:font-semibold [&>button]:text-ember",
   selected:
     "[&>button]:bg-amber [&>button]:font-semibold [&>button]:text-on-accent [&>button]:hover:bg-amber",
-  outside: "[&>button]:text-fog/40",
-  disabled: "[&>button]:pointer-events-none [&>button]:opacity-30",
+  outside: "[&>button]:text-fog",
+  disabled: "[&>button]:pointer-events-none [&>button]:opacity-50",
   hidden: "invisible",
 };
 

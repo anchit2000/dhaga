@@ -16,12 +16,12 @@ export function ThreadMark({ size = 24 }: { size?: number }) {
     >
       <path
         d="M2 16 C 7 16, 8 6, 13 6 C 17 6, 17 11, 13.5 11 C 10 11, 10 6.5, 14.5 5 C 18 3.8, 20 4.5, 22 4"
-        stroke="#e2a44c"
+        stroke="var(--brand-amber)"
         strokeWidth="1.8"
         strokeLinecap="round"
       />
-      <circle cx="2" cy="16" r="2" fill="#f3ede2" />
-      <circle cx="22" cy="4" r="2" fill="#f3ede2" />
+      <circle cx="2" cy="16" r="2" fill="currentColor" />
+      <circle cx="22" cy="4" r="2" fill="currentColor" />
     </svg>
   );
 }

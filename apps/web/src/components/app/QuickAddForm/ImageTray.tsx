@@ -38,7 +38,7 @@ export function ImageTray({
         <span className="text-xs text-fog">
           {files.length === 1 ? "1 image of this card" : `${files.length} images of this card`}
         </span>
-        <span className="font-mono text-[10px] uppercase tracking-wider text-fog/70">
+        <span className="font-mono text-[10px] uppercase tracking-wider text-fog">
           {files.length}/{max}
         </span>
       </div>

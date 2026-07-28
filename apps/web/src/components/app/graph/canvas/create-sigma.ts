@@ -9,7 +9,14 @@ import {
   GRAPH_ZOOM_SIZE_RATIO_FLOOR,
 } from "@/utils/constants/graph";
 import { buildGraphIndexes, nodeSizeForDegree, type GraphIndexes } from "../logic/indexes";
-import { buildRelationshipLabelMap, buildTypeColorMap, edgeLabel, fadeColor, nodeColor } from "../logic/style";
+import {
+  buildRelationshipLabelMap,
+  buildTypeColorMap,
+  edgeLabel,
+  fadeColor,
+  nodeColor,
+  nodePaletteKey,
+} from "../logic/style";
 import { makeDrawNodeHover } from "./draw-hover";
 import { trackRendererDeath } from "./renderer-lifecycle";
 import {
@@ -38,7 +45,7 @@ export function buildRenderGraph(
 
   for (const node of payload.nodes) {
     const pos = positions.get(node.id) ?? { x: 0, y: 0 };
-    const color = nodeColor(node, typeColors);
+    const color = nodeColor(node, typeColors, theme.nodeColors);
     graph.addNode(node.id, {
       x: pos.x,
       y: pos.y,
@@ -46,8 +53,10 @@ export function buildRenderGraph(
       size: nodeSizeForDegree(indexes.degree.get(node.id) ?? 0),
       color,
       dimColor: fadeColor(color, theme.ink, 0.82),
+      paletteKey: nodePaletteKey(node, typeColors),
     });
   }
+  const edgeDim = fadeColor(theme.edge, theme.ink, 0.6);
   for (const edge of payload.edges) {
     if (!graph.hasNode(edge.source) || !graph.hasNode(edge.target)) continue;
     graph.addEdgeWithKey(edge.id, edge.source, edge.target, {
@@ -55,27 +64,34 @@ export function buildRenderGraph(
       source: edge.source,
       target: edge.target,
       size: GRAPH_EDGE_SIZE,
-      color: theme.seam,
-      dimColor: fadeColor(theme.seam, theme.ink, 0.6),
-      activeColor: theme.amber,
-      incomingColor: fadeColor(theme.amber, theme.fog, 0.5),
+      color: theme.edge,
+      dimColor: edgeDim,
+      activeColor: theme.edgeActive,
+      incomingColor: fadeColor(theme.edgeActive, theme.fog, 0.5),
     });
   }
   return graph;
 }
 
-/** Re-tint theme-dependent attributes in place when light/dark flips. */
+/** Re-tint theme-dependent attributes in place when light/dark flips — fills
+ *  included: the palette is theme-resolved, so re-fading the old colour alone
+ *  would leave dark-tuned nodes on the light canvas. User-chosen node-type
+ *  colours (no paletteKey) are data and stay exactly as stored. */
 export function applyThemeToGraph(graph: RenderGraph, theme: GraphTheme): void {
   graph.forEachNode((node, attrs) => {
-    graph.setNodeAttribute(node, "dimColor", fadeColor(attrs.color, theme.ink, 0.82));
+    const color = attrs.paletteKey ? theme.nodeColors[attrs.paletteKey] : attrs.color;
+    graph.mergeNodeAttributes(node, {
+      color,
+      dimColor: fadeColor(color, theme.ink, 0.82),
+    });
   });
-  const seamDim = fadeColor(theme.seam, theme.ink, 0.6);
-  const incomingColor = fadeColor(theme.amber, theme.fog, 0.5);
+  const edgeDim = fadeColor(theme.edge, theme.ink, 0.6);
+  const incomingColor = fadeColor(theme.edgeActive, theme.fog, 0.5);
   graph.forEachEdge((edge) => {
     graph.mergeEdgeAttributes(edge, {
-      color: theme.seam,
-      dimColor: seamDim,
-      activeColor: theme.amber,
+      color: theme.edge,
+      dimColor: edgeDim,
+      activeColor: theme.edgeActive,
       incomingColor,
     });
   });

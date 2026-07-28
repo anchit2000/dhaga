@@ -55,7 +55,7 @@ export function FollowUpsTile() {
               <Check className="size-2 text-fog" />
             </span>
             <p className="min-w-0 flex-1 text-[8px] leading-snug text-fog">
-              {item.action} <span className="text-amber">{item.contact}</span>
+              {item.action} <span className="text-ember">{item.contact}</span>
             </p>
           </div>
         ))}

@@ -16,7 +16,7 @@ export function VoiceScreen() {
           <div>
             <p className="text-[11px] font-medium text-paper">Rohan Mehta</p>
             <p className="font-mono text-[8px] text-ember">
-              <span className="mr-1 inline-block size-1.5 animate-pulse rounded-full bg-red-400 align-middle" />
+              <span className="mr-1 inline-block size-1.5 animate-pulse rounded-full bg-destructive align-middle" />
               Listening…
             </p>
           </div>
@@ -37,7 +37,7 @@ export function VoiceScreen() {
           route-optimisation AI next quarter, and he intro&apos;d me to their CTO…”
         </p>
 
-        <p className="mt-2.5 text-center font-mono text-[8px] uppercase tracking-widest text-fog/60">
+        <p className="mt-2.5 text-center font-mono text-[8px] uppercase tracking-widest text-fog">
           ↓ extracted, with receipts
         </p>
 
@@ -49,7 +49,7 @@ export function VoiceScreen() {
               style={{ animationDelay: `${0.5 + i * 0.4}s` }}
             >
               <p className="text-[9px] leading-snug text-paper">{fact}</p>
-              <p className="text-[7px] italic text-fog/70">voice note · 0:23 · tap to hear</p>
+              <p className="text-[7px] italic text-fog">voice note · 0:23 · tap to hear</p>
             </div>
           ))}
         </div>
@@ -80,7 +80,7 @@ export function AlertsScreen() {
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline justify-between gap-2">
                 <p className="text-[10px] font-semibold text-paper">{alert.title}</p>
-                <span className="font-mono text-[7px] text-fog/60">{alert.time}</span>
+                <span className="font-mono text-[7px] text-fog">{alert.time}</span>
               </div>
               <p className="text-[9px] leading-snug text-fog">{alert.body}</p>
               <span className="mt-1.5 inline-block rounded-full border border-amber/40 bg-amber/10 px-2 py-0.5 text-[8px] font-medium text-ember">
@@ -108,7 +108,7 @@ export function IdleScreen() {
       <StatusBar />
       <ScreenHeader title="People" chip="212 threads" />
       <div className="min-h-0 flex-1 space-y-1.5 px-4">
-        <div className="rounded-full border border-seam bg-panel px-3 py-1.5 text-[9px] text-fog/60">
+        <div className="rounded-full border border-seam bg-panel px-3 py-1.5 text-[9px] text-fog">
           Search your people…
         </div>
         {rows.map((row) => (

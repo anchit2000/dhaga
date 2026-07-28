@@ -98,11 +98,11 @@ export function EventAdmin({
       >
         <input type="hidden" name="eventId" value={eventId} />
         <div>
-          <p className="mb-2 font-mono text-[10px] uppercase tracking-wider text-fog/60">Colour &amp; emoji</p>
+          <p className="mb-2 font-mono text-[10px] uppercase tracking-wider text-fog">Colour &amp; emoji</p>
           <EventStyleFields defaultEmoji={emoji} defaultColor={color} />
         </div>
         <div>
-          <p className="mb-2 font-mono text-[10px] uppercase tracking-wider text-fog/60">Tags</p>
+          <p className="mb-2 font-mono text-[10px] uppercase tracking-wider text-fog">Tags</p>
           <EventTagInput defaultTags={tags} />
         </div>
         <ChipSubmit label="Save appearance" />

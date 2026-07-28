@@ -67,7 +67,7 @@ export function CreateTypePanel({
         </div>
       </div>
       {derivedSlug ? (
-        <p className="font-mono text-[10px] uppercase tracking-wider text-fog/60">
+        <p className="font-mono text-[10px] uppercase tracking-wider text-fog">
           Saved as {derivedSlug}
         </p>
       ) : null}

@@ -34,10 +34,10 @@ export function BlogIndex({ title, description }: BlogIndexProps): ReactElement 
                 className="cover-open group flex min-h-[44px] flex-col rounded-2xl border border-seam bg-panel/60 p-6 hover:border-amber/40"
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-display text-lg text-paper transition-colors group-hover:text-amber">
+                  <span className="font-display text-lg text-paper transition-colors group-hover:text-ember">
                     {category.label}
                   </span>
-                  <ArrowRight className="size-4 text-fog transition-transform group-hover:translate-x-0.5 group-hover:text-amber" />
+                  <ArrowRight className="size-4 text-fog transition-transform group-hover:translate-x-0.5 group-hover:text-ember" />
                 </div>
                 <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-fog">
                   {category.description}

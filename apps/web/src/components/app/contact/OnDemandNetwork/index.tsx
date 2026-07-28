@@ -8,7 +8,7 @@ export function OnDemandNetwork({ contactId }: { contactId: string }) {
   return (
     <section className="space-y-5 rounded-2xl border border-seam bg-panel p-4 sm:p-5">
       <div className="flex items-start gap-3">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-amber/10 text-amber">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-amber/10 text-ember">
           <Network className="size-4" />
         </span>
         <div>

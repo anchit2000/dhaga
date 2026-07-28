@@ -33,7 +33,7 @@ export function OpenFollowUpRow({
         <p className="text-sm leading-snug text-paper">{item.action}</p>
         <Link
           href={`/app/people/${item.contactId}`}
-          className="mt-0.5 inline-block text-xs text-amber hover:underline"
+          className="mt-0.5 inline-block text-xs text-ember hover:underline"
         >
           {item.contactName}
         </Link>
@@ -44,7 +44,7 @@ export function OpenFollowUpRow({
         variant="ghost"
         size="icon-sm"
         aria-label="Dismiss follow-up"
-        className="shrink-0 text-fog/60 hover:text-paper"
+        className="shrink-0 text-fog hover:text-paper"
       >
         <X />
       </Button>

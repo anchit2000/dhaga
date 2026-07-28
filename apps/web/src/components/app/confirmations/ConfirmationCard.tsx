@@ -1,5 +1,6 @@
 import { EntityLinkCard } from "./EntityLinkCard";
 import { EnrichmentMatchCard } from "./EnrichmentMatchCard";
+import { NoteSubjectCard } from "./NoteSubjectCard";
 import { SubjectResolutionCard } from "./SubjectResolutionCard";
 import { SupplementCard } from "./SupplementCard";
 import type { ConfirmationView } from "@/lib/repo/confirmations";
@@ -49,6 +50,15 @@ export function ConfirmationCard({
     case "supplement":
       return (
         <SupplementCard
+          id={id}
+          contactId={contactId}
+          contactName={contactName}
+          payload={payload}
+        />
+      );
+    case "note_subject":
+      return (
+        <NoteSubjectCard
           id={id}
           contactId={contactId}
           contactName={contactName}

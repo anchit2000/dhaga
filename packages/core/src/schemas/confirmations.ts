@@ -16,6 +16,7 @@ export const CONFIRMATION_TYPES = [
   "enrichment_match", // is this web-sourced (unverified) fact really the person?
   "supplement", // add a batch of newly-extracted facts/edges to a contact?
   "subject_resolution", // whose relationship is this — which subject contact?
+  "note_subject", // which person is this captured note about (or create anew)?
 ] as const;
 export type ConfirmationType = (typeof CONFIRMATION_TYPES)[number];
 
@@ -61,6 +62,23 @@ export const resolveSubjectApplySchema = z.object({
   objectName: z.string(),
 });
 
+/**
+ * Attach a pending captured note to a person chosen at resolve time — an
+ * existing contact OR a brand-new one created from a typed name. The note text
+ * rides in the payload (no DDL: nothing is written until the user confirms),
+ * and the resolver runs the same addNote + fact-extraction pipeline the silent
+ * attach path uses. Distinct from resolve_subject (which writes a graph EDGE and
+ * cannot create a contact) — a note is not an edge.
+ */
+export const attachNoteApplySchema = z.object({
+  kind: z.literal("attach_note"),
+  noteBody: z.string(),
+  // The classifier's subject name, kept so the create-new affordance can prefill
+  // it. Nullable: no-match confirmations may still carry a name; ambiguous ones
+  // rely on `options`.
+  subjectName: z.string().nullable(),
+});
+
 // --- Per-type payloads -------------------------------------------------------
 
 export const entityLinkPayloadSchema = z.object({
@@ -91,20 +109,31 @@ export const subjectResolutionPayloadSchema = z.object({
   apply: resolveSubjectApplySchema,
 });
 
+export const noteSubjectPayloadSchema = z.object({
+  type: z.literal("note_subject"),
+  question: z.string(),
+  // Candidate people to attach the note to (empty ⇒ a pure "create new" prompt).
+  options: z.array(confirmationOptionSchema).default([]),
+  apply: attachNoteApplySchema,
+});
+
 /** The stored `confirmations.payload` — discriminated by `type`. */
 export const confirmationPayloadSchema = z.discriminatedUnion("type", [
   entityLinkPayloadSchema,
   enrichmentMatchPayloadSchema,
   supplementPayloadSchema,
   subjectResolutionPayloadSchema,
+  noteSubjectPayloadSchema,
 ]);
 
 export type InsertEdgeApply = z.infer<typeof insertEdgeApplySchema>;
 export type VerifyFactApply = z.infer<typeof verifyFactApplySchema>;
 export type ApplyExtractionApply = z.infer<typeof applyExtractionApplySchema>;
 export type ResolveSubjectApply = z.infer<typeof resolveSubjectApplySchema>;
+export type AttachNoteApply = z.infer<typeof attachNoteApplySchema>;
 export type EntityLinkPayload = z.infer<typeof entityLinkPayloadSchema>;
 export type EnrichmentMatchPayload = z.infer<typeof enrichmentMatchPayloadSchema>;
 export type SupplementPayload = z.infer<typeof supplementPayloadSchema>;
 export type SubjectResolutionPayload = z.infer<typeof subjectResolutionPayloadSchema>;
+export type NoteSubjectPayload = z.infer<typeof noteSubjectPayloadSchema>;
 export type ConfirmationPayload = z.infer<typeof confirmationPayloadSchema>;

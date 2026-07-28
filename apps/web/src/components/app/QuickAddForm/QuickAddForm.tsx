@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { type QuickAddState } from "@/lib/actions/quick-add";
+import { ConfirmationCard } from "@/components/app/confirmations/ConfirmationCard";
 import { ThreadLoader } from "@/components/brand/ThreadLoader";
 import { CARD_SCAN_MESSAGES, QUICK_ADD_MESSAGES } from "@/utils/constants/loader-messages";
 import type { EventOption } from "../EventPicker";
@@ -48,6 +49,19 @@ export function QuickAddForm({
   if (state.matches && state.matches.length > 1 && state.sourceText) {
     return (
       <DisambiguationPanel matches={state.matches} sourceText={state.sourceText} onCreateNew={formAction} />
+    );
+  }
+
+  // A captured note whose subject is ambiguous/unknown: render the
+  // "which person?" confirmation inline (pick existing / create → attach).
+  if (state.confirmation) {
+    return (
+      <section className="space-y-4 rounded-2xl border border-amber/30 bg-panel p-4 sm:p-5">
+        <ConfirmationCard confirmation={state.confirmation} nodeTypes={[]} />
+        <button type="button" onClick={() => window.location.reload()} className="rounded-full px-3 py-2 text-xs text-fog hover:text-paper">
+          Cancel
+        </button>
+      </section>
     );
   }
 

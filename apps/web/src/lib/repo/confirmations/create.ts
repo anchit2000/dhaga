@@ -6,6 +6,7 @@ import type {
 } from "@dhaga/core";
 import { getDb } from "@/lib/db/request-scope";
 import { confirmations } from "@/lib/db/schema";
+import type { ConfirmationView } from "./queue";
 
 /**
  * Typed writers used later by extraction/enrichment. They ONLY insert a
@@ -80,6 +81,46 @@ export async function createSupplementConfirmation(input: {
     apply: { kind: "apply_extraction", contactId: input.contactId, extraction: input.extraction },
   };
   return insertConfirmation(payload, input.sourceNoteId, input.contactId);
+}
+
+/**
+ * Raise a "which person is this note about?" confirmation. Carries the pending
+ * note body in the payload (no DDL — nothing is attached until the user
+ * confirms). `options` are the candidate people (empty ⇒ a pure create-new
+ * prompt); `subjectName` prefills the create-new affordance. `contactId` is left
+ * null — the subject is exactly what is unresolved, so the row belongs to no
+ * single contact yet. Resolving it runs the addNote + fact-extraction pipeline.
+ *
+ * Returns the full {@link ConfirmationView} (not just the id) so the inline
+ * quick-add flow can render it through <ConfirmationCard> immediately, with no
+ * re-read and no duplicated payload construction.
+ */
+export async function createNoteSubjectConfirmation(input: {
+  noteBody: string;
+  subjectName: string | null;
+  question: string;
+  options?: ConfirmationOption[];
+}): Promise<ConfirmationView> {
+  const payload: ConfirmationPayload = {
+    type: "note_subject",
+    question: input.question,
+    options: input.options ?? [],
+    apply: {
+      kind: "attach_note",
+      noteBody: input.noteBody,
+      subjectName: input.subjectName,
+    },
+  };
+  const id = await insertConfirmation(payload, null, null);
+  return {
+    id,
+    type: "note_subject",
+    payload,
+    contactId: null,
+    contactName: null,
+    sourceNoteId: null,
+    createdAt: new Date(),
+  };
 }
 
 export async function createSubjectResolutionConfirmation(input: {

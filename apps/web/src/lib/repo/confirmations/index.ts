@@ -5,6 +5,7 @@ export {
   createEnrichmentMatchConfirmation,
   createSupplementConfirmation,
   createSubjectResolutionConfirmation,
+  createNoteSubjectConfirmation,
 } from "./create";
 export {
   listPendingConfirmations,
@@ -16,4 +17,5 @@ export {
   applyConfirmation,
   type ConfirmationChoice,
   type ConfirmationResult,
+  type NoteSubjectChoice,
 } from "./apply";

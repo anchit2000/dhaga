@@ -21,6 +21,7 @@ export { AnthropicLLMClient } from "./anthropic-client";
 export { OpenAILLMClient, type OpenAILLMClientOptions } from "./openai-client";
 export {
   CONTACT_PARSE_SYSTEM,
+  CAPTURE_EXTRACTION_SYSTEM,
   buildContactParsePrompt,
 } from "./prompts/contact-parse";
 export {

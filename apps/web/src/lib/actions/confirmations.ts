@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireUserId } from "@/lib/auth/guard";
 import { mutation } from "@/lib/actions/mutation";
+import { extractAndApplyNote } from "@/lib/ai/note-extraction";
 import {
   dismissConfirmation,
   resolveConfirmation,
@@ -39,6 +41,21 @@ export async function resolveConfirmationAction(
       revalidatePath(`/app/entities/${result.dstId}`);
     }
   } else if (result?.kind === "extraction") {
+    revalidatePath(`/app/people/${result.contactId}`);
+  } else if (result?.kind === "note") {
+    // The note is already attached and the row resolved inside the mutation
+    // scope above. Run fact extraction HERE — after that scope released — so no
+    // tenant connection is held across the LLM call (mirrors the note-attach
+    // path in quick-add.ts). extractAndApplyNote maps its own errors to
+    // outcomes (never throws), so a failed extraction never un-attaches the note.
+    const userId = await requireUserId();
+    await extractAndApplyNote(
+      userId,
+      result.contactId,
+      result.noteId,
+      result.contactName,
+      result.noteBody,
+    );
     revalidatePath(`/app/people/${result.contactId}`);
   }
 }

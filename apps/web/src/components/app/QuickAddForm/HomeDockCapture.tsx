@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode, RefObject } from "react";
+import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { ThreadLoader } from "@/components/brand/ThreadLoader";
 import { CARD_SCAN_MESSAGES } from "@/utils/constants/loader-messages";
@@ -15,6 +16,7 @@ import { QuickAddDock } from "./QuickAddDock";
  */
 export function HomeDockCapture({
   isManual,
+  wide,
   aiUsage,
   surface,
   resultDialog,
@@ -29,6 +31,10 @@ export function HomeDockCapture({
   pending,
 }: {
   isManual: boolean;
+  /** The person manual sub-tab hosts the full contact form — widen the dialog
+   *  so it can breathe (and reflow into two columns) instead of cramming a rich
+   *  form into a 512px modal. AI capture and the simpler manual tabs stay lg. */
+  wide: boolean;
   aiUsage?: string;
   surface: ReactNode;
   resultDialog: ReactNode;
@@ -52,7 +58,9 @@ export function HomeDockCapture({
           else onDialogClose();
         }}
       >
-        <DialogContent className="max-w-lg">
+        <DialogContent
+          className={cn("max-h-[85vh] overflow-y-auto", wide ? "max-w-4xl" : "max-w-lg")}
+        >
           <DialogTitle>{isManual ? "Add someone manually" : "Capture someone"}</DialogTitle>
           <DialogDescription>
             {isManual

@@ -46,7 +46,7 @@ export function ContactForm({
     setProfile((previous) => ({ ...previous, ...part }));
 
   return (
-    <form action={formAction} className="space-y-5">
+    <form action={formAction} className="@container space-y-5">
       <input type="hidden" name="payload" value={buildProfilePayload(profile)} readOnly />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -86,31 +86,39 @@ export function ContactForm({
         </div>
       </div>
 
-      <PositionSection items={profile.positions} onChange={(positions) => patch({ positions })} />
-      <MethodSection
-        title="Emails"
-        items={profile.emails}
-        onChange={(emails) => patch({ emails })}
-        inputType="email"
-        valuePlaceholder="name@example.com"
-        labelPlaceholder="Work / Personal"
-      />
-      <MethodSection
-        title="Phones"
-        items={profile.phones}
-        onChange={(phones) => patch({ phones })}
-        inputType="tel"
-        valuePlaceholder="+1 555 123 4567"
-        labelPlaceholder="Mobile / Work"
-      />
-      <MethodSection
-        title="Links"
-        items={profile.links}
-        onChange={(links) => patch({ links })}
-        inputType="url"
-        valuePlaceholder="https://…"
-        labelPlaceholder="LinkedIn / Site"
-      />
+      {/* On a wide surface (the widened manual-add dialog) the four groups sit
+          in two columns — jobs beside the contact methods — instead of one tall
+          stack. Narrow surfaces (edit/new pages, ~624px) stay single-column via
+          the @container query, so those pages are unchanged. */}
+      <div className="grid gap-5 @3xl:grid-cols-2 @3xl:items-start">
+        <PositionSection items={profile.positions} onChange={(positions) => patch({ positions })} />
+        <div className="space-y-5">
+          <MethodSection
+            title="Emails"
+            items={profile.emails}
+            onChange={(emails) => patch({ emails })}
+            inputType="email"
+            valuePlaceholder="name@example.com"
+            labelPlaceholder="Work / Personal"
+          />
+          <MethodSection
+            title="Phones"
+            items={profile.phones}
+            onChange={(phones) => patch({ phones })}
+            inputType="tel"
+            valuePlaceholder="+1 555 123 4567"
+            labelPlaceholder="Mobile / Work"
+          />
+          <MethodSection
+            title="Links"
+            items={profile.links}
+            onChange={(links) => patch({ links })}
+            inputType="url"
+            valuePlaceholder="https://…"
+            labelPlaceholder="LinkedIn / Site"
+          />
+        </div>
+      </div>
 
       <Accordion>
         <AccordionItem>

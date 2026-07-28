@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { type QuickAddState } from "@/lib/actions/quick-add";
+import { ConfirmationCard } from "@/components/app/confirmations/ConfirmationCard";
 import { ThreadLoader } from "@/components/brand/ThreadLoader";
 import { CARD_SCAN_MESSAGES, QUICK_ADD_MESSAGES } from "@/utils/constants/loader-messages";
 import type { EventOption } from "../EventPicker";
@@ -10,7 +11,7 @@ import { DEFAULT_CAPTURE_MODE, showsManualSurface, type CaptureMode } from "./ca
 import { CaptureForm } from "./CaptureForm";
 import { DisambiguationPanel } from "./DisambiguationPanel";
 import { HomeDockCapture } from "./HomeDockCapture";
-import { QuickAddManual } from "./QuickAddManual";
+import { QuickAddManual, type SubTab } from "./QuickAddManual";
 import { QuickAddResultDialog } from "./QuickAddResultDialog";
 import { useQuickAdd } from "./useQuickAdd";
 
@@ -30,6 +31,7 @@ export function QuickAddForm({
   aiUsage?: string;
 }) {
   const [mode, setMode] = useState<CaptureMode>(DEFAULT_CAPTURE_MODE);
+  const [manualTab, setManualTab] = useState<SubTab>("person");
   const [captureOpen, setCaptureOpen] = useState(!homeDock);
   const [photos, setPhotos] = useState<File[]>([]);
   const pasteTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -48,6 +50,19 @@ export function QuickAddForm({
   if (state.matches && state.matches.length > 1 && state.sourceText) {
     return (
       <DisambiguationPanel matches={state.matches} sourceText={state.sourceText} onCreateNew={formAction} />
+    );
+  }
+
+  // A captured note whose subject is ambiguous/unknown: render the
+  // "which person?" confirmation inline (pick existing / create → attach).
+  if (state.confirmation) {
+    return (
+      <section className="space-y-4 rounded-2xl border border-amber/30 bg-panel p-4 sm:p-5">
+        <ConfirmationCard confirmation={state.confirmation} nodeTypes={[]} />
+        <button type="button" onClick={() => window.location.reload()} className="rounded-full px-3 py-2 text-xs text-fog hover:text-paper">
+          Cancel
+        </button>
+      </section>
     );
   }
 
@@ -79,7 +94,13 @@ export function QuickAddForm({
   // Manual is one of the three capture pills; its surface (the sibling's blank
   // ContactForm hub) takes over from CaptureForm. Back returns to the paste tab.
   const surface = showsManualSurface(mode) ? (
-    <QuickAddManual events={events} defaultEventId={defaultEventId} onBack={() => setMode("paste")} />
+    <QuickAddManual
+      events={events}
+      defaultEventId={defaultEventId}
+      tab={manualTab}
+      onTabChange={setManualTab}
+      onBack={() => setMode("paste")}
+    />
   ) : (
     captureForm
   );
@@ -110,6 +131,7 @@ export function QuickAddForm({
   return (
     <HomeDockCapture
       isManual={showsManualSurface(mode)}
+      wide={showsManualSurface(mode) && manualTab === "person"}
       aiUsage={aiUsage}
       surface={surface}
       resultDialog={resultDialog}

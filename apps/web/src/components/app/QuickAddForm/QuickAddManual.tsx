@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactElement } from "react";
+import { type ReactElement } from "react";
 import { ArrowLeft } from "lucide-react";
 import { emptyContactProfile } from "@dhaga/core";
 import { cn } from "@/lib/utils";
@@ -9,7 +9,7 @@ import { EventPicker, type EventOption } from "../EventPicker";
 import { ManualRelationshipForm } from "./manual/ManualRelationshipForm";
 import { ManualFactFollowUp } from "./manual/ManualFactFollowUp";
 
-type SubTab = "person" | "relationship" | "fact";
+export type SubTab = "person" | "relationship" | "fact";
 
 // Local UI tab list (hoisted out of the component body, not a business
 // constant): the three no-AI quick adds, Person first.
@@ -27,13 +27,15 @@ export function QuickAddManual({
   events,
   defaultEventId,
   onBack,
+  tab,
+  onTabChange,
 }: {
   events: EventOption[];
   defaultEventId?: string;
   onBack: () => void;
+  tab: SubTab;
+  onTabChange: (tab: SubTab) => void;
 }): ReactElement {
-  const [tab, setTab] = useState<SubTab>("person");
-
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -50,7 +52,7 @@ export function QuickAddManual({
                 type="button"
                 role="tab"
                 aria-selected={active}
-                onClick={() => setTab(item.value)}
+                onClick={() => onTabChange(item.value)}
                 className={cn(
                   "min-h-11 whitespace-nowrap rounded-full px-3.5 text-xs font-medium transition-colors sm:text-sm",
                   active ? "bg-amber/15 text-amber" : "text-fog hover:text-paper",

@@ -71,10 +71,12 @@ export {
   verifyFactApplySchema,
   applyExtractionApplySchema,
   resolveSubjectApplySchema,
+  attachNoteApplySchema,
   entityLinkPayloadSchema,
   enrichmentMatchPayloadSchema,
   supplementPayloadSchema,
   subjectResolutionPayloadSchema,
+  noteSubjectPayloadSchema,
   confirmationPayloadSchema,
   type ConfirmationType,
   type ConfirmationOption,
@@ -82,9 +84,23 @@ export {
   type VerifyFactApply,
   type ApplyExtractionApply,
   type ResolveSubjectApply,
+  type AttachNoteApply,
   type EntityLinkPayload,
   type EnrichmentMatchPayload,
   type SupplementPayload,
   type SubjectResolutionPayload,
+  type NoteSubjectPayload,
   type ConfirmationPayload,
 } from "./schemas/confirmations";
+export {
+  captureClassificationSchema,
+  captureExtractionSchema,
+  emptyCaptureClassification,
+  type CaptureClassification,
+  type CaptureExtraction,
+} from "./schemas/capture-classification";
+export {
+  routeNoteCapture,
+  type CaptureRoute,
+  type CaptureRoutingInput,
+} from "./capture/route";

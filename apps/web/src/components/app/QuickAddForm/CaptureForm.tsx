@@ -1,18 +1,17 @@
 "use client";
 
 import type { Dispatch, RefObject, SetStateAction } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { FormError } from "@/components/app/feedback";
-import { SubmitButton } from "../SubmitButton";
-import { VoiceNoteReview } from "../contact/VoiceNoteReview";
 import { CardPhotoCapture } from "./CardPhotoCapture";
+import { CAPTURE_MODES, type CaptureMode } from "./capture-mode";
+import { PasteCapture } from "./PasteCapture";
 import { QuickAddDock } from "./QuickAddDock";
 import { useCaptureVoice } from "./useCaptureVoice";
 
-type Mode = "paste" | "photo";
-
-/** Mode toggle + paste form + multi-image card tray + inline dock, shared by
- *  the home dock's expanded state and the standalone /app/quick-add page. */
+/** Mode strip + paste form + multi-image card tray + inline dock, shared by
+ *  the home dock's expanded state and the standalone /app/quick-add page.
+ *  The Manual pill is rendered here but its surface (the blank ContactForm hub)
+ *  is owned by QuickAddForm, which swaps it in for this whole component. */
 export function CaptureForm({
   mode,
   setMode,
@@ -26,11 +25,10 @@ export function CaptureForm({
   notice,
   captureOpen,
   onCaptureToggle,
-  onManual,
   inDialog = false,
 }: {
-  mode: Mode;
-  setMode: (mode: Mode) => void;
+  mode: CaptureMode;
+  setMode: (mode: CaptureMode) => void;
   formAction: (formData: FormData) => void;
   storeCardPhotos: boolean;
   pasteTextareaRef: RefObject<HTMLTextAreaElement | null>;
@@ -43,17 +41,18 @@ export function CaptureForm({
   notice?: string;
   captureOpen: boolean;
   onCaptureToggle?: () => void;
-  /** Skip AI and type the person in by hand — shown under every capture mode. */
-  onManual: () => void;
   /** True when rendered inside the capture Dialog, where the dock must sit
    *  in-flow instead of floating (see QuickAddDock's `floating` prop). */
   inDialog?: boolean;
 }) {
   const voice = useCaptureVoice(pasteTextareaRef);
-  // Composed so tapping Voice also switches to the paste form (where the note
-  // textarea and its tap-to-fix review live).
+  // Off the home dock (the standalone page / nav dialog) the paste tab carries
+  // its own mic, so suppress the dock's now-redundant Voice item there
+  // (supported:false hides it) while keeping Camera / Upload. On the home dock
+  // the dock owns voice, so the inline mic stays hidden instead.
+  const inlineVoice = !inDialog;
   const dockVoice = {
-    supported: voice.supported,
+    supported: inlineVoice ? false : voice.supported,
     listening: voice.listening,
     transcribing: voice.transcribing,
     loadingProgress: voice.loadingProgress,
@@ -66,45 +65,24 @@ export function CaptureForm({
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-1.5">
-        {(["paste", "photo"] as const).map((option) => (
+      <div className="flex gap-1.5 overflow-x-auto">
+        {CAPTURE_MODES.map(({ mode: option, label }) => (
           <button
             key={option}
             type="button"
             onClick={() => setMode(option)}
-            className={`rounded-full border px-3.5 py-1.5 text-sm transition-colors ${
+            className={`shrink-0 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm transition-colors ${
               mode === option
                 ? "border-amber/40 bg-amber/15 font-medium text-amber"
                 : "border-seam text-fog hover:text-paper"
             }`}
           >
-            {option === "paste" ? "Paste text" : "Card photo"}
+            {label}
           </button>
         ))}
       </div>
 
-      {mode === "paste" ? (
-        <form action={formAction} className="space-y-4">
-          <Textarea
-            ref={pasteTextareaRef}
-            name="raw"
-            required
-            rows={8}
-            placeholder={
-              "Paste anything with a person in it —\nan email signature, card text, a LinkedIn intro… or tap Voice below and just talk."
-            }
-            className="font-mono text-sm"
-          />
-          {voice.review.show ? (
-            <VoiceNoteReview
-              text={voice.review.text}
-              onChange={voice.review.onChange}
-              onWordFix={voice.review.onWordFix}
-            />
-          ) : null}
-          <SubmitButton>Extract contact</SubmitButton>
-        </form>
-      ) : (
+      {mode === "photo" ? (
         <CardPhotoCapture
           storeCardPhotos={storeCardPhotos}
           photos={photos}
@@ -112,23 +90,17 @@ export function CaptureForm({
           pending={pending}
           formAction={formAction}
         />
+      ) : (
+        <PasteCapture
+          formAction={formAction}
+          pasteTextareaRef={pasteTextareaRef}
+          voice={voice}
+          showVoice={inlineVoice}
+        />
       )}
 
       <FormError message={error} />
       {notice ? <p className="text-sm text-fog">{notice}</p> : null}
-
-      {/* Escape hatch shown under every capture mode (paste AND card photo):
-          skip AI entirely and fill a blank contact form in by hand. */}
-      <div className="flex justify-center border-t border-seam/60 pt-3">
-        <button
-          type="button"
-          onClick={onManual}
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm text-fog transition-colors hover:text-paper"
-        >
-          Prefer to type it in?
-          <span className="font-medium text-amber">Add manually</span>
-        </button>
-      </div>
 
       <QuickAddDock
         formAction={formAction}

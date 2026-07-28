@@ -2,21 +2,20 @@
 
 import { useRef, useState } from "react";
 import { type QuickAddState } from "@/lib/actions/quick-add";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { ThreadLoader } from "@/components/brand/ThreadLoader";
 import { CARD_SCAN_MESSAGES, QUICK_ADD_MESSAGES } from "@/utils/constants/loader-messages";
 import type { EventOption } from "../EventPicker";
 import { captureDialogState } from "./capture-dialog-state";
+import { DEFAULT_CAPTURE_MODE, showsManualSurface, type CaptureMode } from "./capture-mode";
 import { CaptureForm } from "./CaptureForm";
 import { DisambiguationPanel } from "./DisambiguationPanel";
-import { QuickAddDock } from "./QuickAddDock";
+import { HomeDockCapture } from "./HomeDockCapture";
 import { QuickAddManual } from "./QuickAddManual";
 import { QuickAddResultDialog } from "./QuickAddResultDialog";
 import { useQuickAdd } from "./useQuickAdd";
 
-type Mode = "paste" | "photo";
-
-/** Capture (paste, card photo, voice, or live webcam) → review-and-save with event attach. */
+/** Capture (manual, paste, card photo, voice, or live webcam) → review-and-save
+ *  with event attach. Manual is the default tab; the AI modes live behind it. */
 export function QuickAddForm({
   events,
   defaultEventId,
@@ -30,10 +29,8 @@ export function QuickAddForm({
   homeDock?: boolean;
   aiUsage?: string;
 }) {
-  const [mode, setMode] = useState<Mode>("paste");
+  const [mode, setMode] = useState<CaptureMode>(DEFAULT_CAPTURE_MODE);
   const [captureOpen, setCaptureOpen] = useState(!homeDock);
-  // Skip-AI escape hatch: swap the capture UI for a blank ContactForm.
-  const [manual, setManual] = useState(false);
   const [photos, setPhotos] = useState<File[]>([]);
   const pasteTextareaRef = useRef<HTMLTextAreaElement>(null);
   const { state, formAction, pending } = useQuickAdd();
@@ -71,24 +68,20 @@ export function QuickAddForm({
         notice={state.notice}
         captureOpen={captureOpen}
         onCaptureToggle={homeDock ? () => setCaptureOpen((open) => !open) : undefined}
-        onManual={() => setManual(true)}
         inDialog={homeDock}
       />
       {pending ? (
-        <ThreadLoader
-          overlay
-          messages={mode === "photo" ? CARD_SCAN_MESSAGES : QUICK_ADD_MESSAGES}
-        />
+        <ThreadLoader overlay messages={mode === "photo" ? CARD_SCAN_MESSAGES : QUICK_ADD_MESSAGES} />
       ) : null}
     </div>
   );
 
-  const manualForm = (
-    <QuickAddManual
-      events={events}
-      defaultEventId={defaultEventId}
-      onBack={() => setManual(false)}
-    />
+  // Manual is one of the three capture pills; its surface (the sibling's blank
+  // ContactForm hub) takes over from CaptureForm. Back returns to the paste tab.
+  const surface = showsManualSurface(mode) ? (
+    <QuickAddManual events={events} defaultEventId={defaultEventId} onBack={() => setMode("paste")} />
+  ) : (
+    captureForm
   );
 
   const resultDialog = state.contact ? (
@@ -108,60 +101,33 @@ export function QuickAddForm({
   if (!homeDock) {
     return (
       <div className="pb-28">
-        {manual ? manualForm : captureForm}
+        {surface}
         {resultDialog}
       </div>
     );
   }
 
   return (
-    <div className="pb-28">
-      {/* Keep the capture Dialog MOUNTED and drive it by `open` — a successful
-          scan flips resultOpen true in the same commit that opens the result
-          Dialog, so unmounting this one mid-open would leave Base UI's modal
-          manager wedged and the result Dialog would never paint. Letting `open`
-          go false runs the normal close→open handoff between the two dialogs. */}
-      <Dialog
-        open={(captureOpen || captureErrorOpen) && !resultOpen}
-        onOpenChange={(open) => {
-          if (open) {
-            setCaptureOpen(true);
-          } else {
-            setManual(false);
-            dismissResult();
-          }
-        }}
-      >
-        <DialogContent className="max-w-lg">
-          <DialogTitle>{manual ? "Add someone manually" : "Capture someone"}</DialogTitle>
-          <DialogDescription>
-            {manual
-              ? "Type in what you know — no AI, saved straight to your graph."
-              : "Paste an intro, speak a note, or scan a card. Dhaga keeps the source as a receipt."}
-          </DialogDescription>
-          {aiUsage && !manual ? <p className="font-mono text-[10px] uppercase tracking-wider text-fog/60">{aiUsage}</p> : null}
-          {manual ? manualForm : captureForm}
-        </DialogContent>
-      </Dialog>
-      {!captureOpen && !captureErrorOpen && !resultOpen ? (
-        <QuickAddDock
-          formAction={formAction}
-          onVoiceStart={() => { setCaptureOpen(true); setMode("paste"); }}
-          pasteTextareaRef={pasteTextareaRef}
-          captureOpen={captureOpen}
-          onCaptureToggle={() => setCaptureOpen(true)}
-        />
-      ) : null}
-      {/* Dock capture (camera/upload) submits straight to the action while the
-          capture dialog is closed, so the in-form loader is hidden. Surface a
-          branded scanning state so the wait has feedback instead of looking
-          like nothing happened. (When the dialog is open its own overlay runs.) */}
-      {pending && !captureOpen ? (
-        <div className="dark fixed inset-0 z-50 flex items-center justify-center bg-ink/80 backdrop-blur-sm">
-          <ThreadLoader messages={CARD_SCAN_MESSAGES} />
-        </div>
-      ) : null}
-      {resultDialog}
-    </div>
+    <HomeDockCapture
+      isManual={showsManualSurface(mode)}
+      aiUsage={aiUsage}
+      surface={surface}
+      resultDialog={resultDialog}
+      captureOpen={captureOpen}
+      setCaptureOpen={setCaptureOpen}
+      captureErrorOpen={captureErrorOpen}
+      resultOpen={resultOpen}
+      onDialogClose={() => {
+        setMode(DEFAULT_CAPTURE_MODE);
+        dismissResult();
+      }}
+      onVoiceStart={() => {
+        setCaptureOpen(true);
+        setMode("paste");
+      }}
+      formAction={formAction}
+      pasteTextareaRef={pasteTextareaRef}
+      pending={pending}
+    />
   );
 }

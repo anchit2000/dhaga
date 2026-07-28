@@ -12,15 +12,16 @@ interface OrbitItem {
 const ITEMS: OrbitItem[] = [
   { label: "Card scan", radius: 92, duration: 16, angle: 15, icon: <CardGlyph /> },
   { label: "Badge / QR", radius: 92, duration: 16, angle: 165, icon: <QrGlyph /> },
-  { label: "Voice note", radius: 130, duration: 24, angle: 255, icon: <MicGlyph /> },
-  { label: "LinkedIn", radius: 130, duration: 24, angle: 80, icon: <LinkGlyph /> },
+  { label: "Voice note", radius: 130, duration: 24, angle: 60, icon: <MicGlyph /> },
+  { label: "LinkedIn", radius: 130, duration: 24, angle: 180, icon: <LinkGlyph /> },
+  { label: "WhatsApp / Telegram", radius: 130, duration: 24, angle: 300, icon: <ChatGlyph /> },
 ];
 
 /**
- * The capture sources — card, badge/QR, voice, LinkedIn — orbiting the
- * Dhaga mark, echoing the "capture anywhere" pitch instead of generic
- * social-app logos. Purely decorative: hidden under reduced motion rather
- * than frozen mid-orbit.
+ * The capture sources — card, badge/QR, voice, LinkedIn, and a forwarded chat
+ * message — orbiting the Dhaga mark, echoing the "capture anywhere" pitch
+ * instead of generic social-app logos. Purely decorative: hidden under reduced
+ * motion rather than frozen mid-orbit.
  */
 export function CaptureOrbit() {
   return (
@@ -109,6 +110,15 @@ function LinkGlyph() {
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <rect x="3" y="3" width="18" height="18" rx="3" />
       <path d="M7.5 10v7M7.5 7.2v.1M11.5 17v-4.5c0-1.4 1.1-2.5 2.5-2.5s2.5 1.1 2.5 2.5V17" />
+    </svg>
+  );
+}
+
+function ChatGlyph() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4 5.5h16A1.5 1.5 0 0 1 21.5 7v8A1.5 1.5 0 0 1 20 16.5H9l-4 3v-3H4A1.5 1.5 0 0 1 2.5 15V7A1.5 1.5 0 0 1 4 5.5Z" />
+      <path d="M7 10h10M7 12.5h6" />
     </svg>
   );
 }

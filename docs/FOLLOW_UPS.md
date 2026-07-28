@@ -5,6 +5,36 @@ a known, currently-exploitable security vulnerability — tenant isolation was
 reviewed (see [`SECURITY.md`](../SECURITY.md)); these are functional gaps,
 hardening, and correctness items. Grouped by area.
 
+## Follow-up calendar, notifications & reminders (2026-07-27)
+
+Shipped on `feat/followups-calendar` (not an open item — recorded here because it
+resolves part of the hosted email-job fan-out gap below):
+
+- **`/app/calendar` view.** A month + agenda calendar of every open follow-up
+  (`getCalendarFollowUps` in `lib/repo/reminders/calendar.ts`), built on
+  **FullCalendar v6** (`@fullcalendar/react` + `daygrid` + `list` +
+  `interaction`), themed to the amber tokens via `--fc-*` overrides — follow-ups
+  are all-day single-date items, so only the dayGrid (month) and list (agenda)
+  views are used. See [`LIBRARIES.md`](LIBRARIES.md) §12.
+- **Drag-to-reschedule.** FullCalendar's `interaction` plugin (pointer + touch)
+  moves a follow-up to a new day, persisted through the follow-up repo/action
+  layer.
+- **In-app notification bell.** A nav bell surfaces overdue + due-today counts and
+  a capped preview list (`getNotificationSummary`), the same "due soon" set the
+  email reminder uses (`isDueSoon` = overdue OR due today).
+- **Daily due-follow-up reminder email.** New `lib/jobs/follow-up-reminders.ts`
+  (`runFollowUpReminders`), wired into `/api/jobs/daily`. For each hosted tenant it
+  reads `getDueFollowUpRemindersForUser()` inside `withUserDb`, and — if the tenant
+  opted in (**reuses the morning-reminder toggle `morning_reminder_enabled`**; no
+  new Settings toggle, which is out of this job's scope) and has ≥1 due item —
+  emails a `"N follow-up(s) due"` summary (`followUpReminderHtml` + `emailShell`,
+  contact names/actions HTML-escaped) via Resend. Skips tenants with nothing due
+  (no empty emails), best-effort per tenant, and is a clean no-op in self-host
+  without `DHAGA_OWNER_EMAIL` or Resend. Unlike `runMorningReminder` /
+  `runDailyDigest`, it is **per-tenant from day one** (mirrors
+  `linkedin-export-reminders`); pure subject/HTML/send-guard covered by
+  `lib/jobs/follow-up-reminders.test.ts`.
+
 ## Connection-hygiene sweeps (2026-07-26)
 
 Two passes landed the connection-hygiene model — acquire a connection, use it for
@@ -107,13 +137,15 @@ gaps and the correctness/doc items below.
   for the self-host case. Give them the same per-tenant `withUserDb` fan-out the
   signal-detection job now uses (enumerate tenants from the non-RLS auth `user`
   table; do **not** give the sweep an RLS bypass on tenant tables).
-- **`hostedTenants()` vs the signals sweep's private copy.** The new
-  LinkedIn-export reminder job (`lib/jobs/linkedin-export-reminders.ts`) already
-  fans out per tenant via a shared `lib/hosted/tenants.ts` helper (id + account
-  email), so it works for real users in hosted mode — unlike the digest/reminder
-  jobs above. But `runSignalDetection` still carries its own id-only tenant
-  enumeration; fold it onto `hostedTenants()` so there is one tenant-enumeration
-  path (the shared helper returns email too, which the signals sweep can ignore).
+- **`hostedTenants()` vs the signals sweep's private copy.** The LinkedIn-export
+  reminder job (`lib/jobs/linkedin-export-reminders.ts`) and the due-follow-up
+  reminder job (`lib/jobs/follow-up-reminders.ts`) both fan out per tenant via the
+  shared `lib/hosted/tenants.ts` helper (id + account email), so they work for real
+  users in hosted mode — unlike the `runDailyDigest` / `runMorningReminder` jobs
+  above, which are still single-owner. But `runSignalDetection` still carries its
+  own id-only tenant enumeration; fold it onto `hostedTenants()` so there is one
+  tenant-enumeration path (the shared helper returns email too, which the signals
+  sweep can ignore).
 - **Telegram owner resolution.** Resolved (deterministic email-first + `orderBy`).
   Kept here only as a pointer; today's only impact was which admin's AI quota
   absorbed bot usage — no data-isolation consequence.

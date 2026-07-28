@@ -10,6 +10,7 @@ export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
 /** Primary nav pills, always visible. */
 export const APP_NAV_LINKS = [
   { href: "/app", label: "Home", icon: Home },
+  { href: "/app/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/app/confirmations", label: "Confirmations", icon: Inbox },
   { href: "/app/graph", label: "Graph", icon: Waypoints },
 ] as const;

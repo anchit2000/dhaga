@@ -10,6 +10,7 @@ export { loadContactsForMergeAction, mergeContactsAction } from "./merge";
 export {
   addContactsToCompanyAction,
   bulkForgetContactsAction,
+  bulkSetAffiliationAction,
   bulkStarContactsAction,
   bulkTagContactsAction,
 } from "./bulk";

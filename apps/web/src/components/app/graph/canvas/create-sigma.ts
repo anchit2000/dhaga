@@ -58,6 +58,7 @@ export function buildRenderGraph(
       color: theme.seam,
       dimColor: fadeColor(theme.seam, theme.ink, 0.6),
       activeColor: theme.amber,
+      incomingColor: fadeColor(theme.amber, theme.fog, 0.5),
     });
   }
   return graph;
@@ -69,11 +70,13 @@ export function applyThemeToGraph(graph: RenderGraph, theme: GraphTheme): void {
     graph.setNodeAttribute(node, "dimColor", fadeColor(attrs.color, theme.ink, 0.82));
   });
   const seamDim = fadeColor(theme.seam, theme.ink, 0.6);
+  const incomingColor = fadeColor(theme.amber, theme.fog, 0.5);
   graph.forEachEdge((edge) => {
     graph.mergeEdgeAttributes(edge, {
       color: theme.seam,
       dimColor: seamDim,
       activeColor: theme.amber,
+      incomingColor,
     });
   });
 }

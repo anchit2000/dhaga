@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FormError } from "@/components/app/feedback";
+import { AliasSection } from "./AliasSection";
 import { createCompanyAction, renameCompanyAction } from "@/lib/actions/companies";
 
 /** The fields the rename path prefills; `null` puts the dialog in create mode. */
@@ -28,7 +29,9 @@ export interface CompanyFormValues {
  * One dialog reused for both create (company = null) and rename (prefilled).
  * The body is only mounted while open, so it reads fresh prop values into local
  * state on every open — no reset effect. Name is required; domain and sector
- * are optional. Success closes, refreshes the route, and toasts.
+ * are optional. Success closes, refreshes the route, and toasts. In rename mode
+ * the body also embeds the alias editor (aliases apply immediately, distinct
+ * from the identity Save button).
  */
 export function CompanyFormDialog({
   company,
@@ -107,6 +110,7 @@ function CompanyFormBody({
         </div>
         <FormError message={error} />
       </div>
+      {isRename && company ? <AliasSection companyId={company.id} /> : null}
       <DialogFooter>
         <Button loading={pending} disabled={!name.trim()} onClick={submit}>
           {isRename ? "Save changes" : "Create company"}

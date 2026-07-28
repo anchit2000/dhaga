@@ -4,18 +4,13 @@ import { useActionState, useState } from "react";
 import { createContactAction, type ContactFormState } from "@/lib/actions/contacts";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { FormError } from "@/components/app/feedback";
 import { SubmitButton } from "../SubmitButton";
-import { MethodSection, PositionSection } from "./sections";
-import { AddressSection, CustomFieldSection, DateSection } from "./more-sections";
+import { EducationSection, MethodSection, PositionSection } from "./sections";
+import { MoreDetails } from "./more-details";
 import { buildProfilePayload } from "./payload";
-import type { ContactProfile } from "@dhaga/core";
+import { splitPositionGroups } from "./position-groups";
+import type { ContactProfile, Position } from "@dhaga/core";
 
 type ProfileAction = (
   previous: ContactFormState,
@@ -44,6 +39,14 @@ export function ContactForm({
   const [profile, setProfile] = useState<ContactProfile>(initial);
   const patch = (part: Partial<ContactProfile>) =>
     setProfile((previous) => ({ ...previous, ...part }));
+
+  // One position list in state, edited as two groups. Each group writes back
+  // its slice (Experience first); see splitPositionGroups for the why.
+  const { experience: experienceItems, education: educationItems } = splitPositionGroups(
+    profile.positions,
+  );
+  const setExperience = (next: Position[]) => patch({ positions: [...next, ...educationItems] });
+  const setEducation = (next: Position[]) => patch({ positions: [...experienceItems, ...next] });
 
   return (
     <form action={formAction} className="@container space-y-5">
@@ -86,12 +89,16 @@ export function ContactForm({
         </div>
       </div>
 
-      {/* On a wide surface (the widened manual-add dialog) the four groups sit
-          in two columns — jobs beside the contact methods — instead of one tall
-          stack. Narrow surfaces (edit/new pages, ~624px) stay single-column via
-          the @container query, so those pages are unchanged. */}
+      {/* On a wide surface (the widened manual-add dialog) the groups sit in two
+          columns — the position history (Experience + Education) beside the
+          contact methods — instead of one tall stack. Narrow surfaces (edit/new
+          pages, ~624px) stay single-column via the @container query, so those
+          pages are unchanged. */}
       <div className="grid gap-5 @3xl:grid-cols-2 @3xl:items-start">
-        <PositionSection items={profile.positions} onChange={(positions) => patch({ positions })} />
+        <div className="space-y-5">
+          <PositionSection items={experienceItems} onChange={setExperience} />
+          <EducationSection items={educationItems} onChange={setEducation} />
+        </div>
         <div className="space-y-5">
           <MethodSection
             title="Emails"
@@ -120,25 +127,7 @@ export function ContactForm({
         </div>
       </div>
 
-      <Accordion>
-        <AccordionItem>
-          <AccordionTrigger>More details</AccordionTrigger>
-          <AccordionContent className="space-y-5">
-            <AddressSection
-              items={profile.addresses}
-              onChange={(addresses) => patch({ addresses })}
-            />
-            <DateSection
-              items={profile.importantDates}
-              onChange={(importantDates) => patch({ importantDates })}
-            />
-            <CustomFieldSection
-              items={profile.customFields}
-              onChange={(customFields) => patch({ customFields })}
-            />
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
+      <MoreDetails profile={profile} patch={patch} />
 
       {children}
       <FormError message={state.error} />

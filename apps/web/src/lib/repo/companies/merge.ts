@@ -1,6 +1,7 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
-import { companies, contacts, edges, positions } from "@/lib/db/schema";
+import { companies, companyAliases, contacts, edges, positions } from "@/lib/db/schema";
+import { addAliasesInTx } from "@/lib/repo/company-aliases";
 import { PreconditionError } from "@/lib/repo/errors";
 import type { CompanyMergeResolution } from "@dhaga/core";
 
@@ -78,6 +79,23 @@ export async function mergeCompanies(
         sector: resolution.sector?.trim() || null,
       })
       .where(eq(companies.id, targetId));
+    // Preserve the losing companies' identities: record each losing name and its
+    // own aliases as aliases of the survivor, so a later capture that still uses
+    // an old name resolves here. Runs after the survivor's name update above (so
+    // the dedupe sees the resolved name) and before the delete (the FK cascade
+    // would drop the losing companies' alias rows). Same transaction — atomic.
+    const losing = await tx
+      .select({ name: companies.name })
+      .from(companies)
+      .where(inArray(companies.id, sourceIds));
+    const inheritedAliases = await tx
+      .select({ alias: companyAliases.alias })
+      .from(companyAliases)
+      .where(inArray(companyAliases.companyId, sourceIds));
+    await addAliasesInTx(tx, targetId, [
+      ...losing.map((row) => row.name),
+      ...inheritedAliases.map((row) => row.alias),
+    ]);
     await tx.delete(companies).where(inArray(companies.id, sourceIds));
   });
   return { targetId };

@@ -15,6 +15,16 @@ export const companies = pgTable("companies", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+// Alternate names a company is known by (acquisitions, abbreviations, prior
+// names). Uniqueness is enforced in app code, not the schema. FK cascade is in
+// the DDL; the Drizzle side only needs the column shape.
+export const companyAliases = pgTable("company_aliases", {
+  id: text("id").primaryKey(),
+  companyId: text("company_id").notNull(),
+  alias: text("alias").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 export const contacts = pgTable("contacts", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -65,6 +75,10 @@ export const positions = pgTable("positions", {
   companyId: text("company_id").references(() => companies.id),
   title: text("title"),
   department: text("department"),
+  // Affiliation predicate for this role (studied_at, interned_at, board_member_of,
+  // …). NULL means a plain employment role — affiliationPredicate() then derives
+  // works_at / worked_at from isCurrent.
+  relation: text("relation"),
   isCurrent: boolean("is_current").notNull().default(false),
   startedAt: text("started_at"),
   endedAt: text("ended_at"),
@@ -74,5 +88,6 @@ export const positions = pgTable("positions", {
 });
 
 export type CompanyRow = typeof companies.$inferSelect;
+export type CompanyAliasRow = typeof companyAliases.$inferSelect;
 export type ContactRow = typeof contacts.$inferSelect;
 export type PositionRow = typeof positions.$inferSelect;

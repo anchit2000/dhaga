@@ -1,4 +1,8 @@
-import { GRAPH_COLLAPSED_GROUP_SCALE } from "@/utils/constants/graph";
+import {
+  GRAPH_COLLAPSED_GROUP_SCALE,
+  GRAPH_EDGE_ACTIVE_SIZE,
+  GRAPH_EDGE_INCOMING_SIZE,
+} from "@/utils/constants/graph";
 import type { Attributes } from "graphology-types";
 import type { EdgeDisplayData, NodeDisplayData } from "sigma/types";
 
@@ -46,6 +50,9 @@ export interface EdgeRenderAttributes extends Attributes {
   color: string;
   dimColor: string;
   activeColor: string;
+  /** Softer, desaturated amber for edges *incoming* to the hovered node.
+   *  Optional: tag-layer spoke edges omit it and fall back to activeColor. */
+  incomingColor?: string;
 }
 
 // Sigma's reducer contract (sigma@3 internal/Sigma.addNode): the returned
@@ -115,9 +122,26 @@ export function makeEdgeReducer(ref: { current: RenderState }) {
       state.highlightedPath.has(data.target);
 
     // Hovered/selected edges always carry their label — the primary way to
-    // read a relationship without opening the panel.
+    // read a relationship without opening the panel. On hover, direction is
+    // emphasised: an edge whose SOURCE is the hovered node (outgoing — the
+    // hovered node is the subject) gets the strongest treatment (full amber,
+    // thickest, so the arrowhead is unmistakable), while an edge merely
+    // pointing INTO the hovered node (incoming) reads softer — a desaturated
+    // amber a notch thinner. Selected/path edges keep the strong treatment.
     if (touchesSelected || touchesHovered || onPath) {
-      return { ...data, color: data.activeColor, label: data.label, forceLabel: true, zIndex: 1, size: 1.1 };
+      const incoming =
+        !touchesSelected &&
+        !onPath &&
+        data.target === state.hoveredId &&
+        data.source !== state.hoveredId;
+      return {
+        ...data,
+        color: incoming ? data.incomingColor ?? data.activeColor : data.activeColor,
+        label: data.label,
+        forceLabel: true,
+        zIndex: 1,
+        size: incoming ? GRAPH_EDGE_INCOMING_SIZE : GRAPH_EDGE_ACTIVE_SIZE,
+      };
     }
     if (state.hoveredId || state.highlightedPath) {
       return { ...data, color: data.dimColor, label: null };

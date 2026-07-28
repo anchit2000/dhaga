@@ -2,7 +2,7 @@
 
 import { Input } from "@/components/ui/input";
 import { RepeatableList } from "./RepeatableList";
-import { SectionHeader } from "./sections";
+import { SectionHeader } from "./section-header";
 import type { Address, CustomField, ImportantDate } from "@dhaga/core";
 
 export function AddressSection({

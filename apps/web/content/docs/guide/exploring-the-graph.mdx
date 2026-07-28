@@ -29,6 +29,22 @@ into **incoming** and **outgoing** — and lets you:
 
 ![The graph with a node selected, its side panel showing incoming and outgoing edge counts, and the focused node's circle isolated](/docs/guide/graph-node-panel.png)
 
+## Reading the edges
+
+Edges are **directional**, and hovering a node makes the direction obvious: its
+**outgoing** edges — the ones where it's the subject — thicken into solid amber
+with a clear arrowhead, while edges merely **pointing at it** stay softer and
+thinner. So *Ajay → parent of → Anchit* reads at a glance.
+
+Employment and schooling both draw an edge from the person to the organisation:
+
+- A current employer is the person's primary **"works at"** edge.
+- Past employers render as their own **"worked at"** edges — every role in a
+  person's history shows, not just the current one.
+- Education renders as **"studied at"** (or "attended").
+
+![A hovered person node on the graph with its outgoing edges thickened into solid amber arrows and its incoming edges rendered softer and thinner](/docs/guide/graph-edge-direction.png)
+
 ## Layers and controls
 
 - The **Layers** panel toggles which node types and circles are drawn, so you

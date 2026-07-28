@@ -7,10 +7,12 @@ import {
   addContactsToCompany,
   addTagToContacts,
   findDuplicateContactClusters,
+  findOrCreateCompany,
   forgetContacts,
   getContact,
   getContactsForMerge,
   removeTagFromContacts,
+  setContactsAffiliation,
   setContactsStarred,
 } from "@/lib/repo/contacts";
 import { addNote } from "@/lib/repo/notes";
@@ -94,6 +96,80 @@ describe("addContactsToCompany", () => {
       .from(positions)
       .where(and(eq(positions.contactId, a), eq(positions.companyId, companyId), eq(positions.isCurrent, true)));
     expect(rows).toHaveLength(1);
+  });
+});
+
+/**
+ * Bulk affiliation relabels the `relation` predicate on many contacts' positions
+ * at one company — mode "current" targets each contact's OWN primary employer,
+ * mode "company" one shared company. The returned count drives the toast/undo,
+ * so it must reflect only contacts actually changed: a contact with no matching
+ * position must be neither relabeled nor counted, and mode "company" must never
+ * touch a contact's roles at a DIFFERENT employer.
+ */
+describe("setContactsAffiliation", () => {
+  async function companyIdOf(contactId: string): Promise<string> {
+    const db = await getDb();
+    const [row] = await db
+      .select({ companyId: contacts.companyId })
+      .from(contacts)
+      .where(eq(contacts.id, contactId))
+      .limit(1);
+    if (!row?.companyId) throw new Error(`contact ${contactId} has no company`);
+    return row.companyId;
+  }
+
+  async function positionRelation(contactId: string, companyId: string): Promise<string | null> {
+    const db = await getDb();
+    const [row] = await db
+      .select({ relation: positions.relation })
+      .from(positions)
+      .where(and(eq(positions.contactId, contactId), eq(positions.companyId, companyId)))
+      .limit(1);
+    return row?.relation ?? null;
+  }
+
+  it("mode 'current' relabels each contact's own primary-company role, counting only those changed", async () => {
+    const tag = randomUUID();
+    const a = await uniqueContact("Aff A", { company: `Aff CoA ${tag}` });
+    const b = await uniqueContact("Aff B", { company: `Aff CoB ${tag}` });
+    // No company → no position at any company_id → the "no matching position" case.
+    const c = await uniqueContact("Aff C");
+    const coA = await companyIdOf(a);
+    const coB = await companyIdOf(b);
+
+    const affected = await setContactsAffiliation([a, b, c], { mode: "current" }, "studied_at");
+
+    // WHY: each contact's OWN employer is relabeled (a batch "mark as alumni"
+    // where everyone studied somewhere different), and c — with no matching
+    // position — must neither be relabeled nor inflate the count the undo relies on.
+    expect(affected).toBe(2);
+    expect(await positionRelation(a, coA)).toBe("studied_at");
+    expect(await positionRelation(b, coB)).toBe("studied_at");
+  });
+
+  it("mode 'company' relabels only positions at that company, leaving other employers untouched", async () => {
+    const tag = randomUUID();
+    const sharedName = `Aff Shared ${tag}`;
+    const d = await uniqueContact("Aff D", { company: sharedName });
+    const e = await uniqueContact("Aff E", { company: sharedName });
+    const f = await uniqueContact("Aff F", { company: `Aff Other ${tag}` });
+    const shared = await findOrCreateCompany(sharedName); // idempotent → the existing id
+    const other = await companyIdOf(f);
+
+    const affected = await setContactsAffiliation(
+      [d, e, f],
+      { mode: "company", companyId: shared },
+      "interned_at",
+    );
+
+    // WHY: scoping to one company must not touch a contact's role at a DIFFERENT
+    // employer (f's Other-Co job stays null), and f — with no position at the
+    // shared company — must not be counted.
+    expect(affected).toBe(2);
+    expect(await positionRelation(d, shared)).toBe("interned_at");
+    expect(await positionRelation(e, shared)).toBe("interned_at");
+    expect(await positionRelation(f, other)).toBeNull();
   });
 });
 

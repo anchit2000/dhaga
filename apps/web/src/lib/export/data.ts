@@ -3,6 +3,7 @@ import { getDb } from "@/lib/db/request-scope";
 import {
   cardImages,
   companies,
+  companyAliases,
   contacts,
   edges,
   facts,
@@ -36,6 +37,7 @@ export async function exportEverything(): Promise<Record<string, unknown>> {
   const [
     allContacts,
     allCompanies,
+    allCompanyAliases,
     allPositions,
     allEvents,
     allEventContacts,
@@ -49,6 +51,7 @@ export async function exportEverything(): Promise<Record<string, unknown>> {
   ] = await Promise.all([
     db.select().from(contacts),
     db.select().from(companies),
+    db.select().from(companyAliases),
     db.select().from(positions),
     db.select().from(events),
     db.select().from(eventContacts),
@@ -64,6 +67,7 @@ export async function exportEverything(): Promise<Record<string, unknown>> {
     exported_at: new Date().toISOString(),
     contacts: allContacts,
     companies: allCompanies,
+    company_aliases: allCompanyAliases,
     positions: allPositions,
     events: allEvents,
     event_contacts: allEventContacts,

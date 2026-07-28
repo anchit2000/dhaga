@@ -23,11 +23,35 @@ With people selected, the bar offers:
   least two selected). See below.
 - **Add to company** — attach everyone to a company at once; pick an existing
   one or create it inline.
+- **Change relationship** — relabel how the selected people relate to a company
+  — studied at, worked at, interned at, board member of, and so on. Only the
+  label changes; nobody moves companies. See
+  [Relabel relationships in bulk](#relabel-relationships-in-bulk) below.
 - **Tag** — add or remove a tag across the whole selection.
 - **Star** / **Unstar** — flag or unflag people for your Saved list.
 - **Delete** — forget the selected people. This cascades — their notes, facts,
   edges, and embeddings go too — exactly like "forget this person" on a single
   profile.
+
+## Relabel relationships in bulk
+
+Phone and address-book imports often land everyone at a place as "works at" —
+including the classmates you studied with and the professors who taught you.
+**Change relationship** fixes a whole batch in one pass:
+
+1. Select the people and click **Change relationship**.
+2. Choose **which company** the label applies to — **their current company**
+   (each person's own), or **a specific company** you pick.
+3. Choose the new relationship — **studied at**, **worked at**, **interned at**,
+   **board member of**, and so on, or create your own type.
+4. Apply.
+
+Only the affiliation *label* changes — nobody is moved to a different company.
+So students relabelled to "studied at" and the professors left as "works at"
+still cluster on the same university node in your
+[graph](/docs/guide/exploring-the-graph).
+
+![The Change relationship dialog: a "Which company" choice of Their current company or A specific company, and a Relationship picker offering studied at, worked at, interned at, and more](/docs/guide/people-change-relationship.png)
 
 ## Merge duplicate contacts
 

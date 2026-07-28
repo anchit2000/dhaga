@@ -24,7 +24,7 @@ export interface FullGraphEdge {
   source: string; // node id
   target: string;
   predicate: string; // snake_case
-  kind: "explicit" | "works_at" | "attended" | "tagged";
+  kind: "explicit" | "works_at" | "affiliation" | "attended" | "tagged";
 }
 
 /** Server-persisted settled layout for one graph state (repo/graph-layouts.ts). */

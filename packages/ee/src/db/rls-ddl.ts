@@ -5,6 +5,7 @@
  */
 const TENANT_TABLES = [
   "companies",
+  "company_aliases",
   "contacts",
   "events",
   "event_contacts",

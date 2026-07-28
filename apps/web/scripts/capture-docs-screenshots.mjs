@@ -362,6 +362,97 @@ await capture("nav-quick-add.png", "/app (nav Add)", "The global nav 'Add someon
   await sleep(800);
 });
 
+// --- Shots for this PR: relationships / education / aliases / edge direction ---
+
+// 27. people-change-relationship.png — the bulk "Change relationship" dialog
+await capture(
+  "people-change-relationship.png",
+  "/app/people",
+  "The bulk Change relationship dialog: a 'Which company' choice (their current company / a specific company) and a Relationship picker (studied at / worked at / interned at / …).",
+  async () => {
+    await page.goto(`${BASE}/app/people`, { waitUntil: "networkidle" });
+    await sleep(1000);
+    const boxes = page.getByRole("checkbox", { name: "Select row" });
+    for (const i of [0, 1, 2]) await boxes.nth(i).click();
+    await page.getByText(/\d+ selected/).first().waitFor({ timeout: 8000 });
+    // The bulk-bar trigger (distinct from the dialog's confirm button of the same name).
+    await page.getByRole("button", { name: "Change relationship" }).first().click();
+    await page.waitForSelector('[role="dialog"]', { timeout: 8000 });
+    await sleep(700);
+  },
+);
+
+// 28. add-person-education.png — the contact form's Experience + Education sections
+await capture(
+  "add-person-education.png",
+  "/app/people/new",
+  "The contact form's Experience and Education sections — Education showing Institution, Degree / programme, Field of study, year fields, a 'Currently studying here' toggle, and a relationship-type selector.",
+  async () => {
+    await page.goto(`${BASE}/app/people/new`, { waitUntil: "networkidle" });
+    await sleep(800);
+    // Both groups start empty (just an add button); add one row each so the
+    // fields — the point of the shot — render.
+    await page.getByRole("button", { name: "Add role" }).click().catch(() => {});
+    await page.getByRole("button", { name: "Add education" }).click().catch(() => {});
+    await sleep(400);
+    await page.getByRole("button", { name: "Add education" }).scrollIntoViewIfNeeded();
+    // Nudge up so the Experience section above stays in frame too.
+    await page.evaluate(() => window.scrollBy(0, -300));
+    await sleep(400);
+  },
+);
+
+// 29. companies-aliases.png — the global Company aliases page
+await capture(
+  "companies-aliases.png",
+  "/app/companies/aliases",
+  "The Company aliases page: alternate names each shown next to the company they resolve to, editable/removable in place.",
+  async () => {
+    // The seed records no aliases, so add one first via a company's edit dialog
+    // (row Actions → Rename → 'Also known as'). Best-effort: if the DB already
+    // has aliases this just adds one more.
+    await page.goto(`${BASE}/app/companies`, { waitUntil: "networkidle" });
+    await sleep(900);
+    await page.getByRole("button", { name: /^Actions for/ }).first().click();
+    await page.getByRole("menuitem", { name: "Rename" }).click();
+    await page.getByText("Also known as").waitFor({ timeout: 8000 });
+    await page.getByPlaceholder("Acme Corp").fill("Innovate Labs");
+    // The alias "Add" button, distinct from the footer "Save changes".
+    await page.getByRole("button", { name: "Add", exact: true }).click();
+    await sleep(800);
+    await page.keyboard.press("Escape");
+    await sleep(400);
+    await page.goto(`${BASE}/app/companies/aliases`, { waitUntil: "networkidle" });
+    await sleep(900);
+    await page.evaluate(() => window.scrollTo(0, 0));
+  },
+);
+
+// 30. graph-edge-direction.png — directional edges emphasised on hover
+await capture(
+  "graph-edge-direction.png",
+  `/app/graph?focus=${CONTACT_ID}`,
+  "A focused/hovered node on the graph: its outgoing edges thick amber arrows, incoming edges softer/thinner — edge direction at a glance (arrowheads render regardless).",
+  async () => {
+    await page.goto(`${BASE}/app/graph?focus=${CONTACT_ID}`, { waitUntil: "domcontentloaded" });
+    await waitForGraph(page);
+    await sleep(2500); // let the camera centre on the focused node
+    // Hover the centred node so the reducer emphasises outgoing vs incoming
+    // edges. Sweep a few points centre-left (a right-side node panel covers the
+    // right) to catch the node's small hit area.
+    const box = await page.locator("canvas").first().boundingBox();
+    if (box) {
+      const cx = box.x + box.width * 0.42;
+      const cy = box.y + box.height * 0.5;
+      for (const [dx, dy] of [[0, 0], [6, 0], [-6, 4], [0, -6], [4, 6]]) {
+        await page.mouse.move(cx + dx, cy + dy);
+        await sleep(120);
+      }
+    }
+    await sleep(600);
+  },
+);
+
 await context.close();
 await browser.close();
 

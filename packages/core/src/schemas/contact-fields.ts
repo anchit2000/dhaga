@@ -41,6 +41,17 @@ export const positionSchema = z.object({
   startedAt: z.string().nullable().describe('When it started, verbatim (e.g. "2019"), or null'),
   endedAt: z.string().nullable().describe("When it ended, verbatim, or null"),
   note: z.string().nullable().describe("Any extra note, or null"),
+  // Affiliation predicate for this row: studied_at / attended mark education,
+  // interned_at / board_member_of / … mark other affiliations. Deliberately
+  // OPTIONAL (not the required-nullable the fields above use) so every existing
+  // caller and capture surface that omits it stays valid; a null/absent relation
+  // is a plain employment role and affiliationPredicate() then derives
+  // works_at / worked_at from `current`.
+  relation: z
+    .string()
+    .nullable()
+    .optional()
+    .describe("Affiliation predicate (studied_at, attended, interned_at, …); null for plain employment"),
 });
 export type Position = z.infer<typeof positionSchema>;
 

@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { GRAPH_COLLAPSED_GROUP_SCALE } from "@/utils/constants/graph";
+import {
+  GRAPH_COLLAPSED_GROUP_SCALE,
+  GRAPH_EDGE_ACTIVE_SIZE,
+  GRAPH_EDGE_INCOMING_SIZE,
+} from "@/utils/constants/graph";
 import {
   emptyRenderState,
   makeEdgeReducer,
@@ -33,6 +37,7 @@ function edgeAttrs(): EdgeRenderAttributes {
     color: "#3a352e",
     dimColor: "#221f1b",
     activeColor: "#e2a44c",
+    incomingColor: "#8a6d3b",
   };
 }
 
@@ -119,8 +124,27 @@ describe("edge reducer keeps sigma's total-object contract", () => {
     ] satisfies Partial<RenderState>[]) {
       const out = makeEdgeReducer(stateWith(overrides))("e", edgeAttrs());
       expectTotal(edgeAttrs(), out);
-      expect(out).toMatchObject({ color: edgeAttrs().activeColor, size: 1.1, forceLabel: true });
+      // "a" (source) is the hovered/selected/path node, so the edge is
+      // outgoing/selected — the strong treatment that makes the arrow legible.
+      expect(out).toMatchObject({
+        color: edgeAttrs().activeColor,
+        size: GRAPH_EDGE_ACTIVE_SIZE,
+        forceLabel: true,
+      });
     }
+  });
+
+  it("hovering the edge's target reads softer (incoming): thinner + desaturated", () => {
+    // Edge a→b, hover "b" (the target): the edge points INTO the hovered node,
+    // so it must read a notch thinner and in the softer incoming colour — the
+    // fatter outgoing arrow leaving the subject wins the eye (the direction cue).
+    const out = makeEdgeReducer(stateWith({ hoveredId: "b" }))("e", edgeAttrs());
+    expectTotal(edgeAttrs(), out);
+    expect(out).toMatchObject({
+      color: edgeAttrs().incomingColor,
+      size: GRAPH_EDGE_INCOMING_SIZE,
+      forceLabel: true,
+    });
   });
 
   it("hover-elsewhere dims via dimColor without losing size", () => {

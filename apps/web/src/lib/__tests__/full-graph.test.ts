@@ -1,9 +1,11 @@
+import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
-import { emptyExtractedContact } from "@dhaga/core";
+import { emptyContactProfile, emptyExtractedContact } from "@dhaga/core";
+import type { ContactProfile, Position } from "@dhaga/core";
 import { getDb } from "@/lib/db/request-scope";
 import { contacts } from "@/lib/db/schema";
-import { createContact } from "@/lib/repo/contacts";
+import { createContact, createContactProfile, findOrCreateCompany } from "@/lib/repo/contacts";
 import { addContactToEvent, createEvent } from "@/lib/repo/events";
 import { createEntity } from "@/lib/repo/entities";
 import { createNodeType } from "@/lib/repo/node-types";
@@ -94,6 +96,109 @@ describe("fetchFullGraph assembles every node kind and synthesizes edges", () =>
 
     await deleteRelationshipEdge(edgeId);
     expect((await fetchFullGraph()).edges.some((edge) => edge.id === edgeId)).toBe(false);
+  });
+});
+
+/**
+ * Affiliation edges now derive from the positions table (source of truth for
+ * employment & education), not just the denormalised company_id — so past and
+ * additional roles surface in the graph. The contract these pin: the PRIMARY
+ * role keeps exactly one kind:"works_at" edge with the pinned `works-at:<id>`
+ * sigma key (FA2 seeding + the client's stable-key assumption depend on it),
+ * every other role ships as a labeled kind:"affiliation" edge, and the edge
+ * label always comes from affiliationPredicate() (studied_at wins; a plain past
+ * role reads worked_at, not works_at).
+ */
+describe("fetchFullGraph derives affiliation edges from positions", () => {
+  function affilProfile(name: string, roles: Position[]): ContactProfile {
+    return { ...emptyContactProfile(), name, positions: roles };
+  }
+
+  it("keeps exactly one pinned works-at edge for a plain primary role (backward compat)", async () => {
+    const tag = randomUUID();
+    const co = `Affil Solo ${tag}`;
+    const id = await createContactProfile(
+      affilProfile(`Affil Solo Person ${tag}`, [
+        { title: "Engineer", company: co, department: null, current: true, startedAt: null, endedAt: null, note: null, relation: null },
+      ]),
+      "manual",
+    );
+    const companyId = await findOrCreateCompany(co); // idempotent → the id the profile created
+
+    const outgoing = (await fetchFullGraph()).edges.filter((edge) => edge.source === id);
+    // WHY: the client uses `works-at:<contactId>` as a STABLE sigma key across
+    // reloads and seeds FA2 clustering off kind:"works_at". A plain current
+    // primary role must still yield exactly that one edge — deriving edges from
+    // positions must not alter the backward-compatible shape the old company_id
+    // edge had.
+    expect(outgoing).toEqual([
+      { id: `works-at:${id}`, source: id, target: companyId, predicate: "works_at", kind: "works_at" },
+    ]);
+  });
+
+  it("adds a labeled kind:'affiliation' worked_at edge for a PAST secondary role", async () => {
+    const tag = randomUUID();
+    const currentCo = `Affil Current ${tag}`;
+    const pastCo = `Affil Past ${tag}`;
+    const id = await createContactProfile(
+      affilProfile(`Affil History Person ${tag}`, [
+        { title: "Now", company: currentCo, department: null, current: true, startedAt: null, endedAt: null, note: null, relation: null },
+        { title: "Then", company: pastCo, department: null, current: false, startedAt: null, endedAt: "2020", note: null, relation: null },
+      ]),
+      "manual",
+    );
+    const currentId = await findOrCreateCompany(currentCo);
+    const pastId = await findOrCreateCompany(pastCo);
+
+    const outgoing = (await fetchFullGraph()).edges.filter((edge) => edge.source === id);
+    // The primary (current) role still holds the pinned works-at edge …
+    expect(outgoing).toContainEqual(
+      expect.objectContaining({ id: `works-at:${id}`, target: currentId, kind: "works_at" }),
+    );
+    // WHY: past employment is exactly what the company_id-only edge dropped; it
+    // must surface as a SEPARATE labeled affiliation reading "worked at" — never
+    // a second works_at (which would collide on the pinned key and mis-cluster).
+    const pastEdge = outgoing.find((edge) => edge.target === pastId);
+    expect(pastEdge).toMatchObject({ predicate: "worked_at", kind: "affiliation" });
+    expect(pastEdge?.id).not.toBe(`works-at:${id}`);
+  });
+
+  it("labels a studied_at role by its relation — works_at kind when primary, affiliation when not", async () => {
+    const tag = randomUUID();
+    // studied_at as the PRIMARY role.
+    const school = `Affil School ${tag}`;
+    const student = await createContactProfile(
+      affilProfile(`Affil Student ${tag}`, [
+        { title: null, company: school, department: null, current: true, startedAt: null, endedAt: null, note: null, relation: "studied_at" },
+      ]),
+      "manual",
+    );
+    const schoolId = await findOrCreateCompany(school);
+
+    // studied_at as a SECONDARY role, alongside a primary job.
+    const jobCo = `Affil Job ${tag}`;
+    const almaMater = `Affil Alma ${tag}`;
+    const grad = await createContactProfile(
+      affilProfile(`Affil Grad ${tag}`, [
+        { title: "PM", company: jobCo, department: null, current: true, startedAt: null, endedAt: null, note: null, relation: null },
+        { title: null, company: almaMater, department: null, current: false, startedAt: null, endedAt: null, note: null, relation: "studied_at" },
+      ]),
+      "manual",
+    );
+    const almaId = await findOrCreateCompany(almaMater);
+
+    const graph = await fetchFullGraph();
+
+    // WHY: the label must follow the relation (studied_at), but because this is
+    // the PRIMARY role the client still needs kind:"works_at" + the pinned key to
+    // seed clustering — the override changes the label, not the clustering role.
+    const studentEdge = graph.edges.find((edge) => edge.id === `works-at:${student}`);
+    expect(studentEdge).toMatchObject({ target: schoolId, predicate: "studied_at", kind: "works_at" });
+
+    // WHY: a NON-primary studied_at is a genuine education affiliation — it must
+    // ship as kind:"affiliation" labeled studied_at, distinct from the job edge.
+    const almaEdge = graph.edges.find((edge) => edge.source === grad && edge.target === almaId);
+    expect(almaEdge).toMatchObject({ predicate: "studied_at", kind: "affiliation" });
   });
 });
 

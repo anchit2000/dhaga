@@ -2,17 +2,18 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, GitMerge, Star, StarOff, Tag, Trash2 } from "lucide-react";
+import { Building2, GitMerge, Link2, Star, StarOff, Tag, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { toastError } from "@/components/app/feedback";
 import { Button } from "@/components/ui/button";
 import { bulkStarContactsAction } from "@/lib/actions/contacts";
 import { AddToCompanyDialog } from "./AddToCompanyDialog";
+import { BulkAffiliationDialog } from "./BulkAffiliationDialog";
 import { BulkDeleteDialog } from "./BulkDeleteDialog";
 import { BulkTagDialog } from "./BulkTagDialog";
 import { ContactMergeDialog } from "./ContactMergeDialog";
 
-type OpenDialog = "merge" | "company" | "tag" | "delete" | null;
+type OpenDialog = "merge" | "company" | "affiliation" | "tag" | "delete" | null;
 
 /**
  * The action triggers slotted into the People {@link BulkActionBar}: merge,
@@ -57,6 +58,9 @@ export function PeopleBulkActions({ ids, onClear }: { ids: string[]; onClear: ()
       <Button variant="outline" size="sm" onClick={() => setDialog("company")}>
         <Building2 /> Add to company
       </Button>
+      <Button variant="outline" size="sm" onClick={() => setDialog("affiliation")}>
+        <Link2 /> Change relationship
+      </Button>
       <Button variant="outline" size="sm" onClick={() => setDialog("tag")}>
         <Tag /> Tag
       </Button>
@@ -92,6 +96,12 @@ export function PeopleBulkActions({ ids, onClear }: { ids: string[]; onClear: ()
         contactIds={ids}
         open={dialog === "company"}
         onOpenChange={(open) => setDialog(open ? "company" : null)}
+        onDone={onClear}
+      />
+      <BulkAffiliationDialog
+        contactIds={ids}
+        open={dialog === "affiliation"}
+        onOpenChange={(open) => setDialog(open ? "affiliation" : null)}
         onDone={onClear}
       />
       <BulkTagDialog

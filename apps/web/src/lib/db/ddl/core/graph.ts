@@ -26,6 +26,18 @@ CREATE TABLE IF NOT EXISTS companies (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- Alternate names a company is known by. Uniqueness is enforced in app code,
+-- not here. Cascades so deleting a company drops its aliases.
+CREATE TABLE IF NOT EXISTS company_aliases (
+  id text PRIMARY KEY,
+  company_id text NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  alias text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS company_aliases_company_idx ON company_aliases (company_id);
+CREATE INDEX IF NOT EXISTS company_aliases_alias_idx ON company_aliases (lower(alias));
+
 CREATE TABLE IF NOT EXISTS contacts (
   id text PRIMARY KEY,
   name text NOT NULL,

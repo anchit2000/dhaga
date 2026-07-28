@@ -14,7 +14,7 @@ import {
 import { withConnectRetry } from "./connect-retry";
 import { DDL } from "./ddl";
 import { ddlAlreadyApplied, ddlFingerprint, recordDdlApplied } from "./ddl-history";
-import { companies, contacts } from "./schema/contacts";
+import { companies, companyAliases, contacts } from "./schema/contacts";
 import { entities, nodeTypes, relationshipTypes } from "./schema/entities";
 import { eventContacts, events } from "./schema/events";
 import { edges, edgeSuggestions, facts, followUps, notes } from "./schema/notes";
@@ -44,6 +44,7 @@ import { apiKey } from "./schema/api-key";
 
 const schema = {
   companies,
+  companyAliases,
   contacts,
   events,
   eventContacts,

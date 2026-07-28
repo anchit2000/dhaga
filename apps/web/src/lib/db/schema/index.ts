@@ -1,8 +1,10 @@
 export {
   companies,
+  companyAliases,
   contacts,
   positions,
   type CompanyRow,
+  type CompanyAliasRow,
   type ContactRow,
   type PositionRow,
 } from "./contacts";

@@ -8,8 +8,10 @@ import {
   addTagToContacts,
   forgetContacts,
   removeTagFromContacts,
+  setContactsAffiliation,
   setContactsStarred,
 } from "@/lib/repo/contacts";
+import { PREDICATE_SLUG_PATTERN } from "@/utils/constants/graph";
 import { parseContactIds } from "./payload";
 
 function revalidateContactSurfaces(): void {
@@ -65,6 +67,36 @@ export async function bulkTagContactsAction(formData: FormData): Promise<Mutatio
     revalidatePath("/app/people");
     revalidatePath("/app/saved");
   }
+  return result;
+}
+
+/** Relabel the company affiliation (studied_at, worked_at, custom, …) across
+ *  many contacts — either their current company or one chosen company. */
+export async function bulkSetAffiliationAction(formData: FormData): Promise<MutationResult<null>> {
+  const idsRaw = formData.get("contactIds");
+  const relation = String(formData.get("relation") ?? "").trim();
+  const targetMode = String(formData.get("targetMode") ?? "");
+  const companyId = String(formData.get("companyId") ?? "").trim();
+  const result = await mutation("bulkSetAffiliation", async () => {
+    const contactIds = parseContactIds(idsRaw);
+    // Built-in org predicates are all snake_case slugs and custom predicates are
+    // allowed as long as they match PREDICATE_SLUG_PATTERN — so the pattern is
+    // the allowed set (same validation as createRelationshipTypeAction).
+    if (!relation) throw new MutationError("Choose a relationship.");
+    if (!PREDICATE_SLUG_PATTERN.test(relation)) {
+      throw new MutationError("Relationship must be a snake_case slug (e.g. studied_at).");
+    }
+    let target: { mode: "current" } | { mode: "company"; companyId: string };
+    if (targetMode === "company") {
+      if (!companyId) throw new MutationError("Choose a company.");
+      target = { mode: "company", companyId };
+    } else {
+      target = { mode: "current" };
+    }
+    await setContactsAffiliation(contactIds, target, relation);
+    return null;
+  });
+  if (result.ok) revalidateContactSurfaces();
   return result;
 }
 

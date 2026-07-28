@@ -43,6 +43,15 @@ export const GRAPH_NODE_SIZE_MIN = 2;
 export const GRAPH_NODE_SIZE_MAX = 9;
 /** Base edge thickness (display units) — main-payload + tag-layer edges. */
 export const GRAPH_EDGE_SIZE = 0.5;
+/** Emphasised edge thickness on hover/selection/path. The arrowhead scales with
+ *  thickness in sigma's EdgeArrowProgram, so this is what makes the direction
+ *  arrow legible. Applied to outgoing edges of the hovered node (subject side)
+ *  and to all selected/path edges. */
+export const GRAPH_EDGE_ACTIVE_SIZE = 2.8;
+/** Emphasised thickness for edges *incoming* to the hovered node — clearly
+ *  thicker than idle but a notch below the outgoing size so the subject side
+ *  (the fatter amber arrow leaving the node) reads at a glance. */
+export const GRAPH_EDGE_INCOMING_SIZE = 1.8;
 /** Collapsed company/event group nodes scale up to signal they hold members. */
 export const GRAPH_COLLAPSED_GROUP_SCALE = 1.5;
 

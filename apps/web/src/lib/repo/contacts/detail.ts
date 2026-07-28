@@ -10,6 +10,9 @@ export interface PositionView {
   title: string | null;
   companyName: string | null;
   department: string | null;
+  /** Affiliation predicate; null = plain employment. Education rows carry a
+   *  studied_at / attended value so the detail page can group them separately. */
+  relation: string | null;
   isCurrent: boolean;
   startedAt: string | null;
   endedAt: string | null;
@@ -43,6 +46,7 @@ export async function getContact(id: string): Promise<ContactDetail | null> {
       title: positions.title,
       companyName: companies.name,
       department: positions.department,
+      relation: positions.relation,
       isCurrent: positions.isCurrent,
       startedAt: positions.startedAt,
       endedAt: positions.endedAt,
@@ -80,6 +84,9 @@ export async function getContactProfile(id: string): Promise<ContactProfile | nu
       startedAt: p.startedAt,
       endedAt: p.endedAt,
       note: p.note,
+      // Carry the affiliation predicate back into the editable profile so the
+      // edit form can split existing rows into Experience vs Education.
+      relation: p.relation,
     })),
     emails: normalizeContactMethods(c.emails),
     phones: normalizeContactMethods(c.phones),

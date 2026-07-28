@@ -7,9 +7,12 @@ import { captureDialogState } from "./capture-dialog-state";
  * The regression: on the home dock a camera/upload card scan submits with the
  * capture dialog CLOSED. A failing scan returns `{ error }`, but that error only
  * renders inside the capture dialog's CaptureForm — so with the dialog closed it
- * vanished and the user bounced back to home with no contact and no error. These
- * pin that a dock-scan error forces a visible surface (captureErrorOpen) while a
- * success opens the review step, and that neither leaks off the home dock.
+ * vanished and the user bounced back to home with no contact and no error (after
+ * Manual became the default surface, the dialog even reopened to a blank
+ * "add manually" form). `captureErrorOpen` is what tells HomeDockCapture to raise
+ * the dedicated ScanErrorDialog instead. These pin that a dock-scan error flags a
+ * visible surface (captureErrorOpen) while a success opens the review step, and
+ * that neither leaks off the home dock.
  */
 const contact: ExtractedContact = {
   name: "Ada Lovelace",
@@ -22,7 +25,7 @@ const contact: ExtractedContact = {
 };
 
 describe("captureDialogState", () => {
-  it("forces the capture dialog open so a home-dock scan error is visible", () => {
+  it("flags the scan-error dialog so a home-dock scan error is visible", () => {
     const state: QuickAddState = { error: "The scan failed." };
     const { resultOpen, captureErrorOpen } = captureDialogState(state, undefined, true);
     expect(captureErrorOpen).toBe(true); // error surfaces instead of a silent bounce
@@ -48,7 +51,7 @@ describe("captureDialogState", () => {
     expect(captureDialogState(next, dismissed, true).captureErrorOpen).toBe(true);
   });
 
-  it("never forces the capture dialog open off the home dock", () => {
+  it("never flags the scan-error dialog off the home dock", () => {
     const state: QuickAddState = { error: "The scan failed." };
     expect(captureDialogState(state, undefined, false).captureErrorOpen).toBe(false);
   });

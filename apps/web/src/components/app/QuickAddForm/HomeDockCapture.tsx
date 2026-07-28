@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { ThreadLoader } from "@/components/brand/ThreadLoader";
 import { CARD_SCAN_MESSAGES } from "@/utils/constants/loader-messages";
 import { QuickAddDock } from "./QuickAddDock";
+import { ScanErrorDialog } from "./ScanErrorDialog";
 
 /**
  * The home-dock capture surface: the collapsed floating dock plus the capture
@@ -26,6 +27,9 @@ export function HomeDockCapture({
   resultOpen,
   onDialogClose,
   onVoiceStart,
+  error,
+  onScanRetry,
+  onScanManual,
   formAction,
   pasteTextareaRef,
   pending,
@@ -45,6 +49,13 @@ export function HomeDockCapture({
   /** Reset mode to the default and dismiss the current result on dialog close. */
   onDialogClose: () => void;
   onVoiceStart: () => void;
+  /** The current action error — shown in the scan-error dialog when a dock scan
+   *  (capture dialog closed) fails, so the failure isn't a silent bounce. */
+  error?: string;
+  /** Dismiss the failed scan and reopen capture on the Card-photo tab to reshoot. */
+  onScanRetry: () => void;
+  /** Dismiss the failed scan and reopen capture on the free Manual tab. */
+  onScanManual: () => void;
   formAction: (formData: FormData) => void;
   pasteTextareaRef: RefObject<HTMLTextAreaElement | null>;
   pending: boolean;
@@ -52,7 +63,7 @@ export function HomeDockCapture({
   return (
     <div className="pb-28">
       <Dialog
-        open={(captureOpen || captureErrorOpen) && !resultOpen}
+        open={captureOpen && !resultOpen}
         onOpenChange={(open) => {
           if (open) setCaptureOpen(true);
           else onDialogClose();
@@ -73,6 +84,16 @@ export function HomeDockCapture({
           {surface}
         </DialogContent>
       </Dialog>
+      {/* A dock scan submits with the capture dialog closed; on failure surface
+          the error here (not the blank Manual hub the default surface would show)
+          with a retry / manual fallback. In-dialog captures show errors inline. */}
+      <ScanErrorDialog
+        open={captureErrorOpen && !captureOpen && !resultOpen}
+        message={error}
+        onClose={onDialogClose}
+        onRetry={onScanRetry}
+        onManual={onScanManual}
+      />
       {!captureOpen && !captureErrorOpen && !resultOpen ? (
         <QuickAddDock
           formAction={formAction}

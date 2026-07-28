@@ -8,6 +8,7 @@ import {
   type LLMImage,
 } from "@dhaga/core";
 import { withUserDb } from "@/lib/db/request-scope";
+import { isTransientConnectionError } from "@/utils/constants/db";
 import { AiBudgetError, assertAiBudget, recordAiAction } from "./metering";
 
 export interface CardScanResult {
@@ -48,9 +49,21 @@ export async function scanCardImages(
       tier: "extract",
       images,
     });
-    await withUserDb(userId, () =>
-      recordAiAction("contact_parse", result.model, result.usage),
-    );
+    // The vision call already succeeded (and was billed) — a transient blip in
+    // the usage-record must NOT discard the contact. Record best-effort: on
+    // failure log PII-free and keep the scan. An occasional unmetered action is
+    // harmless next to losing a good scan the user waited seconds for.
+    try {
+      await withUserDb(userId, () =>
+        recordAiAction("contact_parse", result.model, result.usage),
+      );
+    } catch (recordError) {
+      console.error("[card-scan] usage record failed (scan kept)", {
+        name: recordError instanceof Error ? recordError.name : typeof recordError,
+        code: (recordError as { code?: unknown } | null)?.code,
+        transient: isTransientConnectionError(recordError),
+      });
+    }
     const { raw_text, ...contact } = result.data;
     if (!contact.name.trim()) {
       return {
@@ -60,6 +73,21 @@ export async function scanCardImages(
     }
     return { contact, rawText: raw_text };
   } catch (error) {
+    if (!(error instanceof AiBudgetError)) {
+      // The scan collapsed into an opaque "try again"; without this it left no
+      // trace, so a real failure (LLM API error, or a transient Sydney pool
+      // blip in the budget check / usage-record around the vision call) was a
+      // black box. PII-safe — error class / code / HTTP status / transient flag
+      // and the image count only, never the message body which could echo card
+      // content (mirrors the [ask-dhaga] failure log; privacy rule).
+      console.error("[card-scan] extraction failed", {
+        name: error instanceof Error ? error.name : typeof error,
+        code: (error as { code?: unknown } | null)?.code,
+        status: (error as { status?: unknown } | null)?.status,
+        transient: isTransientConnectionError(error),
+        imageCount: images.length,
+      });
+    }
     return {
       error:
         error instanceof AiBudgetError ? error.message : "The scan failed — try again.",

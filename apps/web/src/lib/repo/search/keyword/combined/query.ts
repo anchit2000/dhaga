@@ -1,5 +1,9 @@
 import { sql, type SQL } from "drizzle-orm";
-import { SEARCH_HEADLINE_OPTS, NAME_FUZZY_MATCH_THRESHOLD } from "@/utils/constants/search";
+import {
+  SEARCH_HEADLINE_OPTS,
+  NAME_FUZZY_MATCH_THRESHOLD,
+  NAME_FUZZY_MIN_TOKEN_LEN,
+} from "@/utils/constants/search";
 import { buildTsQuery } from "../../tokenize";
 
 /**
@@ -27,14 +31,26 @@ export function buildCombinedKeywordQuery(words: string[]): SQL {
   const phonesMatch = anyIlike(sql`c.phones::text`);
   const linksMatch = anyIlike(sql`c.links::text`);
   const domainMatch = anyIlike(sql`co.domain`);
-  const nameSimSum = sql.join(
-    words.map((w) => sql`word_similarity(${w}, lower(c.name))`),
-    sql` + `,
-  );
-  const nameFuzzy = sql.join(
-    words.map((w) => sql`word_similarity(${w}, lower(c.name)) > ${NAME_FUZZY_MATCH_THRESHOLD}`),
-    sql` or `,
-  );
+  // Fuzzy (trigram) NAME matching is gated to longer tokens: a short token
+  // like "mit" shares trigrams with too many unrelated names ("Mittal",
+  // "Amit") to be a signal. Short tokens still match names via the tsvector /
+  // prefix path above — only this word_similarity bonus is length-gated. When
+  // every query word is short, there is no fuzzy contribution at all.
+  const fuzzyWords = words.filter((w) => w.length >= NAME_FUZZY_MIN_TOKEN_LEN);
+  const nameSimSum = fuzzyWords.length
+    ? sql.join(
+        fuzzyWords.map((w) => sql`word_similarity(${w}, lower(c.name))`),
+        sql` + `,
+      )
+    : sql`0`;
+  const nameFuzzy = fuzzyWords.length
+    ? sql.join(
+        fuzzyWords.map(
+          (w) => sql`word_similarity(${w}, lower(c.name)) > ${NAME_FUZZY_MATCH_THRESHOLD}`,
+        ),
+        sql` or `,
+      )
+    : sql`false`;
 
   // Non-identity branches carry NULLs for the identity-only detail columns so
   // every branch of the UNION shares one column list/types.

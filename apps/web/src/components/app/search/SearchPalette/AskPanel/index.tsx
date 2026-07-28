@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { ThreadLoader } from "@/components/brand/ThreadLoader";
 import { ASK_MESSAGES } from "@/utils/constants/loader-messages";
 import type { AskStreamState } from "../useAskStream";
+import { AnswerMarkdown } from "./AnswerMarkdown";
 import { AskNotice } from "./AskNotice";
 import { StepChecklist } from "./StepChecklist";
 
@@ -57,11 +58,7 @@ export function AskPanel({
         <ThreadLoader messages={ASK_MESSAGES} className="px-1 py-2" />
       ) : null}
 
-      {answer ? (
-        <p className="whitespace-pre-wrap text-sm leading-relaxed text-paper">
-          {answer}
-        </p>
-      ) : null}
+      {answer ? <AnswerMarkdown content={answer} /> : null}
 
       {notice ? (
         <AskNotice

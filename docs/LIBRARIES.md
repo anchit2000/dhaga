@@ -81,6 +81,22 @@ second design language" approach as react-day-picker (§11). react-big-calendar
 was not chosen — it needs moment/date-fns adapters and its Bootstrap-derived DOM
 is harder to bend to the bespoke look than FullCalendar's CSS-variable surface.
 
+### 13. react-markdown (Ask-Dhaga answer rendering) — adopted 2026-07-28
+
+**Renders:** the streamed Ask-Dhaga answer (`SearchPalette/AskPanel/`).
+
+The Sonnet answer stage emits Markdown (bold names, bullet lists, links); it was
+being dropped into a `whitespace-pre-wrap` `<p>`, so the raw `**`/`-` syntax
+showed literally. `react-markdown` v9 (+ the already-present `remark-gfm` v4)
+renders it as React elements — no `dangerouslySetInnerHTML`, and its default URL
+sanitiser strips dangerous link protocols, which matters for model-generated
+text. Wrapped in `AskPanel/AnswerMarkdown.tsx` with a component map themed to the
+amber/paper/seam tokens (no vendored stylesheet, same "library themed to our
+tokens" approach as the pickers above). Streaming-safe: it re-parses the growing
+string each delta and a half-written token renders as text until it closes. Not
+`marked`/`markdown-to-jsx` — react-markdown is the maintained standard and its
+no-raw-HTML default is the safer posture for untrusted model output.
+
 ---
 
 ## Adopt when the milestone needs it

@@ -36,8 +36,7 @@ export async function answerSearchQuery(
   }
 
   const plan = await planQuery(query);
-  const retrievalQuery = plan?.semantic_query || query;
-  const hits = await withUserDb(userId, () => retrieveHits(plan, retrievalQuery));
+  const hits = await withUserDb(userId, () => retrieveHits(plan, query));
   if (hits.length === 0) {
     return {
       notice:
@@ -88,12 +87,11 @@ export async function* streamSearchAnswer(
   }
 
   const plan = await planQuery(query);
-  const retrievalQuery = plan?.semantic_query || query;
   if (plan) {
     yield { type: "step", label: `Finding contacts related to ${describePlan(plan)}` };
   }
 
-  const hits = await withUserDb(userId, () => retrieveHits(plan, retrievalQuery));
+  const hits = await withUserDb(userId, () => retrieveHits(plan, query));
   if (hits.length === 0) {
     yield {
       type: "notice",

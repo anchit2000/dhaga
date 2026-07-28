@@ -7,6 +7,8 @@ progress, and what's next — derived from the full
 each phase. This page is a summary for contributors and prospective
 self-hosters; check those two docs for the exact feature-by-feature detail.
 
+See the [build timeline](TIMELINE.md) for how this was built, day by day, from 2 July 2026.
+
 Status legend:
 
 - **Shipped** — built, verified (typecheck/lint/build/tests + a manual

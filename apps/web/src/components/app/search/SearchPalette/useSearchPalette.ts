@@ -86,11 +86,30 @@ export function useSearchPalette(initialWeights: SearchWeights) {
     askStream.submit(String(formData.get("q") ?? ""));
   }
 
+  /** Bridge from the Search tab's right rail: run a query as an Ask-Dhaga
+   *  question — switch tabs, mirror it into the input, and fire the stream. */
+  function runAsk(question: string): void {
+    const q = question.trim();
+    if (!q) return;
+    setMode("ask");
+    setQuery(q);
+    askStream.submit(q);
+  }
+
+  // Two-pane only once there's something to put beside the answer/results: an
+  // Ask answer/receipts, or search results for a live query. The empty palette
+  // stays compact so it never balloons when idle.
+  const wide =
+    mode === "ask"
+      ? askStream.state.answer.length > 0 || askStream.state.receipts.length > 0
+      : query.trim().length > 0 && searchState.hits.length > 0;
+
   return {
     open,
     setOpen,
     mode,
     setMode,
+    wide,
     query,
     setQuery,
     weights,
@@ -99,6 +118,7 @@ export function useSearchPalette(initialWeights: SearchWeights) {
     showTuner,
     setShowTuner,
     formId,
+    runAsk,
     dispatch: mode === "search" ? searchDispatch : askFormAction,
     // Stale the instant the query outruns the last dispatched search, not just
     // while the request is in flight — otherwise the 300ms debounce window

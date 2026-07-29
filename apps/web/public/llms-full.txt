@@ -920,7 +920,9 @@ entry is always available.
 
 The capture dock at the bottom of the screen adds two more shortcuts:
 
-- **Camera** — grab a shot straight from your webcam.
+- **Camera** — shoot one or several frames straight from your webcam. **Done**
+  drops them into the card-photo tray, so you can crop, reorder, or remove any
+  of them before pressing Scan.
 - **Upload** — attach an image or file you already have.
 
 ![Dhaga quick-add in card-photo mode with a "Take or choose card photos" drop area (front, back, or multiple pages all merge into one contact), a Use live camera button, and the Voice / Camera / Upload capture dock](/docs/guide/quick-add-capture.png)
@@ -957,10 +959,23 @@ in by hand (no AI, no API key) is the zero-click path. Its sub-tabs let you add 
 **person**, record a **relationship** between two people you already have, or log
 a **fact / follow-up** against a contact. Switch to **Paste text** or **Card
 photo** whenever you'd rather have Dhaga extract from captured input, or go
-straight to **`/app/people/new`** for the full person form. Either way you can
-add multiple jobs, several labelled emails and phones, and links, then save.
+straight to **`/app/people/new`** for the full person form.
 
 ![The Manual hub with its Person, Relationship, and Fact / follow-up sub-tabs](/docs/guide/quick-add-manual.png)
+
+The person form keeps **Experience** and **Education** as two separate sections:
+
+- **Experience** — roles with a title, company, dates, and a **relationship
+  type** (employment, internship, founder, board member, advisor, volunteer).
+- **Education** — schooling with an **institution**, **degree / programme**,
+  **field of study**, years, and a **currently studying** toggle. Education is
+  stored as a "studied at" affiliation, so schools become nodes in your
+  [graph](/docs/guide/exploring-the-graph) just like employers.
+
+Add as many of each as you need, along with several labelled emails and phones
+and links, then save.
+
+![The manual person form's Experience and Education sections — Education showing Institution, Degree / programme, Field of study, year fields, a "Currently studying here" toggle, and a relationship-type selector](/docs/guide/add-person-education.png)
 
 ---
 
@@ -1010,6 +1025,23 @@ Like a contact merge, it's one atomic step.
 The merged-away companies are deleted with no undo. Their people, jobs, and
 edges move to the survivor first, so nothing is lost — but pick the survivor
 deliberately.
+
+## Aliases
+
+Companies pick up other names — a prior name, an acronym, an acquisition. Dhaga
+tracks these as **aliases**, so a later import that still uses an old name
+resolves to the right company instead of creating a duplicate.
+
+- **Merging records them automatically.** When you merge companies, each
+  merged-away name (and any aliases it already had) becomes an alias of the
+  survivor.
+- **Add your own.** Open a company's edit dialog and use **Also known as** to
+  add, rename, or remove aliases — changes save as you make them.
+- **See them all** on **`/app/companies/aliases`** — the **Aliases** link in the
+  Companies page header — which lists every alias next to its company, each
+  editable or removable in place.
+
+![The Company aliases page: a list of alternate names, each shown next to the company it resolves to, with inline edit and remove controls](/docs/guide/companies-aliases.png)
 
 ## Find duplicate companies
 
@@ -1217,6 +1249,22 @@ into **incoming** and **outgoing** — and lets you:
 
 ![The graph with a node selected, its side panel showing incoming and outgoing edge counts, and the focused node's circle isolated](/docs/guide/graph-node-panel.png)
 
+## Reading the edges
+
+Edges are **directional**, and hovering a node makes the direction obvious: its
+**outgoing** edges — the ones where it's the subject — thicken into solid amber
+with a clear arrowhead, while edges merely **pointing at it** stay softer and
+thinner. So *Ajay → parent of → Anchit* reads at a glance.
+
+Employment and schooling both draw an edge from the person to the organisation:
+
+- A current employer is the person's primary **"works at"** edge.
+- Past employers render as their own **"worked at"** edges — every role in a
+  person's history shows, not just the current one.
+- Education renders as **"studied at"** (or "attended").
+
+![A hovered person node on the graph with its outgoing edges thickened into solid amber arrows and its incoming edges rendered softer and thinner](/docs/guide/graph-edge-direction.png)
+
 ## Layers and controls
 
 - The **Layers** panel toggles which node types and circles are drawn, so you
@@ -1406,11 +1454,35 @@ With people selected, the bar offers:
   least two selected). See below.
 - **Add to company** — attach everyone to a company at once; pick an existing
   one or create it inline.
+- **Change relationship** — relabel how the selected people relate to a company
+  — studied at, worked at, interned at, board member of, and so on. Only the
+  label changes; nobody moves companies. See
+  [Relabel relationships in bulk](#relabel-relationships-in-bulk) below.
 - **Tag** — add or remove a tag across the whole selection.
 - **Star** / **Unstar** — flag or unflag people for your Saved list.
 - **Delete** — forget the selected people. This cascades — their notes, facts,
   edges, and embeddings go too — exactly like "forget this person" on a single
   profile.
+
+## Relabel relationships in bulk
+
+Phone and address-book imports often land everyone at a place as "works at" —
+including the classmates you studied with and the professors who taught you.
+**Change relationship** fixes a whole batch in one pass:
+
+1. Select the people and click **Change relationship**.
+2. Choose **which company** the label applies to — **their current company**
+   (each person's own), or **a specific company** you pick.
+3. Choose the new relationship — **studied at**, **worked at**, **interned at**,
+   **board member of**, and so on, or create your own type.
+4. Apply.
+
+Only the affiliation *label* changes — nobody is moved to a different company.
+So students relabelled to "studied at" and the professors left as "works at"
+still cluster on the same university node in your
+[graph](/docs/guide/exploring-the-graph).
+
+![The Change relationship dialog: a "Which company" choice of Their current company or A specific company, and a Relationship picker offering studied at, worked at, interned at, and more](/docs/guide/people-change-relationship.png)
 
 ## Merge duplicate contacts
 

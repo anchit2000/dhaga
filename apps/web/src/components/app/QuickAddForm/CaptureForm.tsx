@@ -16,6 +16,7 @@ export function CaptureForm({
   mode,
   setMode,
   formAction,
+  onPhotosCaptured,
   storeCardPhotos,
   pasteTextareaRef,
   photos,
@@ -30,6 +31,8 @@ export function CaptureForm({
   mode: CaptureMode;
   setMode: (mode: CaptureMode) => void;
   formAction: (formData: FormData) => void;
+  /** Dock camera frames → the card-photo tray (see QuickAddDock). */
+  onPhotosCaptured: (files: File[]) => void;
   storeCardPhotos: boolean;
   pasteTextareaRef: RefObject<HTMLTextAreaElement | null>;
   /** The card-image tray: several photos describing ONE contact. */
@@ -104,6 +107,7 @@ export function CaptureForm({
 
       <QuickAddDock
         formAction={formAction}
+        onPhotosCaptured={onPhotosCaptured}
         voice={dockVoice}
         pasteTextareaRef={pasteTextareaRef}
         captureOpen={captureOpen}

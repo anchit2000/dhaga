@@ -2,15 +2,16 @@
 
 import { useRef, useState } from "react";
 import { ConfirmationCard } from "@/components/app/confirmations/ConfirmationCard";
-import { ThreadLoader } from "@/components/brand/ThreadLoader";
 import { CARD_SCAN_MESSAGES, QUICK_ADD_MESSAGES } from "@/utils/constants/loader-messages";
 import type { EventOption } from "../EventPicker";
 import { DEFAULT_CAPTURE_MODE, showsManualSurface, type CaptureMode } from "./capture-mode";
 import { CaptureForm } from "./CaptureForm";
+import { CaptureLoader } from "./CaptureLoader";
 import { DisambiguationPanel } from "./DisambiguationPanel";
 import { HomeDockCapture } from "./HomeDockCapture";
 import { QuickAddManual, type SubTab } from "./QuickAddManual";
 import { QuickAddResultDialog } from "./QuickAddResultDialog";
+import { useCardPhotos } from "./useCardPhotos";
 import { useCaptureDialog } from "./useCaptureDialog";
 import { useQuickAdd } from "./useQuickAdd";
 
@@ -32,9 +33,9 @@ export function QuickAddForm({
   const [mode, setMode] = useState<CaptureMode>(DEFAULT_CAPTURE_MODE);
   const [manualTab, setManualTab] = useState<SubTab>("person");
   const [captureOpen, setCaptureOpen] = useState(!homeDock);
-  const [photos, setPhotos] = useState<File[]>([]);
   const pasteTextareaRef = useRef<HTMLTextAreaElement>(null);
   const { state, formAction, pending } = useQuickAdd();
+  const { photos, setPhotos, onPhotosCaptured } = useCardPhotos(setMode, setCaptureOpen);
 
   // A parsed capture opens the review dialog; a dock scan that fails opens the
   // scan-error dialog. Both are derived from the action result (see
@@ -62,13 +63,14 @@ export function QuickAddForm({
   }
 
   const captureForm = (
-    // Relative wrapper so the extraction loader can overlay the form while it
-    // stays mounted — unmounting would drop the user's uncaptured paste/photo.
-    <div className="relative">
+    // Wrapper so the extraction loader can overlay the form while it stays
+    // mounted — unmounting would drop the user's uncaptured paste/photo.
+    <div>
       <CaptureForm
         mode={mode}
         setMode={setMode}
         formAction={formAction}
+        onPhotosCaptured={onPhotosCaptured}
         storeCardPhotos={storeCardPhotos}
         pasteTextareaRef={pasteTextareaRef}
         photos={photos}
@@ -81,7 +83,7 @@ export function QuickAddForm({
         inDialog={homeDock}
       />
       {pending ? (
-        <ThreadLoader overlay messages={mode === "photo" ? CARD_SCAN_MESSAGES : QUICK_ADD_MESSAGES} />
+        <CaptureLoader messages={mode === "photo" ? CARD_SCAN_MESSAGES : QUICK_ADD_MESSAGES} />
       ) : null}
     </div>
   );
@@ -140,6 +142,7 @@ export function QuickAddForm({
       onScanRetry={() => reopenAfterScanError("photo")}
       onScanManual={() => reopenAfterScanError("manual")}
       formAction={formAction}
+      onPhotosCaptured={onPhotosCaptured}
       pasteTextareaRef={pasteTextareaRef}
       pending={pending}
     />

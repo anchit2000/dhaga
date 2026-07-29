@@ -26,7 +26,7 @@ export function WebcamCapture({
   onClose: () => void;
   /** Confirm the captured frames (the "Done" button). Falls back to onClose
    *  when absent — callers with a persistent tray (CardPhotoCapture) just close;
-   *  the dock passes this to submit the frames it accumulated. */
+   *  the dock passes this to hand its accumulated frames to that tray. */
   onDone?: () => void;
   /** Current tray size — drives the live n/max badge and the full state. */
   count: number;

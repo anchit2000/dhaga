@@ -3,8 +3,8 @@
 import type { ReactNode, RefObject } from "react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import { ThreadLoader } from "@/components/brand/ThreadLoader";
 import { CARD_SCAN_MESSAGES } from "@/utils/constants/loader-messages";
+import { CaptureLoader } from "./CaptureLoader";
 import { QuickAddDock } from "./QuickAddDock";
 import { ScanErrorDialog } from "./ScanErrorDialog";
 
@@ -31,6 +31,7 @@ export function HomeDockCapture({
   onScanRetry,
   onScanManual,
   formAction,
+  onPhotosCaptured,
   pasteTextareaRef,
   pending,
 }: {
@@ -57,6 +58,9 @@ export function HomeDockCapture({
   /** Dismiss the failed scan and reopen capture on the free Manual tab. */
   onScanManual: () => void;
   formAction: (formData: FormData) => void;
+  /** Dock camera frames → the card-photo tray, which opens the capture dialog
+   *  so they can be cropped/reordered before the scan (see QuickAddDock). */
+  onPhotosCaptured: (files: File[]) => void;
   pasteTextareaRef: RefObject<HTMLTextAreaElement | null>;
   pending: boolean;
 }) {
@@ -97,19 +101,19 @@ export function HomeDockCapture({
       {!captureOpen && !captureErrorOpen && !resultOpen ? (
         <QuickAddDock
           formAction={formAction}
+          onPhotosCaptured={onPhotosCaptured}
           onVoiceStart={onVoiceStart}
           pasteTextareaRef={pasteTextareaRef}
           captureOpen={captureOpen}
           onCaptureToggle={() => setCaptureOpen(true)}
         />
       ) : null}
-      {/* Dock capture (camera/upload) submits straight to the action while the
-          capture dialog is closed, so the in-form loader is hidden. Surface a
-          branded scanning state so the wait has feedback. */}
+      {/* Dock upload submits straight to the action while the capture dialog is
+          closed, so the in-form loader is hidden. Surface a branded scanning
+          state so the wait has feedback. (Dock camera frames go to the tray
+          instead, and scan from inside the dialog.) */}
       {pending && !captureOpen ? (
-        <div className="dark fixed inset-0 z-50 flex items-center justify-center bg-ink/80 backdrop-blur-sm">
-          <ThreadLoader messages={CARD_SCAN_MESSAGES} />
-        </div>
+        <CaptureLoader className="dark rounded-none" messages={CARD_SCAN_MESSAGES} />
       ) : null}
       {resultDialog}
     </div>

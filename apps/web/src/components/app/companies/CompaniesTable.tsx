@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { GitMerge, Trash2 } from "lucide-react";
+import { useRef, useState } from "react";
+import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { GitMergeIcon } from "@/components/ui/animated-icons";
 import { DataTable, type DataTableColumn, type DataTableSelection } from "@/components/app/table/DataTable";
 import { BulkActionBar } from "@/components/app/table/BulkActionBar";
 import { CompanyRowActions } from "@/components/app/companies/CompanyRowActions";
 import { CompanyFormDialog, type CompanyFormValues } from "@/components/app/companies/CompanyFormDialog";
 import { CompanyMergeDialog } from "@/components/app/companies/CompanyMergeDialog";
 import { CompanyDeleteDialog } from "@/components/app/companies/CompanyDeleteDialog";
+import type { AnimatedIconHandle } from "@/components/ui/animated-icons";
 import type { CompanyListItem } from "@/lib/repo/companies";
 
 /**
@@ -39,6 +41,7 @@ export function CompaniesTable({
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [mergeIds, setMergeIds] = useState<string[]>([]);
   const [mergeOpen, setMergeOpen] = useState(false);
+  const mergeIconRef = useRef<AnimatedIconHandle>(null);
 
   function toggleRow(id: string): void {
     setSelectedIds((current) => {
@@ -109,8 +112,8 @@ export function CompaniesTable({
     <div className="space-y-3">
       {selectedIds.size > 0 ? (
         <BulkActionBar count={selectedIds.size} onClear={clearSelection}>
-          <Button variant="outline" size="xs" disabled={selectedIds.size < 2} onClick={() => { setMergeIds(selectedList); setMergeOpen(true); }}>
-            <GitMerge /> Merge
+          <Button variant="outline" size="xs" disabled={selectedIds.size < 2} onClick={() => { setMergeIds(selectedList); setMergeOpen(true); }} onMouseEnter={() => mergeIconRef.current?.startAnimation()} onMouseLeave={() => mergeIconRef.current?.stopAnimation()}>
+            <GitMergeIcon ref={mergeIconRef} /> Merge
           </Button>
           <Button
             variant="destructive"

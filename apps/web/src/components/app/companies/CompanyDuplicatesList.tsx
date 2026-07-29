@@ -1,10 +1,28 @@
 "use client";
 
-import { useState } from "react";
-import { GitMerge } from "lucide-react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { GitMergeIcon } from "@/components/ui/animated-icons";
 import { CompanyMergeDialog } from "@/components/app/companies/CompanyMergeDialog";
+import type { AnimatedIconHandle } from "@/components/ui/animated-icons";
 import type { DuplicateCompanyCluster } from "@/lib/repo/companies";
+
+/** One cluster's merge trigger. Its own component so each rendered button owns
+ *  an icon ref — the animation is driven from the button, not the 14px glyph. */
+function ReviewMergeButton({ onClick }: { onClick: () => void }): React.ReactElement {
+  const iconRef = useRef<AnimatedIconHandle>(null);
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={onClick}
+      onMouseEnter={() => iconRef.current?.startAnimation()}
+      onMouseLeave={() => iconRef.current?.stopAnimation()}
+    >
+      <GitMergeIcon ref={iconRef} /> Review &amp; merge
+    </Button>
+  );
+}
 
 /** Clusters of same-looking companies, each with a "Review & merge" trigger. */
 export function CompanyDuplicatesList({ clusters }: { clusters: DuplicateCompanyCluster[] }) {
@@ -25,9 +43,7 @@ export function CompanyDuplicatesList({ clusters }: { clusters: DuplicateCompany
               <p className="font-medium text-paper">{cluster.companies.length} possible matches</p>
               <p className="truncate text-xs text-fog">Normalised as “{cluster.normalizedName}”</p>
             </div>
-            <Button variant="outline" size="sm" onClick={() => review(cluster)}>
-              <GitMerge /> Review &amp; merge
-            </Button>
+            <ReviewMergeButton onClick={() => review(cluster)} />
           </div>
           <ul className="mt-3 divide-y divide-seam/60">
             {cluster.companies.map((company) => (

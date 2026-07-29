@@ -2,14 +2,27 @@
 
 import { revalidatePath } from "next/cache";
 import { mutation, type MutationResult } from "@/lib/actions/mutation";
+import { scheduleCalendarWriteOut } from "@/lib/calendar/write-out";
 import { setFollowUpStatus, updateFollowUp } from "@/lib/repo/notes";
+
+/**
+ * Every mutation here calls scheduleCalendarWriteOut with the acting user, so a
+ * connection that is upgraded AND write-enabled stays in step: an edited or
+ * rescheduled follow-up moves, and a completed or dismissed one is DELETED from
+ * the Dhaga calendar rather than lingering there. The sync runs after the
+ * response (see lib/calendar/write-out.ts) and never fails the save.
+ */
 
 export async function completeFollowUpAction(formData: FormData): Promise<void> {
   const followUpId = String(formData.get("followUpId") ?? "");
   const contactId = String(formData.get("contactId") ?? "");
   if (!followUpId) return;
-  const r = await mutation("completeFollowUp", () => setFollowUpStatus(followUpId, "done"));
+  const r = await mutation("completeFollowUp", async (userId) => {
+    await setFollowUpStatus(followUpId, "done");
+    return userId;
+  });
   if (!r.ok) throw new Error(r.error);
+  scheduleCalendarWriteOut(r.data, followUpId);
   revalidatePath(`/app/people/${contactId}`);
   revalidatePath("/app");
 }
@@ -27,10 +40,12 @@ export async function updateFollowUpAction(formData: FormData): Promise<void> {
   const dueRaw = String(formData.get("dueDate") ?? "").trim();
   const parsedDue = dueRaw ? new Date(dueRaw) : null;
   const dueDate = parsedDue && !Number.isNaN(parsedDue.getTime()) ? parsedDue : null;
-  const r = await mutation("updateFollowUp", () =>
-    updateFollowUp(followUpId, { action, dueDate }),
-  );
+  const r = await mutation("updateFollowUp", async (userId) => {
+    await updateFollowUp(followUpId, { action, dueDate });
+    return userId;
+  });
   if (!r.ok) throw new Error(r.error);
+  scheduleCalendarWriteOut(r.data, followUpId);
   revalidatePath(`/app/people/${contactId}`);
   revalidatePath("/app");
 }
@@ -45,8 +60,12 @@ export async function dismissFollowUpAction(formData: FormData): Promise<void> {
   const followUpId = String(formData.get("followUpId") ?? "");
   const contactId = String(formData.get("contactId") ?? "");
   if (!followUpId) return;
-  const r = await mutation("dismissFollowUp", () => setFollowUpStatus(followUpId, "dismissed"));
+  const r = await mutation("dismissFollowUp", async (userId) => {
+    await setFollowUpStatus(followUpId, "dismissed");
+    return userId;
+  });
   if (!r.ok) throw new Error(r.error);
+  scheduleCalendarWriteOut(r.data, followUpId);
   revalidatePath(`/app/people/${contactId}`);
   revalidatePath("/app");
 }
@@ -63,14 +82,16 @@ export async function rescheduleFollowUpAction(input: {
   id: string;
   dueDate: string | null;
 }): Promise<MutationResult<void>> {
-  const r = await mutation("rescheduleFollowUp", async () => {
+  const r = await mutation("rescheduleFollowUp", async (userId) => {
     await updateFollowUp(input.id, {
       dueDate: input.dueDate ? new Date(input.dueDate) : null,
     });
+    return userId;
   });
   if (r.ok) {
+    scheduleCalendarWriteOut(r.data, input.id);
     revalidatePath("/app");
     revalidatePath("/app/calendar");
   }
-  return r;
+  return r.ok ? { ok: true, data: undefined } : r;
 }

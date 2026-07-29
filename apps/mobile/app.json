@@ -13,6 +13,10 @@
     },
     "android": {
       "package": "com.dhaga.app",
+      "permissions": [
+        "android.permission.READ_CONTACTS",
+        "android.permission.WRITE_CONTACTS"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#0d0b09",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -57,7 +61,7 @@
       [
         "expo-contacts",
         {
-          "contactsPermission": "Dhaga reads your device contacts so you can import people you already know."
+          "contactsPermission": "Dhaga reads your device contacts so you can import people you already know, and — only when you start a sync — writes your Dhaga edits back to them."
         }
       ],
       "expo-secure-store"

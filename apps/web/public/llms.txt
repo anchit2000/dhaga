@@ -49,6 +49,7 @@ Sections run in order of what a reader needs first, not by directory. `## Option
 - [Search & Ask Dhaga](https://www.dhaga.app/docs/guide/search-and-ask): The ⌘K command palette has two tabs — Search to filter by name, fact, or note, and Ask Dhaga to get a reasoned, receipted answer over your own graph.
 - [Settings & import](https://www.dhaga.app/docs/guide/settings): The Settings page — profile, billing, 2FA, calendar, suggestions, card-photo storage, voice teaching, API keys — and importing your contacts from a file, a Google or Outlook connect, or your phone.
 - [Share & invite](https://www.dhaga.app/docs/guide/share-and-invite): Wrapped turns your graph into a contact-free share card you can post anywhere; Invite friends gives you and a friend a free month of Pro.
+- [Syncing with your phone](https://www.dhaga.app/docs/guide/syncing-your-phone): Keep your phone's address book and Dhaga in step, both ways — with a three-way merge that never silently overwrites, and a hard line that keeps your notes and facts off every device your contacts sync to.
 
 ## Self-hosting, extending & contributing
 

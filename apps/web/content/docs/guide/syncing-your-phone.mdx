@@ -1,0 +1,227 @@
+---
+title: Syncing with your phone
+description: Keep your phone's address book and Dhaga in step, both ways — with a three-way merge that never silently overwrites, and a hard line that keeps your notes and facts off every device your contacts sync to.
+---
+
+[Importing](/docs/guide/importing-contacts) is a one-time copy. **Sync** is the
+ongoing version: the mobile app reconciles this phone's address book with Dhaga
+**in both directions**, so a number you add in the car and a job title you fix in
+Dhaga both end up in both places.
+
+It runs **only when you tap it**. Nothing is read or written in the background.
+
+## Where it lives
+
+In the mobile app, tap the **refresh** icon in the header (**Sync contacts**) to
+open the **Sync contacts** screen. Grant the **Contacts** permission when asked —
+if you've declined permanently, the screen offers an **Open Settings** shortcut.
+Then tap **Sync contacts**.
+
+The screen counts the run off as it goes: *Asking for contacts access… → Reading
+your address book… → Comparing with Dhaga… → Writing changes to your phone… →
+Confirming…*
+
+<Callout title="Mobile only, and it needs a native build">
+There is no sync screen on the web — the address book lives on the phone, so the
+phone drives the run. (The one web surface is **More › Sync conflicts**, where
+you decide the fields both sides changed — see below.) Like on-device import,
+sync ships as code but needs a **native app build** to appear; it can't arrive
+over-the-air or in plain Expo Go.
+</Callout>
+
+## What syncs
+
+Exactly nine fields — the ones a vCard would carry:
+
+- **Name**, **nickname**, **job title**, **company**
+- **Emails**, **phones**, **links**, **addresses**, **important dates**
+
+Dhaga writes these onto the existing contact record and leaves every other field
+on it alone.
+
+## What deliberately does not sync
+
+Your **notes**, the **facts** Dhaga extracted from them, the **relationships** in
+your graph, **signals** and watchlist state, **stars** and **tags** — none of it
+is ever written to an address book.
+
+<Callout title="This is a deliberate boundary, not a missing feature">
+An address book is not a private place. It syncs onward to your laptop, your
+car's infotainment system, a shared family iPad, and any app that asks for
+contacts permission. "Met at the Lisbon offsite, mentioned he's leaving" is a
+note you wrote for yourself — it stays in Dhaga.
+</Callout>
+
+Going the other way, sync also leaves the phone's **photos, social profiles,
+related names and phonetic names** on the device: it doesn't read them, so they
+never enter your graph.
+
+## Both directions, and the one you opt into
+
+**Pulling in** — changes on the phone flow into Dhaga on every run.
+
+**Pushing out** — edits to contacts Dhaga is *already linked to* are written back
+to the phone on every run. Copying people who exist **only in Dhaga** into your
+address book is a separate, opt-in step: turn on **Add Dhaga-only contacts to
+this phone** on the sync screen. It's **off by default**, because most people
+don't want every business card they scanned landing in their phone's contacts.
+
+People Dhaga only ever heard *mentioned* in a note — the stub contacts it infers
+rather than ones you captured — are never pushed out, even with the toggle on.
+
+## How conflicts are handled
+
+Dhaga does a **three-way merge**: it keeps a snapshot of each contact as it stood
+at the last successful sync, then compares both sides against that base. Whichever
+side moved away from the base is the side that edited the field.
+
+<Callout title="Why not just take the newest change?">
+No platform — iOS, Android, Google People, or Microsoft Graph — exposes a
+modification time **per field**, only per record. So "newest wins" can't tell
+*you added a phone number on your phone* from *you renamed the contact in Dhaga*;
+it would just clobber one with the other. Comparing against a base needs no clocks
+at all.
+</Callout>
+
+What that means in practice:
+
+- **Only one side changed** → that change is applied to the other side. No prompt.
+- **You added an email / phone / link / address / date** → it's a **union**, not a
+  conflict. Both sides end up with both entries.
+- **You removed an entry** and the other side didn't touch it → the removal is
+  honoured.
+- **A removal races an edit** on the same entry → the entry is **kept** and
+  reported. Deleting contact data on a guess is unrecoverable, so Dhaga won't.
+- **Both sides edited the same field** → reported as a conflict.
+
+Conflicts are listed at the end of the run — *"3 contacts need you to decide"* —
+naming the contact, the field, and whether it was *changed in both places* or
+*changed in one place, removed in the other*.
+
+Two rules hold in every conflict case:
+
+1. **A contested field is never pushed outward.** Whatever the disagreement,
+   Dhaga will not write its version over yours in your address book.
+2. **The first sync of a contact never overwrites Dhaga.** With no base snapshot
+   yet, Dhaga can't tell who edited what, so it keeps its own value, pushes
+   nothing, and flags it for you.
+
+### Deciding a conflict, on the web
+
+When both sides genuinely moved the same field, Dhaga adopts the **phone's**
+value so the edit you just made on the handset survives — and **keeps the value
+it had** so you can take it back.
+
+Open Dhaga on the web and go to **More › Sync conflicts**. Each undecided field
+is one row, showing what Dhaga had and what your phone had, with two choices:
+
+- **Restore Dhaga's value** — puts it back on the contact. Dhaga is then the side
+  that moved, so the **next sync carries it out to your phone**, and both sides
+  end up agreeing on it.
+- **Keep the phone's** — accepts what already won and clears the row.
+
+A conflict sits there until you decide it, or until it stops mattering: if you
+re-type the Dhaga value on the phone yourself, the next sync sees no disagreement
+left and drops the row on its own. Nothing accumulates, and nothing is thrown
+away while it is still undecided.
+
+## Nothing is ever deleted in Dhaga
+
+If a contact disappears from your address book, Dhaga does **not** delete the
+person, their notes, or their facts — it only marks the link between the two as
+broken. Deleting a phone contact is not consent to destroy everything hanging off
+it in your graph. If that contact reappears later, the link is picked back up.
+
+## iPhone: which account your contacts land in
+
+Apple publishes no server API for iCloud Contacts, so there's no "Connect iCloud"
+button anywhere in Dhaga — and there doesn't need to be one. On iOS, Dhaga looks
+at the **containers** your address book is made of and writes into the first one
+that syncs off the device: a **CardDAV** container (that's iCloud, and also
+Google if you added the account in iOS Settings) or an **Exchange** one
+(Outlook / Microsoft 365).
+
+Writing there is enough. **iOS itself propagates the change up to iCloud or
+Google** — Dhaga hands the edit to the operating system and the account's own
+sync carries it to your Mac, your iPad, and the web. No extra OAuth, no Google
+write permission, no third-party server in the middle.
+
+If your contacts only live in a **local** container ("On My iPhone"), sync still
+runs — but the screen tells you plainly that your changes stay on the handset
+until you turn on iCloud Contacts or add a Google/Exchange account in iOS
+Settings. Dhaga decides this from the container's **type**, never its name, since
+anyone can name a local container "iCloud".
+
+<Callout title="iOS syncs one container at a time">
+Only contacts in the container Dhaga picked take part in a run. If your address
+book is split across several accounts, the others sit it out.
+</Callout>
+
+## Android: edits sync, new contacts don't
+
+This one is a firm limitation, not a rough edge:
+
+- **Edits to contacts you already have** are written onto the existing record, so
+  they ride whatever account already owns it — a contact owned by your Google
+  account syncs up to Google as usual.
+- **Contacts Dhaga creates stay on the phone.** They will not appear in Google
+  Contacts, and they won't survive a factory reset or move to a new device on
+  their own.
+
+The reason: Android gives apps no way to choose which account a new contact
+belongs to. The account/container API is iOS-only, and a contact created through
+the Android API is inserted with no account attached, which the OS files as
+device-local.
+
+The sync screen says this on every Android run rather than hiding it. If you want
+Dhaga-created people in your Google account on Android, add them to Google
+Contacts yourself, then sync — from then on they're an existing contact and edits
+flow normally.
+
+## Large address books
+
+Contacts go up in batches of **1,000**; the screen shows *"batch 3 of 7"* while it
+works. Batches are sent one after another, never in parallel.
+
+Each run reads the **whole** address book — neither iOS nor Android offers a
+"what changed since last time?" query, so there's no incremental fast path. A very
+large address book takes as long on the tenth run as on the first.
+
+## Things that don't survive the round trip
+
+A few values have no clean equivalent on both sides:
+
+- **Verbatim dates.** Dhaga lets you record *"spring 2019"*; an address book only
+  holds real calendar dates. These are **dropped rather than guessed at** — they
+  stay in Dhaga.
+- **Unlabelled dates** on the phone are skipped rather than merged into a nameless
+  bucket. Birthdays use the phone's dedicated birthday slot.
+- **Name particles.** Dhaga stores one display name; address books store first /
+  middle / last separately. Splitting is a heuristic and gets names like *van der
+  Berg* wrong.
+- **Labels** are title-cased coming in (`mobile` → **Mobile**) and lowercased going
+  out, defaulting to `other` when a value has no label.
+
+<Callout type="warn" title="Not yet tested on a real device">
+The merge logic, field mapping, container selection and batching are unit-tested,
+and the server side is covered by database tests. But **no part of this feature
+has been run on a physical iPhone or Android handset yet** — the platform I/O
+(reading the address book, writing a patch, creating a contact) has no test that
+executes it. Treat the first run as a trial: sync a phone whose contacts you have
+a backup of.
+</Callout>
+
+## For self-hosters
+
+Sync is entirely in the AGPL core. There's no extra configuration, no API key to
+buy, and no `packages/ee` — it authenticates with the same per-user API key your
+mobile app already uses (see [Settings](/docs/guide/settings)). The iOS relay is
+why: because the operating system carries the change to iCloud or Google for you,
+Dhaga never needs a Google or Microsoft contacts-write scope.
+
+<Callout title="Google and Outlook sync aren't built yet">
+Sync currently has one target: **this device's address book**. Google Contacts and
+Outlook appear in the sync protocol as provider names, but no implementation ships
+for either — for those, use the one-way
+[OAuth connectors](/docs/guide/importing-contacts) instead.
+</Callout>

@@ -1,3 +1,4 @@
+import { isUpgradableProvider } from "./capability";
 import { DemoCalendarProvider } from "./demo-provider";
 import { GoogleCalendarProvider } from "./google-provider";
 import { MicrosoftCalendarProvider } from "./microsoft-provider";
@@ -7,9 +8,26 @@ export type {
   BusyInterval,
   TimeRange,
   CalendarTokens,
+  CalendarCapabilities,
+  CalendarEvent,
+  CalendarWriteEvent,
   CalendarProvider,
   CalendarProviderInfo,
 } from "./types";
+export {
+  FREEBUSY_ONLY,
+  scopeHasAny,
+  capabilitiesFromScopeTokens,
+  connectionCapabilities,
+  isUpgradableProvider,
+} from "./capability";
+export {
+  DHAGA_CALENDAR_NAME,
+  DHAGA_CALENDAR_DESCRIPTION,
+  followUpToCalendarEvent,
+  toAllDayDate,
+  type FollowUpForCalendar,
+} from "./follow-up-event";
 export { GoogleCalendarProvider } from "./google-provider";
 export { MicrosoftCalendarProvider } from "./microsoft-provider";
 export { DemoCalendarProvider } from "./demo-provider";
@@ -67,6 +85,7 @@ export function listCalendarProviders(): CalendarProviderInfo[] {
     id: provider.id,
     label: provider.label,
     configured: provider.isConfigured(),
+    upgradable: isUpgradableProvider(provider),
   }));
 }
 

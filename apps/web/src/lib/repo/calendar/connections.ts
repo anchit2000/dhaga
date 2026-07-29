@@ -1,22 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { and, desc, eq, isNull } from "drizzle-orm";
-import {
-  getCalendarProvider,
-  mergeBusy,
-  type BusyInterval,
-  type CalendarTokens,
-  type TimeRange,
-} from "@dhaga/core";
+import { connectionCapabilities, getCalendarProvider, type CalendarCapabilities, type CalendarTokens } from "@dhaga/core";
 import { getDb } from "@/lib/db/request-scope";
 import { calendarConnections } from "@/lib/db/schema";
-import {
-  decryptToken,
-  encryptOptionalToken,
-  encryptToken,
-} from "@/lib/crypto/tokens";
-
-/** Refresh a token this many ms before its stated expiry, to avoid edge misses. */
-const REFRESH_SKEW_MS = 60_000;
+import { encryptOptionalToken, encryptToken } from "@/lib/crypto/tokens";
 
 export interface CalendarConnectionSummary {
   id: string;
@@ -24,21 +11,40 @@ export interface CalendarConnectionSummary {
   accountEmail: string | null;
   status: string;
   createdAt: Date;
+  /** Derived from the granted scope — never stored, never assumed. */
+  capabilities: CalendarCapabilities;
+  /** The user's own write-out switch (only meaningful when capabilities.writeEvents). */
+  writeEnabled: boolean;
+}
+
+/** An unknown/unregistered provider id can't be asked for anything. */
+function capabilitiesOf(provider: string, scope: string | null): CalendarCapabilities {
+  try {
+    return connectionCapabilities(getCalendarProvider(provider), scope);
+  } catch {
+    return { readEvents: false, writeEvents: false };
+  }
 }
 
 /** Connections for the settings UI — never exposes tokens. */
 export async function listCalendarConnections(): Promise<CalendarConnectionSummary[]> {
   const db = await getDb();
-  return db
+  const rows = await db
     .select({
       id: calendarConnections.id,
       provider: calendarConnections.provider,
       accountEmail: calendarConnections.accountEmail,
       status: calendarConnections.status,
       createdAt: calendarConnections.createdAt,
+      scope: calendarConnections.scope,
+      writeEnabled: calendarConnections.writeEnabled,
     })
     .from(calendarConnections)
     .orderBy(desc(calendarConnections.createdAt));
+  return rows.map(({ scope, ...row }) => ({
+    ...row,
+    capabilities: capabilitiesOf(row.provider, scope),
+  }));
 }
 
 export async function hasCalendarConnection(): Promise<boolean> {
@@ -47,7 +53,14 @@ export async function hasCalendarConnection(): Promise<boolean> {
   return Boolean(row);
 }
 
-/** Upsert by (provider, account): re-connecting the same account refreshes it in place. */
+/**
+ * Upsert by (provider, account): re-connecting the same account refreshes it in
+ * place. The upgrade flow lands here too — it is the same account consenting
+ * again with broader scopes, so only the token/scope columns move.
+ * `writeCalendarId`/`writeEnabled` are deliberately NOT written: re-consenting
+ * must not orphan the Dhaga calendar we already created, nor silently re-enable
+ * write-out the user turned off.
+ */
 export async function saveCalendarConnection(params: {
   provider: string;
   tokens: CalendarTokens;
@@ -55,7 +68,7 @@ export async function saveCalendarConnection(params: {
   const db = await getDb();
   const { provider, tokens } = params;
   const [existing] = await db
-    .select({ id: calendarConnections.id })
+    .select({ id: calendarConnections.id, scope: calendarConnections.scope })
     .from(calendarConnections)
     .where(
       and(
@@ -72,7 +85,11 @@ export async function saveCalendarConnection(params: {
     accessToken: encryptToken(tokens.accessToken),
     refreshToken: encryptOptionalToken(tokens.refreshToken),
     expiresAt: tokens.expiresAt,
-    scope: tokens.scope,
+    // Keep the grant we already know about when a provider's token response
+    // omits `scope` (it is optional on Microsoft's auth-code leg): overwriting
+    // it with null would silently DOWNGRADE an upgraded connection back to
+    // free/busy on an ordinary reconnect.
+    scope: tokens.scope ?? existing?.scope ?? null,
     status: "connected",
     updatedAt: new Date(),
   };
@@ -88,55 +105,12 @@ export async function deleteCalendarConnection(id: string): Promise<void> {
   await db.delete(calendarConnections).where(eq(calendarConnections.id, id));
 }
 
-async function markNeedsReconnect(id: string): Promise<void> {
+/** Turn write-out on/off without touching the grant — the user keeps the
+ *  connection and the scopes, we simply stop writing. */
+export async function setCalendarWriteEnabled(id: string, enabled: boolean): Promise<void> {
   const db = await getDb();
   await db
     .update(calendarConnections)
-    .set({ status: "needs_reconnect", updatedAt: new Date() })
+    .set({ writeEnabled: enabled, updatedAt: new Date() })
     .where(eq(calendarConnections.id, id));
-}
-
-/**
- * Merged busy intervals across every connected calendar for `range`. Refreshes
- * near-expiry access tokens in place; a provider that errors (revoked access,
- * unknown provider id) is flagged `needs_reconnect` and skipped rather than
- * failing the whole read — one broken calendar never blocks the others.
- */
-export async function getFreeBusy(range: TimeRange): Promise<BusyInterval[]> {
-  const db = await getDb();
-  const rows = await db
-    .select()
-    .from(calendarConnections)
-    .where(eq(calendarConnections.status, "connected"));
-  const all: BusyInterval[] = [];
-  for (const row of rows) {
-    try {
-      const provider = getCalendarProvider(row.provider);
-      let accessToken = decryptToken(row.accessToken);
-      const nearExpiry =
-        row.expiresAt !== null && row.expiresAt.getTime() <= Date.now() + REFRESH_SKEW_MS;
-      if (nearExpiry && row.refreshToken) {
-        const refreshed = await provider.refresh(decryptToken(row.refreshToken));
-        if (!refreshed) {
-          await markNeedsReconnect(row.id);
-          continue;
-        }
-        accessToken = refreshed.accessToken;
-        await db
-          .update(calendarConnections)
-          .set({
-            accessToken: encryptToken(refreshed.accessToken),
-            refreshToken: encryptOptionalToken(refreshed.refreshToken),
-            expiresAt: refreshed.expiresAt,
-            scope: refreshed.scope ?? row.scope,
-            updatedAt: new Date(),
-          })
-          .where(eq(calendarConnections.id, row.id));
-      }
-      all.push(...(await provider.listBusy({ accessToken, range })));
-    } catch {
-      await markNeedsReconnect(row.id);
-    }
-  }
-  return mergeBusy(all);
 }

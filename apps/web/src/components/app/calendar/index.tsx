@@ -1,19 +1,23 @@
 "use client";
 
-import { useMemo, useRef, useState, type ReactElement } from "react";
-import Link from "next/link";
+import { useMemo, useRef, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import listPlugin from "@fullcalendar/list";
-import interactionPlugin, { type EventReceiveArg } from "@fullcalendar/interaction";
-import type { EventClickArg, EventContentArg, EventDropArg } from "@fullcalendar/core";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/app/EmptyState";
-import { rescheduleFollowUpAction } from "@/lib/actions/follow-ups";
+import interactionPlugin from "@fullcalendar/interaction";
+import type { EventClickArg } from "@fullcalendar/core";
 import type { CalendarFollowUp } from "@/lib/repo/reminders";
-import { toCalendarEvents, unscheduledFollowUps, type FollowUpEventProps } from "./event-map";
+import type { ExternalCalendarEvent } from "@/lib/repo/calendar";
+import {
+  isExternalEventProps,
+  toCalendarEvents,
+  toExternalCalendarEvents,
+  type CalendarEventProps,
+} from "./event-map";
+import { renderEventContent } from "./event-content";
+import { CalendarEmptyState } from "./CalendarEmptyState";
 import { useCalendarInitialView } from "./use-calendar-view";
+import { useReschedule } from "./use-reschedule";
 import { UnscheduledTray } from "./UnscheduledTray";
 import { EventDetailsDialog, type SelectedFollowUp } from "./EventDetailsDialog";
 import "./calendar-theme.css";
@@ -24,31 +28,32 @@ const HEADER_TOOLBAR = {
   right: "dayGridMonth,listWeek",
 } as const;
 
-function renderEventContent(arg: EventContentArg): ReactElement {
-  const props = arg.event.extendedProps as FollowUpEventProps;
-  return (
-    <div className="fc-followup">
-      <span className="fc-followup-name">{arg.event.title}</span>
-      {props.action ? <span className="fc-followup-action">{props.action}</span> : null}
-    </div>
-  );
-}
-
 /**
  * Full-screen follow-up calendar. Renders client-only (useCalendarInitialView is
  * null until mounted, so FullCalendar never touches `window` during SSR). Drag a
- * dated event (eventDrop) or a tray chip onto the grid (eventReceive) to
- * reschedule: FullCalendar moves it optimistically and we call
- * rescheduleFollowUpAction, reverting on any non-success. Clicking opens the
- * details dialog. The events array is a stable useMemo so imperative changes
- * (event.remove(), received events) are never clobbered by a React re-render.
+ * dated event or a tray chip onto the grid to reschedule it (useReschedule owns
+ * both paths and the tray's live list). Clicking opens the details dialog. The
+ * events array is a stable useMemo so imperative changes (event.remove(),
+ * received events) are never clobbered by a React re-render.
+ *
+ * `externalEvents` are read-only context from a CONNECTED calendar, merged onto
+ * the same grid: they cannot be dragged (editable:false per event, plus the
+ * guard in useReschedule) and clicking one opens nothing, because Dhaga owns no
+ * record to act on. The caption under the grid says so in the UI.
  */
-export function CalendarBoard({ items }: { items: CalendarFollowUp[] }) {
+export function CalendarBoard({
+  items,
+  externalEvents,
+}: {
+  items: CalendarFollowUp[];
+  externalEvents: ExternalCalendarEvent[];
+}) {
   const calendarRef = useRef<FullCalendar>(null);
-  const events = useMemo(() => toCalendarEvents(items), [items]);
-  const [trayItems, setTrayItems] = useState<CalendarFollowUp[]>(() =>
-    unscheduledFollowUps(items),
+  const events = useMemo(
+    () => [...toCalendarEvents(items), ...toExternalCalendarEvents(externalEvents)],
+    [items, externalEvents],
   );
+  const { trayItems, handleEventDrop, handleEventReceive } = useReschedule(items);
   const [selected, setSelected] = useState<SelectedFollowUp | null>(null);
   const initialView = useCalendarInitialView();
 
@@ -56,29 +61,11 @@ export function CalendarBoard({ items }: { items: CalendarFollowUp[] }) {
     calendarRef.current?.getApi().getEventById(id)?.remove();
   }
 
-  async function handleEventDrop(arg: EventDropArg): Promise<void> {
-    const r = await rescheduleFollowUpAction({ id: arg.event.id, dueDate: arg.event.startStr });
-    if (r.ok) toast.success("Follow-up rescheduled.");
-    else {
-      arg.revert();
-      toast.error(r.error);
-    }
-  }
-
-  async function handleEventReceive(arg: EventReceiveArg): Promise<void> {
-    const id = arg.event.id;
-    const r = await rescheduleFollowUpAction({ id, dueDate: arg.event.startStr });
-    if (r.ok) {
-      setTrayItems((prev) => prev.filter((t) => t.id !== id));
-      toast.success("Follow-up scheduled.");
-    } else {
-      arg.revert();
-      toast.error(r.error);
-    }
-  }
-
   function handleEventClick(arg: EventClickArg): void {
-    const props = arg.event.extendedProps as FollowUpEventProps;
+    const props = arg.event.extendedProps as CalendarEventProps;
+    // A connected-calendar event has no Dhaga record to complete, dismiss or
+    // reschedule — the details dialog would be lying. It stays inert.
+    if (isExternalEventProps(props)) return;
     setSelected({
       id: arg.event.id,
       contactId: props.contactId,
@@ -88,15 +75,10 @@ export function CalendarBoard({ items }: { items: CalendarFollowUp[] }) {
     });
   }
 
-  if (items.length === 0) {
-    return (
-      <EmptyState
-        title="Nothing on the calendar"
-        body="Follow-ups with a due date land here — capture a contact and add one to get started."
-      >
-        <Button render={<Link href="/app/quick-add" />}>Quick add a contact</Button>
-      </EmptyState>
-    );
+  // Only when there is nothing at all: a connected calendar with events is a
+  // reason to render the grid even before the first follow-up exists.
+  if (items.length === 0 && externalEvents.length === 0) {
+    return <CalendarEmptyState />;
   }
 
   return (
@@ -112,6 +94,9 @@ export function CalendarBoard({ items }: { items: CalendarFollowUp[] }) {
             events={events}
             height="auto"
             dayMaxEvents={3}
+            // Follow-ups first (rank 0) so a day busy with connected-calendar
+            // events never buries Dhaga's own work behind "+N more".
+            eventOrder="rank,start,-duration,allDay,title"
             longPressDelay={200}
             editable
             eventStartEditable
@@ -126,6 +111,12 @@ export function CalendarBoard({ items }: { items: CalendarFollowUp[] }) {
           <div className="h-[60vh] animate-pulse rounded-xl bg-panel/60" aria-hidden />
         )}
       </div>
+      {externalEvents.length > 0 ? (
+        <p className="text-xs leading-relaxed text-fog">
+          Muted entries come from your connected calendar and are read-only. Everything else is a
+          Dhaga follow-up.
+        </p>
+      ) : null}
       <EventDetailsDialog
         selected={selected}
         onOpenChange={(open) => {

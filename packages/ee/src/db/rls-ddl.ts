@@ -21,12 +21,21 @@ const TENANT_TABLES = [
   "signals",
   "extraction_jobs",
   "calendar_connections",
+  // Which follow-up Dhaga wrote as which event on which connected calendar.
+  // Per-tenant: it joins a tenant's follow_ups to a tenant's calendar_connections,
+  // and an unscoped read would let one user delete another's calendar event.
+  "calendar_event_links",
   "positions",
   "node_types",
   "entities",
   "relationship_types",
   "graph_layouts",
   "voice_vocab",
+  // Address-book sync links. Per-tenant and RLS-scoped: the row maps a contact
+  // to an id in one user's device/Google/Outlook address book, and external ids
+  // collide freely across users (Android hands out small integers from the
+  // device's own sequence), so an unscoped read would cross-link tenants.
+  "contact_links",
   // Forwarded messaging content (contact cards / notes awaiting processing) —
   // per-tenant PII, RLS-scoped. The routing tables (messaging_identities,
   // messaging_link_tokens) are deliberately NOT here: the webhook reads them

@@ -10,6 +10,7 @@ import {
   type NoteExtraction,
 } from "@dhaga/core";
 import { withUserDb } from "@/lib/db/request-scope";
+import { scheduleCalendarWriteOutForNote } from "@/lib/calendar/write-out";
 import { createEnrichmentMatchConfirmation } from "@/lib/repo/confirmations";
 import { applyExtraction } from "@/lib/repo/graph";
 import { listNodeTypes } from "@/lib/repo/node-types";
@@ -115,6 +116,11 @@ export async function extractAndApplyNote(
     });
     return graphWriteFailedOutcome();
   }
+  // Extraction is where most follow-ups are born, so they have to reach a
+  // write-enabled calendar too. After the response, outside the scope above:
+  // applyExtraction hands back only fact ids, so the sync re-reads this note's
+  // follow-ups itself (lib/calendar/write-out.ts).
+  scheduleCalendarWriteOutForNote(userId, noteId);
   return {
     applied: true,
     failed: false,

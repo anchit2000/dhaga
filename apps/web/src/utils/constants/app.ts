@@ -2,6 +2,7 @@
 
 import { BookOpen, Building2, CalendarDays, CirclePlus, Gift, Home, Inbox, MapPin, Newspaper, Shapes, Sparkles, Star, Upload, Users, Waypoints } from "lucide-react";
 import type { CaptureImageType } from "@dhaga/core/src/api/capture";
+import type { RecentReason } from "@/lib/repo/last-touch";
 
 export const SESSION_COOKIE = "dhaga_session";
 
@@ -36,6 +37,12 @@ export const APP_MORE_LINKS = [
 ] as const;
 
 export const HOME_PREVIEW_LIMIT = 5;
+
+/** Badge wording for a "Recent people" row's `reason` (repo/last-touch.ts). */
+export const RECENT_REASON_LABELS: Record<RecentReason, string> = {
+  added: "recently added",
+  interacted: "recently interacted",
+};
 
 /**
  * Free-tier cloud AI action cap per calendar month (BRD §8.3). The free tier

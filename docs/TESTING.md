@@ -714,7 +714,7 @@ npm run test --prefix apps/web           # vitest
 ## 10. Load-testing `/app/graph` and `/app/people` at scale
 
 Neither page paginates today: `listContacts()` (`apps/web/src/lib/repo/
-contacts/queries.ts:18-48`) selects the entire `contacts` table with no
+contacts/queries/recent.ts`) selects the entire `contacts` table with no
 `LIMIT`, and `GraphBrowser` (`apps/web/src/components/app/graph/
 GraphBrowser.tsx:16-43`) renders every node/edge through `@xyflow/react`
 (DOM/SVG, no virtualization) after recomputing a full ring layout on every

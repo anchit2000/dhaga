@@ -12,6 +12,7 @@ import {
 } from "@/lib/db/schema";
 import { deleteCardImagesByNote } from "@/lib/repo/card-images";
 import { deleteEmbedding, deleteEmbeddingsForNote } from "@/lib/repo/embeddings";
+import { deleteNotePositions } from "@/lib/repo/graph/position-rows";
 
 export type NoteKind = "text" | "voice" | "capture_source" | "enrichment" | "signal";
 
@@ -46,8 +47,10 @@ export async function getNote(noteId: string): Promise<NoteRow | null> {
 }
 
 /**
- * Drop everything a note previously derived (facts/edges/follow-ups and the
- * facts' embeddings), leaving the note itself. Makes a re-run of the extraction
+ * Drop everything a note previously derived (facts/edges/follow-ups, the jobs
+ * and degrees it wrote, and the facts' embeddings), leaving the note itself.
+ * Positions are cleared by source_note_id ONLY, so a user-entered job (no
+ * receipt) survives a re-run untouched. Makes a re-run of the extraction
  * worker idempotent: a retried job re-derives from scratch instead of stacking
  * a second copy of every fact. Hard delete (not tombstone) — these rows are
  * being regenerated from the same note, so there's no receipt to preserve.
@@ -64,6 +67,7 @@ export async function clearNoteDerivations(noteId: string): Promise<void> {
     await tx.delete(edgeSuggestions).where(eq(edgeSuggestions.sourceNoteId, noteId));
     await tx.delete(confirmations).where(and(eq(confirmations.sourceNoteId, noteId), eq(confirmations.status, "pending")));
     await tx.delete(followUps).where(eq(followUps.sourceNoteId, noteId));
+    await deleteNotePositions(tx, noteId);
     for (const row of factRows) await deleteEmbedding("fact", row.id, tx);
   });
 }
@@ -94,6 +98,10 @@ export async function deleteNote(noteId: string): Promise<void> {
     // deleted note's "confirm this" prompts are moot, so drop them outright.
     await tx.delete(edgeSuggestions).where(eq(edgeSuggestions.sourceNoteId, noteId));
     await tx.delete(confirmations).where(and(eq(confirmations.sourceNoteId, noteId), eq(confirmations.status, "pending")));
+    // Jobs/degrees this note derived. Positions carry no deleted_at, so these
+    // are hard deleted rather than tombstoned — and only rows with THIS note as
+    // their receipt: a user-entered job is never touched (deleteNotePositions).
+    await deleteNotePositions(tx, noteId);
     await deleteCardImagesByNote(noteId, tx);
     await deleteEmbeddingsForNote(noteId, tx);
   });

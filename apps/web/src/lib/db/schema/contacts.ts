@@ -83,6 +83,11 @@ export const positions = pgTable("positions", {
   startedAt: text("started_at"),
   endedAt: text("ended_at"),
   note: text("note"),
+  // Receipt for an extraction-derived row (the note the job or degree came
+  // from); NULL when the user typed or imported it. The FK to notes(id) lives
+  // in the DDL only — declaring it here would cycle, since notes.ts already
+  // imports this module (same treatment as companyAliases above).
+  sourceNoteId: text("source_note_id"),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });

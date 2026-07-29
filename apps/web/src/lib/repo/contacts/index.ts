@@ -8,6 +8,7 @@ export {
   listMentionMergeCandidates,
   type ContactIdentityCandidate,
   type ContactListItem,
+  type RecentContactListItem,
 } from "./queries";
 export {
   getContact,

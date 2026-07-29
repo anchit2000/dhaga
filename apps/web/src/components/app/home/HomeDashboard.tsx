@@ -11,7 +11,7 @@ import { SignalsFeed } from "./SignalsFeed";
 import { StarredTile } from "./StarredTile";
 import { TodaySuggestions, type MeetingSlot } from "./TodaySuggestions";
 import type { ReactElement, ReactNode } from "react";
-import type { ContactListItem } from "@/lib/repo/contacts";
+import type { ContactListItem, RecentContactListItem } from "@/lib/repo/contacts";
 import type { DailySuggestion } from "@/lib/repo/daily-suggestions";
 import type { EventListItem } from "@/lib/repo/events";
 import type { listAllOpenFollowUps } from "@/lib/repo/reminders";
@@ -46,7 +46,7 @@ export function HomeDashboard({
   inbox,
   groups,
 }: {
-  people: ContactListItem[];
+  people: RecentContactListItem[];
   events: EventListItem[];
   suggestions: DailySuggestion[];
   calendarConnected: boolean;

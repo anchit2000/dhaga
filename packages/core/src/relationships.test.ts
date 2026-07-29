@@ -13,7 +13,12 @@
  *    under education, or a degree under employment, in any UI that branches on it.
  */
 import { describe, it, expect } from "vitest";
-import { affiliationPredicate, isEducationPredicate } from "./relationships";
+import {
+  affiliationPredicate,
+  isAffiliationPredicate,
+  isEducationPredicate,
+  positionRelationFor,
+} from "./relationships";
 
 describe("affiliationPredicate", () => {
   it("falls back to works_at for a plain CURRENT role", () => {
@@ -48,5 +53,45 @@ describe("isEducationPredicate", () => {
     expect(isEducationPredicate("works_at")).toBe(false);
     expect(isEducationPredicate("worked_at")).toBe(false);
     expect(isEducationPredicate("board_member_of")).toBe(false);
+  });
+});
+
+/**
+ * These two decide whether an extracted relationship becomes a POSITION (a job
+ * or a degree on the contact) or stays a plain edge, and what gets stored in
+ * `positions.relation`. Getting either wrong writes junk into a table the app
+ * treats as the source of truth for employment.
+ */
+describe("isAffiliationPredicate", () => {
+  it("is true for employment and education affiliations", () => {
+    expect(isAffiliationPredicate("works_at")).toBe(true);
+    expect(isAffiliationPredicate("used_to_work_at")).toBe(true);
+    expect(isAffiliationPredicate("interned_at")).toBe(true);
+    expect(isAffiliationPredicate("studied_at")).toBe(true);
+  });
+
+  it("is false for company links that are not a role", () => {
+    // WHY: a person can relate to a company without holding a position there.
+    // Treating these as affiliations would invent phantom jobs on the contact's
+    // Experience — and suppress the edge that should have been drawn instead.
+    expect(isAffiliationPredicate("invests_in")).toBe(false);
+    expect(isAffiliationPredicate("customer_of")).toBe(false);
+    expect(isAffiliationPredicate("competitor_of")).toBe(false);
+  });
+});
+
+describe("positionRelationFor", () => {
+  it("stores NULL for plain employment, whatever tense the predicate is", () => {
+    // WHY: NULL is the convention the manual editor and the importer write —
+    // affiliationPredicate() derives works_at/worked_at back from isCurrent, so
+    // storing "works_at" here would freeze a role as current forever.
+    expect(positionRelationFor("works_at")).toBeNull();
+    expect(positionRelationFor("worked_at")).toBeNull();
+    expect(positionRelationFor("used_to_work_at")).toBeNull();
+  });
+
+  it("keeps every other affiliation's own predicate", () => {
+    expect(positionRelationFor("studied_at")).toBe("studied_at");
+    expect(positionRelationFor("board_member_of")).toBe("board_member_of");
   });
 });

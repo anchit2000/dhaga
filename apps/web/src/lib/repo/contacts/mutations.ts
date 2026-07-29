@@ -14,6 +14,7 @@ import {
 import type { DhagaDb } from "@/lib/db";
 import { deleteEmbeddingsByContact } from "../embeddings";
 import { deleteCardImagesByContact } from "../card-images";
+import { deleteNotePositions } from "../graph/position-rows";
 
 export async function promoteMentionedContact(id: string): Promise<boolean> {
   const db = await getDb();
@@ -93,6 +94,11 @@ export async function cascadeForget(tx: DhagaDb, id: string): Promise<void> {
     await tx.delete(facts).where(inArray(facts.sourceNoteId, noteIds));
     await tx.delete(edgeSuggestions).where(inArray(edgeSuggestions.sourceNoteId, noteIds));
     await tx.delete(followUps).where(inArray(followUps.sourceNoteId, noteIds));
+    // Jobs/degrees these notes derived can sit on ANOTHER contact (a note names
+    // a third party's employer), and positions.source_note_id is a real FK to
+    // notes(id) — leaving them would abort the notes delete below. Per note, so
+    // the other contact's denormalised title/company_id is recomputed too.
+    for (const noteId of noteIds) await deleteNotePositions(tx, noteId);
   }
   await tx
     .delete(edges)

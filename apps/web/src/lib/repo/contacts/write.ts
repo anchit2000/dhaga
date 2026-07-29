@@ -159,7 +159,10 @@ export async function createContact(
 }
 
 /** Update an existing contact from the edit form. Positions are the source of
- *  truth, so they're replaced wholesale (the form submits the full list). */
+ *  truth, so they're replaced wholesale (the form submits the full list —
+ *  extraction-derived jobs included, since getContactProfile renders them like
+ *  any other row). They come back without a receipt: a row the user saw and
+ *  kept is now user-entered, so no later note deletion can remove it. */
 export async function updateContact(id: string, input: ContactProfile): Promise<void> {
   const db = await getDb();
   const resolved = await resolvePositions(input.positions);

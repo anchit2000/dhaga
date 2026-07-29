@@ -91,4 +91,10 @@ CREATE INDEX IF NOT EXISTS positions_companyId_idx ON positions (company_id);
 -- Affiliation predicate (studied_at, interned_at, board_member_of, …). NULL is
 -- a plain employment role; app code derives works_at/worked_at from is_current.
 ALTER TABLE positions ADD COLUMN IF NOT EXISTS relation text;
+
+-- Receipt, like facts/edges/follow_ups: the note an extracted job or degree came
+-- from, so a deleted note's derived positions can be cleared and re-run. NULL
+-- for rows the user typed or imported.
+ALTER TABLE positions ADD COLUMN IF NOT EXISTS source_note_id text REFERENCES notes(id);
+CREATE INDEX IF NOT EXISTS positions_sourceNoteId_idx ON positions (source_note_id);
 `;

@@ -10,6 +10,7 @@ import {
   createEntityLinkConfirmation,
   createSubjectResolutionConfirmation,
 } from "@/lib/repo/confirmations/create";
+import { buildPositionRow, type PositionInsert } from "../position-rows";
 import { resolveObject, resolveSubject, subjectOptions } from "./resolvers";
 
 export interface RelationshipRows {
@@ -17,6 +18,10 @@ export interface RelationshipRows {
   /** Retained for coexistence with the legacy edge_suggestions table; no longer
    *  populated — ambiguous links now become confirmations (below). */
   suggestionRows: (typeof edgeSuggestions.$inferInsert)[];
+  /** Jobs/degrees the relationships record. These REPLACE the literal edge for
+   *  the same triple — the graph derives an affiliation edge from the position
+   *  row itself (repo/graph-data/full.ts), so writing both would draw it twice. */
+  positionRows: PositionInsert[];
 }
 
 /**
@@ -25,7 +30,9 @@ export interface RelationshipRows {
  * later) — all receipt-linked to the note. Ambiguous links no longer write
  * edge_suggestions rows; the confident auto-apply path is unchanged.
  *
- * - Confident subject + concrete object → an edge now (exactly as today).
+ * - Confident subject + concrete object → an edge now (exactly as today), or,
+ *   when it is an affiliation to a company, a positions row instead of that
+ *   edge (the graph re-derives the edge from the position).
  * - Confident subject + ambiguous object → an entity_link confirmation.
  * - Ambiguous subject + concrete object → a subject_resolution confirmation.
  * - Both ambiguous → an entity_link anchored to the note's contact; the
@@ -38,6 +45,7 @@ export async function buildRelationshipRows(
 ): Promise<RelationshipRows> {
   const edgeRows: RelationshipRows["edgeRows"] = [];
   const suggestionRows: RelationshipRows["suggestionRows"] = [];
+  const positionRows: RelationshipRows["positionRows"] = [];
 
   // The note's subject owns any bare relative/role reference ("his son"), so
   // resolveObject can relabel it as "<owner first name>'s son". Read once here
@@ -56,15 +64,31 @@ export async function buildRelationshipRows(
 
     if (subject.kind === "confident") {
       if (object.kind === "concrete") {
-        edgeRows.push({
-          id: randomUUID(),
-          srcType: "contact",
-          srcId: subject.contactId,
-          predicate: rel.predicate,
-          dstType: object.dstType,
-          dstId: object.dstId,
-          sourceNoteId: noteId,
-        });
+        // An affiliation to a company is stored as the ROLE, not as an edge:
+        // the graph derives its affiliation edge from the positions row, so
+        // emitting the literal edge too would render the job twice.
+        const position =
+          object.dstType === "company"
+            ? buildPositionRow({
+                contactId: subject.contactId,
+                companyId: object.dstId,
+                noteId,
+                rel,
+              })
+            : null;
+        if (position) {
+          positionRows.push(position);
+        } else {
+          edgeRows.push({
+            id: randomUUID(),
+            srcType: "contact",
+            srcId: subject.contactId,
+            predicate: rel.predicate,
+            dstType: object.dstType,
+            dstId: object.dstId,
+            sourceNoteId: noteId,
+          });
+        }
       } else {
         await createEntityLinkConfirmation({
           srcContactId: subject.contactId,
@@ -104,5 +128,5 @@ export async function buildRelationshipRows(
     }
   }
 
-  return { edgeRows, suggestionRows };
+  return { edgeRows, suggestionRows, positionRows };
 }

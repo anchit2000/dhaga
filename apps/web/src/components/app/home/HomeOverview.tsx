@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { HomeTile } from "@/components/app/home/HomeTile";
-import { HOME_PREVIEW_LIMIT } from "@/utils/constants/app";
-import type { ContactListItem } from "@/lib/repo/contacts";
+import { Badge } from "@/components/ui/badge";
+import { HOME_PREVIEW_LIMIT, RECENT_REASON_LABELS } from "@/utils/constants/app";
+import type { RecentContactListItem } from "@/lib/repo/contacts";
 
-/** Home's "Recent people" bento tile. Each row links through to the person's
- *  full detail page. */
-export function HomeOverview({ people }: { people: ContactListItem[] }): React.ReactElement {
+/** Home's "Recent people" bento tile — most recently TOUCHED first, each row
+ *  tagged with why it's here ("recently added" = just captured, "recently
+ *  interacted" = a note, an event scan or a reach-out since). Each row links
+ *  through to the person's full detail page. */
+export function HomeOverview({ people }: { people: RecentContactListItem[] }): React.ReactElement {
   return (
     <HomeTile title="Recent people">
       <div className="space-y-1">
@@ -25,7 +28,15 @@ export function HomeOverview({ people }: { people: ContactListItem[] }): React.R
               <span className="block truncate text-sm text-paper">{person.name}</span>
               <span className="block truncate text-xs text-fog">{person.companyName || person.title || "No details yet"}</span>
             </span>
-            <ArrowRight className="size-3.5 shrink-0 text-fog" aria-hidden />
+            {/* The badge keeps its natural width and the name truncates into
+                whatever is left — at 375px "recently interacted" is the widest
+                the row gets, and it must stay on one line to stay readable. */}
+            <span className="flex shrink-0 items-center gap-2">
+              <Badge variant="outline" className="font-mono text-[10px] uppercase tracking-wide text-fog">
+                {RECENT_REASON_LABELS[person.reason]}
+              </Badge>
+              <ArrowRight className="size-3.5 text-fog" aria-hidden />
+            </span>
           </Link>
         ))}
       </div>

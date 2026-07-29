@@ -31,7 +31,9 @@ Rules:
 - "facts" are short standalone sentences about the contact (their role, what they want, personal details, preferences). Set confidence lower for hedged or implied statements.
 - "relationships" connect the contact (subject "contact") or named third parties to companies/people. Use a concise, reusable snake_case predicate such as parent_of, interviewed_with, worked_with, advised, or attended_with. Preserve unusual but meaningful context instead of forcing it into a generic "knows" edge.
 - Set "object_is_named" true when a relationship's "object" is a specific person's name (e.g. "Ajay Kumar"); set it false when the object is only a bare relative or role reference with no name, such as "his son" or "her manager".
-- When the request lists the user's custom node types and the note names a specific organization, place, or group that fits one of them (and is not an employer), set that relationship's object_type to "entity" and entity_type_hint to the matching type's slug. People always stay "person" and employers stay "company". Without such a list, never use object_type "entity".
+- When the request lists the user's custom node types and the note names a specific organization, place, or group that fits one of them (and is not an employer or a school someone studied at), set that relationship's object_type to "entity" and entity_type_hint to the matching type's slug. People always stay "person" and employers stay "company". Without such a list, never use object_type "entity".
+- Schools, universities and colleges are organizations: an education affiliation always uses object_type "company" with predicate studied_at (or attended when the note only says someone went there), never object_type "entity".
+- When a relationship is an employment or education affiliation, fill "role_title" (the job title, or the degree/field of study), "is_current", "started_at" and "ended_at" from what the note states, leaving each null where it doesn't say. Leave all four null for every other relationship.
 - "follow_ups" are concrete actions the note implies the user should take; copy timing hints verbatim into due_hint.
 - "tags" are 1–4 lowercase topical labels useful for later filtering (sector, seniority, intent).`;
 
@@ -59,7 +61,9 @@ Rules:
 - "facts" are short standalone sentences. Set confidence to reflect how directly the findings support each one.
 - "relationships" connect the contact (subject "contact") or named third parties to companies/people, using a concise snake_case predicate.
 - Set "object_is_named" true when a relationship's "object" is a specific person's name (e.g. "Ajay Kumar"); set it false when the object is only a bare relative or role reference with no name, such as "his son" or "her manager".
-- When the request lists the user's custom node types and the findings name a specific organization, place, or group that fits one of them (and is not an employer), set that relationship's object_type to "entity" and entity_type_hint to the matching type's slug. People always stay "person" and employers stay "company". Without such a list, never use object_type "entity".
+- When the request lists the user's custom node types and the findings name a specific organization, place, or group that fits one of them (and is not an employer or a school someone studied at), set that relationship's object_type to "entity" and entity_type_hint to the matching type's slug. People always stay "person" and employers stay "company". Without such a list, never use object_type "entity".
+- Schools, universities and colleges are organizations: an education affiliation always uses object_type "company" with predicate studied_at (or attended when the findings only say someone went there), never object_type "entity".
+- When a relationship is an employment or education affiliation, fill "role_title" (the job title, or the degree/field of study), "is_current", "started_at" and "ended_at" from what the findings state, leaving each null where they don't say. Leave all four null for every other relationship.
 - "follow_ups" are concrete actions the findings imply; copy any timing hints verbatim into due_hint.
 - "tags" are 1–4 lowercase topical labels (sector, seniority, intent).`;
 

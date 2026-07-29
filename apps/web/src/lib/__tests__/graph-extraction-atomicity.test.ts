@@ -24,7 +24,11 @@ function buildExtraction(): NoteExtraction {
       { type: "personal", text: "Just returned from parental leave", confidence: 0.6 },
     ],
     relationships: [
-      { subject: "contact", predicate: "works_at", object: "Northbridge", object_type: "company", object_is_named: null, entity_type_hint: null },
+      // An affiliation to a company is written as a POSITION, not an edge (the
+      // graph re-derives its edge from the row), so the edge batch below is fed
+      // by the person link — the relationship kind that still becomes an edge.
+      { subject: "contact", predicate: "works_at", object: "Northbridge", object_type: "company", object_is_named: null, entity_type_hint: null, role_title: null, is_current: null, started_at: null, ended_at: null },
+      { subject: "contact", predicate: "knows", object: "Ravi Atomic", object_type: "person", object_is_named: true, entity_type_hint: null, role_title: null, is_current: null, started_at: null, ended_at: null },
     ],
     follow_ups: [
       { action: "Send partnership deck", due_hint: "this week" },
@@ -60,7 +64,7 @@ describe("applyExtraction writes each entity type as one atomic batch", () => {
     const insertSpy = vi.spyOn(db, "insert");
     await applyExtraction(contactId, noteId, buildExtraction());
 
-    // The extraction has 3 facts, 1 relationship (resolves to an edge), and
+    // The extraction has 3 facts, 2 relationships (one edge, one position), and
     // 2 follow-ups. A per-item loop would call db.insert() 3 times for
     // facts and 2 times for follow-ups; batching means exactly one call
     // each, carrying every row for that table at once.

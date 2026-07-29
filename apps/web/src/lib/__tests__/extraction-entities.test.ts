@@ -24,6 +24,10 @@ describe("extraction schema carries custom-entity objects", () => {
       object_type: "entity",
       object_is_named: null,
       entity_type_hint: "gym",
+      role_title: null,
+      is_current: null,
+      started_at: null,
+      ended_at: null,
     });
     expect(parsed.object_type).toBe("entity");
     expect(parsed.entity_type_hint).toBe("gym");
@@ -37,6 +41,10 @@ describe("extraction schema carries custom-entity objects", () => {
       object_type: "person",
       object_is_named: true,
       entity_type_hint: null,
+      role_title: null,
+      is_current: null,
+      started_at: null,
+      ended_at: null,
     });
     expect(parsed.entity_type_hint).toBeNull();
     // WHY: object_is_named is the named-vs-bare discriminator; like

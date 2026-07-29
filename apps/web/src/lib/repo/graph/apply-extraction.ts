@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db/request-scope";
 import { contacts, edges, edgeSuggestions, facts, followUps } from "@/lib/db/schema";
 import { upsertEmbedding } from "../embeddings";
 import { emitWebhook } from "@/lib/webhooks";
+import { insertPositionRows } from "./position-rows";
 import { buildRelationshipRows } from "./relationship-rows";
 import type { NoteExtraction } from "@dhaga/core";
 
@@ -11,8 +12,10 @@ import type { NoteExtraction } from "@dhaga/core";
  * Write one note's extraction into the graph. Every row carries
  * source_note_id — deleting the note tombstones all of this.
  * Relationship objects resolve per kind in ./relationship-rows: unambiguous
- * ones become edges now, ambiguous (or unknown-entity) ones become pending
- * confirmations for the user to resolve (no new edge_suggestions rows).
+ * ones become edges now — or, for an affiliation to a company, a positions row
+ * (a job or a degree) whose edge the graph re-derives — while ambiguous (or
+ * unknown-entity) ones become pending confirmations for the user to resolve
+ * (no new edge_suggestions rows).
  *
  * Each entity type is written with one multi-row `db.insert(...).values([...])`
  * instead of N single-row inserts in a loop: a single INSERT statement is
@@ -45,7 +48,7 @@ export async function applyExtraction(
     sourceNoteId: noteId,
   }));
 
-  const { edgeRows, suggestionRows } = await buildRelationshipRows(
+  const { edgeRows, suggestionRows, positionRows } = await buildRelationshipRows(
     contactId,
     noteId,
     extraction.relationships,
@@ -65,6 +68,10 @@ export async function applyExtraction(
   if (suggestionRows.length > 0) {
     await db.insert(edgeSuggestions).values(suggestionRows);
   }
+
+  // Jobs/degrees the note stated. Purely additive — an existing position for
+  // that employer (the user's or an earlier note's) is left exactly as it is.
+  await insertPositionRows(positionRows);
 
   const followUpRows: (typeof followUps.$inferInsert)[] = extraction.follow_ups.map(
     (followUp) => ({

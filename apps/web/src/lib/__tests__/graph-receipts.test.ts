@@ -51,8 +51,8 @@ const extraction: NoteExtraction = {
     { type: "role", text: "Runs operations for a freight forwarder", confidence: 0.9 },
   ],
   relationships: [
-    { subject: "contact", predicate: "works_at", object: "Freightline", object_type: "company", object_is_named: null, entity_type_hint: null },
-    { subject: "contact", predicate: "knows", object: "Mei Tanaka", object_type: "person", object_is_named: true, entity_type_hint: null },
+    { subject: "contact", predicate: "works_at", object: "Freightline", object_type: "company", object_is_named: null, entity_type_hint: null, role_title: null, is_current: null, started_at: null, ended_at: null },
+    { subject: "contact", predicate: "knows", object: "Mei Tanaka", object_type: "person", object_is_named: true, entity_type_hint: null, role_title: null, is_current: null, started_at: null, ended_at: null },
   ],
   follow_ups: [{ action: "Send route-optimisation deck", due_hint: "next quarter" }],
   tags: ["logistics"],

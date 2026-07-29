@@ -63,6 +63,35 @@ export const relationshipSchema = z.object({
     .describe(
       'true when `object` is a specific person\'s name (e.g. "Ajay Kumar"); false when it is a bare relative or role reference with no name, like "his son" or "her manager".',
     ),
+  // Required-but-nullable, same reason as above. Structured detail for an
+  // employment/education affiliation, so the edge can also become a position
+  // row (a job or a degree) instead of only an edge. All four stay null for a
+  // person-to-person or entity relationship, which has no role to record —
+  // existing behaviour for those is unchanged.
+  role_title: z
+    .string()
+    .nullable()
+    .describe(
+      'The job title, or the degree/field of study for a school (e.g. "Head of Product", "BSc Computer Science"). Null when the note does not state one.',
+    ),
+  is_current: z
+    .boolean()
+    .nullable()
+    .describe(
+      "true when the affiliation is ongoing, false when it has ended. Null when the note does not say, or this is not an affiliation.",
+    ),
+  started_at: z
+    .string()
+    .nullable()
+    .describe(
+      'When the affiliation started, as loosely as the note states it ("2023", "2023-04"). Null when unknown.',
+    ),
+  ended_at: z
+    .string()
+    .nullable()
+    .describe(
+      "When the affiliation ended, in the same loose format. Null when unknown or still ongoing.",
+    ),
 });
 
 export const followUpSchema = z.object({

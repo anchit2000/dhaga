@@ -1,6 +1,7 @@
 import { and, eq, isNull, ne, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { companies, contacts, notes, eventContacts } from "@/lib/db/schema";
+import { lastTouchSql } from "@/lib/repo/last-touch";
 import {
   DECAY_AFTER_DAYS,
   STRENGTH_BANDS,
@@ -53,13 +54,6 @@ export interface QuietContact {
   strength: RelationshipStrength;
 }
 
-const lastTouch = sql<Date>`GREATEST(
-  ${contacts.createdAt},
-  COALESCE(${contacts.lastReachedOutAt}, ${contacts.createdAt}),
-  COALESCE(MAX(${notes.createdAt}), ${contacts.createdAt}),
-  COALESCE(MAX(${eventContacts.scannedAt}), ${contacts.createdAt})
-)`;
-
 const windowStart = sql`now() - make_interval(days => ${STRENGTH_WINDOW_DAYS})`;
 
 const recentInteractions = sql<number>`
@@ -82,7 +76,7 @@ export async function listQuietContacts(): Promise<QuietContact[]> {
       name: contacts.name,
       title: contacts.title,
       companyName: companies.name,
-      lastTouch,
+      lastTouch: lastTouchSql,
       recentInteractions,
     })
     .from(contacts)
@@ -96,7 +90,7 @@ export async function listQuietContacts(): Promise<QuietContact[]> {
     // with an old last-touch must not surface in the "going quiet" tile.
     .where(and(isNull(contacts.reachOutEveryDays), ne(contacts.source, "mentioned")))
     .groupBy(contacts.id, companies.id)
-    .having(sql`${lastTouch} < now() - make_interval(days => ${DECAY_AFTER_DAYS})`);
+    .having(sql`${lastTouchSql} < now() - make_interval(days => ${DECAY_AFTER_DAYS})`);
   return rows
     .map((row) => {
       const touched = new Date(row.lastTouch);

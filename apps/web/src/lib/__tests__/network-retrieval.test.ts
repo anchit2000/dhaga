@@ -69,6 +69,10 @@ describe("bounded network retrieval", () => {
           object_type: "person",
           object_is_named: true,
           entity_type_hint: null,
+          role_title: null,
+          is_current: null,
+          started_at: null,
+          ended_at: null,
         },
       ],
       follow_ups: [],
@@ -92,7 +96,7 @@ describe("bounded network retrieval", () => {
     const noteId = await addNote(root, "voice", mentionName);
     await applyExtraction(root, noteId, {
       facts: [],
-      relationships: [{ subject: "contact", predicate: "parent_of", object: mentionName, object_type: "person", object_is_named: true, entity_type_hint: null }],
+      relationships: [{ subject: "contact", predicate: "parent_of", object: mentionName, object_type: "person", object_is_named: true, entity_type_hint: null, role_title: null, is_current: null, started_at: null, ended_at: null }],
       follow_ups: [],
       tags: [],
     });
@@ -106,7 +110,7 @@ describe("bounded network retrieval", () => {
     const secondNoteId = await addNote(root, "voice", secondMentionName);
     await applyExtraction(root, secondNoteId, {
       facts: [],
-      relationships: [{ subject: "contact", predicate: "worked_with", object: secondMentionName, object_type: "person", object_is_named: true, entity_type_hint: null }],
+      relationships: [{ subject: "contact", predicate: "worked_with", object: secondMentionName, object_type: "person", object_is_named: true, entity_type_hint: null, role_title: null, is_current: null, started_at: null, ended_at: null }],
       follow_ups: [],
       tags: [],
     });

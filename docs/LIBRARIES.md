@@ -97,6 +97,50 @@ string each delta and a half-written token renders as text until it closes. Not
 `marked`/`markdown-to-jsx` — react-markdown is the maintained standard and its
 no-raw-HTML default is the safer posture for untrusted model output.
 
+### 14. lucide-animated / pqoqubbw-icons (animated icons) — vendored 2026-07-29
+
+**Provides:** hover/imperatively-triggered animated versions of the lucide
+glyphs we already use, at a handful of deliberate moments.
+
+[pqoqubbw/icons](https://github.com/pqoqubbw/icons) (464 icons, **MIT**) is
+distributed as a **shadcn registry, not an npm package** — `npx shadcn add
+https://lucide-animated.com/r/<name>.json` copies source into the repo. So this
+is a **vendoring**, not a dependency: the files live in
+`components/ui/animated-icons/` with the MIT notice in each header, and they
+ride our existing `motion` dep (already used by `ui/dock/Dock.tsx`). **Adding an
+icon adds zero npm packages** — pull the source, add the header, re-export it
+from `animated-icons/index.ts`.
+
+**We add the accessibility the library omits.** Upstream ships *no*
+`prefers-reduced-motion` handling at all, and these icons animate `pathLength`
+and `opacity` from 0 — an unguarded one can render as a half-drawn path.
+`animated-icons/use-animated-icon.ts` holds the single guard: `useReducedMotion()`
+(motion's own primitive) gates the *trigger* only, never the markup, so there is
+no hydration branch and the icon stays in its fully-drawn `normal` variant.
+Any new icon must go through that hook. Vendored files also differ from upstream
+in three deliberate ways — React 19 ref-as-prop instead of `forwardRef` (this
+repo uses `forwardRef` nowhere), a `<span>` wrapper instead of `<div>` (a div is
+invalid inside a `<button>`), and lucide's default size/`aria-hidden` so they
+drop into existing call sites without layout shift.
+
+**Where to use it:** marquee moments only, on a client component, driven from
+the wrapping button's ref so the whole target triggers the animation rather than
+the 14px glyph. Currently five sites — `contact/SaveButton`,
+`contact/ReprocessButton`, and the three merge triggers
+(`CompanyDuplicatesList`, `CompaniesTable`, `PeopleBulkActions`).
+
+**Where NOT to use it:**
+
+- **Table rows / repeated list rows** (e.g. `CompanyRowActions`) — dozens of
+  icons animating at once is visual noise and a per-row `motion` runtime cost.
+- **The 54 `Loader2` spinner sites** — matching today's behaviour would need
+  ref-driven wrappers at 44 call sites for a visually identical spinner.
+- **Blanket `X`/`Check` swaps.** Restraint is the point; if every icon moves,
+  none of them read as deliberate.
+- **Server components.** These are `"use client"`. Never convert a server
+  component to a client component just to animate an icon — skip the site.
+- **`apps/mobile`.** It uses `@expo/vector-icons`; `motion/react` is DOM-only.
+
 ---
 
 ## Adopt when the milestone needs it
@@ -274,4 +318,5 @@ don't hand-roll month grids, keyboard nav, and date math.
 - [react-day-picker](https://daypicker.dev/) · [Base UI Popover](https://base-ui.com/react/components/popover)
 - [FullCalendar React](https://fullcalendar.io/docs/react) · [FullCalendar CSS variables](https://fullcalendar.io/docs/css-customization)
 - [shadcn Command / cmdk](https://ui.shadcn.com/docs/components/radix/command)
+- [pqoqubbw/icons](https://github.com/pqoqubbw/icons) · [lucide-animated registry](https://lucide-animated.com) · [motion `useReducedMotion`](https://motion.dev/docs/react-reduced-motion)
 - [rate-limiter-flexible](https://github.com/animir/node-rate-limiter-flexible) · [@upstash/ratelimit](https://github.com/upstash/ratelimit-js) · [@vercel/firewall rate limiting](https://vercel.com/docs/vercel-firewall/vercel-waf/rate-limiting) · [TanStack Pacer (client-side)](https://tanstack.com/pacer/latest/docs/guides/rate-limiting)

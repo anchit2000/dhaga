@@ -1,17 +1,19 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, GitMerge, Link2, Star, StarOff, Tag, Trash2 } from "lucide-react";
+import { Building2, Link2, Star, StarOff, Tag, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { toastError } from "@/components/app/feedback";
 import { Button } from "@/components/ui/button";
+import { GitMergeIcon } from "@/components/ui/animated-icons";
 import { bulkStarContactsAction } from "@/lib/actions/contacts";
 import { AddToCompanyDialog } from "./AddToCompanyDialog";
 import { BulkAffiliationDialog } from "./BulkAffiliationDialog";
 import { BulkDeleteDialog } from "./BulkDeleteDialog";
 import { BulkTagDialog } from "./BulkTagDialog";
 import { ContactMergeDialog } from "./ContactMergeDialog";
+import type { AnimatedIconHandle } from "@/components/ui/animated-icons";
 
 type OpenDialog = "merge" | "company" | "affiliation" | "tag" | "delete" | null;
 
@@ -25,6 +27,7 @@ export function PeopleBulkActions({ ids, onClear }: { ids: string[]; onClear: ()
   const [dialog, setDialog] = useState<OpenDialog>(null);
   const [starOp, setStarOp] = useState<"star" | "unstar" | null>(null);
   const [pending, startTransition] = useTransition();
+  const mergeIconRef = useRef<AnimatedIconHandle>(null);
 
   function setStarred(starred: boolean): void {
     setStarOp(starred ? "star" : "unstar");
@@ -52,8 +55,10 @@ export function PeopleBulkActions({ ids, onClear }: { ids: string[]; onClear: ()
         onClick={() => setDialog("merge")}
         disabled={ids.length < 2}
         title={ids.length < 2 ? "Select at least 2 contacts to merge" : undefined}
+        onMouseEnter={() => mergeIconRef.current?.startAnimation()}
+        onMouseLeave={() => mergeIconRef.current?.stopAnimation()}
       >
-        <GitMerge /> Merge
+        <GitMergeIcon ref={mergeIconRef} /> Merge
       </Button>
       <Button variant="outline" size="sm" onClick={() => setDialog("company")}>
         <Building2 /> Add to company

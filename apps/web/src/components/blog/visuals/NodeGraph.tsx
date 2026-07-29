@@ -25,16 +25,18 @@ interface NodeGraphProps {
 }
 
 // Radius + fill/stroke per node kind. Coordinates and radii are in the 640-wide
-// viewBox user space, so the whole graph scales with the container.
+// viewBox user space, so the whole graph scales with the container. Solid fills
+// stay amber; thin strokes use ember, because amber is only ~2:1 on the light
+// panel and a target node is nothing but its ring.
 const KIND_STYLE: Record<NodeKind, { r: number; fill: string; stroke: string; strokeWidth: number }> = {
   you: { r: 22, fill: "var(--color-amber)", stroke: "var(--color-amber)", strokeWidth: 0 },
-  target: { r: 16, fill: "var(--color-ink)", stroke: "var(--color-amber)", strokeWidth: 2.5 },
+  target: { r: 16, fill: "var(--color-ink)", stroke: "var(--color-ember)", strokeWidth: 2.5 },
   mutual: { r: 10, fill: "var(--color-panel-2)", stroke: "var(--color-seam)", strokeWidth: 1.5 },
   contact: { r: 14, fill: "var(--color-panel-2)", stroke: "var(--color-seam)", strokeWidth: 1.5 },
 };
 
 // A relationship map rendered as inline, scalable SVG: you → mutuals → targets.
-// Edges draw first so nodes sit on top; strong edges glow amber and thicker.
+// Edges draw first so nodes sit on top; strong edges glow ember and thicker.
 export function NodeGraph({
   nodes,
   edges,
@@ -58,7 +60,7 @@ export function NodeGraph({
           const b = byId.get(edge.to);
           if (!a || !b) return null;
           const style: CSSProperties = {
-            stroke: edge.strong ? "var(--color-amber)" : "var(--color-seam)",
+            stroke: edge.strong ? "var(--color-ember)" : "var(--color-seam)",
           };
           return (
             <line

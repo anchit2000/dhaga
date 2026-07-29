@@ -78,7 +78,7 @@ export function NavigationFeedback({ children }: { children: React.ReactNode }) 
       <div onClickCapture={handleClick} aria-busy={pendingHref !== undefined}>
         {pendingHref ? (
           <div className="pointer-events-none fixed inset-x-0 top-0 z-[100] flex h-1 items-center overflow-hidden bg-amber/10">
-            <div className="h-px w-full bg-gradient-to-r from-transparent via-amber/70 to-transparent" />
+            <div className="h-0.5 w-full bg-gradient-to-r from-transparent via-ember to-transparent" />
             <StitchLoader className="absolute left-1/2 -translate-x-1/2" label="Loading page" />
           </div>
         ) : null}

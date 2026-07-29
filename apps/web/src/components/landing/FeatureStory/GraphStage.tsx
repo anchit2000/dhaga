@@ -98,10 +98,14 @@ export function GraphStage({ scene }: { scene: GraphScene }) {
           type: "straight",
           animated: lit,
           style: {
-            stroke: lit ? "#e2a44c" : "#4a3d2b",
+            stroke: lit
+              ? "var(--brand-amber)"
+              : "color-mix(in srgb, var(--brand-fog) 40%, transparent)",
             strokeWidth: lit ? 2 : 1,
             opacity: touchesNew && !scene.showNew ? 0 : lit ? 1 : scene.dimOthers ? 0.35 : 0.8,
-            filter: lit ? "drop-shadow(0 0 5px rgba(226,164,76,0.9))" : "none",
+            filter: lit
+              ? "drop-shadow(0 0 5px color-mix(in srgb, var(--brand-amber) 90%, transparent))"
+              : "none",
             transition: "all 0.7s",
           },
         };

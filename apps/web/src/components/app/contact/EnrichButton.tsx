@@ -34,7 +34,7 @@ export function EnrichButton({ contactId }: { contactId: string }) {
         </p>
       )}
       {state.noticed ? (
-        <p className="w-full text-xs text-amber/90" role="status">
+        <p className="w-full text-xs text-ember" role="status">
           {state.noticed}
         </p>
       ) : null}

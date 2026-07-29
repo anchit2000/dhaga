@@ -27,7 +27,7 @@ export function CopyLinkButton({ url }: { url: string }): ReactElement {
       aria-label="Copy invite link"
       className="min-h-[44px] shrink-0"
     >
-      {copied ? <Check className="text-amber" /> : <Copy />}
+      {copied ? <Check className="text-ember" /> : <Copy />}
       {copied ? "Copied" : "Copy"}
     </Button>
   );

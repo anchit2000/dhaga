@@ -38,7 +38,7 @@ export function NoteList({ contactId, entityId, notes }: NoteListProps) {
             <p className="whitespace-pre-wrap text-sm leading-relaxed text-paper/90">
               {note.body}
             </p>
-            <p className="mt-1.5 font-mono text-[10px] uppercase tracking-wider text-fog/60">
+            <p className="mt-1.5 font-mono text-[10px] uppercase tracking-wider text-fog">
               {KIND_LABELS[note.kind] ?? note.kind} ·{" "}
               {formatDateTime(note.createdAt)}
             </p>

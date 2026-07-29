@@ -131,7 +131,7 @@ export function ConnectionsSection({ contactId }: { contactId: string }) {
                 key={key}
                 type="button"
                 onClick={() => setSelectedFacets((current) => current.filter((item) => item !== key))}
-                className="inline-flex items-center gap-1 rounded-full border border-amber/30 bg-amber/10 px-2 py-1 text-[10px] text-amber"
+                className="inline-flex items-center gap-1 rounded-full border border-amber/30 bg-amber/10 px-2 py-1 text-[10px] text-ember"
                 aria-label={`Remove ${facet.label} filter`}
               >
                 {facet.label} <X className="size-2.5" />

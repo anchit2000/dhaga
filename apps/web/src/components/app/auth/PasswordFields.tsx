@@ -74,7 +74,7 @@ export function PasswordFields({
           onChange={(e) => onConfirmChange(e.target.value)}
         />
         {mismatch ? (
-          <p className="text-sm text-red-400" role="alert">
+          <p className="text-sm text-destructive" role="alert">
             Passwords don&apos;t match.
           </p>
         ) : null}

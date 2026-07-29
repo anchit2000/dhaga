@@ -26,7 +26,7 @@ export default async function PeoplePage({ searchParams }: { searchParams: Promi
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-2xl tracking-tight">People</h1>
         <div className="flex flex-wrap items-center justify-end gap-2">
-          <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-fog/60">
+          <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-fog">
             Export
             {(["csv", "vcard", "json"] as const).map((format) => (
               <a key={format} href={`/api/export/${format}`} className="underline-offset-2 transition-colors hover:text-paper hover:underline">{format}</a>

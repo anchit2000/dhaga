@@ -29,7 +29,7 @@ function RetryButton() {
     <button
       type="submit"
       disabled={pending}
-      className="inline-flex items-center gap-1 rounded-full border border-red-400/40 px-2.5 py-1 text-xs text-red-300 transition-colors hover:bg-red-400/10 disabled:opacity-60"
+      className="inline-flex items-center gap-1 rounded-full border border-destructive/40 px-2.5 py-1 text-xs text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-60"
     >
       {pending ? <Loader2 className="size-3 animate-spin" /> : <RotateCw className="size-3" />}
       Retry
@@ -66,11 +66,11 @@ export function ExtractionStatus({
               key={job.id}
               className="flex flex-wrap items-center gap-2 rounded-lg border border-amber/25 bg-amber/[0.05] px-3 py-2 text-xs text-fog"
             >
-              <Sparkles className="size-3.5 shrink-0 text-amber" />
+              <Sparkles className="size-3.5 shrink-0 text-ember" />
               <span className="min-w-0 flex-1">{EXTRACTION_BLOCKED_LABEL}</span>
               <Link
                 href="/app/settings"
-                className="shrink-0 font-medium text-amber transition-colors hover:underline"
+                className="shrink-0 font-medium text-ember transition-colors hover:underline"
               >
                 Upgrade
               </Link>
@@ -82,7 +82,7 @@ export function ExtractionStatus({
           return (
             <div
               key={job.id}
-              className="flex flex-wrap items-center gap-2 rounded-lg border border-red-400/30 bg-red-400/5 px-3 py-2 text-xs text-red-300"
+              className="flex flex-wrap items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive"
             >
               <TriangleAlert className="size-3.5 shrink-0" />
               <span className="min-w-0 flex-1">
@@ -105,7 +105,7 @@ export function ExtractionStatus({
             key={job.id}
             className="flex items-center gap-2 rounded-lg border border-seam bg-panel px-3 py-2 text-xs text-fog"
           >
-            <Loader2 className="size-3.5 shrink-0 animate-spin text-amber" />
+            <Loader2 className="size-3.5 shrink-0 animate-spin text-ember" />
             <span>{activeLabel(job)}</span>
           </div>
         );

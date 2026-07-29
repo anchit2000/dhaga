@@ -34,7 +34,7 @@ export function SpotlightCard({
         const rect = el!.getBoundingClientRect();
         const x = ((e.clientX - rect.left) / rect.width) * 100;
         const y = ((e.clientY - rect.top) / rect.height) * 100;
-        spot!.style.background = `radial-gradient(circle at ${x}% ${y}%, rgba(226,164,76,0.28), transparent 60%)`;
+        spot!.style.background = `radial-gradient(circle at ${x}% ${y}%, color-mix(in srgb, var(--brand-amber) 28%, transparent), transparent 60%)`;
         spot!.style.opacity = "1";
       }
       function onLeave() {

@@ -63,7 +63,7 @@ export function SecuritySetting({ email, twoFactorEnabled: initialEnabled }: Sec
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-sm text-paper">
             {enabled ? (
-              <ShieldCheck className="size-4 text-amber" />
+              <ShieldCheck className="size-4 text-ember" />
             ) : (
               <ShieldOff className="size-4 text-fog" />
             )}
@@ -109,7 +109,7 @@ export function SecuritySetting({ email, twoFactorEnabled: initialEnabled }: Sec
             </Button>
           </div>
           {error ? (
-            <p className="text-sm text-red-400" role="alert">
+            <p className="text-sm text-destructive" role="alert">
               {error}
             </p>
           ) : null}

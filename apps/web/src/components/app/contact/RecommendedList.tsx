@@ -16,7 +16,7 @@ export function RecommendedList({ recommendations }: { recommendations: Recommen
               href={`/app/people/${person.contactId}`}
               className="flex h-full items-start gap-2.5 rounded-xl border border-seam bg-panel p-3 transition-colors hover:bg-wash/[0.03]"
             >
-              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-amber/15 font-display text-[10px] text-amber">
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-amber/15 font-display text-[10px] text-ember">
                 {person.name.charAt(0).toUpperCase()}
               </span>
               <span className="min-w-0">

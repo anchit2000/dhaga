@@ -11,7 +11,7 @@
   background-color: var(--color-panel);
   border: 1px solid var(--color-seam);
   border-radius: 16px;
-  box-shadow: 0 24px 60px -24px rgb(0 0 0 / 0.7);
+  box-shadow: 0 24px 60px -24px var(--shadow-cast);
 }
 
 .driver-popover.dhaga-tour .driver-popover-title {
@@ -68,8 +68,11 @@
   border-color: transparent;
   color: var(--color-on-accent);
 }
+/* Hover darkens the amber fill rather than swapping to ember: on light, ember
+   under --color-on-accent is only 3.35:1, so the 12px label vanishes mid-tour.
+   A shaded amber keeps on-accent's ~7:1 in both themes. */
 .driver-popover.dhaga-tour .driver-popover-navigation-btns button:last-child:hover {
-  background-color: var(--color-ember);
+  background-color: color-mix(in oklch, var(--color-amber), black 8%);
   border-color: transparent;
   color: var(--color-on-accent);
 }

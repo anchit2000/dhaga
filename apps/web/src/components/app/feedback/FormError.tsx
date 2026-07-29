@@ -5,7 +5,7 @@ import { TriangleAlert, X } from "lucide-react";
 
 /**
  * The ONE dismissible inline error for forms — replaces the ad-hoc
- * `<p className="text-sm text-red-400" role="alert">{state.error}</p>` scattered
+ * `<p className="text-sm text-destructive" role="alert">{state.error}</p>` scattered
  * across every form so a save failure looks identical everywhere (the app ships
  * no shadcn <Alert>). Pairs with useActionState: pass `state.error`. Renders
  * nothing when there's no message. Dismiss is per-message: a NEW (different)
@@ -24,7 +24,7 @@ export function FormError({
   return (
     <div
       role="alert"
-      className="flex items-start gap-2 rounded-md border border-red-400/30 bg-red-400/10 px-3 py-2 text-sm text-red-400"
+      className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
     >
       <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
       <span className="flex-1">{message}</span>
@@ -41,7 +41,7 @@ export function FormError({
         type="button"
         aria-label="Dismiss"
         onClick={() => setDismissed(message)}
-        className="shrink-0 text-red-400/70 transition-colors hover:text-red-400"
+        className="shrink-0 text-destructive/70 transition-colors hover:text-destructive"
       >
         <X className="size-4" aria-hidden />
       </button>

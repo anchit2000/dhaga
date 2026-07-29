@@ -34,7 +34,7 @@ export default async function QuickAddPage() {
           person and keeps the original text as the receipt.
         </p>
         {usageLabel ? (
-          <p className="mt-1 font-mono text-[11px] uppercase tracking-wider text-fog/60">
+          <p className="mt-1 font-mono text-[11px] uppercase tracking-wider text-fog">
             {usageLabel}
           </p>
         ) : null}

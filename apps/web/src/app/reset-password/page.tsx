@@ -34,7 +34,7 @@ export default async function ResetPasswordPage({ searchParams }: ResetPasswordP
           {token ? (
             <ResetPasswordForm token={token} />
           ) : (
-            <p className="text-sm text-red-400">
+            <p className="text-sm text-destructive">
               This reset link is missing its token. Request a new one from the sign-in page.
             </p>
           )}

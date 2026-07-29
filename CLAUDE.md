@@ -98,7 +98,23 @@ GitHub: https://github.com/anchit2000/dhaga
 
 **Brand identity:** warm near-black ground, amber thread glow, Geist Pixel for
 display + body, IBM Plex Mono for labels/code. Design tokens live in
-`apps/web/src/app/globals.css` (`--color-ink/panel/seam/paper/fog/amber`).
+`apps/web/src/app/globals.css`
+(`--color-ink/panel/seam/line/paper/fog/amber/ember`) — that file is the single
+source of colour for every surface. Never hardcode a hex or reach for a Tailwind
+palette colour (`red-400`, `zinc-*`) in a component; add or use a token.
+
+Light/dark both ship from those tokens via one `.dark` class on `<html>`. No
+surface forces a theme; `defaultTheme="dark"` means every new visitor gets dark
+(a deliberate call while light was unpolished), and light is reached by picking
+Light — or System on a light OS — from the toggle. Light therefore has to be
+correct on every surface, not just `/app`. Two rules it makes non-negotiable:
+- **Amber is a fill, never light-mode text** — `#e2a44c` is 1.83:1 on the light
+  ground. Use `text-ember` for accent text/icons; keep amber for backgrounds,
+  borders and gradients where `text-on-accent` sits on top.
+- **Errors use `text-destructive`**, not Tailwind reds (`red-400` is 2.4:1 on light).
+
+`--brand-seam` is the restrained decorative border; `--brand-line` is the
+stronger control/input boundary that clears the 3:1 WCAG minimum.
 
 ### Decided stack (do not re-litigate without asking)
 | Layer | Choice |

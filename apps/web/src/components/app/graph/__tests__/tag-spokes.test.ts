@@ -4,9 +4,15 @@ import { nodeSizeForDegree } from "../logic/indexes";
 import { mergeTagLayer } from "../logic/tag-layer";
 import { spokeLoadAllowed } from "../logic/tag-spokes";
 import { node, payload, settledGraph } from "./helpers";
+import { graphNodePalette } from "../canvas/theme";
 import type { TagLayerHub } from "../types";
 
-const THEME = { ink: "#0d0b09", seam: "#2b241b", amber: "#e2a44c" };
+const THEME = {
+  ink: "#0d0b09",
+  edge: "#2b241b",
+  edgeActive: "#e2a44c",
+  nodeColors: graphNodePalette("dark"),
+};
 // memberCount deliberately exceeds the spokes below — the truncated/capped case.
 const HUB: TagLayerHub = { id: "tag:ai", label: "AI", slug: "ai", memberCount: 25 };
 const SPOKES = [

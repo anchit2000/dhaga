@@ -114,7 +114,7 @@ export function FollowUpItem({
           setDueDate(followUp.dueDate);
           setEditing(true);
         }}
-        className="shrink-0 rounded-full p-1 text-fog/60 transition-colors hover:bg-wash/[0.06] hover:text-paper"
+        className="shrink-0 rounded-full p-1 text-fog transition-colors hover:bg-wash/[0.06] hover:text-paper"
       >
         <Pencil className="size-3.5" />
       </button>

@@ -10,7 +10,17 @@ export interface EventColor {
   hex: string;
 }
 
-/** Warm-leaning, mutually distinct hues that read on both /app themes. */
+/**
+ * Warm-leaning, mutually distinct hues, tuned for the dark theme: amber
+ * (1.83:1), teal (~2.4:1) and green (~2.9:1) fall under WCAG's 3:1 on the
+ * light canvas. Not re-tuned in place, because these hexes are persisted, not
+ * just rendered — NODE_TYPE_COLOR_SWATCHES (utils/constants/graph.ts) feeds
+ * the node-type picker, which stores the RAW HEX on the node type, so
+ * changing a value here silently orphans every node type already saved with
+ * it. Groups are safe (they store the token, not the hex); a light-mode fix
+ * therefore belongs in a light/dark pair keyed off the token — the shape
+ * GRAPH_NODE_COLORS uses — plus a migration for stored node-type hexes.
+ */
 export const EVENT_COLORS: readonly EventColor[] = [
   { token: "amber", label: "Amber", hex: "#e2a44c" },
   { token: "clay", label: "Clay", hex: "#cf6a4a" },

@@ -50,13 +50,13 @@ export function RequestAccessForm() {
         required
         placeholder="you@company.com"
         aria-label="Email address"
-        className="h-12 min-w-60 flex-1 border-seam bg-well text-base placeholder:text-fog/50"
+        className="h-12 min-w-60 flex-1 border-seam bg-well text-base placeholder:text-fog"
       />
       <Button type="submit" size="lg" disabled={loading}>
         {loading ? "Requesting…" : "Request access"}
       </Button>
       {error ? (
-        <p role="alert" className="w-full text-sm text-red-400">
+        <p role="alert" className="w-full text-sm text-destructive">
           {error}
         </p>
       ) : null}

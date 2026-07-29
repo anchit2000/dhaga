@@ -35,7 +35,7 @@ export function EdgePopover({
     >
       <div className="flex items-start gap-2">
         <p className="flex-1 text-sm leading-snug text-paper">
-          {data.source.label} <span className="text-amber">— {data.label} →</span>{" "}
+          {data.source.label} <span className="text-ember">— {data.label} →</span>{" "}
           {data.target.label}
         </p>
         <Button variant="ghost" size="icon-xs" aria-label="Close" onClick={onClose}>

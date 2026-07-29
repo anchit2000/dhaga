@@ -41,7 +41,7 @@ export function StarButton({
       disabled={pending}
       aria-pressed={isStarred}
       aria-label={isStarred ? "Unstar contact" : "Star contact"}
-      className={cn("text-fog hover:text-amber", isStarred && "text-amber", className)}
+      className={cn("text-fog hover:text-ember", isStarred && "text-ember", className)}
       onClick={(event) => {
         event.preventDefault();
         event.stopPropagation();

@@ -27,13 +27,13 @@
 }
 
 .dock-item-wrap:focus-visible {
-  outline: 2px solid var(--color-amber);
+  outline: 2px solid var(--color-ember);
   outline-offset: 2px;
   border-radius: 0.5rem;
 }
 
 .dock-item-wrap--active {
-  color: var(--color-amber);
+  color: var(--color-ember);
 }
 
 .dock-item {

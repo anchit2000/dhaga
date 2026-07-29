@@ -66,7 +66,7 @@ export function SearchPalette({
                   aria-label={p.dictation.listening ? "Stop dictation" : "Search by voice"}
                   className={`flex size-11 shrink-0 items-center justify-center rounded-full border transition-colors disabled:opacity-60 ${
                     p.dictation.listening
-                      ? "border-red-400/50 text-red-400"
+                      ? "border-destructive/50 text-destructive"
                       : "border-seam text-fog hover:text-paper"
                   }`}
                 >

@@ -24,7 +24,7 @@ export async function GroupChipsSection({
         <Link
           key={event.id}
           href={`/app/events/${event.id}`}
-          className="rounded-full border border-amber/30 bg-amber/10 px-2.5 py-0.5 text-xs text-amber transition-colors hover:bg-amber/20"
+          className="rounded-full border border-amber/30 bg-amber/10 px-2.5 py-0.5 text-xs text-ember transition-colors hover:bg-amber/20"
         >
           {event.name}
         </Link>

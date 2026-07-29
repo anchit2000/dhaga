@@ -79,7 +79,7 @@ export function WrappedStudio({
     <div className="space-y-6">
       <ScopeSelector options={options} value={scope} onChange={changeScope} disabled={loading} />
       {error ? (
-        <p className="text-sm text-red-400" role="alert">
+        <p className="text-sm text-destructive" role="alert">
           {error}
         </p>
       ) : null}

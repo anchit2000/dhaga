@@ -17,7 +17,7 @@ const GRID_STYLE: CSSProperties = {
   gridTemplateColumns: "repeat(auto-fit, minmax(7rem, 1fr))",
 };
 
-// A responsive row of stat tiles: a large amber value over a small fog label.
+// A responsive row of stat tiles: a large ember value over a small fog label.
 export function StatStrip({ stats, caption }: StatStripProps): ReactElement {
   return (
     <Figure caption={caption}>
@@ -27,7 +27,7 @@ export function StatStrip({ stats, caption }: StatStripProps): ReactElement {
             key={index}
             className="rounded-lg border border-seam bg-panel-2 px-4 py-4"
           >
-            <dd className="font-mono text-2xl font-semibold text-amber sm:text-3xl">
+            <dd className="font-mono text-2xl font-semibold text-ember sm:text-3xl">
               {stat.value}
             </dd>
             <dt className="mt-1 text-xs text-fog">{stat.label}</dt>

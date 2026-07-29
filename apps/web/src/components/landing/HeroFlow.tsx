@@ -16,7 +16,7 @@ export function HeroFlow(): React.JSX.Element {
         const Icon = STEP_ICONS[i] ?? STEP_ICONS[0];
         return (
           <li key={item.label} className="flex flex-col items-center text-center">
-            <span className="flex size-9 items-center justify-center rounded-full border border-amber/25 bg-amber/10 text-amber">
+            <span className="flex size-9 items-center justify-center rounded-full border border-amber/25 bg-amber/10 text-ember">
               <Icon />
             </span>
             <span className="mt-3 font-mono text-[11px] uppercase tracking-[0.16em] text-paper/90">

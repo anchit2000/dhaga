@@ -74,7 +74,7 @@ export function ScanScreen() {
           ))}
         </div>
 
-        <div className="mt-3 whitespace-nowrap rounded-full bg-gradient-to-b from-[#f0bc6e] to-[#d18f36] py-2 text-center text-[11px] font-semibold text-on-accent shadow-lg">
+        <div className="mt-3 whitespace-nowrap rounded-full bg-gradient-to-b from-amber-lift to-amber-sink py-2 text-center text-[11px] font-semibold text-on-accent shadow-lg">
           Save contact
         </div>
       </div>

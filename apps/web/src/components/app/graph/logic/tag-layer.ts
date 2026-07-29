@@ -1,4 +1,4 @@
-import { GRAPH_EDGE_SIZE, GRAPH_NODE_COLORS } from "@/utils/constants/graph";
+import { GRAPH_EDGE_SIZE } from "@/utils/constants/graph";
 import { nodeSizeForDegree } from "./indexes";
 import { hashCode } from "./seeding";
 import { edgeLabel, fadeColor } from "./style";
@@ -35,7 +35,7 @@ export function mergeTagLayer(
   graph: TagRenderGraph,
   positions: PositionMap,
   labelMap: RelationshipLabelMap,
-  theme: Pick<GraphTheme, "ink" | "seam" | "amber">,
+  theme: Pick<GraphTheme, "ink" | "edge" | "edgeActive" | "nodeColors">,
 ): MergedTagLayer {
   const merged: MergedTagLayer = { nodes: [], edges: [] };
 
@@ -51,7 +51,7 @@ export function mergeTagLayer(
     else membersByHub.set(tagEdge.target, [tagEdge.source]);
   }
 
-  const tagColor = GRAPH_NODE_COLORS.tag;
+  const tagColor = theme.nodeColors.tag;
   const tagDim = fadeColor(tagColor, theme.ink, 0.82);
   for (const hub of layer.hubs) {
     const members = membersByHub.get(hub.id) ?? [];
@@ -74,6 +74,7 @@ export function mergeTagLayer(
       size: nodeSizeForDegree(hub.memberCount),
       color: tagColor,
       dimColor: tagDim,
+      paletteKey: "tag",
     });
     const node: FullGraphNode = {
       id: hub.id,
@@ -89,7 +90,7 @@ export function mergeTagLayer(
     indexes.edgesByNode.set(hub.id, []);
   }
 
-  const seamDim = fadeColor(theme.seam, theme.ink, 0.6);
+  const edgeDim = fadeColor(theme.edge, theme.ink, 0.6);
   for (const tagEdge of liveEdges) {
     if (!graph.hasNode(tagEdge.target)) continue; // hub missing from a malformed payload
     const edge: FullGraphEdge = {
@@ -104,9 +105,9 @@ export function mergeTagLayer(
       source: edge.source,
       target: edge.target,
       size: GRAPH_EDGE_SIZE,
-      color: theme.seam,
-      dimColor: seamDim,
-      activeColor: theme.amber,
+      color: theme.edge,
+      dimColor: edgeDim,
+      activeColor: theme.edgeActive,
     });
     merged.edges.push(edge);
     indexes.neighbors.get(edge.source)?.add(edge.target);

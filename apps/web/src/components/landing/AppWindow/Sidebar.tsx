@@ -15,7 +15,7 @@ export function Sidebar() {
         <div className="px-2.5 py-1.5 text-fog">Notes</div>
         <div className="px-2.5 py-1.5 text-fog">Ask</div>
       </nav>
-      <p className="mt-4 px-2.5 font-mono text-[10px] uppercase tracking-widest text-fog/70">
+      <p className="mt-4 px-2.5 font-mono text-[10px] uppercase tracking-widest text-fog">
         Circles
       </p>
       <div className="mt-1 space-y-0.5 text-xs">

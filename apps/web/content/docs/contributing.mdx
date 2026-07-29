@@ -168,6 +168,20 @@ Privacy is the product's moat — violations are bugs, not style issues.
   rates on integrated GPUs) with budget constants and console tripwires —
   if you touch the payload or reducers, re-verify against the seeded 20k
   dataset, and remember sigma reducers must return **total** objects.
+- **Colour is one file.** Every theme value lives in `src/app/globals.css`
+  as a `--brand-*` token. Don't hardcode a hex or reach for a Tailwind
+  palette colour (`red-400`, `zinc-*`) in a component — both bypass light
+  mode. Errors use `text-destructive`; accent *text* uses `text-ember`
+  (amber is a fill — it is 1.83:1 on the light ground and fails AA as text).
+- **Adding or renaming a doc/blog page?** Run `npm run generate:llms-txt`
+  in `apps/web` and commit the regenerated `public/llms.txt` +
+  `public/llms-full.txt`. They are generated from `content/**`, never
+  hand-edited; the output is deterministic, so a clean tree means you're
+  in sync. New pages default into `## Optional` (linked, not inlined) — a
+  new comparison post must be added to `COMPARISON_POSTS` in the generator
+  to reach the promoted section, and a new product-guide page to
+  `START_ORDER`. The generator fails loudly on a dead URL rather than
+  quietly dropping it.
 
 ## AI-call rules
 

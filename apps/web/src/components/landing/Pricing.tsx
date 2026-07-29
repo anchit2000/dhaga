@@ -32,7 +32,7 @@ export function Pricing() {
         <p className="mt-8 text-sm">
           <Link
             href="/pricing"
-            className="inline-flex min-h-11 items-center text-ember underline-offset-4 transition-colors hover:text-amber hover:underline"
+            className="inline-flex min-h-11 items-center text-ember underline-offset-4 transition-colors hover:underline"
           >
             Compare plans in detail →
           </Link>

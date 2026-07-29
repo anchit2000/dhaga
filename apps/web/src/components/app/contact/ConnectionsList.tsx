@@ -13,7 +13,7 @@ export function ConnectionsList({ connections }: { connections: ConnectionItem[]
               href={`/app/people/${connection.contactId}`}
               className="flex h-full items-center gap-2.5 rounded-xl border border-seam bg-panel px-3 py-2.5 transition-colors hover:bg-wash/[0.03]"
             >
-              <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-amber/15 font-display text-xs text-amber">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-amber/15 font-display text-xs text-ember">
                 {connection.name.charAt(0).toUpperCase()}
               </span>
               <span className="min-w-0">

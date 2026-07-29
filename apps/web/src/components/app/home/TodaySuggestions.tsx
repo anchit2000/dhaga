@@ -124,7 +124,7 @@ export function TodaySuggestions({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-auto gap-1.5 px-0 text-xs text-amber hover:bg-transparent hover:underline"
+                    className="h-auto gap-1.5 px-0 text-xs text-ember hover:bg-transparent hover:underline"
                     onClick={() => setSchedulingId(schedulingId === person.contactId ? null : person.contactId)}
                   >
                     <CalendarClock className="size-3.5" /> Find a time
@@ -149,7 +149,7 @@ export function TodaySuggestions({
       {!calendarConnected || moreDue > 0 ? (
         <div className="mt-auto space-y-1.5 pt-1">
           {!calendarConnected ? (
-            <Link href="/app/settings" className="block text-xs text-amber hover:underline">
+            <Link href="/app/settings" className="block text-xs text-ember hover:underline">
               Connect a calendar to get meeting-time suggestions →
             </Link>
           ) : null}

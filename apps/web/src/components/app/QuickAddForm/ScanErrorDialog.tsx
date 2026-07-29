@@ -31,7 +31,7 @@ export function ScanErrorDialog({
     <Dialog open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
       <DialogContent className="max-w-sm">
         <DialogTitle className="flex items-center gap-2">
-          <TriangleAlert className="size-4 text-amber" aria-hidden />
+          <TriangleAlert className="size-4 text-ember" aria-hidden />
           Couldn’t scan the card
         </DialogTitle>
         <DialogDescription>

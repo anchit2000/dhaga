@@ -136,7 +136,7 @@ export function UnlinkButton({ identityId }: { identityId: string }) {
       type="button"
       variant="ghost"
       size="sm"
-      className="min-h-11 shrink-0 text-red-400/90 hover:bg-red-400/10 hover:text-red-400"
+      className="min-h-11 shrink-0 text-destructive/90 hover:bg-destructive/10 hover:text-destructive"
       disabled={pending}
       onClick={handleUnlink}
     >

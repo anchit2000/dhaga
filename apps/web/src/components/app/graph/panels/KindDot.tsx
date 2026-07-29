@@ -1,3 +1,6 @@
+"use client";
+
+import { useGraphPalette } from "../canvas/use-graph-palette";
 import { buildTypeColorMap, nodeColor } from "../logic/style";
 import type { FullGraphNode, GraphNodeType } from "../types";
 
@@ -17,11 +20,12 @@ export function KindDot({
   node: FullGraphNode;
   nodeTypes: readonly GraphNodeType[];
 }): React.ReactElement {
+  const palette = useGraphPalette();
   return (
     <span
       aria-hidden
       className="size-2 shrink-0 rounded-full"
-      style={{ backgroundColor: nodeColor(node, buildTypeColorMap(nodeTypes)) }}
+      style={{ backgroundColor: nodeColor(node, buildTypeColorMap(nodeTypes), palette) }}
     />
   );
 }

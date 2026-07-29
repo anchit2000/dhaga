@@ -67,14 +67,14 @@ export function AddNoteForm({ contactId }: { contactId: string }) {
             disabled={transcribing || loadingProgress !== null}
             className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-xs transition-colors disabled:opacity-60 ${
               listening
-                ? "border-red-400/50 text-red-400"
+                ? "border-destructive/50 text-destructive"
                 : "border-seam text-fog hover:text-paper"
             }`}
           >
             {listening ? (
               <>
                 <Square className="size-3" />
-                <span className="mr-0.5 inline-block size-1.5 animate-pulse rounded-full bg-red-400" />
+                <span className="mr-0.5 inline-block size-1.5 animate-pulse rounded-full bg-destructive" />
                 Listening — tap to stop
               </>
             ) : (

@@ -48,7 +48,7 @@ export default async function PersonPage({
     <div className="mx-auto max-w-7xl space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-start gap-4">
-          <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-amber/15 font-display text-xl text-amber">
+          <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-amber/15 font-display text-xl text-ember">
             {contact.name.charAt(0).toUpperCase()}
           </span>
           <div className="min-w-0">

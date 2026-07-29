@@ -73,7 +73,7 @@ export function CaptureForm({
             onClick={() => setMode(option)}
             className={`shrink-0 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm transition-colors ${
               mode === option
-                ? "border-amber/40 bg-amber/15 font-medium text-amber"
+                ? "border-amber/40 bg-amber/15 font-medium text-ember"
                 : "border-seam text-fog hover:text-paper"
             }`}
           >

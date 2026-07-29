@@ -55,7 +55,7 @@ export function QuickAddManual({
                 onClick={() => onTabChange(item.value)}
                 className={cn(
                   "min-h-11 whitespace-nowrap rounded-full px-3.5 text-xs font-medium transition-colors sm:text-sm",
-                  active ? "bg-amber/15 text-amber" : "text-fog hover:text-paper",
+                  active ? "bg-amber/15 text-ember" : "text-fog hover:text-paper",
                 )}
               >
                 {item.label}

@@ -1,26 +1,106 @@
 # Dhaga
 
-> Dhaga (धागा — "thread") is an open-source, privacy-first, AI-native personal CRM. Capture contacts anywhere (business-card/badge scan, voice notes, web quick-add, browser extension), turn every note into a private knowledge graph, and query it in natural language. Open-core: the whole CRM is AGPL and runs fully self-hosted, with a source-available cloud tier.
+> Dhaga is an open-source, privacy-first, AI-native personal CRM: capture contacts anywhere, turn every note into a private knowledge graph, and query it in natural language. Open-core: the whole CRM is AGPL and runs fully self-hosted, with a source-available cloud tier.
 
-## Docs
+Dhaga (धागा — Hindi for "thread") is built for people whose work *is* their network: founders, investors, recruiters, real-estate and financial advisors, consultants, community builders. Scan a business card, paste an email, forward a WhatsApp or Telegram voice note, dictate into the browser, clip a page with the extension, or import an address book — Dhaga extracts the people, companies and facts, files them in a private knowledge graph, and answers questions like "who do I know at a fintech in Bangalore?" in plain language. Every AI-derived fact keeps a receipt back to the note it came from, so you can verify it or delete it.
 
-- [Documentation home](https://www.dhaga.app/docs): What Dhaga is, how to self-host it, and the product thinking behind it.
-- [Using Dhaga](https://www.dhaga.app/docs/guide): End-user guide — capturing contacts, building the graph, and asking questions.
-- [Self-hosting](https://www.dhaga.app/docs/self-hosting): Run the AGPL core yourself with none of the proprietary cloud tier.
-- [Extending Dhaga](https://www.dhaga.app/docs/extending): Bring-your-own-key LLMs, search providers, and other pluggable gateways.
-- [API reference](https://www.dhaga.app/docs/api): Generated reference for the shared core (LLM/search clients, prompt builders, types).
-- [Contributing](https://www.dhaga.app/docs/contributing): How to build, test, and contribute to the project.
+What separates it from Dex, Monica or a notes app: the whole CRM is AGPL-licensed and self-hostable, every external dependency (LLM, web search, embeddings, vector store, messaging) sits behind a swappable provider gateway so you can point it at a local model or your own API key, enrichment only ever runs when you ask for it, and full export always works. The free tier is a complete CRM at $0 forever with unlimited capture and notes; cloud AI is the paid feature, from $8/month billed yearly. Start free at https://www.dhaga.app/signup.
 
-## Blog
+Sections run in order of what a reader needs first, not by directory. `## Optional` carries its llms.txt meaning — those URLs are secondary and can be skipped when context is tight: SEO/how-to guides, the per-profession landing pages (each restates the same product for a different job), and internal engineering documents that change weekly. Everything outside `## Optional` is inlined in full at https://www.dhaga.app/llms-full.txt.
 
-- [The Dhaga blog](https://www.dhaga.app/blog): Engineering deep dives and practical guides by profession.
-- [Why I built Dhaga](https://www.dhaga.app/blog/why-i-built-dhaga): The founder story behind the product.
-- [Engineering](https://www.dhaga.app/blog/engineering): Deep dives on the hardest problems — rendering a 21k-node graph, AI unit economics, tenant isolation on serverless Postgres.
-- [By profession](https://www.dhaga.app/blog/solutions): How Dhaga fits real estate, finance, sales, recruiting, legal, VC, and more.
+## Start here
 
-## Key pages
+- [Dhaga — home](https://www.dhaga.app/): The fastest read on what Dhaga is: the problem, a 60-second explainer, a live knowledge-graph sandbox you can drag around, the comparison table, pricing and FAQ.
+- [Documentation](https://www.dhaga.app/docs): Dhaga is an AI-native, privacy-first personal CRM. Self-host it, extend its providers, or read the product thinking behind it.
+- [Pricing](https://www.dhaga.app/#pricing): Free forever for the full manual CRM (unlimited capture, notes and export, self-host everything). Cloud AI is the paid tier: Pro $8/month billed yearly, or $79/year at the founding price. Annual billing only — no monthly meter.
+- [Sign up (free)](https://www.dhaga.app/signup): Create a free account — no credit card, and the free tier is a complete CRM rather than a trial.
+- [FAQ](https://www.dhaga.app/#faq): Straight answers on data privacy, what happens if Dhaga shuts down, how AI metering works, and mobile status (a native iOS/Android app is on the roadmap and not shipped — capture from a phone today goes through the web app or the WhatsApp/Telegram bot).
+- [I was looking for VCs. They were already in my phone.](https://www.dhaga.app/blog/general/why-i-built-dhaga): The night I realized my contacts app remembers nothing — and why I started building the thing that would.
+- [Roadmap](https://www.dhaga.app/docs/roadmap/roadmap): What's shipped, what's in progress, and what's next — a contributor-facing summary derived from the build checklist and the BRD.
+- [Privacy policy](https://www.dhaga.app/privacy): What Dhaga stores, what it never collects, and how contact data — which is the user's data about third parties — is deleted and exported.
+- [Source code (GitHub)](https://github.com/anchit2000/dhaga): The AGPL-licensed core. Self-hosting needs nothing from the source-available cloud package.
+- [Full text of the pages above](https://www.dhaga.app/llms-full.txt): One file containing the complete markdown of every page listed outside `## Optional`, in this same order — fetch it instead of crawling if you want the whole product in one request.
 
-- [Home](https://www.dhaga.app/): Product overview and the problem Dhaga solves.
-- [Sign up](https://www.dhaga.app/signup): Create an account.
-- [Privacy](https://www.dhaga.app/privacy): How Dhaga handles your data.
-- [Source code](https://github.com/anchit2000/dhaga): The AGPL-core repository on GitHub.
+## How Dhaga compares
+
+- [Comparison table](https://www.dhaga.app/#compare): Dhaga against the alternatives at a glance — spreadsheets, LinkedIn, sales CRMs, and the other personal CRMs.
+- [Dhaga vs Dex: Private CRM vs Auto-Sync CRM](https://www.dhaga.app/blog/guides/dhaga-vs-dex): Dex vs Dhaga compared — automatic LinkedIn/email sync vs open-source privacy and a free tier that actually works. Which personal CRM fits?
+- [Dhaga vs Louisa AI: Personal vs Enterprise Graph](https://www.dhaga.app/blog/guides/dhaga-vs-louisa): Louisa AI vs Dhaga — enterprise, firm-owned relationship intelligence vs a private personal CRM you own. Different buyers, compared honestly.
+- [Dhaga vs Monica: Open-Source Personal CRM Compared](https://www.dhaga.app/blog/guides/dhaga-vs-monica): Monica vs Dhaga — two open-source, self-hostable personal CRMs compared on AI, capture, and features. Which should you self-host?
+- [Dhaga vs OpenVC: Warm Intros vs Investor Database](https://www.dhaga.app/blog/guides/dhaga-vs-openvc): OpenVC vs Dhaga — a fundraising investor database vs a private relationship graph you own. Complementary tools for founders raising a round.
+- [Dhaga vs YourPond: Which Personal CRM Remembers?](https://www.dhaga.app/blog/guides/dhaga-vs-yourpond): YourPond vs Dhaga — a polished iOS relationship app vs an open-source, AI-native personal CRM you own. Which remembers your network best?
+- [Personal CRM vs LinkedIn: Which Keeps Your Network?](https://www.dhaga.app/blog/guides/personal-crm-vs-linkedin): Why LinkedIn forgets your connections, and how a personal CRM keeps every conversation and follow-up.
+
+## Using Dhaga
+
+- [Using Dhaga](https://www.dhaga.app/docs/guide): A task-oriented tour of the Dhaga app — capture people anywhere, turn notes into a private knowledge graph, and query it in plain language.
+- [Calendar & reminders](https://www.dhaga.app/docs/guide/calendar): See every follow-up on a full-screen calendar — drag to reschedule, schedule date-less ones from the tray, and stay nudged by the nav bell and a daily reminder email.
+- [Capturing people](https://www.dhaga.app/docs/guide/capturing-people): Add a person to your graph from pasted text, a card photo, voice, your webcam, or a file — with a review step that confirms the fields before saving.
+- [Companies](https://www.dhaga.app/docs/guide/companies): View, create, rename, delete, and merge the companies in your graph — with duplicate detection — from a dedicated management page.
+- [Confirmations](https://www.dhaga.app/docs/guide/confirmations): A unified inbox for the doubts AI raises — when extraction is ambiguous it defers to a confirmation instead of guessing, and nothing touches your graph until you confirm.
+- [Enrich from the web](https://www.dhaga.app/docs/guide/enrich-from-web): Search the public web for a person's footprint on demand — always user-triggered, cited on every finding, and saved as a note you can delete.
+- [Custom entities](https://www.dhaga.app/docs/guide/entities): Model the non-person things that connect your people — gyms, schools, projects — as custom entity nodes with their own types.
+- [Exploring the graph](https://www.dhaga.app/docs/guide/exploring-the-graph): Your whole network on one canvas — find warm-path intros, open a node's edges in a side panel, toggle layers, and zoom or reset the view.
+- [Groups & events](https://www.dhaga.app/docs/guide/groups-and-events): Group the people you met at a gathering into an event, add them in a row from the roster, email a digest, and let Dhaga suggest groups it spots.
+- [Importing contacts](https://www.dhaga.app/docs/guide/importing-contacts): Bring an existing address book into Dhaga — from a .vcf or CSV file, a one-click Google or Outlook connection, or the contacts already on your phone.
+- [Bulk actions & merging](https://www.dhaga.app/docs/guide/merging-and-bulk-actions): Act on many people at once from the People table — merge duplicates into one record, add a company, tag, star, or forget in a batch — and let Dhaga surface likely duplicates for you.
+- [Messaging capture (WhatsApp & Telegram)](https://www.dhaga.app/docs/guide/messaging-capture): Forward a contact card, a note, or a voice note to Dhaga's WhatsApp or Telegram bot, reply DONE, and Dhaga saves the person into your graph — capture from your phone with nothing to install.
+- [Notes & facts](https://www.dhaga.app/docs/guide/notes-and-facts): Add notes to a person by typing or voice; Dhaga extracts structured facts automatically (or add facts and follow-ups by hand — no AI needed), keeps a receipt on each, and cascades deletions.
+- [Search & Ask Dhaga](https://www.dhaga.app/docs/guide/search-and-ask): The ⌘K command palette has two tabs — Search to filter by name, fact, or note, and Ask Dhaga to get a reasoned, receipted answer over your own graph.
+- [Settings & import](https://www.dhaga.app/docs/guide/settings): The Settings page — profile, billing, 2FA, calendar, suggestions, card-photo storage, voice teaching, API keys — and importing your contacts from a file, a Google or Outlook connect, or your phone.
+- [Share & invite](https://www.dhaga.app/docs/guide/share-and-invite): Wrapped turns your graph into a contact-free share card you can post anywhere; Invite friends gives you and a friend a free month of Pro.
+
+## Self-hosting, extending & contributing
+
+- [API reference](https://www.dhaga.app/docs/api): Generated TypeDoc reference for the shared @dhaga/core package — LLM, search and messaging gateway contracts, prompt builders, and types. Excluded from llms-full.txt (~153 generated pages); browse it on the site.
+- [Contributing](https://www.dhaga.app/docs/contributing): The distilled version of how this codebase actually gets built — licensing, the branch/PR workflow, the code standards CI enforces, and the architecture principles.
+- [Extending Dhaga](https://www.dhaga.app/docs/extending): Every external capability Dhaga uses — the LLM, web search, and vector retrieval — sits behind a provider-agnostic gateway in @dhaga/core. Add your own by implementing an interface and registering it.
+- [Add an LLM provider](https://www.dhaga.app/docs/extending/llm-provider): Implement the LLMClient interface and register an LLMProvider so Dhaga routes extraction and reasoning to your model — Ollama, a BYO-key gateway, or any OpenAI-compatible server.
+- [Add a search provider](https://www.dhaga.app/docs/extending/search-provider): Implement the SearchClient interface and register a SearchProvider so Dhaga's enrichment and news-watchlist features run against your web search backend — Brave, SerpAPI, or a self-hosted SearXNG.
+- [Add a vector store / retrieval provider](https://www.dhaga.app/docs/extending/vector-store): Swap Dhaga's embedding model and vector store independently through the retrieval gateway — any external engine, as long as declared dimensions match.
+- [Self-hosting](https://www.dhaga.app/docs/self-hosting): Run the full AGPL core without Dhaga Cloud — what you get, what you don't, and how the hosted-mode switches work.
+- [Cost & scaling on AWS](https://www.dhaga.app/docs/self-hosting/cost-scaling-aws): A service-by-service migration map off Supabase + Vercel, a cost model at 1k / 10k / 100k users, and the scaling architecture — built around the one number that moves the bill: model inference.
+- [Deploying](https://www.dhaga.app/docs/self-hosting/deploy): The three ways Dhaga deploys — Vercel, a single persistent server, and Docker — plus the Postgres role and pooling rules that matter in hosted mode.
+- [Providers](https://www.dhaga.app/docs/self-hosting/providers): Extend Dhaga with your own LLM, web search, embedding model, or vector store — all through provider-agnostic gateways in @dhaga/core.
+
+## Engineering deep dives
+
+- [Engineering](https://www.dhaga.app/blog/engineering): Deep dives on the hardest problems we solved building Dhaga — rendering a 21k-node graph in the browser, keeping an AI product's unit economics alive, isolating tenants on serverless Postgres. Executive summary up top, full engineering detail below.
+- [How we build Dhaga with Claude Code](https://www.dhaga.app/blog/engineering/building-with-claude-code): A checked-in rulebook the AI must obey, hooks that gate every single edit, and a persistent memory that survives across sessions. Our AI-assisted engineering workflow — the practices that make an agent a reliable contributor instead of a fast intern who forgets everything.
+- [The bill is the model, not the servers](https://www.dhaga.app/blog/engineering/metering-the-model): In an AI product, infrastructure is a rounding error and inference is the P&L. How we found the real cost driver in Dhaga, and the guardrails that keep a heavy user from costing us $7,200 a month.
+- [Rendering a 21,000-node graph in the browser](https://www.dhaga.app/blog/engineering/rendering-21k-node-graph): 63,000 edges, 60fps pans, and a laptop with integrated graphics — without a graph database, a server-side render farm, or a spinner that never ends. How Dhaga renders a whole knowledge graph client-side.
+- [A schema that heals itself on cold start](https://www.dhaga.app/blog/engineering/self-healing-schema): No migration tool, no migration files, and a 15-second sign-in. How a single content hash turned a full schema replay on every serverless cold start into a no-op — while keeping the zero-config, self-healing setup that makes Dhaga trivial to self-host.
+- [Isolating tenants on serverless Postgres](https://www.dhaga.app/blog/engineering/tenant-isolation-serverless-postgres): Row-level security is easy to turn on and easy to get catastrophically wrong. How a connection pooler almost leaked one customer's data into another's in Dhaga Cloud, and the transaction-scoped design that makes it impossible on either pooling mode.
+- [The feature flag that didn't fire](https://www.dhaga.app/blog/engineering/the-feature-flag-that-didnt-fire): Our documented escape hatch for a native dependency didn't work — the app crashed on deploy anyway. A short war story about how `import` runs before your code does, and why a feature flag can't gate a static import.
+
+## Optional
+
+- [Log in](https://www.dhaga.app/login): Sign in to an existing Dhaga workspace.
+- [The Dhaga blog](https://www.dhaga.app/blog): Two kinds of writing: deep engineering dives on the hardest problems we solved, and practical guides on how Dhaga fits the way real professionals manage relationships — real estate, finance, sales, recruiting, and more.
+- [General](https://www.dhaga.app/blog/general): The story behind Dhaga and the ideas that shape it — why an AI-native personal CRM, what we believe about owning your own relationship data, and the thinking that doesn't fit neatly under engineering or a single profession.
+- [Guides](https://www.dhaga.app/blog/guides): Practical, step-by-step guides to networking and running a personal CRM — capturing people, keeping relationships warm, following up on time, and querying your own knowledge graph.
+- [AI Contact Manager: Networking on Autopilot (2026)](https://www.dhaga.app/blog/guides/ai-tools-for-networking-india): Turns notes and cards into a searchable network — the best AI networking tools in India for 2026.
+- [Best Personal CRM Apps in India (2026): Top Picks](https://www.dhaga.app/blog/guides/best-personal-crm-apps-india): The best personal CRM apps in India for 2026 — privacy-first, AI, and free options compared so you can choose in five minutes.
+- [Best Business Card Scanner Apps in India (2026)](https://www.dhaga.app/blog/guides/business-card-scanner-apps-india): OCR accuracy, offline scans, and CRM sync compared for Android and iPhone.
+- [How to Build a Professional Network in India (2026)](https://www.dhaga.app/blog/guides/how-to-build-professional-network-india): Founder-tested tips on events, warm intros, and follow-through that compounds.
+- [How to Follow Up After a Networking Event (2026 Guide)](https://www.dhaga.app/blog/guides/how-to-follow-up-after-a-networking-event): How to follow up after a networking event without being pushy — timing, subject lines, and templates so no connection ever goes cold.
+- [Investor Relationship Management for Startups (2026)](https://www.dhaga.app/blog/guides/investor-relationship-management-startups): Track investor conversations, follow-ups, and your fundraising pipeline in one place.
+- [Best Open-Source & Self-Hosted CRM for Startups 2026](https://www.dhaga.app/blog/guides/open-source-self-hosted-crm-startups): Keep contact data on your own servers — compared on privacy, cost, and setup.
+- [Voice Notes for Networking: Capture Contacts Fast](https://www.dhaga.app/blog/guides/voice-notes-for-networking): Turn a 20-second memo into an organized contact the moment you leave the room.
+- [Warm Introductions: Find Mutual Connections Fast](https://www.dhaga.app/blog/guides/warm-introductions-mutual-connections): Map mutual connections and find the shortest path to any investor you want to meet.
+- [By profession](https://www.dhaga.app/blog/solutions): Your network is your livelihood, but it lives in scattered notes, business cards, and memory. Here's how Dhaga fits the way real professionals manage relationships — by the specific work you do.
+- [B2B sales & account executives](https://www.dhaga.app/blog/solutions/b2b-sales): Complex deals are multi-threaded and champions move companies. Dhaga is the personal relationship graph that keeps every stakeholder, warm-intro path, and closed-won relationship alive — alongside the CRM your team runs the deal in.
+- [Community builders & super-connectors](https://www.dhaga.app/blog/solutions/community-builders): You're the connective tissue for hundreds or thousands of people — the one who remembers who's who and who should meet whom. That doesn't fit in your head at scale. Here's how Dhaga becomes the memory behind your best introductions.
+- [Management consultants & professional-services firms](https://www.dhaga.app/blog/solutions/consulting): In consulting your book of business is your network — client stakeholders, firm alumni who become buyers, and referral sources. Here's how Dhaga keeps those relationships warm long after an engagement ends, exactly when they're worth the most.
+- [Dhaga for financial advisors & wealth managers](https://www.dhaga.app/blog/solutions/financial-advisors): Advisory is a relationship business built on trust and memory over decades. Dhaga is the personal relationship memory that remembers the details that matter — grandkids' names, a retirement date, a coming liquidity event — and complements your official CRM and custodian systems of record.
+- [Founders & startup CEOs](https://www.dhaga.app/blog/solutions/founders): A founder's network does five jobs at once — investors, advisors, early hires, design-partner customers, and press — and it all lives in one overloaded brain. Here's how Dhaga keeps you from dropping a thread while you context-switch twenty times a day.
+- [Lawyers & legal business development](https://www.dhaga.app/blog/solutions/legal): For partners, rainmaking is relationship work — referral sources, clients between matters, and cross-serving inside the firm. Dhaga is the personal relationship layer that keeps every thread warm without it feeling like sales.
+- [Nonprofit fundraising & development officers](https://www.dhaga.app/blog/solutions/nonprofit-fundraising): Major-gift work is stewardship measured in years — knowing each donor's passions, family, and history with your mission, and moving a portfolio toward the right ask at the right time. Dhaga is the personal relationship-memory layer that keeps every one of those threads alive alongside your donor database.
+- [Real estate agents & brokers](https://www.dhaga.app/blog/solutions/real-estate): In real estate every past client is a future referral and every contact belongs to a sphere of influence. Here's how Dhaga keeps you from losing the thread on a lead, a closing anniversary, or a neighbourhood farm.
+- [Recruiting & executive search](https://www.dhaga.app/blog/solutions/recruiting): The best candidates aren't looking, today's 'no' is next year's placement, and every person you place becomes a future client. Here's how Dhaga keeps a decade of candidate and hiring-manager relationships warm without a heavyweight ATS.
+- [Venture capital & angel investors](https://www.dhaga.app/blog/solutions/venture-capital): Deal flow is a network effect, and a fund's edge is its relationship graph — founders tracked over years, co-investors, operators, and LPs. Here's how Dhaga turns scattered founder meetings and warm-intro paths into a private, queryable graph you actually own.
+- [Testing](https://www.dhaga.app/docs/development/testing): A manual, step-by-step guide for taking Dhaga from zero to a fully clicked-through app — first deploy, first account, first admin, and every shipped product feature.
+- [Business Requirements](https://www.dhaga.app/docs/product/brd): The full BRD — problem, competitive landscape, MVP vs full-product scope, technical architecture, the open-source strategy, and the cost model.
+- [Build checklist](https://www.dhaga.app/docs/roadmap/checklist): Every feature, big and small, with its verified/unverified build status. Checkboxes drift — verify claims against code.
+- [Ideas backlog](https://www.dhaga.app/docs/roadmap/ideas): The raw, unfiltered feature-idea backlog — some shipped, some deferred, some just notes to self.
+- [Build timeline](https://www.dhaga.app/docs/roadmap/timeline): How Dhaga was built, day by day — a public timeline derived from the project's git commit history, starting 2 July 2026.

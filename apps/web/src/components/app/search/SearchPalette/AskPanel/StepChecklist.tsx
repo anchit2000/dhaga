@@ -26,7 +26,7 @@ export function StepChecklist({
                 className="size-3.5 shrink-0 animate-pulse rounded-full bg-amber/60"
               />
             ) : (
-              <Check aria-hidden className="size-3.5 shrink-0 text-amber" />
+              <Check aria-hidden className="size-3.5 shrink-0 text-ember" />
             )}
             <span>{step}</span>
           </li>

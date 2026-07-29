@@ -38,7 +38,7 @@ export function ContactDuplicatesList({ clusters }: { clusters: DuplicateContact
             className="rounded-2xl border border-seam bg-panel p-4"
           >
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <span className="font-mono text-[10px] uppercase tracking-wider text-fog/60">
+              <span className="font-mono text-[10px] uppercase tracking-wider text-fog">
                 {DUPLICATE_CONTACT_REASON_LABELS[cluster.reason]}
               </span>
               <Button variant="outline" size="sm" onClick={() => setOpenIds(ids)}>

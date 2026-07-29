@@ -33,7 +33,7 @@ export function CategoryIndex({
       >
         <Link
           href="/blog"
-          className="inline-flex min-h-[44px] items-center gap-1.5 font-mono text-xs uppercase tracking-widest text-fog transition-colors hover:text-amber"
+          className="inline-flex min-h-[44px] items-center gap-1.5 font-mono text-xs uppercase tracking-widest text-fog transition-colors hover:text-ember"
         >
           <ArrowLeft className="size-3.5" />
           All writing

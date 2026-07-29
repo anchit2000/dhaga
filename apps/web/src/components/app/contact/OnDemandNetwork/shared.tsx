@@ -32,7 +32,7 @@ export function Empty({ label }: { label: string }) {
 export function SectionError({ error }: { error: Error | null }) {
   if (!error) return null;
   return (
-    <p className="text-xs text-red-400" role="alert">
+    <p className="text-xs text-destructive" role="alert">
       {error.message}
     </p>
   );

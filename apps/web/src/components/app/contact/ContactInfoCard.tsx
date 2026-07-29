@@ -26,7 +26,7 @@ function PositionGroup({
   if (items.length === 0) return null;
   return (
     <div>
-      <p className="mb-1.5 font-mono text-[10px] uppercase tracking-widest text-fog/70">
+      <p className="mb-1.5 font-mono text-[10px] uppercase tracking-widest text-fog">
         {label}
       </p>
       <ul className="space-y-2">
@@ -37,7 +37,7 @@ function PositionGroup({
                 {[position.title, position.companyName].filter(Boolean).join(" · ") || "—"}
               </span>
               {position.isCurrent ? (
-                <span className="rounded-full border border-amber/30 bg-amber/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber">
+                <span className="rounded-full border border-amber/30 bg-amber/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-ember">
                   {currentLabel}
                 </span>
               ) : null}
@@ -46,7 +46,7 @@ function PositionGroup({
               <p className="text-xs text-fog">{position.department}</p>
             ) : null}
             {position.startedAt || position.endedAt ? (
-              <p className="text-xs text-fog/60">
+              <p className="text-xs text-fog">
                 {[position.startedAt, position.endedAt ?? "present"]
                   .filter(Boolean)
                   .join(" – ")}
@@ -84,7 +84,7 @@ export function ContactInfoCard({ detail }: { detail: ContactDetail }) {
 
       {addresses.length > 0 ? (
         <div>
-          <p className="mb-1.5 font-mono text-[10px] uppercase tracking-widest text-fog/70">
+          <p className="mb-1.5 font-mono text-[10px] uppercase tracking-widest text-fog">
             Addresses
           </p>
           <ul className="space-y-1.5 text-sm text-paper">

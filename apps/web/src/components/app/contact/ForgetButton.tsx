@@ -11,7 +11,7 @@ function ForgetSubmit({ name }: { name: string }) {
     <button
       type="submit"
       disabled={pending}
-      className="inline-flex items-center gap-1.5 rounded-full border border-red-400/30 px-3 py-1.5 text-xs text-red-400/90 transition-colors hover:bg-red-400/10 disabled:pointer-events-none"
+      className="inline-flex items-center gap-1.5 rounded-full border border-destructive/30 px-3 py-1.5 text-xs text-destructive/90 transition-colors hover:bg-destructive/10 disabled:pointer-events-none"
       onClick={(event) => {
         if (
           !confirm(

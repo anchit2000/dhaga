@@ -30,7 +30,7 @@ export function AskNotice({
           <Link
             href="/app/settings"
             onClick={onNavigate}
-            className="shrink-0 text-sm font-medium text-amber hover:underline"
+            className="shrink-0 text-sm font-medium text-ember hover:underline"
           >
             Upgrade
           </Link>
@@ -64,10 +64,10 @@ export function AskNotice({
     return (
       <div
         className={`flex items-center justify-between gap-3 rounded-2xl border p-4 ${
-          isError ? "border-red-400/30 bg-red-400/[0.06]" : "border-amber/25 bg-amber/[0.05]"
+          isError ? "border-destructive/30 bg-destructive/[0.06]" : "border-amber/25 bg-amber/[0.05]"
         }`}
       >
-        <p className={`text-sm ${isError ? "text-red-300" : "text-fog"}`}>{notice}</p>
+        <p className={`text-sm ${isError ? "text-destructive" : "text-fog"}`}>{notice}</p>
         <Button
           type="submit"
           form={formId}

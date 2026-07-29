@@ -20,14 +20,14 @@ export function Feed() {
             {item.personId ? (
               <Headshot personId={item.personId} className="mt-0.5 size-6" />
             ) : (
-              <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-amber/15 text-amber">
+              <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-amber/15 text-ember">
                 <CalendarIcon />
               </span>
             )}
             <p className="min-w-0 flex-1 text-xs leading-relaxed text-fog">
               {renderBold(item.text, item.bold)}
             </p>
-            <span className="shrink-0 font-mono text-[10px] text-fog/60">{item.time}</span>
+            <span className="shrink-0 font-mono text-[10px] text-fog">{item.time}</span>
           </div>
         ))}
       </div>

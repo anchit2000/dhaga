@@ -10,6 +10,7 @@
     "test": "vitest run",
     "postinstall": "fumadocs-mdx",
     "docs:api": "typedoc && node scripts/docs-api-postprocess.mjs",
+    "generate:llms-txt": "node scripts/generate-llms-txt.mjs",
     "seed:dummy-graph": "node scripts/seed-dummy-graph.mjs",
     "screenshot": "node scripts/screenshot.mjs",
     "screenshot:install": "playwright install chromium",

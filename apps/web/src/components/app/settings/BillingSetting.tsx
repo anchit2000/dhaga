@@ -35,7 +35,7 @@ function AiCreditsRow({ used, cap, unlimited }: AiUsage) {
         </p>
       ) : cap > 0 ? (
         <p className="mt-1 text-sm text-fog">
-          <span className="text-amber">{remaining}</span> of {cap} AI actions left this month
+          <span className="text-ember">{remaining}</span> of {cap} AI actions left this month
         </p>
       ) : (
         <p className="mt-1 text-sm text-fog">Cloud AI is included with a paid plan.</p>
@@ -63,7 +63,7 @@ export function BillingSetting({
               {PLAN_LABEL[summary.plan]}
             </Badge>
             {summary.status && summary.status !== "active" ? (
-              <span className="text-red-400/90">{summary.status}</span>
+              <span className="text-destructive/90">{summary.status}</span>
             ) : null}
           </p>
         </div>

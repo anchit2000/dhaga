@@ -8,7 +8,7 @@ function MethodRow({ label, values }: { label: string; values: string[] }) {
   if (values.length === 0) return null;
   return (
     <div className="flex flex-col gap-1 sm:flex-row sm:gap-3">
-      <span className="w-16 shrink-0 font-mono text-[10px] uppercase tracking-wider text-fog/60">
+      <span className="w-16 shrink-0 font-mono text-[10px] uppercase tracking-wider text-fog">
         {label}
       </span>
       <span className="min-w-0 break-words text-sm text-paper">{values.join(", ")}</span>
@@ -39,7 +39,7 @@ export function MergePreview({ records }: { records: ContactMergeRecord[] }) {
           <MethodRow label="Links" values={links} />
           {tags.length > 0 ? (
             <div className="flex flex-col gap-1 sm:flex-row sm:gap-3">
-              <span className="w-16 shrink-0 font-mono text-[10px] uppercase tracking-wider text-fog/60">
+              <span className="w-16 shrink-0 font-mono text-[10px] uppercase tracking-wider text-fog">
                 Tags
               </span>
               <span className="flex flex-wrap gap-1.5">

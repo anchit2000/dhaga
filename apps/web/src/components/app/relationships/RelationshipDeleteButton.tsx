@@ -26,7 +26,7 @@ export function RelationshipDeleteButton({
       onClick={remove}
       aria-label={`Remove relationship with ${name}`}
       title={`Remove relationship with ${name}`}
-      className="rounded-full p-1 text-fog/60 transition-colors hover:bg-wash/[0.06] hover:text-paper"
+      className="rounded-full p-1 text-fog transition-colors hover:bg-wash/[0.06] hover:text-paper"
     >
       <X className="size-3.5" />
     </button>

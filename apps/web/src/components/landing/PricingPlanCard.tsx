@@ -32,13 +32,13 @@ export function PricingPlanCard({
           <div className="flex items-baseline justify-between">
             <p
               className={`font-mono text-xs uppercase tracking-[0.18em] ${
-                plan.highlight ? "text-amber" : "text-fog"
+                plan.highlight ? "text-ember" : "text-fog"
               }`}
             >
               {plan.tier}
             </p>
             {plan.badge ? (
-              <span className="rounded-full bg-amber/15 px-2.5 py-0.5 text-[10px] font-medium text-amber">
+              <span className="rounded-full bg-amber/15 px-2.5 py-0.5 text-[10px] font-medium text-ember">
                 {plan.badge}
               </span>
             ) : null}
@@ -55,7 +55,7 @@ export function PricingPlanCard({
           <ul className="mt-6 flex-1 space-y-2.5">
             {plan.features.map((feature) => (
               <li key={feature} className="flex gap-2 text-sm text-fog">
-                <span className="text-amber">·</span>
+                <span className="text-ember">·</span>
                 {feature}
               </li>
             ))}

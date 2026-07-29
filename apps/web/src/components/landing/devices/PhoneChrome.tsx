@@ -26,7 +26,7 @@ export function ScreenHeader({ title, chip }: { title: string; chip?: string }) 
     <div className="flex items-center justify-between px-4 pb-2 pt-1.5">
       <p className="font-ui text-base text-paper">{title}</p>
       {chip ? (
-        <span className="rounded-full border border-amber/30 bg-amber/10 px-2 py-0.5 font-mono text-[7.5px] uppercase tracking-widest text-amber">
+        <span className="rounded-full border border-amber/30 bg-amber/10 px-2 py-0.5 font-mono text-[7.5px] uppercase tracking-widest text-ember">
           {chip}
         </span>
       ) : null}
@@ -56,8 +56,8 @@ export function TabBar({ active }: { active: TabId }) {
               key={tab.id}
               className={`-mt-4 flex size-9 items-center justify-center rounded-full text-on-accent shadow-[0_6px_18px_-4px_rgba(226,164,76,0.7)] ${
                 isActive
-                  ? "bg-gradient-to-b from-[#f0bc6e] to-[#d18f36] ring-2 ring-amber/40"
-                  : "bg-gradient-to-b from-[#f0bc6e] to-[#d18f36]"
+                  ? "bg-gradient-to-b from-amber-lift to-amber-sink ring-2 ring-amber/40"
+                  : "bg-gradient-to-b from-amber-lift to-amber-sink"
               }`}
             >
               <Icon />
@@ -68,7 +68,7 @@ export function TabBar({ active }: { active: TabId }) {
           <span
             key={tab.id}
             className={`flex flex-col items-center gap-0.5 text-[7px] ${
-              isActive ? "text-ember" : "text-fog/70"
+              isActive ? "text-ember" : "text-fog"
             }`}
           >
             <Icon />

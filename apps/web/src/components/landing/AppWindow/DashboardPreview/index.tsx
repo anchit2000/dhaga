@@ -15,7 +15,7 @@ export function DashboardPreview() {
     <div className="relative min-w-0 flex-1 bg-ink text-left">
       <div className="flex h-11 items-center gap-3 border-b border-seam px-4">
         <span className="font-display text-sm text-paper">dhaga</span>
-        <span className="rounded-full bg-amber/15 px-2.5 py-1 text-[10px] text-amber">Home</span>
+        <span className="rounded-full bg-amber/15 px-2.5 py-1 text-[10px] text-ember">Home</span>
         <span className="text-[10px] text-fog">Graph</span>
         <div className="ml-auto flex w-1/2 items-center gap-1.5 rounded-full border border-seam bg-panel px-2.5 py-1 text-fog">
           <Search className="size-3" />

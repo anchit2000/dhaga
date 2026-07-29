@@ -52,7 +52,7 @@ export function PredicateField({
               >
                 <span className="truncate">{option.forward}</span>
                 {option.custom ? (
-                  <span className="shrink-0 font-mono text-[9px] uppercase tracking-wider text-amber/70">
+                  <span className="shrink-0 font-mono text-[9px] uppercase tracking-wider text-ember">
                     Custom
                   </span>
                 ) : null}
@@ -63,7 +63,7 @@ export function PredicateField({
             <button
               type="button"
               onClick={() => setCreating(true)}
-              className="w-full px-2.5 py-1.5 text-left text-sm text-amber hover:bg-wash/[0.05]"
+              className="w-full px-2.5 py-1.5 text-left text-sm text-ember hover:bg-wash/[0.05]"
             >
               Create new type…
             </button>

@@ -9,7 +9,7 @@ export function LoadingState({
 }): React.ReactElement {
   return (
     <div className="flex h-[70vh] min-h-[420px] flex-col items-center justify-center gap-4 rounded-2xl border border-seam bg-ink">
-      <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-amber">{label}</p>
+      <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-ember">{label}</p>
       <div className="h-1 w-56 overflow-hidden rounded-full bg-seam">
         {progress === null ? (
           <div className="h-full w-1/3 animate-pulse rounded-full bg-amber/70" />

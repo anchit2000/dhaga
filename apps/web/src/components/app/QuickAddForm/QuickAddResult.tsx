@@ -28,7 +28,7 @@ export function QuickAddResult({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded-full border border-amber/30 bg-amber/10 px-2.5 py-1 font-mono text-[10px] uppercase tracking-widest text-amber">
+        <span className="rounded-full border border-amber/30 bg-amber/10 px-2.5 py-1 font-mono text-[10px] uppercase tracking-widest text-ember">
           {via === "ai" ? "Extracted with AI" : "Parsed offline"}
         </span>
         <Link

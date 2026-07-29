@@ -6,17 +6,19 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import {
   GRAPH_MAX_ENABLED_CIRCLES,
-  GRAPH_NODE_COLORS,
   GRAPH_TAG_HUB_CAP,
+  type GraphPaletteKind,
 } from "@/utils/constants/graph";
+import { useGraphPalette } from "../../canvas/use-graph-palette";
 import type { CircleOption } from "../../logic/circles";
 import type { GraphNodeType, LayerKey } from "../../types";
 
-const BUILT_IN_LAYERS: { key: LayerKey; label: string; color: string }[] = [
-  { key: "contact", label: "People", color: GRAPH_NODE_COLORS.contact },
-  { key: "company", label: "Companies", color: GRAPH_NODE_COLORS.company },
-  { key: "event", label: "Events", color: GRAPH_NODE_COLORS.event },
-  { key: "tag", label: "Tags", color: GRAPH_NODE_COLORS.tag },
+/** Swatch colours are theme-resolved, so the legend dot matches the canvas. */
+const BUILT_IN_LAYERS: { key: GraphPaletteKind; label: string }[] = [
+  { key: "contact", label: "People" },
+  { key: "company", label: "Companies" },
+  { key: "event", label: "Events" },
+  { key: "tag", label: "Tags" },
 ];
 
 /** One search box filters both the type toggles and the circle list — the
@@ -47,11 +49,12 @@ export function LayersContent({
   tagsTotalHubs: number;
 }): React.ReactElement {
   const [filter, setFilter] = useState("");
+  const palette = useGraphPalette();
   const normalized = filter.trim().toLowerCase();
   const matches = (label: string): boolean => !normalized || label.toLowerCase().includes(normalized);
 
-  const layers = [
-    ...BUILT_IN_LAYERS,
+  const layers: { key: LayerKey; label: string; color: string }[] = [
+    ...BUILT_IN_LAYERS.map((layer) => ({ ...layer, color: palette[layer.key] })),
     ...nodeTypes.map((type) => ({ key: type.id as LayerKey, label: type.name, color: type.color })),
   ].filter((layer) => matches(layer.label));
   const circleRows = circles.filter((circle) => matches(circle.label));
@@ -123,7 +126,7 @@ export function LayersContent({
                   <span
                     aria-hidden
                     className="size-2 rounded-full"
-                    style={{ backgroundColor: GRAPH_NODE_COLORS[circle.kind] }}
+                    style={{ backgroundColor: palette[circle.kind] }}
                   />
                   <span className="flex-1 truncate text-sm text-paper">{circle.label}</span>
                   <span className="font-mono text-[10px] text-fog">{circle.memberCount}</span>

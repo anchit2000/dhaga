@@ -12,7 +12,8 @@ import type { ReactElement, ReactNode } from "react";
 // empty (in place of the stock Fumadocs card grid). Two on-brand tracks —
 // Product guide and Developer/self-hosting — each with a primary CTA and the
 // key entry links beneath. Mobile-first: a single column that becomes two at
-// `sm`. One accent (amber), one border (seam); tokens from globals.css.
+// `sm`. One accent (amber fills, ember glyphs), one border (seam); tokens from
+// globals.css.
 
 interface DocsTrackCardProps {
   track: DocsHubTrack;
@@ -22,7 +23,7 @@ interface DocsTrackCardProps {
 function DocsTrackCard({ track, icon }: DocsTrackCardProps): ReactElement {
   return (
     <section className="cover-open flex flex-col rounded-2xl border border-fd-border bg-fd-card p-6 hover:border-amber/40 sm:p-8">
-      <span className="inline-flex size-11 items-center justify-center rounded-xl border border-fd-border bg-amber/10 text-amber">
+      <span className="inline-flex size-11 items-center justify-center rounded-xl border border-fd-border bg-amber/10 text-ember">
         {icon}
       </span>
 
@@ -73,7 +74,7 @@ export function DocsHub(): ReactElement {
           Documentation
         </p>
         <h1 className="mt-3 font-display text-3xl tracking-tight text-fd-foreground sm:text-4xl">
-          Dhaga<span className="text-amber">.</span> docs
+          Dhaga<span className="text-ember">.</span> docs
         </h1>
         <p className="mt-4 text-base leading-relaxed text-fd-muted-foreground">
           Dhaga (धागा — &ldquo;thread&rdquo;) turns every card scan, badge, and

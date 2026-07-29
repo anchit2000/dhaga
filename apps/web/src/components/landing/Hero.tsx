@@ -80,7 +80,7 @@ export function Hero() {
           Free to start · Self-hostable & private · AGPL-3.0
         </p>
         <p
-          className={`mt-6 text-sm text-fog/70 ${RISE}`}
+          className={`mt-6 text-sm text-fog ${RISE}`}
           style={{ animationDelay: "0.64s" }}
         >
           <span className="text-paper/80">{HERO.tagline}</span>{" "}

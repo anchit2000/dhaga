@@ -49,7 +49,7 @@ export function ManualFactFollowUp(): ReactElement {
                 onClick={() => setEntry(value)}
                 className={cn(
                   "min-h-11 whitespace-nowrap rounded-full px-4 text-xs font-medium transition-colors",
-                  entry === value ? "bg-amber/15 text-amber" : "text-fog hover:text-paper",
+                  entry === value ? "bg-amber/15 text-ember" : "text-fog hover:text-paper",
                 )}
               >
                 {value === "fact" ? "Fact" : "Follow-up"}

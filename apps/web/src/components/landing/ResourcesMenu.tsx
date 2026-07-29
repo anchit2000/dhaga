@@ -93,11 +93,11 @@ export function ResourcesMenu(): ReactElement {
                 onClick={close}
                 className="group flex items-start gap-3 rounded-xl p-3 transition-colors hover:bg-amber/5"
               >
-                <span className="mt-0.5 inline-flex size-9 shrink-0 items-center justify-center rounded-lg border border-seam bg-amber/10 text-amber transition-colors group-hover:border-amber/40">
+                <span className="mt-0.5 inline-flex size-9 shrink-0 items-center justify-center rounded-lg border border-seam bg-amber/10 text-ember transition-colors group-hover:border-amber/40">
                   <Icon className="size-4" aria-hidden="true" />
                 </span>
                 <span className="flex flex-col gap-0.5">
-                  <span className="text-sm font-medium text-paper transition-colors group-hover:text-amber">
+                  <span className="text-sm font-medium text-paper transition-colors group-hover:text-ember">
                     {item.title}
                   </span>
                   <span className="text-xs leading-relaxed text-fog">

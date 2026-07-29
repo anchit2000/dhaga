@@ -29,7 +29,7 @@ export function PostCard({ post, showCategory = false }: PostCardProps): ReactEl
       <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-fog">
         {showCategory ? (
           <>
-            <span className="text-amber">{categoryLabel(post.category)}</span>
+            <span className="text-ember">{categoryLabel(post.category)}</span>
             {displayDate ? <span aria-hidden>·</span> : null}
           </>
         ) : null}
@@ -38,9 +38,9 @@ export function PostCard({ post, showCategory = false }: PostCardProps): ReactEl
         ) : null}
       </div>
 
-      <h3 className="mt-3 flex items-start gap-1.5 font-display text-lg leading-snug text-paper transition-colors group-hover:text-amber">
+      <h3 className="mt-3 flex items-start gap-1.5 font-display text-lg leading-snug text-paper transition-colors group-hover:text-ember">
         <span>{post.title}</span>
-        <ArrowUpRight className="mt-1 size-4 shrink-0 text-fog transition-colors group-hover:text-amber" />
+        <ArrowUpRight className="mt-1 size-4 shrink-0 text-fog transition-colors group-hover:text-ember" />
       </h3>
 
       <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-fog">

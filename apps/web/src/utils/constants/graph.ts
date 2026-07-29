@@ -20,23 +20,43 @@ export const RELATIONSHIP_KIND_LABELS: Record<
 export const PREDICATE_SLUG_PATTERN = /^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$/;
 /** Node-type colors are plain hex (#rgb or #rrggbb). */
 export const HEX_COLOR_PATTERN = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
-/** Node-type swatch choices (stored as raw hex) — reuses the event palette,
- *  already curated to stay distinct and readable on both /app themes. */
+/** Node-type swatch choices — reuses the event palette. The picked value is
+ *  stored as RAW HEX on the node type (unlike groups, which store a token), so
+ *  a swatch hex can never be re-tuned without orphaning saved node-type
+ *  colours; these are dark-tuned and several fall under 3:1 on the light
+ *  canvas. See the note on EVENT_COLORS. */
 export const NODE_TYPE_COLOR_SWATCHES: readonly string[] = EVENT_COLORS.map(
   (color) => color.hex,
 );
 
 /* ── Sigma renderer (full-load graph on /app/graph) ───────────────────── */
 
-/** Node fill per kind; entity nodes use their node_type.color from the payload. */
-export const GRAPH_NODE_COLORS: Record<"contact" | "company" | "event" | "tag", string> = {
-  contact: "#e2a44c",
-  company: "#6b8afd",
-  event: "#4cc38a",
-  tag: "#a78bfa",
+/** The /app theme a graph palette is resolved for (next-themes' resolvedTheme). */
+export type GraphColorScheme = "light" | "dark";
+/** Node kinds with a fixed brand fill — entities carry their node_type.color. */
+export type GraphPaletteKind = "contact" | "company" | "event" | "tag";
+
+/** Node fill per kind, per theme. Dark keeps the original brand fills; the
+ *  light set is the same hue families darkened until each clears WCAG 3:1
+ *  against the light canvas (--brand-ink #f2ebdc) — the dark fills sit at
+ *  1.8–2.7:1 there, i.e. pastel smudges on cream. Resolve through
+ *  resolveGraphTheme()/graphNodePalette(), never index a scheme by hand. */
+export const GRAPH_NODE_COLORS: Record<
+  GraphColorScheme,
+  Record<GraphPaletteKind, string>
+> = {
+  dark: { contact: "#e2a44c", company: "#6b8afd", event: "#4cc38a", tag: "#a78bfa" },
+  light: { contact: "#a8641a", company: "#3a56c4", event: "#1f7a4d", tag: "#6d45c9" },
 };
 /** Entities whose node type is missing from the payload (deleted mid-flight). */
-export const GRAPH_ENTITY_FALLBACK_COLOR = "#7c9ce8";
+export const GRAPH_ENTITY_FALLBACK_COLOR: Record<GraphColorScheme, string> = {
+  dark: "#7c9ce8",
+  light: "#3f63b5",
+};
+/** Idle edge fill on the light canvas (2.44:1 on --brand-ink). Dark edges ride
+ *  --brand-seam, but light seam (#c8b79a) is 1.28:1 — the whole mesh vanishes,
+ *  so light needs a value of its own rather than a token. */
+export const GRAPH_LIGHT_EDGE_COLOR = "#a89579";
 
 /** Node size = sqrt(degree)-scaled, clamped to this range (display units). */
 export const GRAPH_NODE_SIZE_MIN = 2;

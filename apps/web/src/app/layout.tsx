@@ -66,9 +66,14 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  // Brand near-black (matches manifest.ts + --color-ink); themes the mobile
-  // browser chrome.
-  themeColor: "#0d0b09",
+  // Themes the mobile browser chrome. Both values are --brand-ink in
+  // globals.css: warm paper in :root (light), brand near-black in .dark (which
+  // also matches manifest.ts). A single value would leave the chrome dark in
+  // light mode.
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f2ebdc" },
+    { media: "(prefers-color-scheme: dark)", color: "#0d0b09" },
+  ],
 };
 
 export default function RootLayout({

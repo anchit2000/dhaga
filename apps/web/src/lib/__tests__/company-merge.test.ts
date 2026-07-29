@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { and, eq, ilike, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
-import { companies, contacts, edges, positions } from "@/lib/db/schema";
+import { companies, companyAliases, contacts, edges, positions } from "@/lib/db/schema";
 import { createContact } from "@/lib/repo/contacts";
 import {
   createCompany,
@@ -190,5 +190,30 @@ describe("findDuplicateCompanyClusters groups legal-suffix variants, excludes si
     expect(mine).toBeDefined();
     expect(mine?.companies.map((c) => c.id).sort()).toEqual([a, b].sort());
     expect(clusters.some((c) => c.companies.some((co) => co.id === solo))).toBe(false);
+  });
+});
+
+// Merging must not erase the losing company's identity: its former name has to
+// survive as an alias of the survivor, so a later capture that still types the
+// old name resolves back to the merged company instead of re-forking it. This is
+// the write half of findOrCreateCompany's alias-resolution read.
+describe("mergeCompanies records the losing company's name as an alias of the survivor", () => {
+  it("keeps the old name resolvable by aliasing it onto the target", async () => {
+    const tag = token();
+    const { id: target } = await createCompany({ name: `Survivor ${tag}` });
+    const { id: source } = await createCompany({ name: `Gone ${tag}` });
+
+    await mergeCompanies({
+      targetId: target, sourceIds: [source], name: `Survivor ${tag}`, domain: null, sector: null,
+    });
+
+    // WHY: without this alias a re-capture of "Gone <tag>" would mint a brand-new
+    // company, silently undoing the merge — the losing name must point at the survivor.
+    const db = await getDb();
+    const aliases = await db
+      .select({ alias: companyAliases.alias })
+      .from(companyAliases)
+      .where(eq(companyAliases.companyId, target));
+    expect(aliases.map((a) => a.alias)).toContain(`Gone ${tag}`);
   });
 });

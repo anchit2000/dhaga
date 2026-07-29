@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { and, eq, ilike, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
-import { companies, contacts, positions } from "@/lib/db/schema";
+import { companies, companyAliases, contacts, positions } from "@/lib/db/schema";
 import { emitWebhook } from "@/lib/webhooks";
 import { normalizeContactMethods, profileFromExtracted } from "@dhaga/core";
 import type { ContactProfile, ExtractedContact, Position } from "@dhaga/core";
@@ -33,6 +33,15 @@ export async function findOrCreateCompany(name: string): Promise<string> {
       .where(ilike(companies.name, trimmed))
       .limit(1);
     if (existing) return existing.id;
+    // A name merged away survives as an alias — resolve it to the surviving
+    // company instead of re-creating the duplicate. Query on `tx` (same
+    // connection + advisory lock), never a second getDb() pool connection.
+    const [aliased] = await tx
+      .select({ companyId: companyAliases.companyId })
+      .from(companyAliases)
+      .where(ilike(companyAliases.alias, trimmed))
+      .limit(1);
+    if (aliased) return aliased.companyId;
     const id = randomUUID();
     await tx.insert(companies).values({ id, name: trimmed });
     return id;
@@ -86,6 +95,9 @@ function positionRows(contactId: string, resolved: ResolvedPosition[]) {
     companyId,
     title: position.title?.trim() || null,
     department: position.department?.trim() || null,
+    // Education/affiliation predicate for this row; null = plain employment
+    // (affiliationPredicate() derives works_at/worked_at from isCurrent).
+    relation: position.relation ?? null,
     isCurrent: position.current,
     startedAt: position.startedAt?.trim() || null,
     endedAt: position.endedAt?.trim() || null,

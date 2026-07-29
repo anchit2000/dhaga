@@ -42,6 +42,9 @@ export function buildProfilePayload(profile: ContactProfile): string {
         startedAt: nullIfBlank(p.startedAt),
         endedAt: nullIfBlank(p.endedAt),
         note: nullIfBlank(p.note),
+        // Carry the education/affiliation predicate through so a role set to
+        // "Studied"/"Internship"/… survives form → payload → write path.
+        relation: p.relation ?? null,
       })),
     emails: cleanMethods(profile.emails),
     phones: cleanMethods(profile.phones),

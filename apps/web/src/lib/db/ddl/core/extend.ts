@@ -87,4 +87,8 @@ CREATE TABLE IF NOT EXISTS positions (
 
 CREATE INDEX IF NOT EXISTS positions_contactId_idx ON positions (contact_id);
 CREATE INDEX IF NOT EXISTS positions_companyId_idx ON positions (company_id);
+
+-- Affiliation predicate (studied_at, interned_at, board_member_of, …). NULL is
+-- a plain employment role; app code derives works_at/worked_at from is_current.
+ALTER TABLE positions ADD COLUMN IF NOT EXISTS relation text;
 `;

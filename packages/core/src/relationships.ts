@@ -48,7 +48,39 @@ export const RELATIONSHIP_ROLES: Record<string, RelationshipRoles> = {
   colleague_of: { subject: "colleague", object: "colleague" },
   worked_with: { subject: "colleague", object: "colleague" },
   works_with: { subject: "colleague", object: "colleague" },
+  // Org-affiliation predicates: a contact --predicate--> a company/school/org.
+  // The subject is what the person is to the org; the object how the org reads
+  // back to them, so a single edge phrases naturally from either endpoint.
+  works_at: { subject: "employee", object: "employer" },
+  worked_at: { subject: "former employee", object: "former employer" },
+  studied_at: { subject: "student", object: "school" },
+  attended: { subject: "alumnus", object: "school" },
+  interned_at: { subject: "intern", object: "employer" },
+  board_member_of: { subject: "board member", object: "organization" },
+  advisor_to: { subject: "advisor", object: "organization" },
+  founder_of: { subject: "founder", object: "organization" },
+  volunteers_at: { subject: "volunteer", object: "organization" },
 };
+
+/**
+ * The stored predicate for a position edge. An explicit `relation` (studied_at,
+ * interned_at, board_member_of, …) wins; a plain employment role falls back to
+ * works_at / worked_at based on whether the role is current.
+ */
+export function affiliationPredicate(position: {
+  relation: string | null;
+  isCurrent: boolean;
+}): string {
+  return position.relation ?? (position.isCurrent ? "works_at" : "worked_at");
+}
+
+/** Org-affiliation predicates that denote schooling rather than employment. */
+export const EDUCATION_PREDICATES = ["studied_at", "attended"] as const;
+
+/** True when a predicate is an education affiliation (studied_at / attended). */
+export function isEducationPredicate(predicate: string): boolean {
+  return (EDUCATION_PREDICATES as readonly string[]).includes(predicate);
+}
 
 /** Turn a snake_case predicate into a plain phrase ("used_to_work_at" -> "used to work at"). */
 export function humanizePredicate(predicate: string): string {

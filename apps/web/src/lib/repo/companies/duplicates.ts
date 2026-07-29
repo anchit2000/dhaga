@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
-import { companies, contacts } from "@/lib/db/schema";
+import { companies, companyAliases, contacts } from "@/lib/db/schema";
 import { PreconditionError } from "@/lib/repo/errors";
 import {
   COMPANY_LEGAL_SUFFIXES,
@@ -51,15 +51,37 @@ export async function findDuplicateCompanyClusters(): Promise<DuplicateCompanyCl
       `Too many companies to scan for duplicates (over ${DUPLICATE_COMPANY_SCAN_LIMIT}).`,
     );
   }
-  const clusters = new Map<string, CompanyListItem[]>();
+  // Alias names are additional cluster keys, so a company known by another's
+  // name (an acquisition, a prior name) groups with it. One query — no per-
+  // company fan-out.
+  const aliasRows = await db
+    .select({ companyId: companyAliases.companyId, alias: companyAliases.alias })
+    .from(companyAliases);
+  const aliasesByCompany = new Map<string, string[]>();
+  for (const row of aliasRows) {
+    const list = aliasesByCompany.get(row.companyId);
+    if (list) list.push(row.alias);
+    else aliasesByCompany.set(row.companyId, [row.alias]);
+  }
+  // key → (companyId → row): the inner Map dedupes a company that reaches the
+  // same key by several of its names, preserving the query's name ordering.
+  const clusters = new Map<string, Map<string, CompanyListItem>>();
+  function addKey(key: string, row: CompanyListItem): void {
+    if (!key) return;
+    let bucket = clusters.get(key);
+    if (!bucket) {
+      bucket = new Map();
+      clusters.set(key, bucket);
+    }
+    bucket.set(row.id, row);
+  }
   for (const row of rows) {
-    const key = normalizeCompanyName(row.name);
-    if (!key) continue;
-    const bucket = clusters.get(key);
-    if (bucket) bucket.push(row);
-    else clusters.set(key, [row]);
+    addKey(normalizeCompanyName(row.name), row);
+    for (const alias of aliasesByCompany.get(row.id) ?? []) {
+      addKey(normalizeCompanyName(alias), row);
+    }
   }
   return [...clusters.entries()]
-    .filter(([, group]) => group.length >= 2)
-    .map(([normalizedName, group]) => ({ normalizedName, companies: group }));
+    .map(([normalizedName, byId]) => ({ normalizedName, companies: [...byId.values()] }))
+    .filter((cluster) => cluster.companies.length >= 2);
 }

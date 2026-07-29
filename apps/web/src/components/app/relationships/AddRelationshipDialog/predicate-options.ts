@@ -12,7 +12,19 @@ export interface PredicateOption {
  *  person↔person pairs draw from RELATIONSHIP_ROLES instead. Suggestions
  *  only: the predicate stays free text via "Create new type…". */
 const ORG_PREDICATES: Record<Exclude<RelationshipEndpointKind, "contact">, readonly string[]> = {
-  company: ["works_at", "worked_at", "invests_in", "customer_of"],
+  company: [
+    "works_at",
+    "worked_at",
+    "invests_in",
+    "customer_of",
+    "studied_at",
+    "attended",
+    "interned_at",
+    "board_member_of",
+    "advisor_to",
+    "founder_of",
+    "volunteers_at",
+  ],
   event: ["attended", "spoke_at", "organized"],
   entity: ["member_of", "attends", "works_on"],
 };

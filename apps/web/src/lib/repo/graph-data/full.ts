@@ -1,4 +1,5 @@
-import { eq, isNull, sql } from "drizzle-orm";
+import { eq, isNotNull, isNull, sql } from "drizzle-orm";
+import { affiliationPredicate } from "@dhaga/core";
 import { getDb } from "@/lib/db/request-scope";
 import {
   companies,
@@ -8,6 +9,7 @@ import {
   eventContacts,
   events,
   nodeTypes,
+  positions,
   relationshipTypes,
 } from "@/lib/db/schema";
 import { getLayout } from "../graph-layouts";
@@ -23,7 +25,7 @@ import type { FullGraphEdge, FullGraphNode, FullGraphPayload } from "./types";
  */
 export async function fetchFullGraph(): Promise<FullGraphPayload> {
   const db = await getDb();
-  const [contactRows, companyRows, eventRows, entityRows, typeRows, relTypeRows, edgeRows, attendance, layout] =
+  const [contactRows, companyRows, eventRows, entityRows, typeRows, relTypeRows, edgeRows, attendance, positionRows, layout] =
     await Promise.all([
       db
         .select({ id: contacts.id, name: contacts.name, title: contacts.title, companyId: contacts.companyId })
@@ -43,6 +45,10 @@ export async function fetchFullGraph(): Promise<FullGraphPayload> {
         .from(edges)
         .where(isNull(edges.deletedAt)),
       db.select({ eventId: eventContacts.eventId, contactId: eventContacts.contactId }).from(eventContacts),
+      db
+        .select({ id: positions.id, contactId: positions.contactId, companyId: positions.companyId, isCurrent: positions.isCurrent, relation: positions.relation, sortOrder: positions.sortOrder })
+        .from(positions)
+        .where(isNotNull(positions.companyId)),
       getLayout(),
     ]);
 
@@ -75,15 +81,37 @@ export async function fetchFullGraph(): Promise<FullGraphPayload> {
       kind: "explicit",
     });
   }
+  // Affiliation edges derive from positions (source of truth for employment &
+  // education), so past/additional roles surface — not just the denormalised
+  // company_id. Each contact keeps exactly ONE kind:"works_at" edge (its PRIMARY
+  // role) so FA2 seeding/clustering and the client's pinned `works-at:<contactId>`
+  // sigma key stay unchanged; every other role ships as a labeled kind:"affiliation"
+  // edge, labeled by affiliationPredicate() ("studied at"/"worked at", not "works at").
+  const rolesByContact = new Map<string, typeof positionRows>();
+  for (const pos of positionRows) {
+    if (!pos.companyId) continue; // the query filters these out; this narrows the type
+    (rolesByContact.get(pos.contactId) ?? rolesByContact.set(pos.contactId, []).get(pos.contactId)!).push(pos);
+  }
   for (const contact of contactRows) {
-    if (!contact.companyId) continue;
-    graphEdges.push({
-      id: `works-at:${contact.id}`,
-      source: contact.id,
-      target: contact.companyId,
-      predicate: "works_at",
-      kind: "works_at",
-    });
+    const roles = rolesByContact.get(contact.id);
+    if (!roles) continue;
+    // Primary = role at the denormalised company_id, else current, else first.
+    const ordered = [...roles].sort((a, b) => a.sortOrder - b.sortOrder);
+    const primary =
+      (contact.companyId ? ordered.find((role) => role.companyId === contact.companyId) : undefined) ??
+      ordered.find((role) => role.isCurrent) ??
+      ordered[0];
+    for (const role of ordered) {
+      if (!role.companyId) continue;
+      const isPrimary = role.id === primary.id;
+      graphEdges.push({
+        id: isPrimary ? `works-at:${contact.id}` : `affil:${role.id}`,
+        source: contact.id,
+        target: role.companyId,
+        predicate: affiliationPredicate(role),
+        kind: isPrimary ? "works_at" : "affiliation",
+      });
+    }
   }
   for (const row of attendance) {
     graphEdges.push({

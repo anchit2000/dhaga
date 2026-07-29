@@ -1,6 +1,7 @@
 "use client";
 
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { MoreHorizontal, Pencil, Tags, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -9,7 +10,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-/** Per-row overflow menu: Rename opens the form dialog, Delete the confirm. */
+/** Per-row overflow menu: Rename (which also holds the alias editor) opens the
+ *  form dialog, Manage aliases jumps to the global list, Delete the confirm. */
 export function CompanyRowActions({
   name,
   onRename,
@@ -29,6 +31,10 @@ export function CompanyRowActions({
         <DropdownMenuItem onClick={onRename}>
           <Pencil />
           Rename
+        </DropdownMenuItem>
+        <DropdownMenuItem render={<Link href="/app/companies/aliases" />}>
+          <Tags />
+          Manage aliases
         </DropdownMenuItem>
         <DropdownMenuItem variant="destructive" onClick={onDelete}>
           <Trash2 />

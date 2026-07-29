@@ -35,5 +35,6 @@ export {
   addTagToContacts,
   forgetContacts,
   removeTagFromContacts,
+  setContactsAffiliation,
   setContactsStarred,
 } from "./bulk";

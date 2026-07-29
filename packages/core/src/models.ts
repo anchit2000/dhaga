@@ -44,8 +44,11 @@ export {
 } from "./schemas/extraction";
 export {
   RELATIONSHIP_ROLES,
+  EDUCATION_PREDICATES,
+  affiliationPredicate,
   buildRelationshipLabelMap,
   humanizePredicate,
+  isEducationPredicate,
   relationshipRole,
   type RelationshipLabelMap,
   type RelationshipRoles,

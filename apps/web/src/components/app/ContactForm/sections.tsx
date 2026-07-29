@@ -1,19 +1,14 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { EntityCombobox } from "@/components/app/EntityCombobox";
+import {
+  AFFILIATION_RELATION_OPTIONS,
+  EDUCATION_RELATION_OPTIONS,
+} from "@/utils/constants/people";
 import { RepeatableList } from "./RepeatableList";
+import { PositionEditor } from "./position-editor";
+import { SectionHeader } from "./section-header";
 import type { ContactMethod, Position } from "@dhaga/core";
-
-export function SectionHeader({ title, hint }: { title: string; hint?: string }) {
-  return (
-    <div className="flex items-baseline justify-between">
-      <h3 className="font-mono text-[10px] uppercase tracking-widest text-fog/70">{title}</h3>
-      {hint ? <span className="text-[11px] text-fog/50">{hint}</span> : null}
-    </div>
-  );
-}
 
 /** Emails / phones / links — a value plus an optional label (Work/Home/Mobile). */
 export function MethodSection({
@@ -59,7 +54,8 @@ export function MethodSection({
   );
 }
 
-/** Jobs — the source of truth for employment. Multiple, current or past. */
+/** Experience — the source of truth for employment/affiliation. Any one row's
+ *  relationship type is selectable (default Employment → works_at/worked_at). */
 export function PositionSection({
   items,
   onChange,
@@ -68,67 +64,66 @@ export function PositionSection({
   onChange: (next: Position[]) => void;
 }) {
   return (
-    <section className="space-y-2">
-      <SectionHeader title="Jobs" hint="current & past" />
-      <RepeatableList
-        items={items}
-        onChange={onChange}
-        makeEmpty={() => ({
-          title: "",
-          company: "",
-          department: null,
-          current: items.length === 0,
-          startedAt: null,
-          endedAt: null,
-          note: null,
-        })}
-        addLabel="Add job"
-        renderRow={(item, update) => (
-          <>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <Input
-                value={item.title ?? ""}
-                placeholder="Title"
-                onChange={(event) => update({ title: event.target.value })}
-              />
-              <EntityCombobox
-                kinds={["company"]}
-                inputValue={item.company ?? ""}
-                onInputValueChange={(value) => update({ company: value })}
-                onSelect={(target) => update({ company: target.label })}
-                onCreate={(name) => update({ company: name })}
-                createLabel="Create company"
-                placeholder="Company"
-                inputClassName="h-8"
-              />
-              <Input
-                value={item.department ?? ""}
-                placeholder="Department (optional)"
-                onChange={(event) => update({ department: event.target.value || null })}
-              />
-              <div className="grid grid-cols-2 gap-2">
-                <Input
-                  value={item.startedAt ?? ""}
-                  placeholder="From"
-                  onChange={(event) => update({ startedAt: event.target.value || null })}
-                />
-                <Input
-                  value={item.endedAt ?? ""}
-                  placeholder="To"
-                  onChange={(event) => update({ endedAt: event.target.value || null })}
-                />
-              </div>
-            </div>
-            <label className="flex items-center gap-2 text-xs text-fog">
-              <Switch
-                checked={item.current}
-                onCheckedChange={(checked) => update({ current: checked })}
-              />
-              Current role
-            </label>
-          </>
-        )}
-      />
-    </section>
+    <PositionEditor
+      items={items}
+      onChange={onChange}
+      title="Experience"
+      hint="current & past"
+      addLabel="Add role"
+      labels={{
+        title: "Title",
+        company: "Company",
+        department: "Department (optional)",
+        currentToggle: "Current role",
+      }}
+      relationOptions={AFFILIATION_RELATION_OPTIONS}
+      makeEmpty={() => ({
+        title: "",
+        company: "",
+        department: null,
+        current: items.length === 0,
+        startedAt: null,
+        endedAt: null,
+        note: null,
+        relation: null,
+      })}
+    />
+  );
+}
+
+/** Education — the same editor, fixed to an education predicate (studied_at by
+ *  default; "attended" for alumni). School → college → master's, first-class. */
+export function EducationSection({
+  items,
+  onChange,
+}: {
+  items: Position[];
+  onChange: (next: Position[]) => void;
+}) {
+  return (
+    <PositionEditor
+      items={items}
+      onChange={onChange}
+      title="Education"
+      hint="schools & degrees"
+      addLabel="Add education"
+      labels={{
+        title: "Degree / programme",
+        company: "Institution",
+        department: "Field of study",
+        currentToggle: "Currently studying here",
+      }}
+      relationOptions={EDUCATION_RELATION_OPTIONS}
+      makeEmpty={() => ({
+        title: "",
+        company: "",
+        department: null,
+        current: false,
+        startedAt: null,
+        endedAt: null,
+        note: null,
+        relation: "studied_at",
+      })}
+    />
   );
 }

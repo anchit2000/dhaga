@@ -362,6 +362,114 @@ await capture("nav-quick-add.png", "/app (nav Add)", "The global nav 'Add someon
   await sleep(800);
 });
 
+// --- Shots for this PR: relationships / education / aliases / edge direction ---
+
+// 27. people-change-relationship.png — the bulk "Change relationship" dialog
+await capture(
+  "people-change-relationship.png",
+  "/app/people",
+  "The bulk Change relationship dialog: a 'Which company' choice (their current company / a specific company) and a Relationship picker (studied at / worked at / interned at / …).",
+  async () => {
+    await page.goto(`${BASE}/app/people`, { waitUntil: "networkidle" });
+    await sleep(1000);
+    const boxes = page.getByRole("checkbox", { name: "Select row" });
+    for (const i of [0, 1, 2]) await boxes.nth(i).click();
+    await page.getByText(/\d+ selected/).first().waitFor({ timeout: 8000 });
+    // The bulk-bar trigger (distinct from the dialog's confirm button of the same name).
+    await page.getByRole("button", { name: "Change relationship" }).first().click();
+    await page.waitForSelector('[role="dialog"]', { timeout: 8000 });
+    await sleep(700);
+  },
+);
+
+// 28. add-person-education.png — the contact form's Experience + Education sections
+await capture(
+  "add-person-education.png",
+  "/app/people/new",
+  "The contact form's Experience and Education sections — Education showing Institution, Degree / programme, Field of study, year fields, a 'Currently studying here' toggle, and a relationship-type selector.",
+  async () => {
+    await page.goto(`${BASE}/app/people/new`, { waitUntil: "networkidle" });
+    await sleep(800);
+    // Both groups start empty (just an add button); add one row each so the
+    // fields — the point of the shot — render.
+    await page.getByRole("button", { name: "Add role" }).click().catch(() => {});
+    await page.getByRole("button", { name: "Add education" }).click().catch(() => {});
+    await sleep(400);
+    await page.getByRole("button", { name: "Add education" }).scrollIntoViewIfNeeded();
+    // Nudge up so the Experience section above stays in frame too.
+    await page.evaluate(() => window.scrollBy(0, -300));
+    await sleep(400);
+  },
+);
+
+// 29. companies-aliases.png — the global Company aliases page
+await capture(
+  "companies-aliases.png",
+  "/app/companies/aliases",
+  "The Company aliases page: alternate names each shown next to the company they resolve to, editable/removable in place.",
+  async () => {
+    // The seed records no aliases, so add one first via a company's edit dialog
+    // (row Actions → Rename → 'Also known as'). Best-effort: if the DB already
+    // has aliases this just adds one more.
+    await page.goto(`${BASE}/app/companies`, { waitUntil: "networkidle" });
+    await sleep(900);
+    await page.getByRole("button", { name: /^Actions for/ }).first().click();
+    await page.getByRole("menuitem", { name: "Rename" }).click();
+    await page.getByText("Also known as").waitFor({ timeout: 8000 });
+    await page.getByPlaceholder("Acme Corp").fill("Innovate Labs");
+    // The alias "Add" button, distinct from the footer "Save changes".
+    await page.getByRole("button", { name: "Add", exact: true }).click();
+    await sleep(800);
+    await page.keyboard.press("Escape");
+    await sleep(400);
+    await page.goto(`${BASE}/app/companies/aliases`, { waitUntil: "networkidle" });
+    await sleep(900);
+    await page.evaluate(() => window.scrollTo(0, 0));
+  },
+);
+
+// 30. graph-edge-direction.png — directional edges emphasised on hover.
+// Deterministic via the ?e2e=1 hook, which exposes the sigma renderer on
+// window.__dhagaGraph: we centre + zoom the camera on the focus node and compute
+// its EXACT on-canvas pixel, then hover it so the reducer thickens its outgoing
+// edges (bright-amber arrows) over the thinner/softer incoming ones. ?focus also
+// opens the node panel (a Sheet that blurs the canvas); Escape dismisses it.
+await capture(
+  "graph-edge-direction.png",
+  `/app/graph?focus=${CONTACT_ID}`,
+  "A hovered focus node with the panel dismissed: outgoing edges thick amber arrows, incoming edges thinner/softer — edge direction at a glance.",
+  async () => {
+    await page.goto(`${BASE}/app/graph?focus=${CONTACT_ID}&e2e=1`, { waitUntil: "domcontentloaded" });
+    await waitForGraph(page);
+    await page.waitForSelector('[role="dialog"]', { timeout: 8000 }).catch(() => {});
+    await page.keyboard.press("Escape");
+    await page.waitForSelector('[role="dialog"]', { state: "detached", timeout: 8000 }).catch(() => {});
+    await sleep(1400); // let the isolate's fit settle before reading the camera
+    // Centre + zoom the camera on the focus node via the exposed renderer, then
+    // return the node's exact viewport pixel. IMPORTANT: sigma's camera x/y are
+    // in the FRAMED (normalized) space — use getNodeDisplayData for the target;
+    // graphToViewport takes RAW graph coords. Zoom in from the isolate fit.
+    const pt = await page.evaluate(async (id) => {
+      const r = window.__dhagaGraph;
+      if (!r || !r.getGraph().hasNode(id)) return null;
+      const dd = r.getNodeDisplayData(id);
+      if (!dd) return null;
+      const cam = r.getCamera();
+      const ratio = cam.getState().ratio * 0.55; // tighter than the fit → edges thicken
+      await new Promise((resolve) => cam.animate({ x: dd.x, y: dd.y, ratio }, { duration: 500 }, resolve));
+      const raw = r.getGraph().getNodeAttributes(id);
+      const vp = r.graphToViewport({ x: raw.x, y: raw.y });
+      return { x: vp.x, y: vp.y };
+    }, CONTACT_ID);
+    await sleep(500);
+    if (pt) {
+      const box = await page.locator("canvas").first().boundingBox();
+      await page.mouse.move(box.x + pt.x, box.y + pt.y, { steps: 8 });
+    }
+    await sleep(900);
+  },
+);
+
 await context.close();
 await browser.close();
 

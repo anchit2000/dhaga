@@ -81,6 +81,19 @@ export function GraphCanvas({
   useFocusDeepLink(renderer, focusId, tags.indexes, selectNode);
   usePathRequest(renderer, pathRequest, tags.indexes, setHighlightedPath);
 
+  // Screenshot/E2E hook: expose the sigma renderer on window ONLY when the URL
+  // carries ?e2e=1, so doc-screenshot automation can compute a node's exact
+  // on-canvas position (renderer.graphToViewport) and drive the camera
+  // deterministically. No-op in normal use.
+  useEffect(() => {
+    if (!renderer || typeof window === "undefined") return;
+    if (!new URLSearchParams(window.location.search).has("e2e")) return;
+    (window as unknown as { __dhagaGraph?: unknown }).__dhagaGraph = renderer;
+    return () => {
+      delete (window as unknown as { __dhagaGraph?: unknown }).__dhagaGraph;
+    };
+  }, [renderer]);
+
   const selectedNode = view.selectedId ? (tags.indexes.nodeById.get(view.selectedId) ?? null) : null;
   const showReset = view.isolateRootId !== null || view.highlightedPath !== null;
 

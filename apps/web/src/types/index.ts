@@ -30,6 +30,16 @@ export interface PricingPlan {
   cta: string;
 }
 
+/** One row of the /pricing plan-comparison table. Cells use the same
+ *  "✓ …" / "✗ …" prefix convention as `ComparisonRow`; keys map to
+ *  `PricingPlan.tier` (Free / Annual / Pro). */
+export interface PlanComparisonRow {
+  feature: string;
+  free: string;
+  annual: string;
+  pro: string;
+}
+
 export interface FaqItem {
   question: string;
   answer: string;

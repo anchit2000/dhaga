@@ -110,7 +110,12 @@
   --muted-foreground: var(--brand-fog);
   --accent: var(--brand-panel-2);
   --accent-foreground: var(--brand-paper);
-  --destructive: oklch(0.577 0.245 27.325);
+  /* red-700, not red-600: on the cream panel, red-600 is only 4.61:1 as plain
+     text and drops to 3.86:1 under the 10% destructive focus tint (WCAG AA
+     needs 4.5:1). No tint opacity fixes that — red-600 leaves ~1.5% of alpha
+     headroom — so the token carries the fix. red-700 = 6.21:1 rest, 5.16:1
+     tinted. Dark stays red-400 (6.44:1 / 4.83:1, already AA). */
+  --destructive: oklch(0.505 0.213 27.518);
   --border: var(--brand-seam);
   --input: var(--brand-seam);
   --ring: var(--brand-amber);

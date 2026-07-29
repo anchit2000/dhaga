@@ -4,7 +4,11 @@ import type { WrappedCardFormat } from "@dhaga/core/src/api/wrapped";
  * Network Wrapped — shared, contact-free "in review" card constants.
  * The card is server-rendered via next/og (satori), which has no access to
  * CSS custom properties, so the brand palette is inlined here as hex. Keep in
- * sync with the --brand-* tokens in apps/web/src/app/globals.css (dark).
+ * sync with the `--brand-*` declarations in the `.dark { ... }` block of
+ * apps/web/src/app/globals.css (the marketing/default theme this card always
+ * renders in, regardless of viewer theme). wrapped.test.ts asserts this stays
+ * true. Only keys actually read by app/wrapped/og/card.tsx are listed —
+ * don't add one back without a caller.
  */
 
 /** Aspect ratios of the generated share image, in pixels. */
@@ -22,14 +26,11 @@ export const WRAPPED_DEFAULT_FORMAT: WrappedCardFormat = "landscape";
 /** Brand palette for the OG card (mirrors globals.css .dark --brand-*). */
 export const WRAPPED_CARD_COLORS = {
   ink: "#0d0b09",
-  panel: "#16120e",
   panel2: "#1d1812",
   seam: "#2b241b",
   paper: "#f3ede2",
   fog: "#a49a8a",
   amber: "#e2a44c",
-  ember: "#c37731",
-  onAccent: "#0d0b09",
 } as const;
 
 /** How many category bars the card's mini-distribution shows. */

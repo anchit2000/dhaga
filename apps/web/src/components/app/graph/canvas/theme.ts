@@ -1,3 +1,6 @@
+import { readBrandColors } from "@/lib/brand-colors";
+import { BRAND_COLOR_VARS } from "@/utils/constants/brand";
+
 /** Brand colours resolved from the live CSS custom properties so the WebGL
  *  canvas follows /app's light/dark toggle instead of hardcoding a theme. */
 export interface GraphTheme {
@@ -12,29 +15,20 @@ export interface GraphTheme {
   monoFont: string;
 }
 
-const FALLBACK: GraphTheme = {
-  ink: "#0d0b09",
-  panel: "#16120e",
-  seam: "#2b241b",
-  paper: "#f3ede2",
-  fog: "#a49a8a",
-  amber: "#e2a44c",
-  ember: "#c37731",
-  monoFont: "monospace",
-};
+const FALLBACK_MONO_FONT = "monospace";
 
 export function resolveGraphTheme(element: HTMLElement): GraphTheme {
-  const styles = getComputedStyle(element);
-  const read = (name: string, fallback: string): string =>
-    styles.getPropertyValue(name).trim() || fallback;
+  const colors = readBrandColors(BRAND_COLOR_VARS, element);
+  const monoFont =
+    getComputedStyle(element).getPropertyValue("--font-plex-mono").trim() || FALLBACK_MONO_FONT;
   return {
-    ink: read("--brand-ink", FALLBACK.ink),
-    panel: read("--brand-panel", FALLBACK.panel),
-    seam: read("--brand-seam", FALLBACK.seam),
-    paper: read("--brand-paper", FALLBACK.paper),
-    fog: read("--brand-fog", FALLBACK.fog),
-    amber: read("--brand-amber", FALLBACK.amber),
-    ember: read("--brand-ember", FALLBACK.ember),
-    monoFont: read("--font-plex-mono", FALLBACK.monoFont) || FALLBACK.monoFont,
+    ink: colors["--brand-ink"],
+    panel: colors["--brand-panel"],
+    seam: colors["--brand-seam"],
+    paper: colors["--brand-paper"],
+    fog: colors["--brand-fog"],
+    amber: colors["--brand-amber"],
+    ember: colors["--brand-ember"],
+    monoFont,
   };
 }

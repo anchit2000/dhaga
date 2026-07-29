@@ -2,13 +2,19 @@
 
 import { BookOpen, Compass, Newspaper } from "lucide-react";
 
-/** In-page anchor links shown in the header nav (and the mobile menu). */
+/**
+ * Landing-section links shown in the header nav (and the mobile menu). Written
+ * root-relative (`/#…`, not `#…`) because the same Header renders on the
+ * standalone /pricing route, where a bare fragment would resolve against that
+ * page and go nowhere. On the landing page itself `/#faq` is still an in-page
+ * scroll — Next resolves the same-route hash and scrolls to the section.
+ */
 export const NAV_LINKS = [
-  { href: "#product", label: "Product" },
-  { href: "#compare", label: "Compare" },
-  { href: "#opensource", label: "Open source" },
-  { href: "#pricing", label: "Pricing" },
-  { href: "#faq", label: "FAQ" },
+  { href: "/#product", label: "Product" },
+  { href: "/#compare", label: "Compare" },
+  { href: "/#opensource", label: "Open source" },
+  { href: "/#pricing", label: "Pricing" },
+  { href: "/#faq", label: "FAQ" },
 ] as const;
 
 /**

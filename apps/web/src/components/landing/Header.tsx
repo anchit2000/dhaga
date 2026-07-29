@@ -14,7 +14,7 @@ export function Header({ isSignedIn }: HeaderProps) {
   return (
     <header className="fixed inset-x-0 top-0 z-40 bg-gradient-to-b from-ink via-ink/80 to-transparent">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <Link href="#" className="flex items-center gap-2 font-display text-xl">
+        <Link href="/" className="flex items-center gap-2 font-display text-xl">
           <ThreadMark />
           <span>
             dhaga<span className="text-amber">.</span>

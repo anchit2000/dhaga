@@ -27,7 +27,13 @@ export {
   HOW_IT_WORKS,
   OSS_PILLARS,
 } from "./sections";
-export { FAQ_ITEMS, PRICING_PLANS } from "./pricing";
+export {
+  FAQ_ITEMS,
+  PLAN_COMPARISON_CELL_KEYS,
+  PLAN_COMPARISON_ROWS,
+  PRICING_FAQ_ITEMS,
+  PRICING_PLANS,
+} from "./pricing";
 export { NAV_LINKS, RESOURCE_ITEMS } from "./nav";
 export {
   SANDBOX_EYEBROW,

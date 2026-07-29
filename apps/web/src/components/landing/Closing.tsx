@@ -42,9 +42,11 @@ export function Footer() {
             <p className="font-mono text-[10px] uppercase tracking-widest text-fog/60">
               Product
             </p>
-            <FooterLink href="#product" label="Product" />
-            <FooterLink href="#pricing" label="Pricing" />
-            <FooterLink href="#faq" label="FAQ" />
+            {/* Root-relative anchors: the footer also renders on /pricing, where
+                a bare `#product` would resolve against that page and go nowhere. */}
+            <FooterLink href="/#product" label="Product" />
+            <FooterLink href="/pricing" label="Pricing" />
+            <FooterLink href="/#faq" label="FAQ" />
             <FooterLink href="/blog" label="Blog" />
             <FooterLink href="/docs" label="Docs" />
           </div>

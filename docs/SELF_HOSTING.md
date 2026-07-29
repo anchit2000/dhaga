@@ -338,6 +338,33 @@ crons at once per day and a more-frequent entry can break Hobby deploys. On Hobb
 the effective floor is therefore the daily auto-flush plus a "next-message"
 self-flush (a fresh forward from an idle chat closes the stale batch first).
 
+## Geocoding for the map view
+
+The map plots contacts from their free-text `location` ("Bengaluru", "London").
+Turning that text into coordinates goes through a provider gateway
+(`GEOCODING_PROVIDER`, default `nominatim`) — **core / fully self-hostable, no
+`packages/ee`, and no API key**: Nominatim (OpenStreetMap) works out of the box.
+
+Two obligations come with the public Nominatim instance, and Dhaga meets both
+for you:
+
+- **Max 1 request/second.** The client serializes and spaces its own requests,
+  so a batch over hundreds of contacts is throttled by the client itself.
+- **Each distinct place is geocoded once, ever.** Answers (including "no such
+  place") are stored in the `geocode_cache` table, so nothing is re-queried.
+  Nominatim is the only free geocoder whose terms permit storing coordinates,
+  which is why it's the default.
+
+Anything that displays these coordinates must credit **© OpenStreetMap
+contributors** (ODbL).
+
+Set `NOMINATIM_URL` to run against **your own Nominatim instance** — no shared
+rate limit, and your contacts' locations never leave your infrastructure. On the
+public instance, set `NOMINATIM_USER_AGENT` to something that identifies your
+deployment (Nominatim refuses requests without a real User-Agent).
+
+To plug in a different geocoder entirely, see [PROVIDERS.md](PROVIDERS.md).
+
 ## Self-host env var reference
 
 Everything below lives in `apps/web/.env.local` — see
@@ -361,6 +388,7 @@ None of the `packages/ee/.env.example` vars (`DHAGA_HOSTED_MODE`,
 | `TRANSCRIPTION_PROVIDER` | No | STT gateway for forwarded voice notes — no provider ships yet |
 | `DHAGA_WEBHOOK_URL` | No | Outbound automation |
 | `SEARCH_PROVIDER`, `FIRECRAWL_API_KEY` | No | Job-change detection + news watchlist |
+| `GEOCODING_PROVIDER`, `NOMINATIM_URL`, `NOMINATIM_USER_AGENT` | No | Map view — see "Geocoding for the map view" above; all three have working defaults |
 | `CRON_SECRET` | No | Bearer secret for the `/api/jobs/*` cron routes (`detect-signals`, `daily`, `messaging/flush`) — see above |
 | `DHAGA_AI_MONTHLY_CAP`, `DHAGA_DATA_DIR`, `DHAGA_EMBEDDINGS` | No | See `.env.example` for defaults |
 

@@ -97,3 +97,42 @@ export type ExtractionStreamEvent =
   // no progress to drive — the client reconciles via the slow status-poll
   // fallback instead of the stream ending silently.
   | { type: "detached" };
+
+/** One geocoded place on the map view. Contacts are grouped by their
+ *  normalized `location` string, so a place is a city (the grain the data
+ *  actually supports), not a street address — capture paths only ever produce
+ *  free-text "City / country", and structured `addresses[]` exists solely for
+ *  imported/manually-entered contacts. */
+export interface MapPlace {
+  /** Normalized cache key for the location string (see the geocoding normalizer). */
+  key: string;
+  /** Original location text as the user's data spells it, e.g. "Bengaluru". */
+  label: string;
+  lat: number;
+  lng: number;
+  contacts: MapPlaceContact[];
+}
+
+/** A contact pinned at a place. Deliberately minimal — the map payload is not
+ *  a contact list, and PII beyond a display name has no business in it. */
+export interface MapPlaceContact {
+  id: string;
+  name: string;
+}
+
+/** The whole map in one payload, mirroring the graph's full-load architecture.
+ *  The two counts drive honest empty/partial states: the map must never imply
+ *  it is showing everyone when most contacts simply have no location. */
+export interface MapPayload {
+  places: MapPlace[];
+  /** Contacts whose location text was geocoded and definitively did not
+   *  resolve. Waiting will not help these — distinct from `pendingCount`. */
+  unresolvedCount: number;
+  /** Contacts whose location has not been geocoded YET. Geocoding is deferred
+   *  and rate-limited to 1 req/sec by provider ToS, so the map fills in across
+   *  loads. A non-zero value is the client's signal to refetch; without it a
+   *  first-ever load would look permanently empty. */
+  pendingCount: number;
+  /** Contacts carrying no location text at all — the common case. */
+  missingCount: number;
+}

@@ -141,6 +141,57 @@ the 14px glyph. Currently five sites — `contact/SaveButton`,
   component to a client component just to animate an icon — skip the site.
 - **`apps/mobile`.** It uses `@expo/vector-icons`; `motion/react` is DOM-only.
 
+### 15. mapcn + `maplibre-gl` (map view) — adopted 2026-07-29
+
+**Powers:** `/app/map` — contacts' cities as a clustered point map.
+
+`maplibre-gl` v6 (BSD-3) is the only real npm dependency added. **mapcn** (MIT —
+[mapcn.vercel.app](https://mapcn.vercel.app), `AnmolSaini16/mapcn`) is *not* an
+npm package: it is a shadcn-style registry, so `npx shadcn@latest add @mapcn/map`
+would install `maplibre-gl` and drop a component into `components/ui/`. Our
+`components.json` has an empty `registries` map, so the `@mapcn` shorthand does
+not resolve; the registry item (`https://mapcn.vercel.app/r/map.json`) was
+fetched directly and vendored by hand into `components/ui/map/` — no
+`components.json` change, and nothing else in the tree touched.
+
+**Vendored trimmed, not verbatim,** for reasons a future update should keep:
+
+1. **maplibre-gl v6 removed the default export.** Upstream's
+   `import MapLibreGL from "maplibre-gl"` (and `MapLibreGL.StyleSpecification`)
+   does not compile against v6. Named imports here.
+2. **The CARTO default had to be designed out** (below).
+3. Markers, popups, tooltips, routes, arcs and GeoJSON layers — ~1,700 of the
+   registry item's 2,200 lines — are unused. Re-add from the registry item if a
+   use appears; the file-length rule wants a directory of small files anyway.
+4. Fixes for our constraints: 44px control buttons, a transparent 22px-radius
+   hit layer so a point is a 44px touch target, and a cluster fontstack that
+   actually exists on our basemap (upstream's "Open Sans Semibold" 404s on
+   OpenFreeMap's glyph endpoint, which silently leaves every cluster unlabelled).
+
+**Basemap: OpenFreeMap, never CARTO — do not "fix" this back.** mapcn defaults
+to CARTO's Positron/Dark-Matter tiles, and mapcn's own README states that
+commercial use of them requires a CARTO Enterprise licence. Dhaga is a
+commercial product, so shipping the default would be a licence breach.
+[OpenFreeMap](https://openfreemap.org) serves OpenStreetMap-derived tiles with
+no API key, no rate limit and no commercial restriction, and mapcn's docs
+demonstrate exactly this swap via the `styles` prop. Two guards make the
+default unreachable rather than merely overridden: the vendored `Map` keeps
+**no default style at all** (`styles` is a required prop), and the URLs live in
+`utils/constants/map.ts` with the reasoning attached.
+
+**Attribution is a legal requirement, not polish.** Both the tiles and the
+geocoding that places the pins (Nominatim — see `lib/db/ddl/geocode.ts`) are
+ODbL OpenStreetMap data. OpenFreeMap's style JSON carries **no `attribution`
+field on its sources**, so MapLibre's AttributionControl would otherwise render
+an empty bar: the credit is passed explicitly as `customAttribution`, with
+`compact: false` so it stays visible instead of hiding behind an "i" toggle,
+and `components/ui/map/map.css` re-skins that bar to stay legible in both
+themes.
+
+Not react-map-gl (heavier, Mapbox-shaped) and not Leaflet (no vector tiles, no
+GPU clustering): mapcn is the shadcn-native option, and vendoring means we own
+the source the same way we own every other `components/ui` primitive.
+
 ---
 
 ## Adopt when the milestone needs it

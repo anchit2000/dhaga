@@ -1,5 +1,5 @@
 // Runtime services: the LLM gateway, prompt builders, heuristic parse, web
-// search, retrieval/embeddings, and calendar providers. Re-exported from
+// search, geocoding, retrieval/embeddings, and calendar providers. Re-exported from
 // index.ts via `export *`.
 export {
   AnthropicLLMClient,
@@ -67,6 +67,21 @@ export {
   type SearchProvider,
   type SearchResult,
 } from "./search";
+export {
+  NominatimGeocodingClient,
+  OSM_ATTRIBUTION,
+  createRateLimiter,
+  getGeocodingClient,
+  getGeocodingProvider,
+  hasGeocoding,
+  normalizeLocationQuery,
+  registerGeocodingProvider,
+  selectGeocodingProvider,
+  type GeocodeResult,
+  type GeocodingClient,
+  type GeocodingProvider,
+  type RateLimitedRunner,
+} from "./geocoding";
 export {
   assertCompatibleVectorDimensions,
   DEFAULT_EMBEDDING_DIMENSIONS,

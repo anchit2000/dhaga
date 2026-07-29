@@ -428,28 +428,45 @@ await capture(
   },
 );
 
-// 30. graph-edge-direction.png — directional edges emphasised on hover
+// 30. graph-edge-direction.png — directional edges emphasised on hover.
+// Deterministic via the ?e2e=1 hook, which exposes the sigma renderer on
+// window.__dhagaGraph: we centre + zoom the camera on the focus node and compute
+// its EXACT on-canvas pixel, then hover it so the reducer thickens its outgoing
+// edges (bright-amber arrows) over the thinner/softer incoming ones. ?focus also
+// opens the node panel (a Sheet that blurs the canvas); Escape dismisses it.
 await capture(
   "graph-edge-direction.png",
   `/app/graph?focus=${CONTACT_ID}`,
-  "A focused/hovered node on the graph: its outgoing edges thick amber arrows, incoming edges softer/thinner — edge direction at a glance (arrowheads render regardless).",
+  "A hovered focus node with the panel dismissed: outgoing edges thick amber arrows, incoming edges thinner/softer — edge direction at a glance.",
   async () => {
-    await page.goto(`${BASE}/app/graph?focus=${CONTACT_ID}`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${BASE}/app/graph?focus=${CONTACT_ID}&e2e=1`, { waitUntil: "domcontentloaded" });
     await waitForGraph(page);
-    await sleep(2500); // let the camera centre on the focused node
-    // Hover the centred node so the reducer emphasises outgoing vs incoming
-    // edges. Sweep a few points centre-left (a right-side node panel covers the
-    // right) to catch the node's small hit area.
-    const box = await page.locator("canvas").first().boundingBox();
-    if (box) {
-      const cx = box.x + box.width * 0.42;
-      const cy = box.y + box.height * 0.5;
-      for (const [dx, dy] of [[0, 0], [6, 0], [-6, 4], [0, -6], [4, 6]]) {
-        await page.mouse.move(cx + dx, cy + dy);
-        await sleep(120);
-      }
+    await page.waitForSelector('[role="dialog"]', { timeout: 8000 }).catch(() => {});
+    await page.keyboard.press("Escape");
+    await page.waitForSelector('[role="dialog"]', { state: "detached", timeout: 8000 }).catch(() => {});
+    await sleep(1400); // let the isolate's fit settle before reading the camera
+    // Centre + zoom the camera on the focus node via the exposed renderer, then
+    // return the node's exact viewport pixel. IMPORTANT: sigma's camera x/y are
+    // in the FRAMED (normalized) space — use getNodeDisplayData for the target;
+    // graphToViewport takes RAW graph coords. Zoom in from the isolate fit.
+    const pt = await page.evaluate(async (id) => {
+      const r = window.__dhagaGraph;
+      if (!r || !r.getGraph().hasNode(id)) return null;
+      const dd = r.getNodeDisplayData(id);
+      if (!dd) return null;
+      const cam = r.getCamera();
+      const ratio = cam.getState().ratio * 0.55; // tighter than the fit → edges thicken
+      await new Promise((resolve) => cam.animate({ x: dd.x, y: dd.y, ratio }, { duration: 500 }, resolve));
+      const raw = r.getGraph().getNodeAttributes(id);
+      const vp = r.graphToViewport({ x: raw.x, y: raw.y });
+      return { x: vp.x, y: vp.y };
+    }, CONTACT_ID);
+    await sleep(500);
+    if (pt) {
+      const box = await page.locator("canvas").first().boundingBox();
+      await page.mouse.move(box.x + pt.x, box.y + pt.y, { steps: 8 });
     }
-    await sleep(600);
+    await sleep(900);
   },
 );
 

@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "fumadocs-mdx && next build",
+    "dev": "node scripts/copy-maplibre-worker.mjs && next dev",
+    "build": "fumadocs-mdx && node scripts/copy-maplibre-worker.mjs && next build",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",

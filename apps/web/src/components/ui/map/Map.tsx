@@ -1,13 +1,21 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Map as MapLibreMap } from "maplibre-gl";
+import { Map as MapLibreMap, setWorkerUrl } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./map.css";
 import { cn } from "@/lib/utils";
+import { MAPLIBRE_WORKER_URL } from "@/utils/constants/map";
 import { MapContext, type MapTheme } from "./context";
 import { useResolvedTheme } from "./use-resolved-theme";
 import type { MapOptions } from "maplibre-gl";
+
+// Module scope, not an effect: MapLibre reads this when it spins up its worker
+// pool, and every path that builds a map (including a future `prewarm()`) has
+// to find it already set. Left at its default the pool asks for a worker URL
+// that no build emits and the map never finishes loading — see
+// MAPLIBRE_WORKER_URL for the full story.
+setWorkerUrl(MAPLIBRE_WORKER_URL);
 
 export interface MapProps extends Omit<MapOptions, "container" | "style"> {
   /**

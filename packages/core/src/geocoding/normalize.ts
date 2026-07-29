@@ -12,10 +12,17 @@
  * "not geocodable" and skip it rather than querying the provider.
  */
 export function normalizeLocationQuery(input: string): string {
+  // Split/trim/rejoin rather than /\s*,\s*/ and /[\s,]+$/. Those two regexes
+  // backtrack polynomially on a long run of whitespace — the same defect
+  // CodeQL flagged in nominatim-client's trailing-slash strip, but on input
+  // that is genuinely user-controlled (contacts.location arrives from imports,
+  // card scans, and manual entry), so it matters more here, not less.
+  // This pass is linear and does the same job.
   return input
     .normalize("NFKC")
-    .replace(/\s+/g, " ")
-    .replace(/\s*,\s*/g, ", ")
-    .replace(/^[\s,]+|[\s,]+$/g, "")
+    .split(",")
+    .map((segment) => segment.trim().split(/\s+/u).filter(Boolean).join(" "))
+    .filter(Boolean)
+    .join(", ")
     .toLowerCase();
 }

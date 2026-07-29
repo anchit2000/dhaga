@@ -56,7 +56,13 @@ export class NominatimGeocodingClient implements GeocodingClient {
   private readonly userAgent: string;
 
   constructor(options: NominatimGeocodingClientOptions = {}) {
-    this.baseUrl = (options.baseUrl ?? NOMINATIM_DEFAULT_URL).replace(/\/+$/, "");
+    // Trailing slashes are stripped with a loop, not /\/+$/. That regex
+    // backtracks polynomially on a long run of slashes (CodeQL flags it), and
+    // while this input is operator-supplied via NOMINATIM_URL rather than
+    // user-supplied, a linear scan costs nothing and leaves no sharp edge.
+    let base = options.baseUrl ?? NOMINATIM_DEFAULT_URL;
+    while (base.endsWith("/")) base = base.slice(0, -1);
+    this.baseUrl = base;
     this.userAgent = options.userAgent ?? NOMINATIM_DEFAULT_USER_AGENT;
   }
 

@@ -55,6 +55,27 @@ export const MAP_BASEMAP_STYLES = {
 export const MAP_ATTRIBUTION_HTML =
   '<a href="https://openfreemap.org" target="_blank" rel="noreferrer">OpenFreeMap</a> · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors';
 
+/**
+ * Where MapLibre's worker is served from — MUST be set (`config.WORKER_URL`)
+ * before the first map is constructed.
+ *
+ * maplibre-gl v6 works out its own worker URL at runtime, relative to the
+ * module that asks for it: `new URL('./maplibre-gl-worker.mjs',
+ * import.meta.url)`. That is invisible to bundlers, so once Next inlines the
+ * library into an app chunk it resolves to a file inside `_next/static/chunks/`
+ * that the build never emitted. Both the dev server and Vercel answer that miss
+ * with the HTML shell, the browser refuses a module worker served as
+ * `text/html`, and the map then hangs on its loading veil with nothing in the
+ * UI to say why. Pointing at our own copy is the fix; `scripts/copy-maplibre-
+ * worker.mjs` puts the file (and the sibling chunk it imports) there at build
+ * time. Keep the two in step — this path is the script's output path.
+ *
+ * Same-origin on purpose. A cross-origin URL makes MapLibre re-wrap the worker
+ * in a blob, and it would put a CDN in the request path of a page whose whole
+ * point is that the user's contact data stays with us.
+ */
+export const MAPLIBRE_WORKER_URL = "/maplibre/maplibre-gl-worker.mjs";
+
 /** Opening camera, used until the first fit-to-places (whole world). */
 export const MAP_INITIAL_CENTER: [number, number] = [10, 25];
 export const MAP_INITIAL_ZOOM = 0.8;

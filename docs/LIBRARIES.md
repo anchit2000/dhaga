@@ -168,6 +168,27 @@ fetched directly and vendored by hand into `components/ui/map/` — no
    actually exists on our basemap (upstream's "Open Sans Semibold" 404s on
    OpenFreeMap's glyph endpoint, which silently leaves every cluster unlabelled).
 
+**The worker has to be self-hosted — v6 cannot find its own.** maplibre-gl v6
+split the worker out of the main bundle into a sibling `maplibre-gl-worker.mjs`
+and locates it at runtime with `new URL('./maplibre-gl-worker.mjs',
+import.meta.url)`. A bundler cannot see through that, so once Next inlines the
+library into an app chunk the URL points at `_next/static/chunks/`, where no
+such file was ever emitted; Next and Vercel both answer the miss with the HTML
+shell, the browser refuses a module worker served as `text/html`, and the map
+sits on its loading veil forever with nothing in the UI to explain why. (v5
+inlined the worker as a Blob, which is why this is new in v6 and why no amount
+of mapcn config mentions it.) The fix is the vendor's own knob:
+`scripts/copy-maplibre-worker.mjs` copies the worker — **and the
+`maplibre-gl-shared.mjs` it imports as a sibling** — into `public/maplibre/` on
+`dev` and `build` (not `postinstall`: the Dockerfile installs from the
+workspace manifests before copying the source tree), and `Map.tsx` calls
+`setWorkerUrl()` with
+`MAPLIBRE_WORKER_URL` at module scope, before any map exists. The copied files
+are gitignored build output. Keep the constant and the script's output path in
+step, and keep the URL **same-origin**: a cross-origin one makes MapLibre
+re-wrap the worker in a blob and puts a CDN in the request path of a page whose
+whole point is that contact data stays with us.
+
 **Basemap: OpenFreeMap, never CARTO — do not "fix" this back.** mapcn defaults
 to CARTO's Positron/Dark-Matter tiles, and mapcn's own README states that
 commercial use of them requires a CARTO Enterprise licence. Dhaga is a

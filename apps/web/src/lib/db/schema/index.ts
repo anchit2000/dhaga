@@ -45,6 +45,7 @@ export {
   type MessagingSessionRow,
   type MessagingSessionItemRow,
 } from "./messaging";
+export { geocodeCache, type GeocodeCacheRow } from "./geocode";
 export { graphLayouts, type GraphLayoutRow } from "./graph-layouts";
 export { cardImages, type CardImageRow } from "./card-images";
 export {

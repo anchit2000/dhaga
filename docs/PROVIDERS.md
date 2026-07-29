@@ -80,6 +80,43 @@ export const searxng: SearchProvider = {
 Use `registerSearchProvider`, then either `selectSearchProvider("searxng")`
 or `SEARCH_PROVIDER=searxng`.
 
+## Geocoding providers
+
+Geocoding (free-text location → coordinates, for the map view) has the same
+shape as search:
+
+```ts
+import type { GeocodingProvider } from "@dhaga/core";
+
+export const photon: GeocodingProvider = {
+  id: "photon",
+  isConfigured: () => Boolean(process.env.PHOTON_URL),
+  createClient: () => ({
+    async geocode(query) {
+      // Return { lat, lng, displayName }, or null for a definitive no-match.
+      return geocodePhoton(query);
+    },
+  }),
+};
+```
+
+Use `registerGeocodingProvider`, then either `selectGeocodingProvider("photon")`
+or `GEOCODING_PROVIDER=photon`.
+
+Two contract rules matter more here than elsewhere:
+
+- Return `null` **only** for a definitive "no such place". Timeouts, HTTP
+  errors, and malformed responses must throw — `null` is cached permanently as
+  a negative, so returning it for an outage poisons the cache.
+- Enforce your provider's rate limit **inside** the client. Callers geocode in
+  batches and will not throttle for you. The built-in `nominatim` provider uses
+  `createRateLimiter` (`@dhaga/core`) to hold the public instance's 1 req/s
+  ceiling; reuse it.
+
+Results are cached in `geocode_cache` keyed by `normalizeLocationQuery(text)`,
+shared across tenants — it is public reference data, and one lookup per place
+per deployment is what keeps a public geocoder's usage policy satisfied.
+
 ## Embedding providers and vector stores
 
 Embedding generation and storage are independent plugins. Their declared

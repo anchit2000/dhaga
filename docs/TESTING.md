@@ -394,6 +394,14 @@ Singapore
       multiple shots (each drops into the tray) → Done → Scan — same merge
       into one contact. Denying the permission shows a message and a
       "Choose a photo instead" fallback.
+- [ ] **Dock camera**: the capture dock's **Camera** button → shoot several
+      frames → **Done** → the capture dialog opens on **Card photo** with those
+      frames already in the tray (crop / reorder / remove available); pressing
+      **Scan** starts the extraction. Done never scans blind.
+- [ ] **Scanning feedback**: while a scan is in flight the branded loader
+      covers the visible capture surface — including with a full six-image tray,
+      where the dialog scrolls (the overlay must stay centred in view, not
+      scroll off with the form).
 - [ ] Without a key: honest "Card scanning needs cloud AI" error
       (`hasLLM()` gate, `apps/web/src/lib/ai/card-scan.ts:30`).
 

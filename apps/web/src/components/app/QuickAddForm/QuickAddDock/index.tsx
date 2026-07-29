@@ -9,8 +9,9 @@ import { WebcamCapture } from "../WebcamCapture";
 import { DockBar } from "./dock-bar";
 
 /**
- * Floating quick-add dock: voice dictation, live webcam capture, and file
- * upload all converge on the same review screen as the paste/photo forms. Voice
+ * Floating quick-add dock: voice dictation, live webcam capture (frames go to
+ * the card-photo tray to be cropped before the scan), and file upload (cropped
+ * here, then scanned) all reach the same review screen. Voice
  * is driven by the optional `voice` prop, owned by CaptureForm — it streams the
  * transcript live into the shared textarea and renders the tap-to-fix review
  * directly under it. Without a `voice` prop (the collapsed floating dock) the
@@ -18,6 +19,7 @@ import { DockBar } from "./dock-bar";
  */
 export function QuickAddDock({
   formAction,
+  onPhotosCaptured,
   onVoiceStart,
   voice,
   pasteTextareaRef,
@@ -26,6 +28,9 @@ export function QuickAddDock({
   floating = true,
 }: {
   formAction: (formData: FormData) => void;
+  /** Hands the camera's frames to the card-photo tray (crop / reorder / remove
+   *  live there) instead of scanning them blind. */
+  onPhotosCaptured: (files: File[]) => void;
   /** Opens the capture dialog when the dock owns no dictation (no `voice`). */
   onVoiceStart?: () => void;
   /** Dictation controls, owned by CaptureForm. Absent on the collapsed dock. */
@@ -113,8 +118,9 @@ export function QuickAddDock({
         }}
       />
       {showCamera ? (
-        // Shoot several frames (front, back, extra pages) into a local tray,
-        // then "Done" scans them together into ONE contact. ✕ discards.
+        // Shoot several frames (front, back, extra pages), then "Done" hands
+        // them to the image tray to crop/reorder and scan as ONE contact.
+        // ✕ discards.
         <WebcamCapture
           count={capturedPhotos.length}
           max={MAX_CARD_IMAGES}
@@ -123,7 +129,7 @@ export function QuickAddDock({
           }
           onDone={() => {
             setShowCamera(false);
-            submitPhotos(capturedPhotos);
+            onPhotosCaptured(capturedPhotos);
             setCapturedPhotos([]);
           }}
           onClose={() => {

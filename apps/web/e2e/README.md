@@ -76,6 +76,12 @@ data. `[e2e]`-prefixed rows are safe to delete afterward.
 - The app has **no `data-testid`s**; specs use roles/labels/placeholders/text.
 - `contacts.spec.ts` includes the **3-distinct-companies save** regression for
   the tenant-pool-exhaustion bug (PR #96) — it must save, not time out.
+- `capture-loader.spec.ts` holds the scan's POST open to assert the blocking
+  scan overlay. It guards a bug that shipped twice: a Server Action re-suspends
+  home's `<Suspense><HomeDock/></Suspense>`, React hides that boundary's DOM
+  (portals included) and nothing behind the suspended transition can commit, so
+  a spinner rendered by the capture form is invisible exactly when it's needed.
+  The overlay must stay in the app shell (`BusyOverlay`), above page Suspense.
 - CI does not yet run this suite (no e2e job in `ci.yml`); it's a local/manual
   pre-ship gate for now. Adding a CI job is a follow-up (needs a browser install
   step; PGlite mode needs no DB service).

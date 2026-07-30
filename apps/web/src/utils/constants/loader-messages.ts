@@ -5,6 +5,11 @@
 
 export const LOADER_MESSAGE_INTERVAL_MS = 2200;
 
+/** Safety valve for the app-shell blocking scrim (see BusyOverlay): well past
+ *  the slowest capture, so a lost "done" signal can never wedge the whole app
+ *  behind an overlay that never clears. */
+export const BUSY_OVERLAY_MAX_MS = 120_000;
+
 export const CARD_SCAN_MESSAGES = [
   "Reading the card…",
   "Making out the details…",

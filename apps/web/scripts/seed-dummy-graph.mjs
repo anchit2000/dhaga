@@ -185,6 +185,22 @@ async function main() {
     process.exit(1);
   }
 
+  // The Supabase instance now holds data that cannot be recreated, so the two
+  // destructive commands refuse to point at it. `create` (additive) still runs.
+  // The escape hatch is deliberately explicit — nobody reaches it by accident.
+  if (command === "delete" || command === "recreate") {
+    const target = process.env.DATABASE_URL;
+    if (/supabase\.(co|com|in)/i.test(target) && process.env.DHAGA_ALLOW_DESTRUCTIVE !== "1") {
+      console.error(
+        `Refusing to "${command}" against Supabase — that DELETEs the dummy graph and its user,\n` +
+          "and this instance holds data that cannot be recreated (see CLAUDE.md).\n" +
+          "Use the local PGlite (.env.local) or local Docker Postgres for a disposable graph.\n" +
+          "If you genuinely mean it, re-run with DHAGA_ALLOW_DESTRUCTIVE=1.",
+      );
+      process.exit(1);
+    }
+  }
+
   const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
   const client = await pool.connect();
   try {

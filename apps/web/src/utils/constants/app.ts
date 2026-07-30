@@ -69,11 +69,28 @@ export type CardImageType = (typeof CARD_IMAGE_TYPES)[number];
 export const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
 
 /**
+ * Long edge (px) and JPEG quality a card photo is downscaled to before upload.
+ * Measured against a real card: 1600px cost ~0.5s more per scan than 1024px for
+ * identical extraction, and 768px started misreading digits in phone numbers.
+ * 1024 is the point where accuracy still holds — don't lower it without
+ * re-running the check in docs/TESTING.md §7c.
+ */
+export const CARD_SCAN_MAX_DIMENSION = 1024;
+export const CARD_SCAN_JPEG_QUALITY = 0.8;
+
+/**
  * Max photos merged into ONE contact per scan — front+back of a card, or a
  * few pages of the same leaflet. They all describe the same person; the
  * server merges them and keeps each as a visual receipt.
  */
 export const MAX_CARD_IMAGES = 6;
+
+/**
+ * How long an undated follow-up sits before its chip reads "due for long".
+ * Undated items are ordered oldest-first, so this is the point where age is
+ * the message rather than a detail.
+ */
+export const FOLLOW_UP_LONG_OPEN_DAYS = 14;
 
 /** Keep-in-touch cadence choices (docs/ideas.md #2). */
 export const CADENCE_OPTIONS = [

@@ -14,7 +14,7 @@ export function StarredTile({ rows }: { rows: ContactListItem[] }): React.ReactE
   if (rows.length === 0) return null;
 
   return (
-    <HomeTile title="Starred">
+    <HomeTile title="Starred" viewAll={{ href: "/app/saved", label: "View all starred" }}>
       <div className="space-y-1">
         {rows.slice(0, HOME_PREVIEW_LIMIT).map((person) => (
           <Link
@@ -30,9 +30,6 @@ export function StarredTile({ rows }: { rows: ContactListItem[] }): React.ReactE
           </Link>
         ))}
       </div>
-      <Link href="/app/saved" className="mt-auto inline-flex min-h-11 items-center text-xs text-ember hover:underline">
-        View all →
-      </Link>
     </HomeTile>
   );
 }

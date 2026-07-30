@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { HomeTile } from "./HomeTile";
 import { Button } from "@/components/ui/button";
 import { markReachedOutAction } from "@/lib/actions/reminders";
@@ -38,6 +37,7 @@ export function GoingQuiet({
   return (
     <HomeTile
       title="Going quiet"
+      viewAll={{ href: "/app/people", label: overflow > 0 ? `+${overflow} more quietly fading` : "View all people" }}
       meta={
         <span className="font-mono text-[10px] uppercase tracking-widest text-fog">
           {contacts.length} fading
@@ -85,17 +85,6 @@ export function GoingQuiet({
           </li>
         ))}
       </ul>
-      {overflow > 0 ? (
-        <p className="mt-auto pt-1 text-xs text-fog">
-          +{overflow} more quietly fading —{" "}
-          <Link
-            href="/app/people"
-            className="text-ember underline-offset-2 hover:underline"
-          >
-            see everyone
-          </Link>
-        </p>
-      ) : null}
     </HomeTile>
   );
 }

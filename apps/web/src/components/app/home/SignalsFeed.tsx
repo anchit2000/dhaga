@@ -20,6 +20,7 @@ export function SignalsFeed({
   return (
     <HomeTile
       title="Signals"
+      viewAll={{ href: "/app/people", label: overflow > 0 ? `+${overflow} more signals` : "View all people" }}
       meta={
         <span className="font-mono text-[10px] uppercase tracking-widest text-fog">
           {signals.length} new
@@ -31,7 +32,6 @@ export function SignalsFeed({
           <SignalCard key={signal.id} showContact signal={signal} onContactClick={onSelectContact} />
         ))}
       </ul>
-      {overflow > 0 ? <p className="mt-auto pt-1 text-xs text-fog">+{overflow} more signals</p> : null}
     </HomeTile>
   );
 }

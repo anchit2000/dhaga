@@ -5,6 +5,7 @@ export {
   deleteNote,
   getNote,
   listNotes,
+  replaceNoteBody,
   type NoteKind,
 } from "./notes";
 export {

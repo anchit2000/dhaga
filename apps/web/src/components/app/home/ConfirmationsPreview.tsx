@@ -1,5 +1,3 @@
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
 import { HomeTile } from "./HomeTile";
 import type { ConfirmationView } from "@/lib/repo/confirmations";
 
@@ -22,6 +20,10 @@ export function ConfirmationsPreview({
     <HomeTile
       title="To confirm"
       tone="amber"
+      viewAll={{
+        href: "/app/confirmations",
+        label: confirmations.length > preview.length ? `Review all ${confirmations.length}` : "Review",
+      }}
       meta={
         <span className="font-mono text-[10px] uppercase tracking-widest text-ember">
           {confirmations.length} pending
@@ -55,15 +57,6 @@ export function ConfirmationsPreview({
           );
         })}
       </ul>
-      <Link
-        href="/app/confirmations"
-        className="mt-auto inline-flex items-center gap-1.5 pt-1 text-xs text-ember underline-offset-2 hover:underline"
-      >
-        {confirmations.length > preview.length
-          ? `See all ${confirmations.length}`
-          : "Review"}
-        <ArrowRight className="size-3.5" aria-hidden />
-      </Link>
     </HomeTile>
   );
 }

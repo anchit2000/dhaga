@@ -31,6 +31,10 @@ export {
 } from "./schemas/search-query";
 export { cardScanSchema, type CardScan } from "./schemas/card-scan";
 export {
+  cardTranscriptionSchema,
+  type CardTranscription,
+} from "./schemas/card-transcription";
+export {
   FACT_TYPES,
   RELATIONSHIP_PREDICATES,
   factSchema,

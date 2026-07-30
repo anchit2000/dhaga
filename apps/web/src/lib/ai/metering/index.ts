@@ -1,48 +1,11 @@
-import { getDb } from "@/lib/db/request-scope";
-import { getBillingGate } from "@/lib/hosted/gate";
 import { enforceRateLimit, RateLimitError } from "@/lib/ratelimit";
-import { AI_MONTHLY_CAP_OVERRIDE_KEY, getSetting } from "@/lib/repo/settings";
-import { FREE_TIER_AI_CREDITS_PER_MONTH } from "@/utils/constants/app";
 import { currentAiActionScope } from "./action-scope";
+import { effectiveMonthlyAiCap, hasUnlimitedAiCredits } from "./cap";
 import { aiCreditsUsedThisMonth } from "./record";
 
 export { currentAiActionId, newAiAction, withAiAction } from "./action-scope";
 export { aiCreditsUsedThisMonth, recordAiAction } from "./record";
-
-/**
- * Self-hosters raise the cap via DHAGA_AI_MONTHLY_CAP; hosted free tier = 0
- * (cloud AI is a paid feature). A self-hoster who wants AI on the free tier
- * sets this env var to a positive number. Denominated in CREDITS — a card scan
- * costs 1, heavier actions cost more (see @dhaga/core's credit table).
- */
-export function monthlyAiCap(): number {
-  const fromEnv = Number(process.env.DHAGA_AI_MONTHLY_CAP);
-  return Number.isFinite(fromEnv) && fromEnv > 0
-    ? fromEnv
-    : FREE_TIER_AI_CREDITS_PER_MONTH;
-}
-
-/**
- * A per-user monthly AI-credit allowance an admin can grant, stored on the
- * acting user's `ai_monthly_cap_override` setting. Returns a positive integer
- * or null (absent / blank / 0 / negative / non-integer → no override).
- */
-async function resolveAiCapOverride(): Promise<number | null> {
-  const raw = await getSetting(AI_MONTHLY_CAP_OVERRIDE_KEY);
-  if (raw === null) return null;
-  const n = Number(raw);
-  return Number.isInteger(n) && n > 0 ? n : null;
-}
-
-/**
- * The cap actually enforced for the acting user: an admin-granted per-user
- * override if set, otherwise the instance default (`DHAGA_AI_MONTHLY_CAP` env,
- * else the free-tier constant of 0). Reads the acting user's own setting, so
- * under EE it is correctly per-user (RLS); in core it is the single global row.
- */
-export async function effectiveMonthlyAiCap(): Promise<number> {
-  return (await resolveAiCapOverride()) ?? monthlyAiCap();
-}
+export { effectiveMonthlyAiCap, hasUnlimitedAiCredits, monthlyAiCap } from "./cap";
 
 /**
  * The AI-usage line shown in-app. Free tier has no cloud AI (cap 0), so a raw
@@ -75,8 +38,8 @@ export function aiUsageLabel({
  * request-scoped getDb().
  */
 export async function hasMonthlyAiBudget(userId: string): Promise<boolean> {
-  if (await (await getBillingGate()).hasUnlimitedAi(userId, await getDb())) return true;
-  const cap = await effectiveMonthlyAiCap();
+  if (await hasUnlimitedAiCredits(userId)) return true;
+  const cap = await effectiveMonthlyAiCap(userId);
   return (await aiCreditsUsedThisMonth()) < cap;
 }
 
@@ -104,6 +67,11 @@ export class AiBudgetError extends Error {
  * inside it skips the cap check. Without that, a user one credit below the cap
  * would pass the check on a card scan's first call and then be refused
  * mid-action on its second — billed for a scan they never got.
+ *
+ * "Is this user uncapped?" is `hasUnlimitedAiCredits`, not the billing gate
+ * directly: with the plan-cap master switch off it IS the billing gate (today's
+ * behaviour, unchanged), and with it on the credit ladder decides. See ./cap.ts
+ * for the full precedence.
  */
 export async function assertAiBudget(userId: string): Promise<void> {
   try {
@@ -115,8 +83,8 @@ export async function assertAiBudget(userId: string): Promise<void> {
     throw error;
   }
   if (currentAiActionScope()?.recorded) return;
-  if (await (await getBillingGate()).hasUnlimitedAi(userId, await getDb())) return;
-  const cap = await effectiveMonthlyAiCap();
+  if (await hasUnlimitedAiCredits(userId)) return;
+  const cap = await effectiveMonthlyAiCap(userId);
   if ((await aiCreditsUsedThisMonth()) >= cap) {
     throw new AiBudgetError(`Monthly AI credit cap reached (${cap}).`, "cap");
   }

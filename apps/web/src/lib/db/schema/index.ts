@@ -40,6 +40,7 @@ export {
   type CalendarEventLinkRow,
 } from "./calendar";
 export { contactLinks, type ContactLinkRow } from "./sync";
+export { contactConnections, type ContactConnectionRow } from "./contact-connections";
 export { aiActions, settings, voiceVocab, type AiActionRow, type VoiceVocabRow } from "./meta";
 export {
   messagingIdentities,
@@ -67,3 +68,9 @@ export {
 } from "./auth";
 export { apiKey, type ApiKeyRow } from "./api-key";
 export { notifications, type NotificationRow } from "./notifications";
+export {
+  aiBudgetSettings,
+  aiCreditGrants,
+  type AiBudgetSettingRow,
+  type AiCreditGrantRow,
+} from "./ai-budget";

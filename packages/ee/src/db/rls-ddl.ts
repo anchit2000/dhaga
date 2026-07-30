@@ -39,6 +39,10 @@ const TENANT_TABLES = [
   // collide freely across users (Android hands out small integers from the
   // device's own sequence), so an unscoped read would cross-link tenants.
   "contact_links",
+  // OAuth grants to a user's Google/Outlook address book. Scoped for the
+  // strongest reason on this list: the row holds access and refresh tokens, so
+  // an unscoped read is an account-takeover risk, not just a data leak.
+  "contact_connections",
   // Forwarded messaging content (contact cards / notes awaiting processing) —
   // per-tenant PII, RLS-scoped. The routing tables (messaging_identities,
   // messaging_link_tokens) are deliberately NOT here: the webhook reads them
@@ -135,6 +139,29 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'settings' AND policyname = 'tenant_isolation') THEN
     CREATE POLICY tenant_isolation ON settings USING (
       current_setting('app.bypass_rls', true) = 'true' OR
+      user_id = current_setting('app.current_user_id', true)
+    );
+  END IF;
+END $$;
+
+-- ai_credit_grants gets a BESPOKE policy rather than joining TENANT_TABLES: a
+-- grant row with user_id NULL means "every user on this instance", and the
+-- generic tenant_isolation policy (user_id = <tenant>) hides NULL from
+-- everybody — an instance-wide grant would silently apply to nobody. Adding
+-- "user_id IS NULL" is what makes it apply to everybody instead. Note also that
+-- NO user_id DEFAULT is set here (unlike the generic loop): every write goes
+-- through the admin bypass connection with an explicit user_id, or an explicit
+-- NULL for an instance-wide grant. Core creates the table (apps/web/src/lib/db/
+-- ddl/ai-budget.ts); this only adds tenancy. ai_budget_settings is absent on
+-- purpose — it is operator configuration, identical for every tenant.
+ALTER TABLE ai_credit_grants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ai_credit_grants FORCE ROW LEVEL SECURITY;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'ai_credit_grants' AND policyname = 'tenant_isolation') THEN
+    CREATE POLICY tenant_isolation ON ai_credit_grants USING (
+      current_setting('app.bypass_rls', true) = 'true' OR
+      user_id IS NULL OR
       user_id = current_setting('app.current_user_id', true)
     );
   END IF;

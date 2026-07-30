@@ -1,10 +1,9 @@
 import { headers } from "next/headers";
-import { hasLLM, listConnectableCalendarProviders } from "@dhaga/core";
+import { hasLLM, listConnectableCalendarProviders, listContactSyncProviders } from "@dhaga/core";
 import { getCurrentUser, requireUserIdForPage } from "@/lib/auth/guard";
 import { getAuth } from "@/lib/auth/config";
 import { getBillingGate } from "@/lib/hosted/gate";
-import { getDb } from "@/lib/db/request-scope";
-import { aiCreditsUsedThisMonth, effectiveMonthlyAiCap } from "@/lib/ai/metering";
+import { aiCreditsUsedThisMonth, effectiveMonthlyAiCap, hasUnlimitedAiCredits } from "@/lib/ai/metering";
 import { shouldStoreCardPhotos } from "@/lib/repo/settings";
 import { listVocab } from "@/lib/repo/voice-vocab";
 import { listCalendarConnections } from "@/lib/repo/calendar";
@@ -19,7 +18,9 @@ import {
   isMorningReminderEnabled,
 } from "@/lib/repo/suggestion-settings";
 import { countCardImages } from "@/lib/repo/card-images";
+import { listContactConnections } from "@/lib/repo/contact-sync";
 import { CalendarConnectionsSetting } from "@/components/app/settings/CalendarConnectionsSetting";
+import { ContactSyncSetting } from "@/components/app/settings/ContactSyncSetting";
 import { SuggestionsSetting } from "@/components/app/settings/SuggestionsSetting";
 import { ImportantDatesSetting } from "@/components/app/settings/ImportantDatesSetting";
 import { TimezoneSetting } from "@/components/app/settings/TimezoneSetting";
@@ -55,7 +56,9 @@ export async function BillingSection() {
   if (!planSummary) return null;
   const [used, unlimited] = await Promise.all([
     hasLLM() ? aiCreditsUsedThisMonth() : Promise.resolve(0),
-    hasLLM() ? gate.hasUnlimitedAi(userId, await getDb()) : Promise.resolve(false),
+    // The metering answer, not the billing gate's: with plan-cap enforcement on
+    // the gate would say "unlimited" while the dock correctly shows "n of 300".
+    hasLLM() ? hasUnlimitedAiCredits(userId) : Promise.resolve(false),
   ]);
   const aiUsage = hasLLM() ? { used, cap: await effectiveMonthlyAiCap(), unlimited } : null;
   return <BillingSetting summary={planSummary} aiUsage={aiUsage} />;
@@ -87,6 +90,29 @@ export async function CalendarSection({
   return (
     <CalendarConnectionsSetting
       providers={listConnectableCalendarProviders()}
+      connections={connections}
+      status={status}
+    />
+  );
+}
+
+/**
+ * Server-side address-book accounts (Google People, Outlook). Distinct from the
+ * calendar card above: contacts and calendar are independent OAuth grants stored
+ * in separate tables, so connecting one never touches the other.
+ */
+export async function ContactSyncSection({
+  searchParams,
+}: {
+  searchParams: Promise<{ contacts?: string }>;
+}) {
+  const [connections, { contacts: status }] = await Promise.all([
+    listContactConnections(),
+    searchParams,
+  ]);
+  return (
+    <ContactSyncSetting
+      providers={listContactSyncProviders()}
       connections={connections}
       status={status}
     />

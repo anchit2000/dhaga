@@ -126,14 +126,33 @@ export { mergeSyncedContact } from "./sync/merge";
 export {
   MULTI_FIELDS,
   SCALAR_FIELDS,
+  type ContactSyncTarget,
+  type ExternalContact,
+  type ExternalRef,
   type MultiField,
   type ScalarField,
   type SyncableContact,
   type SyncConflict,
+  type SyncContainer,
   type SyncField,
   type SyncMergeInput,
   type SyncMergeResult,
 } from "./sync/types";
+// Server PROVIDERS are root-safe (plain fetch) where the device target is not.
+export {
+  CONTACT_SYNC_NO_ACCESS,
+  type ContactSyncCapabilities,
+  type ContactSyncProvider,
+  type ContactSyncProviderInfo,
+  type ContactSyncTokens,
+} from "./sync/provider-types";
+export {
+  contactSyncCapabilities,
+  getContactSyncProvider,
+  hasContactSyncProvider,
+  listContactSyncProviders,
+  registerContactSyncProvider,
+} from "./sync/providers";
 // AI credits: the user-facing unit of cloud-AI usage and its per-action price
 // table. Pure data (no I/O), shared by the app's metering and the hosted
 // admin/billing views — see ./metering/credits.ts for how it is derived.

@@ -455,10 +455,21 @@ be a 42% worst-case margin. Lifetime and self-hosted stay uncapped. The free
 tier gets no cloud AI at all, so free users cost ~$0; self-hosters re-enable it
 with `DHAGA_AI_MONTHLY_CAP` (also denominated in credits).
 
-*Plan allowances are defined (`PLAN_AI_CREDITS_PER_MONTH`) but not yet enforced:
-paid plans resolve through `hasUnlimitedAi` today and the pricing page sells
-"no monthly cap". Enforcing them is a pricing and Stripe decision, not a
-metering one.*
+*Plan allowances are defined (`PLAN_AI_CREDITS_PER_MONTH`) and, since 2026-07-30,
+runtime-editable defaults an admin can override per plan at `/app/admin/ai-credits`
+— but they are **still not enforced**, and that status is unchanged until an admin
+flips the master switch there (`AI_PLAN_CAP_ENFORCEMENT_DEFAULT = false`, off on
+every instance). With it off, paid plans resolve through `hasUnlimitedAi` exactly
+as before and the pricing page sells "no monthly cap"; turning it on would hand
+every existing paying customer a ceiling they were never sold, so enforcing them
+remains a pricing and Stripe decision, not a metering one. Two levers do work
+regardless of that switch: an instance-wide **promotion** ("everyone gets 1,000
+credits this month", self-expiring) and an additive **grant** ledger for making
+users whole after a bug. Grants only move the ceiling — `ai_actions`, the sole
+record of what cloud AI actually cost, is never rewritten. Precedence, highest
+first: per-user override → promotion → plan allowance (only when enforced) →
+`DHAGA_AI_MONTHLY_CAP` → free tier, with active grants added on top
+(`apps/web/src/lib/ai/metering/cap.ts`).*
 
 ### 8.4 Revenue streams
 

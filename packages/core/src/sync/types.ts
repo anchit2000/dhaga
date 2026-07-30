@@ -127,6 +127,18 @@ export interface ExternalRef {
  */
 export interface ContactSyncTarget {
   readonly id: string;
+  /**
+   * Fields this target's data model cannot represent, and which must therefore
+   * be excluded from the merge entirely.
+   *
+   * Absent (the normal case) means the target round-trips all nine. Declaring a
+   * field here is not a soft "best effort" — it is load-bearing. A target that
+   * silently reports a field as empty because it cannot store it would have the
+   * merge honour that emptiness as a DELETION on the second run, once the base
+   * snapshot recorded the field as synced. Microsoft Graph is the live example:
+   * one url slot, and `birthday` as the only date.
+   */
+  readonly unsupportedFields?: readonly SyncField[];
   listContainers(): Promise<SyncContainer[]>;
   listChanged(since: Date | null): Promise<ExternalContact[]>;
   create(contact: SyncableContact, containerId: string | null): Promise<ExternalRef>;

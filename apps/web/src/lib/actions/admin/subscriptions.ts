@@ -3,18 +3,12 @@
 // Dhaga Cloud only — see packages/ee/LICENSE.
 import { revalidatePath } from "next/cache";
 import { setSubscriptionForUser, setAiCapOverrideFor } from "@dhaga/ee/admin";
-import { requireUserId } from "@/lib/auth/guard";
-import { getAdminGate } from "@/lib/hosted/gate";
+import { assertAdmin } from "./guard";
 
 type AdminPlan = "free" | "pro" | "lifetime";
 
 function isAdminPlan(value: string): value is AdminPlan {
   return value === "free" || value === "pro" || value === "lifetime";
-}
-
-async function assertAdmin(): Promise<void> {
-  const callerId = await requireUserId();
-  if (!(await (await getAdminGate()).isAdmin(callerId))) throw new Error("Forbidden");
 }
 
 export async function setSubscriptionAction(formData: FormData): Promise<void> {

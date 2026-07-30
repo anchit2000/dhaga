@@ -180,6 +180,54 @@ These controls live only in the EE admin panel — a core-only self-host raises
 the cap for *everyone* with `DHAGA_AI_MONTHLY_CAP` instead (see the env table
 below).
 
+### Instance-wide AI credit controls (`/app/admin/ai-credits`, hosted/EE)
+
+Beside that per-user override, `/app/admin/ai-credits` carries three levers that
+apply to the whole instance:
+
+- **Plan-cap enforcement** — a master switch that is **off on every instance**
+  (`AI_PLAN_CAP_ENFORCEMENT_DEFAULT = false`). While it is off the plan
+  allowances below are stored but ignored, and behaviour is exactly what it was
+  before these controls existed: paid plans bypass the cap through
+  `hasUnlimitedAi`, and the pricing page sells Pro and Annual as "no monthly
+  cap". Turning it on gives every existing paying customer a ceiling they were
+  never sold — a pricing decision, not a metering one.
+- **Monthly allowance per plan** — runtime-editable overrides of the shipped
+  numbers (`PLAN_AI_CREDITS_PER_MONTH`), per plan, each of which can also be set
+  to "no cap". Inert until the switch above is on.
+- **Promotional month** — lifts *every* user to one allowance for a window
+  ("everyone gets 1,000 credits this month"). It works whether or not
+  enforcement is on, and it ends at the **start** of its end date, evaluated on
+  every read — so it expires by itself with no cron job and no admin cleanup.
+
+The same page holds the **grant** ledger: additive make-good credits for one
+user (or, with the user id left blank, everyone), with a required reason and an
+expiry that defaults to the end of the current month. A grant only moves the
+ceiling — `ai_actions`, the only record of what cloud AI actually cost, is never
+rewritten, and "End now" stops a grant counting without deleting its row.
+
+Precedence, highest first (`apps/web/src/lib/ai/metering/cap.ts`): per-user
+override → active promotion → plan allowance (only with the switch on, and only
+when a plan is in play) → `DHAGA_AI_MONTHLY_CAP` → free tier. Active grants are
+added on top of whichever one wins.
+
+**What a core-only self-host gets.** The two tables this feature stores its
+state in — `ai_budget_settings` and `ai_credit_grants`
+([`apps/web/src/lib/db/ddl/ai-budget.ts`](../apps/web/src/lib/db/ddl/ai-budget.ts))
+— belong to the AGPL core, so they are created on your database whether or not
+`packages/ee` is present. Nothing else follows from that: there is no admin UI
+to write to them (both simply stay empty), and no row-level security on them
+either — `ai_credit_grants` gets its bespoke
+`user_id IS NULL OR user_id = <tenant>` policy only from
+`packages/ee/src/db/rls-ddl.ts`, and
+`ai_budget_settings` deliberately gets none anywhere, being operator config
+rather than user data. The cap resolves exactly as it did before: whatever
+`DHAGA_AI_MONTHLY_CAP` says, else the free-tier constant. **Nothing here is
+required from `packages/ee` to self-host**, and the Level 2 removal list above
+needs no additions — the new admin page and its server actions and components
+live under `apps/web/src/app/app/admin/`, `apps/web/src/lib/actions/admin/` and
+`apps/web/src/components/app/admin/`, which are already on it.
+
 ## Running with `docker compose up`
 
 The repo root has a [`Dockerfile`](../Dockerfile) and [`compose.yml`](../compose.yml)
@@ -218,10 +266,25 @@ merge (`packages/core/src/sync`), the repo layer, and `POST /api/sync/contacts`
 Level 2 and don't belong on the deletion list above. There's no env var and no
 new API key: the mobile app authenticates with the same per-user key it already
 uses, and on iOS the change is handed to the operating system, which relays it to
-iCloud or Google itself — so a self-host never needs a Google or Microsoft
-contacts-write scope. The one EE-side touch is additive and inert without hosted
-mode: `packages/ee` adds `contact_links` to its `TENANT_TABLES` so the table gets
-RLS when multi-tenancy is on. See
+iCloud or Google itself — so **phone sync** never needs a Google or Microsoft
+contacts-write scope.
+
+**Server-side account sync (Google People / Outlook) is also core, and is opt-in.**
+`packages/core/src/sync/{google,microsoft}-provider`, `lib/repo/contact-sync` and
+`/api/contact-sync/*` import nothing from `@dhaga/ee`. Unlike phone sync it DOES
+need credentials, and it reuses the calendar integration's:
+`GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`, `MICROSOFT_CLIENT_ID`/`MICROSOFT_CLIENT_SECRET`.
+Two extra steps on that OAuth app: enable the **People API** (Google) or
+**Contacts.ReadWrite** (Microsoft), and register
+`/api/contact-sync/callback/{google,microsoft}` as redirect URIs. Set nothing and
+the Settings card reports no configured providers while phone sync keeps working.
+Google's contacts scope is **sensitive, not restricted** — standard verification,
+no CASA assessment, no annual audit, no fee.
+
+The EE-side touches are additive and inert without hosted mode: `packages/ee` adds
+`contact_links` and `contact_connections` to its `TENANT_TABLES` so both get RLS
+when multi-tenancy is on. `contact_connections` holds OAuth tokens, so on a
+multi-tenant deployment that scoping is doing real work. See
 `apps/web/content/docs/guide/syncing-your-phone.mdx` for the user-facing behaviour
 (including the Android limitation).
 

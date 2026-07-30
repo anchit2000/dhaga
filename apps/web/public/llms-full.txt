@@ -1924,7 +1924,13 @@ beneath it.
   have left this month. Credits are charged per action, not per model call: a
   card scan, note, quick-add or draft costs 1; a question to Ask Dhaga or a
   pre-meeting brief costs 2; enriching a contact from the web costs 20. Nightly
-  watchlist scans are free — they are limited by how many people you watch.
+  watchlist scans are free — they are limited by how many people you watch. The
+  allowance half of that line can be raised by whoever runs the instance — a
+  promotional month, or credits granted to you after something went wrong on
+  their side — and extra credits are only ever *added* on top: the "used" half
+  is a record of what you actually spent and is never rewritten. Operators:
+  those controls are the admin AI credits screen, documented in
+  [Self-hosting](/docs/self-hosting#instance-wide-ai-credit-controls-appadminai-credits-hostedee).
 - **Capture** — **Card photos** (whether the original card image is kept after a
   scan) and **Voice teaching** — a vocabulary manager where you teach Dhaga
   names it keeps mishearing. The fastest way to teach a word is tap-to-fix right
@@ -2155,6 +2161,8 @@ it had** so you can take it back.
 Open Dhaga on the web and go to **More › Sync conflicts**. Each undecided field
 is one row, showing what Dhaga had and what your phone had, with two choices:
 
+![The Sync conflicts review queue at /app/sync/conflicts: one card per undecided field, each naming the contact and the field with why it is here ("changed in both places", or "changed in one place, removed in the other"), then "Dhaga had" beside "Your phone had (in use now)" — including an "(empty)" side where the phone removed a number — and the two actions, Restore Dhaga's value and Keep the phone's](/docs/guide/sync-conflicts.png)
+
 - **Restore Dhaga's value** — puts it back on the contact. Dhaga is then the side
   that moved, so the **next sync carries it out to your phone**, and both sides
   end up agreeing on it.
@@ -2227,6 +2235,55 @@ Each run reads the **whole** address book — neither iOS nor Android offers a
 "what changed since last time?" query, so there's no incremental fast path. A very
 large address book takes as long on the tenth run as on the first.
 
+## Google and Outlook, without a phone
+
+Phone sync needs a phone. If you want Dhaga to keep an address book in step on its
+own — or you're on Android, where a contact Dhaga **creates** never leaves the
+handset — connect the account directly instead.
+
+Go to **Settings › Contact accounts** and connect **Google Contacts** or **Outlook
+Contacts**. Dhaga then talks to that account's API from the server, using the same
+three-way merge as phone sync: nothing is overwritten silently, contested fields
+are never pushed, and disagreements land in **Sync conflicts** exactly as they do
+from a handset.
+
+It runs when you press **Sync now**. There is no background schedule — reading and
+writing your address book without you asking is precisely what this product
+doesn't do.
+
+### The two switches
+
+- **Keep this account in step** — on by default once connected. Turn it off and
+  Dhaga stops syncing while keeping the connection; nothing already in your
+  address book is removed.
+- **Add Dhaga-only people to this account** — **off** by default, and deliberately
+  a separate decision. Turn it on and people who exist only in Dhaga (scanned
+  cards, contacts you typed here) are copied into the account too. Most people
+  don't want every business card they ever scanned landing in their Google
+  contacts, so you have to ask for it. People Dhaga only heard *mentioned* in a
+  note are never copied either way.
+
+**This is the Android fix**
+
+On Android, expo-contacts creates a contact with no account attached, so it stays
+on the handset forever. Connecting Google here writes to the account directly and
+Android syncs it down — the reverse of the iOS relay, where the OS does the
+carrying. If you're on Android and want Dhaga-created people in your Google
+contacts, this is the way.
+
+### What Outlook can't carry
+
+Google Contacts round-trips all nine fields. **Microsoft Graph cannot**: it gives a
+contact one website slot, one birthday, and three fixed address slots rather than
+lists. So for Outlook connections, **links, important dates and addresses do not
+sync in either direction** — they stay in Dhaga, untouched, and Dhaga never writes
+them to Outlook.
+
+That's a deliberate refusal rather than a partial mapping. Storing two links in one
+slot would mean the field read back short, and on the *next* sync Dhaga would have
+taken that shortfall for a deletion you made and removed the rest. Names,
+nicknames, job titles, companies, emails and phone numbers sync both ways as normal.
+
 ## Things that don't survive the round trip
 
 A few values have no clean equivalent on both sides:
@@ -2253,18 +2310,24 @@ a backup of.
 
 ## For self-hosters
 
-Sync is entirely in the AGPL core. There's no extra configuration, no API key to
-buy, and no `packages/ee` — it authenticates with the same per-user API key your
-mobile app already uses (see [Settings](/docs/guide/settings)). The iOS relay is
-why: because the operating system carries the change to iCloud or Google for you,
-Dhaga never needs a Google or Microsoft contacts-write scope.
+Sync is entirely in the AGPL core, and **phone sync** needs no configuration at
+all — it authenticates with the same per-user API key your mobile app already uses
+(see [Settings](/docs/guide/settings)). The iOS relay is why: because the operating
+system carries the change to iCloud or Google for you, phone sync never needs a
+Google or Microsoft contacts-write scope.
 
-**Google and Outlook sync aren't built yet**
+Connecting **Google or Outlook accounts** server-side is core too, but it is the
+one part that does need credentials — see the callout below.
 
-Sync currently has one target: **this device's address book**. Google Contacts and
-Outlook appear in the sync protocol as provider names, but no implementation ships
-for either — for those, use the one-way
-[OAuth connectors](/docs/guide/importing-contacts) instead.
+**Google and Outlook need their own credentials**
+
+Connecting an account server-side uses the **same OAuth app** as the calendar
+integration — `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` and
+`MICROSOFT_CLIENT_ID`/`MICROSOFT_CLIENT_SECRET`. Two extra steps on your side:
+enable the **People API** (Google) or **Contacts.ReadWrite** (Microsoft) on that
+app, and register `/api/contact-sync/callback/google` and
+`/api/contact-sync/callback/microsoft` as redirect URIs. Without credentials the
+card simply says no providers are configured, and phone sync keeps working.
 
 ---
 
@@ -3069,6 +3132,54 @@ Stripe, comp that user's access:
 These controls live only in the EE admin panel — a core-only self-host raises
 the cap for *everyone* with `DHAGA_AI_MONTHLY_CAP` instead (see the env table
 below).
+
+### Instance-wide AI credit controls (`/app/admin/ai-credits`, hosted/EE)
+
+Beside that per-user override, `/app/admin/ai-credits` carries three levers that
+apply to the whole instance:
+
+- **Plan-cap enforcement** — a master switch that is **off on every instance**
+  (`AI_PLAN_CAP_ENFORCEMENT_DEFAULT = false`). While it is off the plan
+  allowances below are stored but ignored, and behaviour is exactly what it was
+  before these controls existed: paid plans bypass the cap through
+  `hasUnlimitedAi`, and the pricing page sells Pro and Annual as "no monthly
+  cap". Turning it on gives every existing paying customer a ceiling they were
+  never sold — a pricing decision, not a metering one.
+- **Monthly allowance per plan** — runtime-editable overrides of the shipped
+  numbers (`PLAN_AI_CREDITS_PER_MONTH`), per plan, each of which can also be set
+  to "no cap". Inert until the switch above is on.
+- **Promotional month** — lifts *every* user to one allowance for a window
+  ("everyone gets 1,000 credits this month"). It works whether or not
+  enforcement is on, and it ends at the **start** of its end date, evaluated on
+  every read — so it expires by itself with no cron job and no admin cleanup.
+
+The same page holds the **grant** ledger: additive make-good credits for one
+user (or, with the user id left blank, everyone), with a required reason and an
+expiry that defaults to the end of the current month. A grant only moves the
+ceiling — `ai_actions`, the only record of what cloud AI actually cost, is never
+rewritten, and "End now" stops a grant counting without deleting its row.
+
+Precedence, highest first (`apps/web/src/lib/ai/metering/cap.ts`): per-user
+override → active promotion → plan allowance (only with the switch on, and only
+when a plan is in play) → `DHAGA_AI_MONTHLY_CAP` → free tier. Active grants are
+added on top of whichever one wins.
+
+**What a core-only self-host gets.** The two tables this feature stores its
+state in — `ai_budget_settings` and `ai_credit_grants`
+([`apps/web/src/lib/db/ddl/ai-budget.ts`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/lib/db/ddl/ai-budget.ts))
+— belong to the AGPL core, so they are created on your database whether or not
+`packages/ee` is present. Nothing else follows from that: there is no admin UI
+to write to them (both simply stay empty), and no row-level security on them
+either — `ai_credit_grants` gets its bespoke
+`user_id IS NULL OR user_id = <tenant>` policy only from
+`packages/ee/src/db/rls-ddl.ts`, and `ai_budget_settings` deliberately gets none
+anywhere, being operator config rather than user data. The cap resolves exactly
+as it did before: whatever `DHAGA_AI_MONTHLY_CAP` says, else the free-tier
+constant. **Nothing here is required from `packages/ee` to self-host**, and the
+Level 2 removal list above needs no additions — the new admin page and its
+server actions and components live under `apps/web/src/app/app/admin/`,
+`apps/web/src/lib/actions/admin/` and `apps/web/src/components/app/admin/`,
+which are already on it.
 
 ## Running with `docker compose up`
 

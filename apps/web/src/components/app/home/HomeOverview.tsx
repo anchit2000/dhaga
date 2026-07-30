@@ -11,7 +11,7 @@ import type { RecentContactListItem } from "@/lib/repo/contacts";
  *  through to the person's full detail page. */
 export function HomeOverview({ people }: { people: RecentContactListItem[] }): React.ReactElement {
   return (
-    <HomeTile title="Recent people">
+    <HomeTile title="Recent people" viewAll={{ href: "/app/people", label: "View all people" }}>
       <div className="space-y-1">
         {people.length === 0 ? (
           <div className="py-4">
@@ -40,7 +40,6 @@ export function HomeOverview({ people }: { people: RecentContactListItem[] }): R
           </Link>
         ))}
       </div>
-      <Link href="/app/people" className="mt-auto inline-flex min-h-11 items-center text-xs text-ember hover:underline">View all people</Link>
     </HomeTile>
   );
 }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { FollowUpDueChip } from "@/components/app/FollowUpDueChip";
 import { HomeTile } from "./HomeTile";
 import { completeFollowUpAction, dismissFollowUpAction } from "@/lib/actions/follow-ups";
 import { useOptimisticList } from "@/lib/hooks/useOptimisticList";
@@ -74,7 +75,10 @@ export function HomeActions({ openFollowUps, onSelectContact }: {
                 {/* Action wraps in full — the rail tile is too narrow to truncate against. */}
                 <div className="min-w-0 flex-1">
                   <p className="text-sm leading-snug text-paper">{item.action}</p>
-                  <Button render={<div />} variant="ghost" onClick={() => onSelectContact(item.contactId)} className="mt-0.5 h-auto rounded-md p-0 text-xs font-normal normal-case text-ember hover:bg-transparent hover:underline">{item.contactName}</Button>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2">
+                    <Button render={<div />} variant="ghost" onClick={() => onSelectContact(item.contactId)} className="h-auto rounded-md p-0 text-xs font-normal normal-case text-ember hover:bg-transparent hover:underline">{item.contactName}</Button>
+                    <FollowUpDueChip item={item} />
+                  </div>
                 </div>
                 <Button type="button" onClick={() => handleRemove(item, dismissFollowUpAction)} variant="ghost" size="icon-sm" aria-label="Dismiss follow-up" className="shrink-0 text-fog hover:text-paper"><X /></Button>
               </div>

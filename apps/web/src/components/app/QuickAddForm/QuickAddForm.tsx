@@ -39,7 +39,7 @@ export function QuickAddForm({
   // scan-error dialog. Both are derived from the action result (see
   // useCaptureDialog / capture-dialog-state), dismissible via a per-result token.
   const { resultOpen, captureErrorOpen, dismissResult, reopenAfterScanError, onDialogClose, onVoiceStart } =
-    useCaptureDialog(state, homeDock, setMode, setCaptureOpen);
+    useCaptureDialog(state, homeDock, setMode, setCaptureOpen, () => setPhotos([]));
 
   if (state.matches && state.matches.length > 1 && state.sourceText) {
     return (

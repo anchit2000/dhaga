@@ -55,6 +55,7 @@ export {
   type SignalDetectionSubject,
 } from "./llm";
 export { heuristicContactParse } from "./parse/heuristic-contact";
+export { cardReceiptText } from "./parse/card-receipt";
 export {
   FirecrawlSearchClient,
   getSearchClient,

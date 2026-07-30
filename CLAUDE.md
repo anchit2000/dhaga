@@ -261,7 +261,7 @@ packages/ee/       Dhaga Cloud only: multi-tenant RLS, billing, admin, early
 
 ## Local / E2E testing (dummy load-test user)
 
-For Playwright / manual E2E, a disposable **load-test user** owns the seeded
+For Playwright / manual E2E, a **load-test user** owns the seeded
 dummy graph in the Supabase DB that `apps/web/.env.vercel` points at. Same
 credentials that `apps/web/scripts/seed-dummy-graph.mjs` defines and prints —
 a throwaway test account, never provisioned in production, not a real secret:
@@ -270,7 +270,18 @@ a throwaway test account, never provisioned in production, not a real secret:
 - Email: `loadtest@dhaga.internal`
 - Password: `LoadTest-Dummy-2026!`
 
-Seed/reset the graph with `node --env-file=.env.vercel scripts/seed-dummy-graph.mjs recreate`.
+**The Supabase database now holds data that CANNOT be recreated. Never delete
+from it.** No `seed-dummy-graph.mjs recreate` (it deletes before it seeds), no
+`DELETE`/`TRUNCATE`/`DROP`, no "reset and reseed", no destructive migration —
+against `.env.vercel`, any other Supabase URL, or a dev server pointed at one.
+This holds even when a wipe looks like the quickest way to a clean test state,
+and even for rows that look like test data: the load-test user's graph and real
+data share the instance. Reads and additive writes are fine. If a task seems to
+need a destructive step, stop and ask — do not decide it is safe.
+
+Need a throwaway graph? Use the embedded local PGlite (`.env.local`, no
+`DATABASE_URL`), which the Playwright suite already targets, or the local Docker
+Postgres (`networkpro-db-1`, port 54329) — both are disposable; Supabase is not.
 
 `next dev` auto-loads `.env.local` (local PGlite, no `DATABASE_URL`), **not**
 `.env.vercel` — so to reach this user, run a dev server whose env carries

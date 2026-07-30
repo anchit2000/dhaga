@@ -2,11 +2,9 @@
 
 import { useRef, useState } from "react";
 import { ConfirmationCard } from "@/components/app/confirmations/ConfirmationCard";
-import { CARD_SCAN_MESSAGES, QUICK_ADD_MESSAGES } from "@/utils/constants/loader-messages";
 import type { EventOption } from "../EventPicker";
 import { DEFAULT_CAPTURE_MODE, showsManualSurface, type CaptureMode } from "./capture-mode";
 import { CaptureForm } from "./CaptureForm";
-import { CaptureLoader } from "./CaptureLoader";
 import { DisambiguationPanel } from "./DisambiguationPanel";
 import { HomeDockCapture } from "./HomeDockCapture";
 import { QuickAddManual, type SubTab } from "./QuickAddManual";
@@ -81,16 +79,6 @@ export function QuickAddForm({
     />
   );
 
-  // One scan scrim for every surface, portalled above the capture dialog (see
-  // CaptureLoader) so it's visible whether that dialog is open or shut. A dock
-  // upload submits with it shut, where `mode` never moved off the default —
-  // that's still a card scan, so pick its copy on the surface, not the tab.
-  const loader = pending ? (
-    <CaptureLoader
-      messages={mode === "photo" || !captureOpen ? CARD_SCAN_MESSAGES : QUICK_ADD_MESSAGES}
-    />
-  ) : null;
-
   // Manual is one of the three capture pills; its surface (the sibling's blank
   // ContactForm hub) takes over from CaptureForm. Back returns to the paste tab.
   const surface = showsManualSurface(mode) ? (
@@ -124,33 +112,29 @@ export function QuickAddForm({
       <div className="pb-28">
         {surface}
         {resultDialog}
-        {loader}
       </div>
     );
   }
 
   return (
-    <>
-      <HomeDockCapture
-        isManual={showsManualSurface(mode)}
-        wide={showsManualSurface(mode) && manualTab === "person"}
-        aiUsage={aiUsage}
-        surface={surface}
-        resultDialog={resultDialog}
-        captureOpen={captureOpen}
-        setCaptureOpen={setCaptureOpen}
-        captureErrorOpen={captureErrorOpen}
-        resultOpen={resultOpen}
-        onDialogClose={onDialogClose}
-        onVoiceStart={onVoiceStart}
-        error={state.error}
-        onScanRetry={() => reopenAfterScanError("photo")}
-        onScanManual={() => reopenAfterScanError("manual")}
-        formAction={formAction}
-        onPhotosCaptured={onPhotosCaptured}
-        pasteTextareaRef={pasteTextareaRef}
-      />
-      {loader}
-    </>
+    <HomeDockCapture
+      isManual={showsManualSurface(mode)}
+      wide={showsManualSurface(mode) && manualTab === "person"}
+      aiUsage={aiUsage}
+      surface={surface}
+      resultDialog={resultDialog}
+      captureOpen={captureOpen}
+      setCaptureOpen={setCaptureOpen}
+      captureErrorOpen={captureErrorOpen}
+      resultOpen={resultOpen}
+      onDialogClose={onDialogClose}
+      onVoiceStart={onVoiceStart}
+      error={state.error}
+      onScanRetry={() => reopenAfterScanError("photo")}
+      onScanManual={() => reopenAfterScanError("manual")}
+      formAction={formAction}
+      onPhotosCaptured={onPhotosCaptured}
+      pasteTextareaRef={pasteTextareaRef}
+    />
   );
 }

@@ -111,11 +111,14 @@ any point within the scheduled hour, not the exact minute. The route always
 401s unless `CRON_SECRET` is set (fails closed by design — see §7j).
 
 **Resetting to blank on this path:** unlike local PGlite, there's no folder
-to delete. Either start a fresh Supabase project, or open the Supabase SQL
-editor and `TRUNCATE` the app's tables yourself (`contacts`, `notes`,
+to delete — start a fresh Supabase project. On a throwaway project you could
+instead `TRUNCATE` the app's tables from the SQL editor (`contacts`, `notes`,
 `facts`, `edges`, `events`, `embeddings`, etc. — see
 `apps/web/src/lib/db/ddl/core.ts` for the full list; the `user`/`session`/
 `account` auth tables are separate and truncating them signs everyone out).
+**Never against Dhaga's own Supabase instance**, which holds data that cannot
+be recreated — nothing deletes from it (see CLAUDE.md). For a disposable graph
+use local PGlite (§1b) or the local Docker Postgres.
 
 ### 1b. Local dev — fastest loop for the core product only
 
@@ -402,10 +405,15 @@ Singapore
       frames already in the tray (crop / reorder / remove available); pressing
       **Scan** starts the extraction. Done never scans blind.
 - [ ] **Scanning feedback**: from the moment **Scan** is pressed until the
-      review dialog opens, the branded loader covers the whole viewport —
-      *above* the capture dialog, and identically for a dock **Upload** (which
-      scans with that dialog shut). Check it with a full six-image tray, where
-      the dialog itself scrolls: the scrim must not scroll away with the form.
+      review dialog opens, a branded loader blocks the WHOLE viewport — the
+      capture dialog blanks out behind it (React hides home's re-suspended
+      `HomeDock` boundary for the duration of the action, which is why the
+      overlay lives in the app shell, not in the form; see `BusyOverlay`).
+      Same for a dock **Upload**, which scans with that dialog shut, and for a
+      paste extraction. Covered by `apps/web/e2e/capture-loader.spec.ts`.
+- [ ] The overlay always CLEARS — on a successful scan, on a failed one, and
+      with a full six-image tray. A scrim that outlives its work freezes the app
+      (a 120s safety timeout is the backstop, not the mechanism).
 - [ ] Without a key: honest "Card scanning needs cloud AI" error
       (`hasLLM()` gate, `apps/web/src/lib/ai/card-scan.ts:30`).
 

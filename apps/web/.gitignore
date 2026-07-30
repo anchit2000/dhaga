@@ -32,8 +32,10 @@
 # (scripts/copy-maplibre-worker.mjs) — vendor output, never edited by hand
 /public/maplibre/
 
-# embedded local database (PGlite)
+# embedded local database (PGlite) — including any copy set aside after a
+# crash (hard-killing the server mid-write corrupts the data dir)
 /.dhaga-data/
+/.dhaga-data.*/
 
 # production
 /build

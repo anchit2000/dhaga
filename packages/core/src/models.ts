@@ -125,11 +125,30 @@ export { mergeSyncedContact } from "./sync/merge";
 export {
   MULTI_FIELDS,
   SCALAR_FIELDS,
+  type ContactSyncTarget,
+  type ExternalContact,
+  type ExternalRef,
   type MultiField,
   type ScalarField,
   type SyncableContact,
   type SyncConflict,
+  type SyncContainer,
   type SyncField,
   type SyncMergeInput,
   type SyncMergeResult,
 } from "./sync/types";
+// Server PROVIDERS are root-safe (plain fetch) where the device target is not.
+export {
+  CONTACT_SYNC_NO_ACCESS,
+  type ContactSyncCapabilities,
+  type ContactSyncProvider,
+  type ContactSyncProviderInfo,
+  type ContactSyncTokens,
+} from "./sync/provider-types";
+export {
+  contactSyncCapabilities,
+  getContactSyncProvider,
+  hasContactSyncProvider,
+  listContactSyncProviders,
+  registerContactSyncProvider,
+} from "./sync/providers";

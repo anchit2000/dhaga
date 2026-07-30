@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { hasLLM, listConnectableCalendarProviders } from "@dhaga/core";
+import { hasLLM, listConnectableCalendarProviders, listContactSyncProviders } from "@dhaga/core";
 import { getCurrentUser, requireUserIdForPage } from "@/lib/auth/guard";
 import { getAuth } from "@/lib/auth/config";
 import { getBillingGate } from "@/lib/hosted/gate";
@@ -16,7 +16,9 @@ import {
   isMorningReminderEnabled,
 } from "@/lib/repo/suggestion-settings";
 import { countCardImages } from "@/lib/repo/card-images";
+import { listContactConnections } from "@/lib/repo/contact-sync";
 import { CalendarConnectionsSetting } from "@/components/app/settings/CalendarConnectionsSetting";
+import { ContactSyncSetting } from "@/components/app/settings/ContactSyncSetting";
 import { SuggestionsSetting } from "@/components/app/settings/SuggestionsSetting";
 import { CardPhotoSetting } from "@/components/app/settings/CardPhotoSetting";
 import { VoiceTeaching } from "@/components/app/settings/VoiceTeaching";
@@ -82,6 +84,29 @@ export async function CalendarSection({
   return (
     <CalendarConnectionsSetting
       providers={listConnectableCalendarProviders()}
+      connections={connections}
+      status={status}
+    />
+  );
+}
+
+/**
+ * Server-side address-book accounts (Google People, Outlook). Distinct from the
+ * calendar card above: contacts and calendar are independent OAuth grants stored
+ * in separate tables, so connecting one never touches the other.
+ */
+export async function ContactSyncSection({
+  searchParams,
+}: {
+  searchParams: Promise<{ contacts?: string }>;
+}) {
+  const [connections, { contacts: status }] = await Promise.all([
+    listContactConnections(),
+    searchParams,
+  ]);
+  return (
+    <ContactSyncSetting
+      providers={listContactSyncProviders()}
       connections={connections}
       status={status}
     />

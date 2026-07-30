@@ -16,6 +16,20 @@ export type {
   SyncField,
 } from "./types";
 export { MULTI_FIELDS, SCALAR_FIELDS } from "./types";
+export {
+  CONTACT_SYNC_NO_ACCESS,
+  type ContactSyncCapabilities,
+  type ContactSyncProvider,
+  type ContactSyncProviderInfo,
+  type ContactSyncTokens,
+} from "./provider-types";
+export {
+  contactSyncCapabilities,
+  getContactSyncProvider,
+  hasContactSyncProvider,
+  listContactSyncProviders,
+  registerContactSyncProvider,
+} from "./providers";
 export { mergeSyncedContact, mergeMultiField, mergeScalarField, sameSyncFieldValue } from "./merge";
 export { entriesEqual, entryKey, indexByKey } from "./keys";
 

@@ -3,8 +3,6 @@
 import type { ReactNode, RefObject } from "react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import { CARD_SCAN_MESSAGES } from "@/utils/constants/loader-messages";
-import { CaptureLoader } from "./CaptureLoader";
 import { QuickAddDock } from "./QuickAddDock";
 import { ScanErrorDialog } from "./ScanErrorDialog";
 
@@ -33,7 +31,6 @@ export function HomeDockCapture({
   formAction,
   onPhotosCaptured,
   pasteTextareaRef,
-  pending,
 }: {
   isManual: boolean;
   /** The person manual sub-tab hosts the full contact form — widen the dialog
@@ -62,8 +59,9 @@ export function HomeDockCapture({
    *  so they can be cropped/reordered before the scan (see QuickAddDock). */
   onPhotosCaptured: (files: File[]) => void;
   pasteTextareaRef: RefObject<HTMLTextAreaElement | null>;
-  pending: boolean;
 }) {
+  // The scan scrim isn't rendered here: QuickAddForm portals one to <body> so a
+  // single overlay covers both the open dialog and a dock scan with it shut.
   return (
     <div className="pb-28">
       <Dialog
@@ -74,7 +72,7 @@ export function HomeDockCapture({
         }}
       >
         <DialogContent
-          className={cn("max-h-[85vh] overflow-y-auto", wide ? "max-w-4xl" : "max-w-lg")}
+          className={cn("max-h-[85vh] overflow-y-auto", wide ? "max-w-4xl" : "max-w-2xl")}
         >
           <DialogTitle>{isManual ? "Add someone manually" : "Capture someone"}</DialogTitle>
           <DialogDescription>
@@ -107,13 +105,6 @@ export function HomeDockCapture({
           captureOpen={captureOpen}
           onCaptureToggle={() => setCaptureOpen(true)}
         />
-      ) : null}
-      {/* Dock upload submits straight to the action while the capture dialog is
-          closed, so the in-form loader is hidden. Surface a branded scanning
-          state so the wait has feedback. (Dock camera frames go to the tray
-          instead, and scan from inside the dialog.) */}
-      {pending && !captureOpen ? (
-        <CaptureLoader className="dark rounded-none" messages={CARD_SCAN_MESSAGES} />
       ) : null}
       {resultDialog}
     </div>

@@ -1,6 +1,6 @@
 /** App-shell constants (the product UI under /app, not the landing page). */
 
-import { BookOpen, Building2, CalendarDays, CirclePlus, Gift, Home, Inbox, MapPin, Newspaper, Shapes, Sparkles, Star, Upload, Users, Waypoints } from "lucide-react";
+import { BookOpen, Building2, CalendarDays, CirclePlus, Gift, GitMerge, Home, Inbox, MapPin, Newspaper, Shapes, Sparkles, Star, Upload, Users, Waypoints } from "lucide-react";
 import type { CaptureImageType } from "@dhaga/core/src/api/capture";
 import type { RecentReason } from "@/lib/repo/last-touch";
 
@@ -30,6 +30,7 @@ export const APP_MORE_LINKS = [
   { href: "/app/entities", label: "Entities", icon: Shapes },
   { href: "/app/quick-add", label: "Quick add", icon: CirclePlus },
   { href: "/app/import", label: "Import", icon: Upload },
+  { href: "/app/sync/conflicts", label: "Sync conflicts", icon: GitMerge },
   { href: "/app/wrapped", label: "Wrapped", icon: Sparkles },
   { href: "/app/referral", label: "Invite friends", icon: Gift },
   { href: "/blog", label: "Blog", icon: Newspaper },

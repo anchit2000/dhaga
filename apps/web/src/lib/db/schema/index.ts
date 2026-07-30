@@ -33,7 +33,13 @@ export { confirmations, type ConfirmationRow } from "./confirmations";
 export { embeddings, type EmbeddingRow } from "./embeddings";
 export { extractionJobs, type ExtractionJobRow } from "./jobs";
 export { signals, type SignalRow } from "./signals";
-export { calendarConnections, type CalendarConnectionRow } from "./calendar";
+export {
+  calendarConnections,
+  calendarEventLinks,
+  type CalendarConnectionRow,
+  type CalendarEventLinkRow,
+} from "./calendar";
+export { contactLinks, type ContactLinkRow } from "./sync";
 export { aiActions, settings, voiceVocab, type AiActionRow, type VoiceVocabRow } from "./meta";
 export {
   messagingIdentities,

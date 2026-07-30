@@ -15,6 +15,11 @@ export const RATE_LIMITS = {
   /** Taught dictation vocabulary CRUD (/api/voice/vocab). User-driven and
    *  low-frequency, but a session start re-reads it, so keep the window roomy. */
   voice_vocab: { points: 60, durationSec: 60 },
+  /** Reads against a connected calendar's API (full event reads, write-out).
+   *  Every point is an outbound Google/Microsoft call on the user's quota, so
+   *  this guards THEIR quota as much as ours — roomy enough for normal browsing
+   *  of /app/calendar, tight enough that a reload loop can't burn the grant. */
+  calendar_external: { points: 30, durationSec: 60 },
 } as const;
 
 export type RateLimitBucket = keyof typeof RATE_LIMITS;

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { FACT_TYPES } from "@dhaga/core";
 import { mutation, MutationError } from "@/lib/actions/mutation";
+import { scheduleCalendarWriteOut } from "@/lib/calendar/write-out";
 import { getContact } from "@/lib/repo/contacts";
 import { addFact, addFollowUp } from "@/lib/repo/manual-entries";
 import { upsertEmbedding } from "@/lib/repo/embeddings";
@@ -60,11 +61,14 @@ export async function createFollowUpAction(
   if (!action) return { error: "Describe the follow-up first." };
   // mutation() pins the getContact read + insert to one tenant-pool connection
   // (server actions get no React cache() getDb() dedupe — see request-scope).
-  const r = await mutation("createFollowUp", async () => {
+  const r = await mutation("createFollowUp", async (userId) => {
     if (!(await getContact(contactId))) throw new MutationError("Contact not found.");
-    await addFollowUp(contactId, action, dueDate);
+    return { userId, followUpId: await addFollowUp(contactId, action, dueDate) };
   });
   if (!r.ok) return { error: r.error };
+  // Mirror it onto any upgraded, write-enabled calendar — after the response,
+  // so a slow provider never delays the save (lib/calendar/write-out.ts).
+  scheduleCalendarWriteOut(r.data.userId, r.data.followUpId);
   revalidatePath(`/app/people/${contactId}`);
   revalidatePath("/app");
   return { notice: "Follow-up added." };

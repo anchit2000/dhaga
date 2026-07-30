@@ -111,3 +111,21 @@ export {
   type CaptureRoute,
   type CaptureRoutingInput,
 } from "./capture/route";
+// Contact-sync merge core. Pure (no I/O, no native modules), so it is safe at
+// the package root; the sync TARGETS are deep-import-only (see ./sync/index.ts)
+// because the device target pulls expo-contacts, which the web bundle cannot load.
+// Named Sync* rather than Merge* on purpose: ./schemas/merge already owns
+// "merge" for de-duplicating two Dhaga contacts into one, which is a different
+// operation from reconciling one contact against an external address book.
+export { mergeSyncedContact } from "./sync/merge";
+export {
+  MULTI_FIELDS,
+  SCALAR_FIELDS,
+  type MultiField,
+  type ScalarField,
+  type SyncableContact,
+  type SyncConflict,
+  type SyncField,
+  type SyncMergeInput,
+  type SyncMergeResult,
+} from "./sync/types";

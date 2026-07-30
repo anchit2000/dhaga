@@ -42,6 +42,33 @@ you can:
 
 ![A follow-up's details dialog opened from the calendar](/docs/guide/calendar-event.png)
 
+## Your connected calendar, alongside
+
+By default a connected calendar tells Dhaga only when you're **busy** — blocks
+of time, no titles, no attendees — and Dhaga never writes to it. That stays true
+unless you say otherwise.
+
+If you **upgrade** a connection in [Settings](/docs/guide/settings), two things
+change for that calendar and nothing else:
+
+- **Its events show up here**, next to your follow-ups and styled differently so
+  you can always tell which is which. They're read-only in Dhaga — to change one,
+  change it in the calendar it came from. Only a window around today is fetched,
+  so events far in the past or future won't appear.
+- **Your follow-ups get written out** to a separate calendar Dhaga creates,
+  called **Dhaga**. Never your main calendar — so you can hide it, or delete it
+  outright, without touching anything of your own. Reschedule a follow-up and its
+  event moves; mark it **done** or **dismiss** it and the event is removed.
+
+Both are per-connection and per-account: upgrading one calendar leaves any other
+connection exactly as it was. You can switch the write-out off on its own, from
+Settings, and keep the connection.
+
+<Callout title="Event details stay on your screen">
+Titles, locations and guests from a connected calendar are only ever displayed.
+Dhaga doesn't store them, doesn't log them, and doesn't send them to an AI model.
+</Callout>
+
 ## Staying reminded
 
 You don't have to keep the calendar open to stay on top of things:

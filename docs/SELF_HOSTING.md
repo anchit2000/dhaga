@@ -209,6 +209,19 @@ of them simply shows file import — no missing-feature errors. See
 `docs/CONTACT_IMPORT_SETUP.md` to configure the connectors. Provider OAuth tokens
 are encrypted at rest (`encryptOAuthTokens`).
 
+**Two-way phone sync is fully core too, and needs no configuration at all** — the
+merge (`packages/core/src/sync`), the repo layer, and `POST /api/sync/contacts`
+(+ `/ack`) import nothing from `@dhaga/ee`, so they're unaffected by Level 1 *and*
+Level 2 and don't belong on the deletion list above. There's no env var and no
+new API key: the mobile app authenticates with the same per-user key it already
+uses, and on iOS the change is handed to the operating system, which relays it to
+iCloud or Google itself — so a self-host never needs a Google or Microsoft
+contacts-write scope. The one EE-side touch is additive and inert without hosted
+mode: `packages/ee` adds `contact_links` to its `TENANT_TABLES` so the table gets
+RLS when multi-tenancy is on. See
+`apps/web/content/docs/guide/syncing-your-phone.mdx` for the user-facing behaviour
+(including the Android limitation).
+
 ### Custom database deployments
 
 `compose.yml` is a working reference, not a requirement — `DATABASE_URL` can
@@ -364,6 +377,33 @@ public instance, set `NOMINATIM_USER_AGENT` to something that identifies your
 deployment (Nominatim refuses requests without a real User-Agent).
 
 To plug in a different geocoder entirely, see [PROVIDERS.md](PROVIDERS.md).
+
+## Calendar OAuth scopes (the opt-in full tier)
+
+Connecting a calendar reuses the Google/Microsoft app credentials you already
+set for social sign-in (`GOOGLE_CLIENT_ID`/`SECRET`,
+`MICROSOFT_CLIENT_ID`/`SECRET`) — core, no `packages/ee`. A connection is
+**free/busy only** by default and asks for nothing more:
+
+- Google — `openid email .../auth/calendar.freebusy`
+- Microsoft — `openid email offline_access .../Calendars.Read`
+
+Each connection can be **upgraded** by its owner from Settings, which sends them
+back through consent for a wider set. Enable these on your OAuth app too, or the
+upgrade link fails at the provider with an invalid-scope error and the user is
+returned to Settings with `?calendar=error` (their existing free/busy connection
+is untouched):
+
+- Google — adds `.../auth/calendar.readonly` and
+  `.../auth/calendar.app.created`. `calendar.app.created` is deliberate: it
+  confines Dhaga to calendars **it created itself**, so the write-out can only
+  ever touch the secondary "Dhaga" calendar, never the user's own.
+- Microsoft — swaps `Calendars.Read` for `Calendars.ReadWrite` (Graph has no
+  app-created-only equivalent).
+
+What a connection may do is derived from the scope string it was actually
+granted — there is no capability column — so a connection made before the
+upgrade existed keeps behaving exactly as it did.
 
 ## Self-host env var reference
 

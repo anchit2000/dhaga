@@ -6,7 +6,12 @@ import { oauthBaseUrl, signState } from "@/lib/calendar/oauth";
  * Starts the calendar OAuth flow: session-gated, then redirects the browser to
  * the provider's consent page with a signed state. The demo provider loops
  * straight back to the callback so the whole feature is exercisable without a
- * real OAuth app ("use dummy for now"). Read-only free/busy scopes only.
+ * real OAuth app ("use dummy for now").
+ *
+ * Free/busy scopes ONLY unless `?upgrade=1` is present. That query flag is the
+ * entire opt-in mechanism: it is set only by the explicit "Upgrade" control in
+ * Settings, so connecting — or reconnecting — never silently broadens what a
+ * user already granted, and an existing free/busy connection is never disturbed.
  */
 export async function GET(
   request: Request,
@@ -30,6 +35,11 @@ export async function GET(
     return Response.redirect(new URL("/app/settings?calendar=not_configured", base), 302);
   }
   const redirectUri = new URL(`/api/calendar/callback/${providerId}`, base).toString();
-  const authUrl = provider.getAuthUrl({ state: signState(providerId, userId), redirectUri });
+  const upgrade = new URL(request.url).searchParams.get("upgrade") === "1";
+  const authUrl = provider.getAuthUrl({
+    state: signState(providerId, userId),
+    redirectUri,
+    upgrade,
+  });
   return Response.redirect(authUrl, 302);
 }

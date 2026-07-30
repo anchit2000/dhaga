@@ -1,10 +1,8 @@
 "use client";
 
-import { useFormStatus } from "react-dom";
-import { Calendar, Loader2, X } from "lucide-react";
-import { ActionForm } from "@/components/app/ActionForm";
 import { Button } from "@/components/ui/button";
-import { disconnectCalendarAction } from "@/lib/actions/calendar";
+import { CalendarConnectionRow } from "./CalendarConnectionRow";
+import type { ReactElement } from "react";
 import type { CalendarProviderInfo } from "@dhaga/core";
 import type { CalendarConnectionSummary } from "@/lib/repo/calendar";
 
@@ -17,16 +15,9 @@ const STATUS: Record<string, { ok: boolean; text: string }> = {
   unknown_provider: { ok: false, text: "Unknown calendar provider." },
 };
 
-function DisconnectButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" variant="ghost" size="icon-sm" disabled={pending} aria-label="Disconnect calendar">
-      {pending ? <Loader2 className="size-3.5 animate-spin" /> : <X className="size-3.5" />}
-    </Button>
-  );
-}
-
-/** Connect/disconnect calendars. Read-only free/busy — we never write to a calendar. */
+/** Connect/disconnect calendars. Free/busy only by default; the full tier —
+ *  event details, plus follow-ups written to a separate "Dhaga" calendar — is
+ *  opt-in per connection and needs a second consent screen. */
 export function CalendarConnectionsSetting({
   providers,
   connections,
@@ -35,15 +26,20 @@ export function CalendarConnectionsSetting({
   providers: CalendarProviderInfo[];
   connections: CalendarConnectionSummary[];
   status?: string;
-}) {
+}): ReactElement {
   const info = status ? STATUS[status] : undefined;
+  const upgradable = new Set(
+    providers.filter((provider) => provider.upgradable).map((provider) => provider.id),
+  );
   return (
     <section className="space-y-4 rounded-2xl border border-seam bg-panel p-5 sm:p-6">
       <div>
         <h2 className="font-display text-lg">Calendars</h2>
         <p className="mt-1 text-sm text-fog">
-          Connect a calendar so Dhaga can suggest open meeting times and flag overloaded days. We read
-          only your busy times — never event details — and never write to your calendar.
+          Connect a calendar so Dhaga can suggest open meeting times and flag overloaded days. By
+          default we read only your busy times — never event details — and write nothing at all.
+          Full access is opt-in per calendar: it lets Dhaga read event details, and it only ever
+          writes to a separate calendar it creates, called &ldquo;Dhaga&rdquo;.
         </p>
       </div>
 
@@ -54,26 +50,11 @@ export function CalendarConnectionsSetting({
       {connections.length > 0 ? (
         <ul className="space-y-2">
           {connections.map((connection) => (
-            <li
+            <CalendarConnectionRow
               key={connection.id}
-              className="flex items-center gap-3 rounded-xl border border-seam bg-wash/[0.04] px-3 py-2.5"
-            >
-              <Calendar className="size-4 shrink-0 text-fog" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm text-paper">{connection.accountEmail ?? connection.provider}</p>
-                <p className="text-xs capitalize text-fog">
-                  {connection.provider}
-                  {connection.status === "needs_reconnect" ? " · needs reconnect" : ""}
-                </p>
-              </div>
-              <ActionForm
-                action={disconnectCalendarAction}
-                errorMessage="Couldn't disconnect that calendar — try again."
-              >
-                <input type="hidden" name="id" value={connection.id} />
-                <DisconnectButton />
-              </ActionForm>
-            </li>
+              connection={connection}
+              upgradable={upgradable.has(connection.provider)}
+            />
           ))}
         </ul>
       ) : null}

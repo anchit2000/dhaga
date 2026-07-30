@@ -107,6 +107,38 @@
   border-color: var(--brand-amber);
   color: var(--brand-on-accent);
 }
+/* Connected-calendar events: context, not Dhaga's own work, so they are muted
+   on purpose — no fill, a dashed fog outline and secondary text, which keeps
+   follow-ups the loudest thing on the grid. Fog (not amber) carries the text:
+   amber is a fill and fails contrast as light-mode type. Read-only, hence the
+   default cursor; it must not look clickable. */
+.dhaga-calendar .fc .fc-external {
+  background: transparent;
+  border-color: color-mix(in oklch, var(--brand-fog) 45%, transparent);
+  border-style: dashed;
+  color: var(--brand-fog);
+  cursor: default;
+}
+.dhaga-calendar .fc-external-body {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  overflow: hidden;
+}
+.dhaga-calendar .fc-external-title {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+.dhaga-calendar .fc-external-meta {
+  font-size: 0.68rem;
+  opacity: 0.72;
+}
+.dhaga-calendar .fc-external-title,
+.dhaga-calendar .fc-external-meta {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .dhaga-calendar .fc .fc-more-link {
   font-size: 0.7rem;
   font-weight: 600;
@@ -139,6 +171,15 @@
 }
 .dhaga-calendar .fc .fc-list-event-dot {
   border-color: var(--brand-amber);
+}
+/* Same muting in the list — rows, not chips, so the dashed outline has nothing
+   to draw on and the fog text plus a fog dot carry the distinction instead. */
+.dhaga-calendar .fc .fc-list-event.fc-external .fc-list-event-title,
+.dhaga-calendar .fc .fc-list-event.fc-external .fc-list-event-time {
+  color: var(--brand-fog);
+}
+.dhaga-calendar .fc .fc-list-event.fc-external .fc-list-event-dot {
+  border-color: var(--brand-fog);
 }
 .dhaga-calendar .fc .fc-list-empty {
   background: transparent;

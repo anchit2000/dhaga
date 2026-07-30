@@ -44,8 +44,9 @@ export interface DeviceContact {
 const RECEIPT_MAX = 2000;
 const RECEIPT_BASE = "Imported from device contacts";
 
-/** "mobile" → "Mobile", "work" → "Work"; empty/whitespace → null. */
-function capitalizeLabel(label: string | undefined): string | null {
+/** "mobile" → "Mobile", "work" → "Work"; empty/whitespace → null. Shared with
+ *  the two-way sync mapper (@/lib/sync/fields), which reads the same OS labels. */
+export function capitalizeLabel(label: string | undefined): string | null {
   const trimmed = label?.trim();
   if (!trimmed) return null;
   return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);

@@ -1,6 +1,7 @@
 import {
   CARD_SCAN_PROMPT,
   CARD_SCAN_SYSTEM,
+  cardReceiptText,
   cardScanSchema,
   getLLMClient,
   hasLLM,
@@ -64,14 +65,14 @@ export async function scanCardImages(
         transient: isTransientConnectionError(recordError),
       });
     }
-    const { raw_text, ...contact } = result.data;
+    const contact = result.data;
     if (!contact.name.trim()) {
       return {
         error:
           "Couldn't read a person off that photo — try a sharper, closer shot.",
       };
     }
-    return { contact, rawText: raw_text };
+    return { contact, rawText: cardReceiptText(contact) };
   } catch (error) {
     if (!(error instanceof AiBudgetError)) {
       // The scan collapsed into an opaque "try again"; without this it left no

@@ -21,10 +21,15 @@ import type { QuietContact } from "@/lib/repo/strength";
 /**
  * Home's adaptive dashboard plus the one contact detail Sheet the action tiles
  * share. A brand-new account (no people) gets a calm welcome instead of an empty
- * grid. Otherwise every tile flows into a single masonry (CSS columns): each
- * keeps its natural height and packs top-to-bottom per column, so a short tile
- * never leaves a tall gap beside a taller neighbour — no dead space at any width
- * (an `items-start` grid can't do this; its row still sizes to the tallest tile).
+ * grid.
+ *
+ * Otherwise every tile sits in a uniform grid: `auto-rows-fr` makes every row the
+ * same height and the cells stretch, so each tile's "View all" footer lands on a
+ * shared baseline. This replaced a CSS-columns masonry that packed tiles by
+ * natural height — tighter, but ragged: neighbouring tiles ended wherever their
+ * content stopped, and so did their footers. Uniform cells trade some whitespace
+ * for a layout that reads as one system.
+ *
  * Data-less tiles (confirmations, signals, going-quiet, starred, suggested
  * groups) are omitted entirely and the rest re-flow to close the layout. Order
  * is priority-first: Today, attention alerts, then the standing tiles.
@@ -102,9 +107,11 @@ export function HomeDashboard({
 
   return (
     <>
-      <div className="dhaga-bento columns-1 gap-4 sm:columns-2 xl:columns-3">
+      {/* auto-rows-fr only from sm: in one column nothing sits beside a tile, so
+          equal rows would just pad every tile out to the tallest one. */}
+      <div className="dhaga-bento grid grid-cols-1 gap-4 sm:auto-rows-fr sm:grid-cols-2 xl:grid-cols-3">
         {tiles.map(({ key, node }) => (
-          <div key={key} className="mb-4 break-inside-avoid">
+          <div key={key} className="flex min-w-0 flex-col [&>*]:h-full">
             {node}
           </div>
         ))}

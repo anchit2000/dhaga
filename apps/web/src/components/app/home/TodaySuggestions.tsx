@@ -55,6 +55,7 @@ export function TodaySuggestions({
   return (
     <HomeTile
       title="Today"
+      viewAll={{ href: "/app/people", label: moreDue > 0 ? `+${moreDue} more due this week` : "View all people" }}
       tone="amber"
       data-tour="updates"
       className={className}
@@ -146,16 +147,11 @@ export function TodaySuggestions({
         </div>
       )}
 
-      {!calendarConnected || moreDue > 0 ? (
+      {!calendarConnected ? (
         <div className="mt-auto space-y-1.5 pt-1">
           {!calendarConnected ? (
             <Link href="/app/settings" className="block text-xs text-ember hover:underline">
               Connect a calendar to get meeting-time suggestions →
-            </Link>
-          ) : null}
-          {moreDue > 0 ? (
-            <Link href="/app/people" className="block text-xs text-fog hover:text-paper">
-              +{moreDue} more due this week → all people
             </Link>
           ) : null}
         </div>

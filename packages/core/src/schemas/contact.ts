@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { withUrlScheme } from "../parse/web-url";
 import {
   addressSchema,
   contactMethodSchema,
@@ -89,6 +90,10 @@ export function emptyContactProfile(): ContactProfile {
 export function profileFromExtracted(extracted: ExtractedContact): ContactProfile {
   const toMethods = (values: string[]) =>
     values.map((value) => ({ value, label: null, note: null }));
+  // Links get a scheme here: capture reads a card's `pune.stpi.in` verbatim,
+  // and the form's url input rejects it on submit (see withUrlScheme).
+  const toLinks = (values: string[]) =>
+    values.map((value) => ({ value: withUrlScheme(value), label: null, note: null }));
   const hasPrimary = Boolean(extracted.title?.trim() || extracted.company?.trim());
   return {
     name: extracted.name,
@@ -108,7 +113,7 @@ export function profileFromExtracted(extracted: ExtractedContact): ContactProfil
       : [],
     emails: toMethods(extracted.emails),
     phones: toMethods(extracted.phones),
-    links: toMethods(extracted.links),
+    links: toLinks(extracted.links),
     addresses: [],
     importantDates: [],
     customFields: [],

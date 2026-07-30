@@ -16,7 +16,7 @@ export function RecentEventsTile({
   className?: string;
 }): React.ReactElement {
   return (
-    <HomeTile title="Recent events" className={className}>
+    <HomeTile title="Recent events" className={className} viewAll={{ href: "/app/events", label: "View all events" }}>
       <div className="space-y-1">
         <div className="pb-1"><CreateEventForm compact /></div>
         {events.length === 0 ? (
@@ -42,9 +42,6 @@ export function RecentEventsTile({
           ))
         )}
       </div>
-      <Link href="/app/events" className="mt-auto inline-flex min-h-11 items-center text-xs text-ember hover:underline">
-        View all events
-      </Link>
     </HomeTile>
   );
 }

@@ -11,10 +11,12 @@ import type { ExtractedContact } from "../schemas/contact";
  * is now derived from them deterministically (project Rule 5: if code can
  * answer, code answers) and the photo remains the visual receipt.
  *
- * Trade-off, stated plainly: text printed on the card that maps to no field —
- * taglines, office addresses, other names — is no longer captured, so it is no
- * longer searchable. Restoring it means a second, off-the-critical-path
- * transcription call; see docs/TESTING.md §7c.
+ * This is only the FIRST half of the receipt. Text printed on the card that
+ * maps to no field — taglines, office addresses, other names — would otherwise
+ * be lost to search, so once the contact is saved a second Haiku call
+ * transcribes the card verbatim off the critical path and replaces this body in
+ * place (apps/web/src/lib/ai/card-transcription.ts, docs/TESTING.md §7c). What
+ * this function returns is what the user sees for the few seconds in between.
  */
 export function cardReceiptText(contact: ExtractedContact): string {
   const role = [contact.title, contact.company].filter((part) => part?.trim()).join(" · ");

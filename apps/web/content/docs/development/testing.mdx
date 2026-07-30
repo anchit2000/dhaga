@@ -386,6 +386,14 @@ Singapore
       photo** tab → take a photo of a real business card. Fields extract
       into the review form; a receipt note is composed from those fields
       (`cardReceiptText`) and saved with the photo.
+- [ ] **The receipt fills in afterwards**: right after saving, the receipt note
+      lists only the extracted fields. Wait ~5s and reload — the SAME note (one
+      receipt, not two; the photo still attached) now holds the card's verbatim
+      text, including whatever maps to no field: the office address, the fax
+      line, the tagline. That is a second Haiku call scheduled with `after()`
+      once the save has committed (`scheduleCardTranscription`), so it costs the
+      scan zero user-facing latency. If the note never changes, check the server
+      log for `cardTranscription` — a budget refusal is silent by design.
 - [ ] **Speed**: click Scan → review dialog in **under ~3s** (measured 3.1s
       end-to-end locally, of which ~2.3s is the model). The scan asks for
       fields ONLY — it used to also request a verbatim transcription of the
@@ -397,6 +405,11 @@ Singapore
 - [ ] **Tray resets**: after a scan is saved or dismissed, reopen Card photo —
       the tray is EMPTY. It used to keep the previous card's photos, so the
       next scan silently merged two people's cards into one contact.
+- [ ] **Bare-domain website**: scan a card whose site is printed as
+      `pune.stpi.in` (no `https://`). It saves. The link field is `type="url"`,
+      so the scheme-less value used to fail native validation and the Save
+      button did nothing with no message — `withUrlScheme` now adds the scheme
+      at the capture→profile boundary.
 - [ ] After saving: the person's page shows the photo under **Card photo**
       (the visual receipt). Clicking it opens the full-size image.
 - [ ] Desktop: choose an image file instead — same flow.

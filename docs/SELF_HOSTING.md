@@ -169,13 +169,64 @@ Stripe, comp that user's access:
   cloud AI.
 - **Expiry** — an optional date on a paid plan. Once it passes, unlimited AI
   lapses automatically (leave it blank for no expiry).
-- **AI credits** — a per-user monthly cloud-AI-action allowance, stored as the
+- **AI credits** — a per-user monthly cloud-AI credit allowance, stored as the
   `ai_monthly_cap_override` setting. This overrides both the free-tier cap and
-  `DHAGA_AI_MONTHLY_CAP` for that one user; blank or `0` clears it.
+  `DHAGA_AI_MONTHLY_CAP` for that one user; blank or `0` clears it. Credits are
+  charged per user-visible action, not per model call — a card scan costs 1
+  credit whether it takes one round-trip or three, and deep research costs 20
+  (`packages/core/src/metering/credits.ts`, BRD §8.3).
 
 These controls live only in the EE admin panel — a core-only self-host raises
 the cap for *everyone* with `DHAGA_AI_MONTHLY_CAP` instead (see the env table
 below).
+
+### Instance-wide AI credit controls (`/app/admin/ai-credits`, hosted/EE)
+
+Beside that per-user override, `/app/admin/ai-credits` carries three levers that
+apply to the whole instance:
+
+- **Plan-cap enforcement** — a master switch that is **off on every instance**
+  (`AI_PLAN_CAP_ENFORCEMENT_DEFAULT = false`). While it is off the plan
+  allowances below are stored but ignored, and behaviour is exactly what it was
+  before these controls existed: paid plans bypass the cap through
+  `hasUnlimitedAi`, and the pricing page sells Pro and Annual as "no monthly
+  cap". Turning it on gives every existing paying customer a ceiling they were
+  never sold — a pricing decision, not a metering one.
+- **Monthly allowance per plan** — runtime-editable overrides of the shipped
+  numbers (`PLAN_AI_CREDITS_PER_MONTH`), per plan, each of which can also be set
+  to "no cap". Inert until the switch above is on.
+- **Promotional month** — lifts *every* user to one allowance for a window
+  ("everyone gets 1,000 credits this month"). It works whether or not
+  enforcement is on, and it ends at the **start** of its end date, evaluated on
+  every read — so it expires by itself with no cron job and no admin cleanup.
+
+The same page holds the **grant** ledger: additive make-good credits for one
+user (or, with the user id left blank, everyone), with a required reason and an
+expiry that defaults to the end of the current month. A grant only moves the
+ceiling — `ai_actions`, the only record of what cloud AI actually cost, is never
+rewritten, and "End now" stops a grant counting without deleting its row.
+
+Precedence, highest first (`apps/web/src/lib/ai/metering/cap.ts`): per-user
+override → active promotion → plan allowance (only with the switch on, and only
+when a plan is in play) → `DHAGA_AI_MONTHLY_CAP` → free tier. Active grants are
+added on top of whichever one wins.
+
+**What a core-only self-host gets.** The two tables this feature stores its
+state in — `ai_budget_settings` and `ai_credit_grants`
+([`apps/web/src/lib/db/ddl/ai-budget.ts`](../apps/web/src/lib/db/ddl/ai-budget.ts))
+— belong to the AGPL core, so they are created on your database whether or not
+`packages/ee` is present. Nothing else follows from that: there is no admin UI
+to write to them (both simply stay empty), and no row-level security on them
+either — `ai_credit_grants` gets its bespoke
+`user_id IS NULL OR user_id = <tenant>` policy only from
+`packages/ee/src/db/rls-ddl.ts`, and
+`ai_budget_settings` deliberately gets none anywhere, being operator config
+rather than user data. The cap resolves exactly as it did before: whatever
+`DHAGA_AI_MONTHLY_CAP` says, else the free-tier constant. **Nothing here is
+required from `packages/ee` to self-host**, and the Level 2 removal list above
+needs no additions — the new admin page and its server actions and components
+live under `apps/web/src/app/app/admin/`, `apps/web/src/lib/actions/admin/` and
+`apps/web/src/components/app/admin/`, which are already on it.
 
 ## Running with `docker compose up`
 
@@ -293,9 +344,30 @@ Requires `CRON_SECRET` and `FIRECRAWL_API_KEY` (or another `SEARCH_PROVIDER`)
 set — see `.env.example`. Without `CRON_SECRET` the route always returns
 401, so it's safe to leave unconfigured if you don't want the feature.
 
+### Daily email jobs (digests and reminders)
+
+Every recurring email — the reach-out digest, the confirmations digest, the
+morning follow-up reminder, the due-follow-up sweep, the birthday/anniversary
+reminder and the LinkedIn-export nudges — runs from the one `/api/jobs/daily`
+endpoint, on the single Vercel cron in `apps/web/vercel.json` (`"17 6 * * *"`,
+unchanged). All of them are **opt-in per user** in Settings → Suggestions and
+all degrade to a clean no-op without `RESEND_API_KEY` / `RESEND_FROM_EMAIL`
+(and, on a single-user self-host, `DHAGA_OWNER_EMAIL`).
+
+Each user's **time zone** (Settings → Suggestions → Time zone, default `UTC`)
+decides which calendar day a job is reasoning about, so a birthday lands on the
+recipient's day rather than the server's, and a re-triggered cron is a no-op for
+someone already emailed on their local day. What the time zone does **not** yet
+change is *when* the mail goes out: every send still happens on the one cron
+run, at whatever UTC time it fires. Per-user local-morning delivery needs the
+endpoint driven **hourly** with `EMAIL_JOBS_HOURLY=true` (see the env table
+below), which is exactly what Vercel Hobby cannot do — see the Hobby cron
+warning under "Idle auto-flush" below; it applies to this endpoint too. Off
+Vercel, an hourly system crontab or container timer is enough.
+
 ## Messaging capture (WhatsApp / Telegram)
 
-Forward a contact card, a note, or a voice note to a WhatsApp or Telegram bot
+Forward a contact card, a note, or a photo to a WhatsApp or Telegram bot
 and Dhaga turns it into people in your graph. Messages from one sender
 accumulate in a **session** until you reply **DONE** (or the session goes idle);
 then a positional batch processor creates and tags the contacts, keeps a receipt
@@ -345,8 +417,11 @@ you can start forwarding before wiring up per-user linking.
 ### Voice notes
 
 Server-side transcription is a pluggable gateway (`TRANSCRIPTION_PROVIDER`) that
-**ships no provider yet** — forwarded voice notes are stored "received, not
-transcribed" until one is registered. (This is separate from Dhaga Voice, the
+**ships no provider yet**, so a forwarded voice note is refused with "Voice notes
+aren't supported yet — coming soon!" rather than being stored unusable. The
+refusal is gated on the gateway itself (`hasTranscription()`), so registering a
+provider is all it takes for voice notes to start being transcribed and attached
+— no change to the messaging code. (This is separate from Dhaga Voice, the
 on-device browser dictation used in web quick-add.)
 
 ### Idle auto-flush
@@ -435,12 +510,13 @@ None of the `packages/ee/.env.example` vars (`DHAGA_HOSTED_MODE`,
 | `NEXT_PUBLIC_SITE_URL` | No | Canonical origin for sitemap/robots/OG/llms.txt; defaults to the production deployment origin when unset |
 | `DATABASE_URL` | Only on serverless (Vercel) | Otherwise defaults to embedded PGlite |
 | `ANTHROPIC_API_KEY` | No | AI features degrade to heuristic parsing / disabled without it |
-| `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `DHAGA_OWNER_EMAIL` | No | Event digests, reach-out digest, morning follow-up reminder + LinkedIn-export upload reminders (the day-1/3/6/7 nudge after "Get contacts from LinkedIn"). All degrade to a clean no-op when unset |
-| `MORNING_REMINDER_HOURLY` | No | Set `true` only if you drive `/api/jobs/daily` hourly — then the morning reminder lands at the recipient's local ~08:00; unset on the single Hobby cron |
+| `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `DHAGA_OWNER_EMAIL` | No | Event digests, reach-out digest, confirmations digest, morning follow-up reminder, due-follow-up reminder, birthday/anniversary reminder + LinkedIn-export upload reminders (the day-1/3/6/7 nudge after "Get contacts from LinkedIn"). All degrade to a clean no-op when unset |
+| `EMAIL_JOBS_HOURLY` | No | Set `true` **only** if you drive `/api/jobs/daily` hourly — then the morning reminder, reach-out digest and confirmations digest send only on the run matching the recipient's local ~08:00 (their Settings time zone). Leave it unset on a once-a-day cron, including Vercel Hobby's: the single run always sends, and a per-user local-day record is what stops duplicates. See "Daily email jobs" above |
+| `MORNING_REMINDER_HOURLY` | No | Deprecated alias for `EMAIL_JOBS_HOURLY`, still honoured for one release. Despite the name it now gates all three of those jobs, not just the morning reminder — prefer the new name |
 | `TELEGRAM_*` | No | Owner-only bot capture; `TELEGRAM_BOT_TOKEN`/`TELEGRAM_WEBHOOK_SECRET` are reused by WhatsApp/Telegram messaging capture (see "Messaging capture" above) |
 | `WHATSAPP_*` | No | WhatsApp inbound messaging capture (Meta Cloud API) — see "Messaging capture" above |
 | `DHAGA_MESSAGING_IDLE_MINUTES` | No | Idle auto-flush window for messaging capture (default 15) |
-| `TRANSCRIPTION_PROVIDER` | No | STT gateway for forwarded voice notes — no provider ships yet |
+| `TRANSCRIPTION_PROVIDER` | No | STT gateway for forwarded voice notes — no provider ships yet, so voice notes are refused with a "coming soon" reply |
 | `DHAGA_WEBHOOK_URL` | No | Outbound automation |
 | `SEARCH_PROVIDER`, `FIRECRAWL_API_KEY` | No | Job-change detection + news watchlist |
 | `GEOCODING_PROVIDER`, `NOMINATIM_URL`, `NOMINATIM_USER_AGENT` | No | Map view — see "Geocoding for the map view" above; all three have working defaults |

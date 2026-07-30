@@ -34,6 +34,8 @@ const EXEMPT: Record<string, string> = {
   setUserAdminAction: "EE admin pool per-query",
   setSubscriptionAction: "EE admin pool per-query",
   setAiCreditsAction: "EE admin pool per-query",
+  grantAiCreditsAction: "EE admin pool per-query (bypass-RLS grant ledger write)",
+  endAiCreditGrantAction: "EE admin pool per-query (bypass-RLS grant ledger write)",
   createCheckoutSessionAction: "EE billing pool per-query (+ Stripe after)",
   createBillingPortalSessionAction: "EE billing pool per-query (+ Stripe after)",
   // Thin action wrappers that delegate to lib/ai (generateBrief /

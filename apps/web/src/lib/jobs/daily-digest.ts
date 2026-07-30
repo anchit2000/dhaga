@@ -1,45 +1,118 @@
 import type { BusyInterval } from "@dhaga/core";
 import { emailEnabled, emailShell, ownerEmail, sendEmail } from "@/lib/email/send";
 import { dailyDigestHtml } from "@/lib/email/daily-digest";
+import { isDummyAccount } from "@/lib/access/dummy-accounts";
+import { logActionError } from "@/lib/actions/resilience";
+import { withUserDb } from "@/lib/db/request-scope";
+import { hostedTenants, runOnGlobal } from "@/lib/hosted/tenants";
+import { hasRunForLocalDay, isHourGateEnabled, markRanForLocalDay } from "@/lib/jobs/last-run";
 import { getFreeBusy, hasCalendarConnection } from "@/lib/repo/calendar";
 import { buildDailySuggestions } from "@/lib/repo/daily-suggestions";
 import { getSchedulePrefs, isDailyDigestEnabled } from "@/lib/repo/suggestion-settings";
+import { isLocalHour, localDayKey } from "@/lib/time/zone";
+import { DAILY_EMAIL_JOB_KEYS, MORNING_REMINDER_LOCAL_HOUR } from "@/utils/constants/reminders";
+import type { ScopedRunner } from "@/lib/hosted/tenants";
 
 const WEEK_MS = 7 * 86_400_000;
 
+/** Subject line for the reach-out digest (pure — unit-tested). */
+export function dailyDigestSubject(count: number): string {
+  return `${count} ${count === 1 ? "person" : "people"} to reach out to today`;
+}
+
 export interface DailyDigestSummary {
-  sent: boolean;
-  suggested: number;
-  skipped?: "not_enabled" | "no_email" | "no_owner" | "empty" | "send_failed";
+  sent: number; // emails sent this run
+  skipped: "no_email" | "no_owner" | null;
 }
 
 /**
- * Morning "reach out to these people today" email. Opt-in (isDailyDigestEnabled),
- * template-only (no AI, no metered cost). Runs on the default connection — so in
- * hosted (multi-tenant RLS) mode it only produces output for the self-host case
- * today; a per-tenant fan-out (which the signal-detection job now implements) is
- * a remaining follow-up for these email jobs (see docs/FOLLOW_UPS.md). Reads the
- * week's free/busy (if a calendar is connected) so the spread avoids already-busy
- * days.
+ * Morning "reach out to these people today" email. Opt-in (`daily_digest_enabled`,
+ * default OFF), template-only (no AI, no metered cost). Reads the week's free/busy
+ * (if a calendar is connected) so the spread avoids already-busy days.
+ *
+ * In hosted mode it fans out per tenant inside `withUserDb` so every read is
+ * RLS-scoped, mirroring follow-up-reminders / linkedin-export-reminders. That
+ * fan-out IS the fix, not a refactor: on the old unscoped connection the settings
+ * read returned zero rows under RLS, so `isDailyDigestEnabled()` answered `false`
+ * for every hosted tenant and this digest could never send for a paying user.
+ * Self-host runs once for the configured owner, unchanged.
+ *
+ * TIMEZONE / DUPLICATES: see lib/jobs/last-run.ts — opt-in local-hour gate,
+ * unconditional one-send-per-tenant-per-local-day record.
  */
 export async function runDailyDigest(now: Date = new Date()): Promise<DailyDigestSummary> {
-  if (!(await isDailyDigestEnabled())) return { sent: false, suggested: 0, skipped: "not_enabled" };
-  if (!emailEnabled()) return { sent: false, suggested: 0, skipped: "no_email" };
-  const recipient = ownerEmail();
-  if (!recipient) return { sent: false, suggested: 0, skipped: "no_owner" };
+  if (!emailEnabled()) return { sent: 0, skipped: "no_email" };
 
-  const prefs = await getSchedulePrefs();
-  let busy: BusyInterval[] = [];
-  if (await hasCalendarConnection()) {
-    busy = await getFreeBusy({ from: now, to: new Date(now.getTime() + WEEK_MS) });
+  const tenants = await hostedTenants();
+
+  // Self-host / core-only: one sweep for the configured owner.
+  if (tenants === null) {
+    const recipient = ownerEmail();
+    if (!recipient) return { sent: 0, skipped: "no_owner" };
+    // Never email disposable test/demo accounts (load-test user, @dhaga.internal).
+    if (isDummyAccount({ email: recipient })) return { sent: 0, skipped: null };
+    const sent = await sweepUser(runOnGlobal, recipient, now);
+    return { sent: sent ? 1 : 0, skipped: null };
   }
-  const { suggestions } = await buildDailySuggestions({ date: now, prefs, busy });
-  if (suggestions.length === 0) return { sent: false, suggested: 0, skipped: "empty" };
 
+  // Hosted (RLS on): sweep each tenant inside its own scope. One tenant failing
+  // must never abort the rest (best-effort, mirroring follow-up-reminders).
+  let sent = 0;
+  for (const t of tenants) {
+    if (isDummyAccount({ email: t.email, id: t.id })) continue;
+    try {
+      if (await sweepUser((work) => withUserDb(t.id, work), t.email, now)) sent++;
+    } catch (error) {
+      // Isolate the tenant: logActionError records only { code, name, transient },
+      // never the error body (which could echo contact-derived text — privacy rule).
+      logActionError("daily-digest", error);
+    }
+  }
+  return { sent, skipped: null };
+}
+
+/**
+ * One tenant's sweep. `runScoped` decides where the DB reads/writes land (global
+ * in self-host, one RLS transaction per unit in hosted); the single sendEmail call
+ * runs between those units, never inside one, so no connection is held across the
+ * network (connection hygiene, mirroring follow-up-reminders).
+ *
+ * `getFreeBusy` is the one unit that talks to a calendar provider from inside its
+ * scope — it interleaves the provider call with token refresh / needs-reconnect
+ * writes on the tenant's own rows, so it cannot be split. It is one connection,
+ * held by one tenant at a time in a sequential loop (never a fan-out), and it is
+ * skipped entirely for the tenants with no calendar connected. Recorded as a
+ * residual in docs/FOLLOW_UPS.md rather than papered over.
+ */
+async function sweepUser(
+  runScoped: ScopedRunner,
+  recipient: string,
+  now: Date,
+): Promise<boolean> {
+  if (!(await runScoped(() => isDailyDigestEnabled()))) return false;
+
+  // The tenant's OWN timezone drives both gates (IANA, so DST-correct).
+  const prefs = await runScoped(() => getSchedulePrefs());
+  if (isHourGateEnabled() && !isLocalHour(now, prefs.timezone, MORNING_REMINDER_LOCAL_HOUR)) {
+    return false;
+  }
+  const dayKey = localDayKey(now, prefs.timezone);
+  if (await runScoped(() => hasRunForLocalDay(DAILY_EMAIL_JOB_KEYS.dailyDigest, dayKey))) {
+    return false;
+  }
+
+  let busy: BusyInterval[] = [];
+  if (await runScoped(() => hasCalendarConnection())) {
+    busy = await runScoped(() => getFreeBusy({ from: now, to: new Date(now.getTime() + WEEK_MS) }));
+  }
+  const { suggestions } = await runScoped(() => buildDailySuggestions({ date: now, prefs, busy }));
+  if (suggestions.length === 0) return false; // nobody to suggest — send nothing
+
+  const subject = dailyDigestSubject(suggestions.length);
   const html = emailShell("People to reach out to today", dailyDigestHtml(suggestions));
-  const subject = `${suggestions.length} ${suggestions.length === 1 ? "person" : "people"} to reach out to today`;
   const result = await sendEmail({ to: recipient, subject, html });
-  return result.ok
-    ? { sent: true, suggested: suggestions.length }
-    : { sent: false, suggested: suggestions.length, skipped: "send_failed" };
+  if (!result.ok) return false; // mark nothing — the next run retries
+
+  await runScoped(() => markRanForLocalDay(DAILY_EMAIL_JOB_KEYS.dailyDigest, dayKey));
+  return true;
 }

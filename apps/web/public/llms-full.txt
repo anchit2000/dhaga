@@ -776,11 +776,11 @@ moment you meet them.
 ## The sections
 
 - [Capturing people](/docs/guide/capturing-people): Quick-add by paste, card scan, voice, camera, or file — plus the review step and manual add.
-- [Messaging capture (WhatsApp & Telegram)](/docs/guide/messaging-capture): Forward a contact card, note, or voice note to the Dhaga bot on WhatsApp or Telegram, reply DONE, and it saves into your graph.
+- [Messaging capture (WhatsApp & Telegram)](/docs/guide/messaging-capture): Forward a contact card, note, or photo to the Dhaga bot on WhatsApp or Telegram, reply DONE, and it saves into your graph.
 - [Importing contacts](/docs/guide/importing-contacts): Bring in an existing address book — a .vcf or CSV file, a one-click Google or Outlook connect, or your phone's contacts.
 - [Syncing with your phone](/docs/guide/syncing-your-phone): Keep your phone's address book and Dhaga in step both ways — a three-way merge that never silently overwrites, with your notes and facts kept out of it.
 - [Bulk actions & merging](/docs/guide/merging-and-bulk-actions): Select many people at once to merge, tag, star, add to a company, or forget — and let Dhaga surface likely duplicates to clean up.
-- [Notes & facts](/docs/guide/notes-and-facts): Add notes by typing or voice; facts get extracted automatically, each with a source receipt.
+- [Notes & facts](/docs/guide/notes-and-facts): Add notes by typing, by voice, or by photo; facts get extracted automatically, each with a source receipt.
 - [Calendar & reminders](/docs/guide/calendar): See your follow-ups on a full-screen calendar, drag to reschedule, and stay nudged by the nav bell and a daily reminder email.
 - [Confirmations](/docs/guide/confirmations): The inbox where ambiguous AI extractions wait for your call — confirm or dismiss, and nothing changes your graph until you do.
 - [Enrich from the web](/docs/guide/enrich-from-web): One button to search the public web for a person's footprint — cited, saved as a deletable note.
@@ -801,7 +801,7 @@ Self-hosting or wiring up providers instead? Start at the
 
 Source: https://www.dhaga.app/docs/guide/calendar
 
-See every follow-up on a full-screen calendar — drag to reschedule, schedule date-less ones from the tray, and stay nudged by the nav bell and a daily reminder email.
+See every follow-up and upcoming birthday on a full-screen calendar — drag to reschedule, schedule date-less ones from the tray, and stay nudged by the notification bell and opt-in reminder emails.
 
 **`/app/calendar`** lays every open follow-up out on a full-screen calendar, so
 you can see what's coming instead of scrolling a list. Dated follow-ups land on
@@ -842,6 +842,34 @@ you can:
 
 ![A follow-up's details dialog opened from the calendar](/docs/guide/calendar-event.png)
 
+## Birthdays and anniversaries
+
+Any **important date** you've saved on a contact — a birthday, a work
+anniversary, the day you met — shows up here too, on the day it comes round each
+year. They sit on the grid as soft amber all-day entries reading
+*"Priya — Birthday"*, with a quieter second line for the age or count where the
+saved date includes a year.
+
+They behave differently from follow-ups, on purpose:
+
+- **They aren't draggable and they can't be marked done.** A birthday isn't a
+  task you complete — it's a fact about a person. Drag one and it snaps straight
+  back.
+- **You edit them on the person.** Click one and Dhaga opens the contact; the
+  date lives under **More details → Important dates**, where a calendar picker
+  (with a year dropdown, so a 1974 birth year is two clicks) sets it. Change it
+  there and the calendar follows.
+- **They're worked out on the fly**, never stored as separate reminders. Fix a
+  date or forget a person and nothing is left behind to clean up.
+
+Dates you imported from Google Contacts or a `.vcf` sometimes arrive as plain
+text — *December 9*, or a day and month with no year. Dhaga keeps those exactly
+as they came and still works out when they next fall; it never quietly rewrites a
+date you didn't type.
+
+How far ahead a date counts as "upcoming" is yours to set, under **Suggestions**
+in [Settings](/docs/guide/settings) — 7 days by default.
+
 ## Your connected calendar, alongside
 
 By default a connected calendar tells Dhaga only when you're **busy** — blocks
@@ -873,13 +901,28 @@ Dhaga doesn't store them, doesn't log them, and doesn't send them to an AI model
 
 You don't have to keep the calendar open to stay on top of things:
 
-- The **bell** in the top nav carries a count of everything **due today** or
-  **overdue**. Open it for the short list, mark any item **done** right there, or
-  jump to the full calendar or your follow-ups list. When it's empty, you're all
-  caught up.
+- The **bell** in the top nav opens **Notifications** — one short list holding
+  three things: follow-ups **due today** or **overdue**, birthdays and
+  anniversaries coming up, and word that a background job has finished (a note
+  you added has turned into facts, an enrichment has landed). Mark a follow-up
+  **done** right there, dismiss a notification with its **×**, or jump to the
+  full calendar or your follow-ups list. When it's empty, you're all caught up.
+  The **count on the bell** is deliberately narrow — things to act on *now*: what's
+  overdue or due today, anything unread, and a date only once it's actually
+  arrived. A birthday next week is in the list without nagging you.
+- **`/app/follow-ups`** gains an **Upcoming dates** block below your open
+  follow-ups, showing who's next and how far off. It's simply absent when nothing
+  is coming.
 - Turn on the **daily reminder email** to get a morning nudge whenever follow-ups
-  are waiting. It's opt-in — flip it on under **Suggestions** in
-  [Settings](/docs/guide/settings).
+  are waiting — it now reaches you while there's still time to act, covering
+  anything due in the next few days rather than only what's already late.
+- Turn on the separate **birthday and anniversary email** to hear about a saved
+  date before it lands. You'll get at most two per occasion: one when it comes
+  into view, one on the day.
+
+Both emails are opt-in and both start off — flip them on under **Suggestions** in
+[Settings](/docs/guide/settings), where you can also set your **time zone** so a
+day starts and ends where you are.
 
 **The calendar is an extra view, not a replacement**
 
@@ -963,7 +1006,7 @@ parsing. See [Self-hosting](/docs/self-hosting) for the env var.
 
 **Prefer your phone?**
 
-You can also forward a contact card, note, or voice note straight to Dhaga on
+You can also forward a contact card, note, or photo straight to Dhaga on
 WhatsApp or Telegram — no app to install. See
 [Messaging capture](/docs/guide/messaging-capture).
 
@@ -1205,6 +1248,13 @@ footprint — cited, saved as a note, fully deletable."* Concretely:
 3. That note can, in turn, yield **facts** (each with its receipt).
 4. You can **delete** the note — and its derived facts tombstone with it — at
    any time.
+
+The search plus extraction takes 20–60 seconds and runs **in the background**:
+the progress pill above the Facts section tracks it, it keeps running if you
+leave the page, and it finishes with a short confirmation of what was added. Go
+elsewhere in the meantime and the result finds you through the
+[**bell**](/docs/guide/calendar#staying-reminded) in the top nav — including when
+it turns up nothing, or fails.
 
 ## Privacy
 
@@ -1556,10 +1606,10 @@ Companies have the same tools — view, merge, and dedupe them on the
 
 Source: https://www.dhaga.app/docs/guide/messaging-capture
 
-Forward a contact card, a note, or a voice note to Dhaga's WhatsApp or Telegram bot, reply DONE, and Dhaga saves the person into your graph — capture from your phone with nothing to install.
+Forward a contact card, a note, or a photo to Dhaga's WhatsApp or Telegram bot, reply DONE, and Dhaga saves the person into your graph — capture from your phone with nothing to install.
 
 Dhaga can capture people straight from a chat you already have open. **Forward
-a contact card, a note, or a voice note** to the Dhaga bot on **WhatsApp** or
+a contact card, a note, or a photo** to the Dhaga bot on **WhatsApp** or
 **Telegram**, reply **`DONE`**, and Dhaga creates and tags the contact, keeps
 every forwarded message as a **receipt**, and replies with a summary. It's the
 fastest way to capture from your phone without any app install — hand someone's
@@ -1592,24 +1642,53 @@ before wiring up per-user linking.
 
 ## What you can forward
 
-- **Contact card** — a shared vCard becomes a new person (or updates a match).
+- **Contact card** — a shared vCard is imported from its own fields (name,
+  numbers, org), never re-read as text, so nothing is lost in translation. A
+  card for someone a note already mentioned fills that person in instead of
+  duplicating them.
 - **Text** — a message you type or forward becomes a note, and Dhaga
   auto-extracts facts from it, each with a receipt back to the message.
-- **Voice note** — stored against the contact (see the caveat below).
-- **Location** or **image** — kept as a note on the current contact.
+- **Photo** — a business card or badge is scanned into a contact; a photo that
+  *isn't* a card (a whiteboard, a poster, a conference schedule) is read as text
+  and kept as a note. Send a caption with it and the caption becomes a note on
+  that person.
+- **Location** — kept as a note on the current contact.
+
+Anything else — a **voice note** (see below), a video, a document, a sticker, an
+empty message — gets a reply telling you so. Nothing is ever dropped in silence:
+if an item can't be saved, either the bot answers straight away or the batch
+summary lists what it skipped and why.
 
 ## How a batch works
 
 Forwarding is **positional**, so the order you send things in is what Dhaga
 acts on — no guessing:
 
-- A **contact card or image** sets the *current contact*.
-- **Text and voice notes that follow** attach to that contact as notes and
-  facts.
+- A **contact card or photo** sets the *current contact*.
+- **Text that follows** attaches to that contact as notes and facts.
 - A leading **text with no card** establishes the contact on its own, the same
   way pasted text does in [quick-add](/docs/guide/capturing-people).
 - Forward **several cards** in one batch and you get several contacts — each one
   collects the messages sent after it.
+
+## When Dhaga isn't sure who you mean
+
+If a forwarded note could be about more than one person in your graph, Dhaga
+asks **in the chat** rather than guessing:
+
+```
+🤔 That note could be about more than one "Ajay". Which one did you mean?
+1. Ajay Shrivastava (STPI)
+2. Ajay Kumar (Infosys)
+```
+
+Reply with the **number**, the **name**, or **`new`** for a new person. If you
+reply with something else entirely, the question is dropped, the note is saved
+under a new person so it can't be lost (merge them later if that's a duplicate),
+and your new message is handled normally. A question expires after an hour.
+
+A note that matches exactly one person is attached to them silently — no
+question, and no duplicate contact.
 
 ## Closing a batch
 
@@ -1624,13 +1703,16 @@ is ever lost:
 When a batch is saved, the bot replies with a summary of who and what it stored
 so you can open Dhaga and review.
 
-**Voice notes aren't transcribed yet**
+**Voice notes aren't supported yet**
 
-Server-side transcription is a pluggable gateway that ships with no provider
-yet, so a forwarded voice note is stored as *"received, not transcribed"* until
-one is configured. (This is separate from **Dhaga Voice**, the on-device
-dictation used in web [quick-add](/docs/guide/capturing-people) — that one does
-transcribe.)
+Forward a voice note and the bot replies *"Voice notes aren't supported yet —
+coming soon! For now please type it, send a photo, or forward a contact."* — it
+is never quietly swallowed. Server-side transcription is a pluggable gateway
+that ships with **no provider**, and the refusal is gated on that gateway: the
+day a provider is configured, voice notes start being transcribed and attached
+like any other note, with no further change. (This is separate from **Dhaga
+Voice**, the on-device dictation in web
+[quick-add](/docs/guide/capturing-people) — that one does transcribe.)
 
 ## More channels later
 
@@ -1651,7 +1733,7 @@ book from [Importing contacts](/docs/guide/importing-contacts).
 
 Source: https://www.dhaga.app/docs/guide/notes-and-facts
 
-Add notes to a person by typing or voice; Dhaga extracts structured facts automatically (or add facts and follow-ups by hand — no AI needed), keeps a receipt on each, and cascades deletions.
+Add notes to a person by typing, by voice, or by photo; Dhaga extracts structured facts automatically (or add facts and follow-ups by hand — no AI needed), keeps a receipt on each, and cascades deletions.
 
 Everything you know about a person lives on their profile at
 **`/app/people/[id]`** — their jobs, contact methods, location, relationships,
@@ -1666,9 +1748,36 @@ the mic and just talk — voice notes are transcribed for you. The box hints as
 much: *"Type — or tap the mic and just talk. Facts get extracted
 automatically."* With Dhaga Voice, the transcript comes back as tappable
 word-chips so you can fix any mis-heard word — doing so teaches Dhaga that
-spelling for next time.
+spelling for next time. Or [photograph it](#add-a-note-from-a-photo) — the
+third way into the same box.
 
 ![A person's profile showing the Facts section with two extracted facts, the Enrich from public web button, and the Notes box with Add note and Voice note buttons](/docs/guide/person-facts-enrich.png)
+
+## Add a note from a photo
+
+Some things are quicker to photograph than to write down: a whiteboard after a
+session, a conference poster, a page of handwritten notes, a receipt from the
+dinner, the badge someone was wearing.
+
+Tap **Photo note** in the same Notes box and pick or shoot the photo. Dhaga
+reads the text out of it and **that text becomes the note** — so it is searchable,
+it shows in the person's timeline, and it goes through exactly the same
+extraction as anything you type: facts, follow-ups and relationships, each with
+a receipt pointing back at this note.
+
+- **Several photos, one note.** Add up to six — pages of the same handout, or
+  two halves of a whiteboard. They are read in tray order, so reorder them with
+  the arrows if you shot them out of sequence, and crop out anything that isn't
+  the subject.
+- **Add your own line too.** Anything you type in the box is kept above the
+  transcription, as your framing of why the photo matters.
+- **The photo is kept as the receipt.** It appears under **Photos** on the
+  person's page, alongside any scanned cards, unless you have turned
+  [photo storage off in Settings](/docs/guide/settings) — in which case only the
+  transcription is kept. Deleting the note deletes its photos with it.
+
+Reading a photo is a cloud-AI action, so it costs a credit like any other. Without
+AI on your plan, type the note instead — a photo alone has nothing to save.
 
 ## Capture a note from quick-add
 
@@ -1698,6 +1807,21 @@ structured **facts** from it — for example a personal detail or an intent
 Every extracted fact carries a **receipt**: the source note it came from, shown
 as *"FROM NOTE, 23/7/2026"*. This is a core principle — no AI-derived fact
 exists without a traceable source you can open and verify.
+
+Extraction runs **in the background**, and the note is saved the moment you
+press **Add note** — so you never have to sit and watch it. A small pill above
+the Facts section reports progress (*"Extracting facts…"*), and it keeps running
+if you navigate away or close the tab: the facts are written server-side
+regardless of who is watching. While you're on the page, the pill turns into a
+short confirmation of what landed — *"Extraction finished — 4 facts and 1
+follow-up added."* — and clears itself. If a run fails, the pill says so and
+offers **Retry**.
+
+If you've already moved on, the finished run reaches you through the
+[**bell**](/docs/guide/calendar#staying-reminded) in the top nav instead —
+*"Extracted 4 facts and 1 follow-up from your note about Priya"* — and clicking
+it takes you back to the person. Runs that failed, or that stopped because
+you're out of AI credits, say so there too, so a job never finishes in silence.
 
 ## Add facts and follow-ups by hand
 
@@ -1796,8 +1920,17 @@ beneath it.
   (two-factor authentication, 2FA), and **API keys** — personal access tokens for
   the API and the browser extension, and for scripted
   [exports](/docs/self-hosting/deploy#backups--migration). On a hosted instance
-  the Billing section also shows your **AI credits** — how many AI actions you've
-  used and have left this month.
+  the Billing section also shows your **AI credits** — how many you have used and
+  have left this month. Credits are charged per action, not per model call: a
+  card scan, note, quick-add or draft costs 1; a question to Ask Dhaga or a
+  pre-meeting brief costs 2; enriching a contact from the web costs 20. Nightly
+  watchlist scans are free — they are limited by how many people you watch. The
+  allowance half of that line can be raised by whoever runs the instance — a
+  promotional month, or credits granted to you after something went wrong on
+  their side — and extra credits are only ever *added* on top: the "used" half
+  is a record of what you actually spent and is never rewritten. Operators:
+  those controls are the admin AI credits screen, documented in
+  [Self-hosting](/docs/self-hosting#instance-wide-ai-credit-controls-appadminai-credits-hostedee).
 - **Capture** — **Card photos** (whether the original card image is kept after a
   scan) and **Voice teaching** — a vocabulary manager where you teach Dhaga
   names it keeps mishearing. The fastest way to teach a word is tap-to-fix right
@@ -1813,7 +1946,16 @@ beneath it.
   your Home briefing, a **morning follow-up reminder** email that nudges you
   when you have follow-ups or check-ins waiting, and an opt-in **Confirmations
   digest** email (off by default) that summarises the AI confirmations waiting
-  for your review.
+  for your review. The same tab holds **Birthdays & anniversaries**: how many
+  days ahead a saved date counts as upcoming (0–90, default 7), and an opt-in
+  reminder email that arrives that far in advance. **Background job alerts** sits
+  alongside them: an opt-in email for when a note extraction or web enrichment
+  **fails or is blocked** by your AI budget, at most one every 15 minutes. Runs
+  that succeed are not emailed — every job, successful or not, is recorded in
+  your notifications, and a run that worked asks nothing of you. Like every email
+  preference in Dhaga these start off — the first-run walkthrough stops here so
+  you choose, and nothing is switched on for you. It also holds your **Time
+  zone** — see below.
 - **Import** — bring an existing address book into Dhaga (see below).
 
 **Some sections depend on configuration**
@@ -1821,6 +1963,26 @@ beneath it.
 Billing only appears when the instance has Stripe configured, and calendar/
 email features need their providers wired up. On a plain self-host several of
 these sections are intentionally absent — see [Self-hosting](/docs/self-hosting).
+
+## Your time zone
+
+Under **Suggestions**, **Time zone** is the setting that decides where your day
+begins and ends. Search for a city or region, or take the **Use detected zone**
+shortcut when Dhaga notices your browser disagrees with what's saved — it fills
+the box for you and waits; nothing changes until you press Save.
+
+It matters because reminders are about *days*. With it set, a birthday reaches
+you on the day it is where **you** are, rather than wherever the server happens
+to be, and a reminder you've already had can't arrive again.
+
+**It picks the day, not the hour**
+
+Everything still goes out on one daily run, so the *time* an email lands is set
+by the instance, not by your zone. Your time zone decides which **day** a
+reminder belongs to — not what time of morning it arrives.
+
+New accounts start on **UTC** until you choose one, so nothing shifts under
+anyone who hasn't looked at this yet.
 
 ## Import your contacts
 
@@ -2960,13 +3122,64 @@ Stripe, comp that user's access:
   cloud AI.
 - **Expiry** — an optional date on a paid plan. Once it passes, unlimited AI
   lapses automatically (leave it blank for no expiry).
-- **AI credits** — a per-user monthly cloud-AI-action allowance, stored as the
+- **AI credits** — a per-user monthly cloud-AI credit allowance, stored as the
   `ai_monthly_cap_override` setting. This overrides both the free-tier cap and
-  `DHAGA_AI_MONTHLY_CAP` for that one user; blank or `0` clears it.
+  `DHAGA_AI_MONTHLY_CAP` for that one user; blank or `0` clears it. Credits are
+  charged per user-visible action, not per model call — a card scan costs 1
+  credit whether it takes one round-trip or three, and deep research costs 20
+  (`packages/core/src/metering/credits.ts`, BRD §8.3).
 
 These controls live only in the EE admin panel — a core-only self-host raises
 the cap for *everyone* with `DHAGA_AI_MONTHLY_CAP` instead (see the env table
 below).
+
+### Instance-wide AI credit controls (`/app/admin/ai-credits`, hosted/EE)
+
+Beside that per-user override, `/app/admin/ai-credits` carries three levers that
+apply to the whole instance:
+
+- **Plan-cap enforcement** — a master switch that is **off on every instance**
+  (`AI_PLAN_CAP_ENFORCEMENT_DEFAULT = false`). While it is off the plan
+  allowances below are stored but ignored, and behaviour is exactly what it was
+  before these controls existed: paid plans bypass the cap through
+  `hasUnlimitedAi`, and the pricing page sells Pro and Annual as "no monthly
+  cap". Turning it on gives every existing paying customer a ceiling they were
+  never sold — a pricing decision, not a metering one.
+- **Monthly allowance per plan** — runtime-editable overrides of the shipped
+  numbers (`PLAN_AI_CREDITS_PER_MONTH`), per plan, each of which can also be set
+  to "no cap". Inert until the switch above is on.
+- **Promotional month** — lifts *every* user to one allowance for a window
+  ("everyone gets 1,000 credits this month"). It works whether or not
+  enforcement is on, and it ends at the **start** of its end date, evaluated on
+  every read — so it expires by itself with no cron job and no admin cleanup.
+
+The same page holds the **grant** ledger: additive make-good credits for one
+user (or, with the user id left blank, everyone), with a required reason and an
+expiry that defaults to the end of the current month. A grant only moves the
+ceiling — `ai_actions`, the only record of what cloud AI actually cost, is never
+rewritten, and "End now" stops a grant counting without deleting its row.
+
+Precedence, highest first (`apps/web/src/lib/ai/metering/cap.ts`): per-user
+override → active promotion → plan allowance (only with the switch on, and only
+when a plan is in play) → `DHAGA_AI_MONTHLY_CAP` → free tier. Active grants are
+added on top of whichever one wins.
+
+**What a core-only self-host gets.** The two tables this feature stores its
+state in — `ai_budget_settings` and `ai_credit_grants`
+([`apps/web/src/lib/db/ddl/ai-budget.ts`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/lib/db/ddl/ai-budget.ts))
+— belong to the AGPL core, so they are created on your database whether or not
+`packages/ee` is present. Nothing else follows from that: there is no admin UI
+to write to them (both simply stay empty), and no row-level security on them
+either — `ai_credit_grants` gets its bespoke
+`user_id IS NULL OR user_id = <tenant>` policy only from
+`packages/ee/src/db/rls-ddl.ts`, and `ai_budget_settings` deliberately gets none
+anywhere, being operator config rather than user data. The cap resolves exactly
+as it did before: whatever `DHAGA_AI_MONTHLY_CAP` says, else the free-tier
+constant. **Nothing here is required from `packages/ee` to self-host**, and the
+Level 2 removal list above needs no additions — the new admin page and its
+server actions and components live under `apps/web/src/app/app/admin/`,
+`apps/web/src/lib/actions/admin/` and `apps/web/src/components/app/admin/`,
+which are already on it.
 
 ## Running with `docker compose up`
 
@@ -3050,6 +3263,32 @@ Requires `CRON_SECRET` and `FIRECRAWL_API_KEY` (or another `SEARCH_PROVIDER`)
 set — see `.env.example`. Without `CRON_SECRET` the route always returns
 401, so it's safe to leave unconfigured if you don't want the feature.
 
+### Daily email jobs (digests and reminders)
+
+Every recurring email — the reach-out digest, the confirmations digest, the
+morning follow-up reminder, the due-follow-up sweep, the birthday/anniversary
+reminder and the LinkedIn-export nudges — runs from the one `/api/jobs/daily`
+endpoint, on the single Vercel cron in `apps/web/vercel.json` (`"17 6 * * *"`,
+unchanged). All of them are **opt-in per user** in Settings → Suggestions and
+all degrade to a clean no-op without `RESEND_API_KEY` / `RESEND_FROM_EMAIL`
+(and, on a single-user self-host, `DHAGA_OWNER_EMAIL`).
+
+Each user's **time zone** (Settings → Suggestions → Time zone, default `UTC`)
+decides which calendar day a job is reasoning about, so a birthday lands on the
+recipient's day rather than the server's, and a re-triggered cron is a no-op for
+someone already emailed on their local day. What the time zone does **not** yet
+change is *when* the mail goes out: every send still happens on the one cron
+run, at whatever UTC time it fires. Per-user local-morning delivery needs the
+endpoint driven **hourly** with `EMAIL_JOBS_HOURLY=true` (see the env table
+below).
+
+**Don't add a sub-daily cron on Vercel Hobby**
+
+Vercel Hobby caps crons at once per day, and a more-frequent entry in
+`apps/web/vercel.json` can break Hobby deploys — so hourly delivery is not
+available there. Off Vercel, an hourly system crontab or container timer hitting
+the same URL with the same `Authorization: Bearer $CRON_SECRET` header is enough.
+
 ## Self-host env var reference
 
 Everything below lives in `apps/web/.env.local` — see
@@ -3065,8 +3304,9 @@ None of the `packages/ee/.env.example` vars (`DHAGA_HOSTED_MODE`,
 | `NEXT_PUBLIC_SITE_URL` | No | Canonical origin for sitemap/robots/OG/llms.txt; defaults to the production deployment origin when unset |
 | `DATABASE_URL` | Only on serverless (Vercel) | Otherwise defaults to embedded PGlite |
 | `ANTHROPIC_API_KEY` | No | AI features degrade to heuristic parsing / disabled without it |
-| `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `DHAGA_OWNER_EMAIL` | No | Event digests, reach-out digest, morning follow-up reminder + LinkedIn-export upload reminders (the day-1/3/6/7 nudge after "Get contacts from LinkedIn"). All degrade to a clean no-op when unset |
-| `MORNING_REMINDER_HOURLY` | No | Set `true` only if you drive `/api/jobs/daily` hourly — then the morning reminder lands at the recipient's local ~08:00; unset on the single Hobby cron |
+| `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `DHAGA_OWNER_EMAIL` | No | Event digests, reach-out digest, confirmations digest, morning follow-up reminder, due-follow-up reminder, birthday/anniversary reminder + LinkedIn-export upload reminders (the day-1/3/6/7 nudge after "Get contacts from LinkedIn"). All degrade to a clean no-op when unset |
+| `EMAIL_JOBS_HOURLY` | No | Set `true` **only** if you drive `/api/jobs/daily` hourly — then the morning reminder, reach-out digest and confirmations digest send only on the run matching the recipient's local ~08:00 (their Settings time zone). Leave it unset on a once-a-day cron, including Vercel Hobby's: the single run always sends, and a per-user local-day record is what stops duplicates. See "Daily email jobs" above |
+| `MORNING_REMINDER_HOURLY` | No | Deprecated alias for `EMAIL_JOBS_HOURLY`, still honoured for one release. Despite the name it now gates all three of those jobs, not just the morning reminder — prefer the new name |
 | `TELEGRAM_*` | No | Owner-only bot capture |
 | `DHAGA_WEBHOOK_URL` | No | Outbound automation |
 | `SEARCH_PROVIDER`, `FIRECRAWL_API_KEY` | No | Job-change detection + news watchlist |
@@ -3492,7 +3732,7 @@ BETTER_AUTH_SECRET=<long random string, e.g. `openssl rand -hex 32`>
 BETTER_AUTH_URL=https://dhaga.example.com
 DHAGA_DATA_DIR=/var/lib/dhaga        # persisted dir OUTSIDE the repo
 ANTHROPIC_API_KEY=sk-ant-...         # optional; enables AI features
-DHAGA_AI_MONTHLY_CAP=500             # optional; default 0 (no cloud AI) — set >0 to enable AI
+DHAGA_AI_MONTHLY_CAP=500             # optional; monthly AI CREDITS, default 0 (no cloud AI) — set >0 to enable AI
 NODE_ENV=production
 ```
 
@@ -4133,7 +4373,7 @@ product surface** — not "we'd notice and fix it," but structurally unavailable
 
 Good guardrails are worthless if you lie to yourself about the gaps. Ours: the
 monthly AI-action budget itself. The metering lives in
-[`assertAiBudget`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/lib/ai/metering.ts),
+[`assertAiBudget`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/lib/ai/metering/index.ts),
 which enforces a free-tier cap of 0 cloud AI actions/month — cloud AI is a
 paid feature, so the free tier does no cloud AI at all — while
 `hasUnlimitedAi()` skips that cap entirely for paid tiers. So day-to-day paid

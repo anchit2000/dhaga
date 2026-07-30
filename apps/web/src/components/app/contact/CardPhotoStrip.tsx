@@ -1,13 +1,14 @@
 import { formatDate } from "@/utils/format-date";
 import type { CardImageRef } from "@/lib/repo/card-images";
 
-/** Stored card photos — the visual receipts behind a scanned contact.
- *  Renders nothing when no photo was kept (storage off, or pasted text). */
+/** Stored photos — the visual receipts behind a scanned card and behind any
+ *  photo captured as a note. Renders nothing when no photo was kept (storage
+ *  off, or a capture that had no photo at all). */
 export function CardPhotoStrip({ images }: { images: CardImageRef[] }) {
   if (images.length === 0) return null;
   return (
     <section className="space-y-3">
-      <h2 className="font-display text-lg">Card photo</h2>
+      <h2 className="font-display text-lg">Photos</h2>
       <div className="flex gap-3 overflow-x-auto pb-1">
         {images.map((image) => (
           <a
@@ -16,13 +17,13 @@ export function CardPhotoStrip({ images }: { images: CardImageRef[] }) {
             target="_blank"
             rel="noreferrer"
             className="shrink-0"
-            title={`Scanned ${formatDate(image.createdAt)}`}
+            title={`Captured ${formatDate(image.createdAt)}`}
           >
             {/* eslint-disable-next-line @next/next/no-img-element -- auth-gated
                 dynamic route; the Next image optimizer can't fetch it */}
             <img
               src={`/api/card-image/${image.id}`}
-              alt="Scanned card — visual receipt"
+              alt="Captured photo — visual receipt"
               className="h-28 w-auto rounded-xl border border-seam transition-opacity hover:opacity-90"
             />
           </a>

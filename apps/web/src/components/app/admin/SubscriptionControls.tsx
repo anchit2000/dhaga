@@ -76,12 +76,12 @@ export function SubscriptionControls({
         <div>
           <p className="text-sm font-medium text-paper">AI credits</p>
           <p className="mt-1 text-sm text-fog">
-            Monthly cloud-AI actions this user gets (free tier is 0). Blank or 0 clears the override.
+            Monthly cloud-AI credits this user gets (free tier is 0). Blank or 0 clears the override.
           </p>
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="credits">Monthly AI actions</Label>
+          <Label htmlFor="credits">Monthly AI credits</Label>
           <Input
             id="credits"
             name="credits"

@@ -13,6 +13,7 @@ export function QuickAddResult({
   notice,
   sourceText,
   images,
+  scanActionId,
   events,
   defaultEventId,
 }: {
@@ -22,6 +23,8 @@ export function QuickAddResult({
   sourceText?: string;
   /** All card images that fed this scan; persisted with the saved contact. */
   images?: CaptureImage[];
+  /** The scan's AI action id — see QuickAddState.scanActionId. */
+  scanActionId?: string;
   events: EventOption[];
   defaultEventId?: string;
 }) {
@@ -44,6 +47,7 @@ export function QuickAddResult({
           <input type="hidden" name="source" value="quick_add" />
           <input type="hidden" name="sourceText" value={sourceText ?? ""} />
           <input type="hidden" name="capturedImages" value={JSON.stringify(images ?? [])} />
+          <input type="hidden" name="scanActionId" value={scanActionId ?? ""} />
           <EventPicker events={events} defaultEventId={defaultEventId} />
         </ContactForm>
       </div>

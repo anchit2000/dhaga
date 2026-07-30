@@ -51,6 +51,7 @@ export {
   type ModelTier,
   type OpenAILLMClientOptions,
 } from "./llm";
+export { PHOTO_NOTE_PROMPT, PHOTO_NOTE_SYSTEM } from "./llm";
 export {
   SIGNAL_DETECTION_SYSTEM,
   buildSignalDetectionPrompt,

@@ -245,8 +245,11 @@ normally only an admin can approve. `DHAGA_ADMIN_EMAILS` breaks the circle:
       an "admin" badge if applicable); click a row → `/app/admin/users/[id]`.
 - [ ] **`/app/admin/users/[id]`** — AI usage this month vs. their cap
       (`N / unlimited` if they have an active paid subscription, else
-      `N / No AI (free tier)`), their subscription plan+status if any, and a
-      **Make admin** / **Revoke admin** toggle button.
+      `N / No AI (free tier)`), their subscription plan+status if any, a
+      **Grant credits to this user** card (see §4a), and a
+      **Make admin** / **Revoke admin** toggle button. When that user has
+      active grants, a second line reads **"+N granted"** — usage above it is
+      what was actually spent, and grants never change it.
 - [ ] **`/app/admin/subscriptions`** — table of every subscription
       (user link, plan, status, renewal date).
 - [ ] Sign out of the admin account, sign in as (or create) a **non-admin**
@@ -257,6 +260,84 @@ normally only an admin can approve. `DHAGA_ADMIN_EMAILS` breaks the circle:
 - [ ] With `DHAGA_HOSTED_MODE` unset entirely (§1b or plain §1a), `/app/admin`
       404s for *every* account including one listed in `DHAGA_ADMIN_EMAILS`
       — there is no way to reach this section at all outside hosted mode.
+
+---
+
+### 4a. AI credit controls (`/app/admin/ai-credits`, needs §3)
+
+The instance-wide AI-credit levers. Reach them from the **AI credits** card
+sitting under the three stat cards on `/app/admin` ("Plan allowances, a
+promotional month, and make-good grants"). The page header restates the
+precedence the resolver actually uses (`apps/web/src/lib/ai/metering/cap.ts`),
+highest first:
+
+> per-user override → active promotion → plan allowance (only with the master
+> switch on, and only when a plan is in play) → `DHAGA_AI_MONTHLY_CAP` → free
+> tier — then **active grants are added on top of whichever one wins**.
+
+**Nothing about today's behaviour changes until an admin turns enforcement
+on.** That is the whole safety story of this screen: with the switch off, paid
+plans still resolve through `hasUnlimitedAi` exactly as in §6, and the pricing
+page still sells Pro and Annual as "no monthly cap".
+
+- [ ] **Plan-cap enforcement** (first card) reads **Off** on a fresh instance
+      (`AI_PLAN_CAP_ENFORCEMENT_DEFAULT = false`,
+      `apps/web/src/utils/constants/ai-budget.ts`), with the copy: *"Limits are
+      not being enforced. The allowances below are stored but ignored: paid
+      plans bypass the cap entirely, exactly as they do today… Turning this on
+      gives every existing paying customer a ceiling they were never sold — a
+      pricing decision, not a metering one."* Toggle it on and the copy flips
+      to *"Limits are being enforced… The pricing page still says Pro and
+      Annual have no monthly cap — change that copy, or turn this back off."*
+      Turn it back **off** when you're done poking at it.
+- [ ] **Monthly allowance per plan** — the editable ladder (`Free`, `Pro`,
+      `Lifetime / Annual`, and `Power (sized, not sold)`), each with **Use
+      default** / **Custom monthly credits** / **No cap**. Defaults come from
+      `PLAN_AI_CREDITS_PER_MONTH` in `apps/web/src/utils/constants/plans.ts`,
+      so "Use default" is not a stored number. With enforcement off the card
+      says so: *"Stored but not applied while enforcement is off."*
+- [ ] **Promotional month** — one allowance for every user on the instance
+      ("everyone gets 1000 credits this month"), with a start date, an end
+      date and a note. It **ends at the start of the end date** (exclusive),
+      so pick the first day it should *no longer* apply; expiry is evaluated
+      on every read, so nobody has to remember to undo it. A promotion applies
+      whether or not enforcement is on, and a per-user override still beats
+      it. Clear the credits field to end it.
+- [ ] **Grant credits** — the additive make-good. *"Added on top of whatever
+      cap applies. Recorded usage is never changed — a grant repairs the
+      ceiling, not the history."* Blank user id = every user on the instance;
+      a reason is required; the expiry defaults to the first of next month
+      (blank = never expires, so it repeats every month). The same card is
+      pinned to one user on `/app/admin/users/[id]`.
+- [ ] **Grant ledger** — every grant ever made, newest first, with who/when/
+      how many/why and an **End now** button on active ones. "End now" sets
+      `ends_at`; it never deletes the row, and `ai_actions` is untouched by
+      any of it.
+- [ ] Automated: the precedence above is pinned by two vitest files —
+      `apps/web/src/lib/__tests__/ai-action-metering/budget-precedence.test.ts`
+      (every rung, plus "master switch off ⇒ byte-for-byte the old behaviour")
+      and `promotion-and-grants.test.ts` (a promotion self-expires; a grant
+      raises the ceiling without touching recorded usage). Run them with
+      `npm run test --prefix apps/web -- ai-action-metering`.
+
+**Getting a server up for this walkthrough.** `next dev` is unreliable on this
+box (leaked Turbopack workers eventually exhaust memory), so the recipe that
+has actually worked is a production build served on a free port and driven by
+the Playwright harness in `apps/web/e2e` — the config reuses an
+already-running server whenever `E2E_BASE_URL` points at one, instead of
+starting its own:
+
+```bash
+cd apps/web
+npx next build
+npx next start -p 3021          # any free port
+# in another shell, against that port:
+E2E_BASE_URL=http://localhost:3021 E2E_HEADLESS=1 npm run test:e2e
+```
+
+Admin screens still need §3's env (`DHAGA_HOSTED_MODE=true`,
+`DHAGA_ADMIN_EMAILS`, real Postgres) on the server you start — embedded PGlite
+can't serve them.
 
 ---
 
@@ -372,7 +453,7 @@ Singapore
       `DHAGA_AI_MONTHLY_CAP` set on a self-host): the "N of {cap} AI actions
       used" counter (confirmed `apps/web/src/app/app/quick-add/page.tsx`, cap
       from `monthlyAiCap()` — default `0`, cloud AI is a paid feature,
-      `FREE_TIER_AI_ACTIONS_PER_MONTH`, `apps/web/src/utils/constants/app.ts`)
+      `FREE_TIER_AI_CREDITS_PER_MONTH`, `apps/web/src/utils/constants/app.ts`)
       increased by one. On the free tier with no override the line instead
       reads "Cloud AI is a paid feature".
 
@@ -440,7 +521,7 @@ Singapore
 
 ### 7d. Card-photo storage setting (Settings page)
 
-- [ ] **Settings** → "Store card photos" is ON by default; the Quick add
+- [ ] **Settings** → "Store captured photos" is ON by default; the Quick add
       photo tab says the photo is kept as the visual receipt.
 - [ ] Toggle it OFF → the Quick add photo tab now says the photo is not
       stored; scan a card → the saved contact has no Card photo section
@@ -557,8 +638,13 @@ On a contact, add this note:
       redirected to People.
 - [ ] Their events no longer list them; search finds nothing; a fresh
       JSON export contains no trace (contact, notes, facts, edges,
-      follow-ups, embeddings all gone —
+      follow-ups, embeddings and now notifications all gone —
       `apps/web/src/lib/repo/contacts/mutations.ts`'s `forgetContact`).
+- [ ] **Known gap, unfixed at the time of writing:** `cascadeForget` never
+      deletes `extraction_jobs`, whose `contact_id` is a `NOT NULL` `RESTRICT`
+      foreign key — so forgetting a contact that still has a job row should abort
+      with FK `23503` rather than cascading. Test a contact that has had a note
+      extracted, and treat a failure here as this known bug, not a new one.
 
 ### 7o. LinkedIn/Google CSV import
 
@@ -583,9 +669,12 @@ On a contact, add this note:
       `DHAGA_OWNER_EMAIL` naming the pending count. Confirm the dummy/
       load-test account (`loadtest@dhaga.internal`) never receives it even if
       it's the configured owner — `isDummyAccount()` skips it
-      (`apps/web/src/lib/jobs/morning-reminder.ts:48`). Gated on `RESEND_*`
-      being set; `MORNING_REMINDER_HOURLY=true` additionally restricts the
-      send to the recipient's local ~08:00 run.
+      (`apps/web/src/lib/jobs/morning-reminder.ts`). Gated on `RESEND_*`
+      being set; `EMAIL_JOBS_HOURLY=true` (old name `MORNING_REMINDER_HOURLY`,
+      honoured for one release) additionally restricts the send to the
+      recipient's local ~08:00 run, and only makes sense if you drive the
+      endpoint hourly. Full coverage of this job, the two digests and the
+      per-tenant fix is in §7aa.
 
 ### 7q. Telegram bot & outbound webhooks (optional envs)
 
@@ -705,6 +794,216 @@ If Vitest fails before collecting tests with a missing schema module, check
 `git status` first. In a shared worktree, another session may be moving or
 deleting that schema file; restore or finish that parallel change before
 interpreting the failure as a network-feature regression.
+
+### 7v. Photo notes (needs `ANTHROPIC_API_KEY`)
+
+Photo is the third way to capture a note, alongside typing and voice — for the
+things a card scan is wrong for: a whiteboard, a conference poster, a
+handwritten page, a receipt.
+
+- [ ] On a contact, tap **Photo note** in the same composer as **Voice note**
+      (on a phone this opens the camera). The tray appears with crop / reorder /
+      remove, and the textarea stops being required — the photo carries the text.
+- [ ] **Add note** → the saved note is labelled *photo*, and its body is the
+      text read out of the image, so searching for a phrase written on the
+      whiteboard finds it. Facts extract from it exactly as from a typed note,
+      with the note as their receipt.
+- [ ] Type a line as well → the note keeps both: your line and the
+      transcription, not one replacing the other.
+- [ ] The photos appear on the person's page as receipts, under the same
+      **Store captured photos** setting (§7d) as scanned cards, and are deleted
+      with the note.
+- [ ] **A photo with nothing legible and no typed line is refused**, not saved
+      as a blank note. With the AI cap exhausted, a typed line still saves as a
+      plain note rather than the whole thing failing.
+- [ ] Automated: `npx playwright test e2e/photo-note.spec.ts` (needs a real key
+      — it makes a live vision call).
+
+### 7w. Inbound messaging: every kind of forward (WhatsApp / Telegram)
+
+The point of this section is that **nothing you send is ever silently dropped**.
+Each case gets a contact, a note, or a reply saying why not. Covered by
+`apps/web/src/lib/__tests__/messaging-cases/`.
+
+- [ ] **Text** → routed like a web quick-add: a confident single match attaches
+      the note to that person (no duplicate); no match creates them; ambiguity
+      asks (below).
+- [ ] **Forwarded contact card** (vCard) → the contact is built from the
+      structured payload, with no AI re-parse. An unreadable card raises a
+      notice rather than vanishing.
+- [ ] **Photo of a business card** → scanned into a contact. **Any other photo**
+      → transcribed into a note on the person; a caption is kept as well.
+      Test this on **Telegram specifically**: Telegram sends no mime type, and
+      every Telegram photo used to be dropped for that reason alone.
+- [ ] **Voice note** → replies *"Voice notes aren't supported yet — coming
+      soon! For now please type it, send a photo, or forward a contact."* It is
+      refused at the door, not stored as a stub. This message is gated on a
+      transcription provider being registered, so it disappears by itself the
+      day one is plugged in — don't hard-code around it.
+- [ ] **Ambiguous note** ("met Aditi today" with three Aditis) → a numbered
+      question in the chat. Answer by number, by name, or `new`. Reply with
+      something else instead and the question is *released*: the pending note is
+      saved under a new person and your new message is handled normally — it is
+      never lost.
+- [ ] **Video / document / sticker / unknown attachment** → an immediate reply
+      naming what it was; nothing stored.
+- [ ] **Empty message** → an immediate reply.
+- [ ] **A media download that fails** → that one item fails and the rest of the
+      batch still processes. It used to abort the whole batch.
+- [ ] The batch summary reflects what actually happened — a batch that only
+      asked a question says it is waiting on your answer, not that it couldn't
+      find a contact.
+
+### 7x. Birthdays & anniversaries → reminders (no API key needed)
+
+Important dates have been storable on a contact for a while; what is new is that
+they now *do* something. Reminders are **derived** from the dates on your
+contacts — there is no reminders table — so editing a date or forgetting a
+person needs no cleanup, and that is the property to test.
+
+- [ ] On a contact → **More details** → **Important dates** → **Add date**. The
+      row starts as `Birthday` and the value is a real **calendar picker**: month
+      *and* year are dropdowns, so a 1974 birth year takes two clicks rather than
+      scrolling back six hundred months. Save.
+- [ ] Reopen the contact — the picker opens on **that date's month**, not on
+      today.
+- [ ] A date imported from Google or a `.vcf` may be stored verbatim
+      (`December 9`) or without a year (`12-09`). Open the form and confirm the
+      picker trigger shows that text as a **placeholder**, and that saving other
+      fields leaves the string **byte-identical**. Dhaga must not silently
+      reinterpret a date the user never typed.
+- [ ] Set a date a few days out, then check all three surfaces agree:
+      **`/app/calendar`** shows an all-day amber entry reading `Name — Birthday`,
+      **`/app/follow-ups`** lists it under **Upcoming dates**, and the nav
+      **bell** carries it in the feed.
+- [ ] On the calendar, **try to drag it** — it snaps back and nothing is saved,
+      and clicking it opens the contact rather than a Done/Reschedule dialog. A
+      birthday is not a task; the caption under the grid says so ("Birthdays and
+      anniversaries come from your contacts — open the contact to change one").
+- [ ] Set the date **further out** than the lead window (Settings → Suggestions →
+      **Birthdays & anniversaries** → *Days ahead*, default 7) — it disappears
+      from all three. Widen the lead time and it comes back. The **Upcoming
+      dates** section hides entirely when nothing is in the window rather than
+      showing an empty heading.
+- [ ] Save `02-29` on a contact and confirm that in a non-leap year the
+      occurrence lands on **28 February**, never 1 March.
+- [ ] **Delete the date, or forget the person** → every surface above clears with
+      no leftover reminder. That is the point of deriving them.
+- [ ] Automated: `npm test --workspace packages/core -- --run
+      src/dates/important-dates.test.ts` for the recurrence maths, plus
+      `npm test --workspace apps/web -- --run
+      src/app/app/follow-ups/__tests__/upcoming-date-copy.test.ts
+      src/components/app/calendar/__tests__/event-map.test.ts`.
+
+### 7y. The notification bell, and knowing a background job finished
+
+The bell used to count follow-ups only. It is now a feed of three kinds —
+follow-up reminders and upcoming dates (both derived, nothing stored) and
+**persisted notifications** (a real table), which is the first thing that tells
+you a background job finished after you navigated away.
+
+- [ ] Open the bell: the header reads **Notifications**, unread persisted items
+      sort above the derived reminders, and read ones stay below as history.
+      Empty state: *"You're all caught up ✨"*.
+- [ ] A follow-up row still has a **Done** pill. An important-date row has **no**
+      action — only a link to the contact.
+- [ ] The **badge** counts overdue + due-today follow-ups, unread notifications,
+      and important dates **only when they land today**. A birthday six days out
+      belongs in the panel but must not inflate the badge — the badge means "act
+      now".
+- [ ] Add a note on a contact then **navigate away immediately** (Home is fine).
+      When extraction finishes, the bell gains an unread item —
+      *"Extracted 4 facts and 1 follow-up from your note about …"*. Click it: it
+      marks read and opens the contact. Also exercise the **X** (dismiss) and
+      **Mark all read**.
+- [ ] Exhaust the AI budget (§7r) and add a note → a *blocked* notification
+      saying extraction is a paid feature, **and the note is still saved**. Force
+      a failure → a failed notification whose body carries the reason, with
+      **Retry** on the contact page.
+- [ ] **Forget a contact that has notifications** → its rows go with it. Titles
+      embed contact names, so both foreign keys are `ON DELETE CASCADE`; a
+      notification outliving its contact would be a privacy bug, not clutter.
+      (Separately and still unfixed: forgetting a contact that has an
+      `extraction_jobs` row aborts on a foreign key — see §7n.)
+- [ ] Automated: `npm test --workspace apps/web -- --run
+      src/lib/__tests__/notifications.test.ts
+      src/lib/__tests__/notification-feed/ordering.test.ts
+      src/lib/__tests__/notification-feed/actions.test.ts`.
+
+### 7z. Background-job progress that actually settles
+
+Each of these was a real failure, so test them as regressions rather than as
+features.
+
+- [ ] Add a note → the copy says the work **keeps running if you leave the page**
+      — then leave, come back, and confirm the facts are there. The claim has to
+      be true, not merely reassuring.
+- [ ] Stay on the page → the pill becomes a confirmation with **real counts**
+      (*"Extraction finished — 4 facts and 1 follow-up added."*), a toast fires,
+      and the pill **clears itself** after ~12s. It must not need a reload; a
+      sticky "extracting facts…" notice that only a refresh cleared was the bug.
+- [ ] Trigger **Enrich from public web** → same shape ("Searching the public web
+      in the background. This keeps running if you leave the page…"), and it
+      settles into a finished or failed state — never a spinner that runs
+      forever.
+- [ ] Start a job then **navigate away mid-stream**. The job must be recorded
+      **done**, not failed: writing to a closed stream used to mark an
+      already-successful job FAILED.
+- [ ] Open the same contact in **two tabs** and start one job. Both settle; only
+      the tab that ran the worker toasts, and the other reconciles by polling.
+- [ ] Automated: `npm test --workspace apps/web -- --run
+      src/components/app/contact/ExtractionStatus/useExtractionStream/settle.test.ts
+      src/components/app/contact/ExtractionStatus/useExtractionStream/live-state.test.ts`.
+
+### 7aa. Time zone + the daily email jobs (needs `RESEND_*` + `CRON_SECRET`)
+
+Three of these emails **could never send for a hosted user** before 2026-07-30:
+they read their own opt-in setting on an unscoped connection, so under EE
+row-level security the read matched zero rows and every toggle looked `off`. If
+you run hosted mode, treat this section as the regression test for that.
+
+- [ ] Settings → Suggestions → **Time zone**. It defaults to `UTC` (existing
+      users see no change until they choose), the picker searches cities, and
+      **Use detected zone (…)** appears only when your browser disagrees — it
+      fills the field and never auto-saves. Save it.
+- [ ] Enable **Morning follow-up reminders**, the **Confirmations digest** and
+      **Birthday and anniversary reminders**, then hit `/api/jobs/daily` with the
+      `CRON_SECRET` header (as §7p) — in **hosted mode, with a second non-owner
+      account**, each opted-in account gets its own email. Only the owner
+      receiving mail means the per-tenant fan-out has regressed.
+- [ ] Hit the same endpoint **twice in a row** → the second run sends nothing.
+      Each job records the recipient's **local** day, so a re-triggered cron is a
+      no-op even for someone at UTC+14.
+- [ ] The **due-follow-up** email now includes items due within the next 3 days,
+      each tagged honestly (`Overdue` / `Due today` / `Due tomorrow` /
+      `Due in N days`) — previously an item due in three days was not emailed
+      until it was already late. The **bell** is deliberately unchanged: still
+      overdue + due-today only.
+- [ ] The **birthday reminder** arrives at most **twice per occurrence** — once
+      when it enters the lead window, once on the day itself. Run the cron on
+      several consecutive days and confirm there is no third email.
+- [ ] With the birthday toggle **off** (its default), no birthday email is ever
+      sent however many dates are saved. Imported address books arrive full of
+      dates the user never reviewed, which is why opt-in is the design.
+- [ ] `EMAIL_JOBS_HOURLY=true` applies **only** if you drive the endpoint hourly;
+      then the morning reminder, reach-out digest and confirmations digest send
+      only on the run matching the recipient's local ~08:00. Unset — the Vercel
+      Hobby default of one cron a day — every job still sends on that single run:
+      the gate must never be able to discard the only invocation of the day.
+      `MORNING_REMINDER_HOURLY` is honoured for one release as the old name.
+- [ ] Automated: `npm test --workspace apps/web -- --run
+      src/lib/jobs/morning-reminder.test.ts src/lib/jobs/daily-digest.test.ts
+      src/lib/jobs/confirmations-digest.test.ts
+      src/lib/jobs/follow-up-reminders.test.ts
+      src/lib/jobs/important-date-reminders/index.test.ts
+      src/lib/__tests__/timezone-zone.test.ts
+      src/lib/__tests__/timezone-settings.test.ts`. The three job suites model
+      RLS by returning rows **only** inside a tenant scope and counting unscoped
+      reads, so the old implementation fails them.
+
+**None of §7x–§7aa has had a browser click-through yet.** All four were built and
+unit-tested while the working tree was under concurrent edit, so treat every box
+in them as genuinely unrun rather than "probably fine".
 
 ---
 

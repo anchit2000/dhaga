@@ -12,7 +12,7 @@ import { logActionError } from "@/lib/actions/resilience";
 import { withUserDb } from "@/lib/db/request-scope";
 import { upsertEmbedding } from "@/lib/repo/embeddings";
 import { replaceNoteBody } from "@/lib/repo/notes";
-import { AiBudgetError, assertAiBudget, recordAiAction } from "./metering";
+import { AiBudgetError, assertAiBudget, recordAiAction, withAiAction } from "./metering";
 
 /**
  * The card's verbatim text, fetched on its own AFTER the response is sent.
@@ -28,11 +28,25 @@ import { AiBudgetError, assertAiBudget, recordAiAction } from "./metering";
 export async function transcribeCardImages(
   userId: string,
   images: LLMImage[],
+  actionId?: string,
 ): Promise<string | null> {
   if (!hasLLM() || images.length === 0) return null;
-  // A second metered action per scan. Budget is checked in its own short scope
-  // before the model call, exactly as the scan does — an out-of-credit user
-  // gets the field-derived receipt and no charge, not a failed save.
+  // NOT a second action: the scan handed its action id across the request
+  // boundary, so this call folds into that one scan and the user is charged one
+  // credit for the whole thing. Without an id (a caller that scanned and saved
+  // in one request, or an older client) it opens its own card_scan action
+  // rather than going unmetered.
+  return withAiAction(
+    actionId ? { feature: "card_scan", id: actionId } : "card_scan",
+    () => runTranscription(userId, images),
+  );
+}
+
+async function runTranscription(userId: string, images: LLMImage[]): Promise<string | null> {
+  // Budget is checked in its own short scope before the model call, exactly as
+  // the scan does — an out-of-credit user gets the field-derived receipt and no
+  // charge, not a failed save. Rejoining the scan's action means the cap does
+  // not refuse this call for a user who was admitted at scan time.
   await withUserDb(userId, () => assertAiBudget(userId));
   const result = await getLLMClient().extract({
     schema: cardTranscriptionSchema,
@@ -43,7 +57,7 @@ export async function transcribeCardImages(
   });
   try {
     await withUserDb(userId, () =>
-      recordAiAction("contact_parse", result.model, result.usage),
+      recordAiAction("card_scan", result.model, result.usage),
     );
   } catch (error) {
     // Same trade as the scan: the call is already billed upstream, so a blip
@@ -68,12 +82,13 @@ export function scheduleCardTranscription(
   contactId: string,
   noteId: string,
   images: LLMImage[],
+  actionId?: string,
 ): void {
   if (!noteId || images.length === 0) return;
   try {
     after(async () => {
       try {
-        const text = await transcribeCardImages(userId, images);
+        const text = await transcribeCardImages(userId, images, actionId);
         if (!text) return;
         await withUserDb(userId, async () => {
           await replaceNoteBody(noteId, text);

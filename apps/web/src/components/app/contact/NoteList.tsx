@@ -13,6 +13,7 @@ import { ReprocessButton } from "./ReprocessButton";
 const KIND_LABELS: Record<string, string> = {
   text: "note",
   voice: "voice note",
+  photo: "photo note",
   capture_source: "capture source",
   enrichment: "web enrichment",
 };

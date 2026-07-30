@@ -22,7 +22,7 @@ export interface AiUsage {
   unlimited: boolean;
 }
 
-/** Credits row: foregrounds how many AI actions are left this month, mirroring
+/** Credits row: foregrounds how many AI credits are left this month, mirroring
  *  how metering.ts counts them (used vs cap, unlimited on a paid plan). */
 function AiCreditsRow({ used, cap, unlimited }: AiUsage) {
   const remaining = Math.max(0, cap - used);
@@ -31,11 +31,11 @@ function AiCreditsRow({ used, cap, unlimited }: AiUsage) {
       <p className="text-sm font-medium text-paper">AI credits</p>
       {unlimited ? (
         <p className="mt-1 text-sm text-fog">
-          <span className="text-paper">Unlimited</span> — {used} AI actions used this month
+          <span className="text-paper">Unlimited</span> — {used} AI credits used this month
         </p>
       ) : cap > 0 ? (
         <p className="mt-1 text-sm text-fog">
-          <span className="text-ember">{remaining}</span> of {cap} AI actions left this month
+          <span className="text-ember">{remaining}</span> of {cap} AI credits left this month
         </p>
       ) : (
         <p className="mt-1 text-sm text-fog">Cloud AI is included with a paid plan.</p>

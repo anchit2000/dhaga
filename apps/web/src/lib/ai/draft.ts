@@ -8,7 +8,8 @@ import { withUserDb } from "@/lib/db/request-scope";
 import { getContact } from "@/lib/repo/contacts";
 import { listFacts, listNotes } from "@/lib/repo/notes";
 import { listContactEvents } from "@/lib/repo/events";
-import { AiBudgetError, assertAiBudget, recordAiAction } from "./metering";
+import { userToday } from "@/lib/repo/reminders/local-today";
+import { AiBudgetError, assertAiBudget, recordAiAction, withAiAction } from "./metering";
 
 export interface DraftResult {
   draft?: string;
@@ -16,7 +17,15 @@ export interface DraftResult {
 }
 
 /** M7: one-tap personalized follow-up draft from the contact's context. */
-export async function generateFollowUpDraft(
+export function generateFollowUpDraft(
+  userId: string,
+  contactId: string,
+): Promise<DraftResult> {
+  // One draft = one metered action, however many model calls it grows to need.
+  return withAiAction("draft", () => runFollowUpDraft(userId, contactId));
+}
+
+async function runFollowUpDraft(
   userId: string,
   contactId: string,
 ): Promise<DraftResult> {
@@ -36,10 +45,15 @@ export async function generateFollowUpDraft(
       listNotes(contactId),
       listContactEvents(contactId),
     ]);
-    return { detail, contactFacts, contactNotes, contactEvents };
+    // The user's calendar day, resolved here and not at the prompt: it is a
+    // settings READ, so it belongs in this already-open scope, sequentially
+    // (never added to the Promise.all above — see local-today.ts on the
+    // max-of-three tenant pool) and released with it, before the LLM call.
+    const today = await userToday();
+    return { detail, contactFacts, contactNotes, contactEvents, today };
   });
   if (!bundle) return { error: "Contact not found." };
-  const { detail, contactFacts, contactNotes, contactEvents } = bundle;
+  const { detail, contactFacts, contactNotes, contactEvents, today } = bundle;
 
   try {
     // Budget check in its own short scope, released BEFORE the LLM call so no
@@ -60,7 +74,7 @@ export async function generateFollowUpDraft(
           .map((note) =>
             note.body.length > 240 ? `${note.body.slice(0, 240)}…` : note.body,
           ),
-      }),
+      }, today),
       tier: "reason",
     });
     // Post-LLM metering write in its own short scope — nothing held across the

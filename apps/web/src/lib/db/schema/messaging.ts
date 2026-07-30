@@ -66,3 +66,23 @@ export const messagingSessionItems = pgTable("messaging_session_items", {
 });
 
 export type MessagingSessionItemRow = typeof messagingSessionItems.$inferSelect;
+
+/**
+ * TENANT data: the one open "which person did you mean?" question per chat.
+ * Short-lived by design (expires_at) and deliberately NOT a conversation state
+ * machine — it holds only the pending note plus the candidates that were
+ * offered, so a numeric/name reply can resolve it. Carries no user_id here:
+ * like the session tables, EE's RLS DDL adds it.
+ */
+export const messagingPendingQuestions = pgTable("messaging_pending_questions", {
+  id: text("id").primaryKey(),
+  provider: text("provider").notNull(),
+  externalId: text("external_id").notNull(),
+  subjectName: text("subject_name"),
+  noteBody: text("note_body").notNull(),
+  options: jsonb("options").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+});
+
+export type MessagingPendingQuestionRow = typeof messagingPendingQuestions.$inferSelect;

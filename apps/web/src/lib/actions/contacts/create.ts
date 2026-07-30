@@ -85,6 +85,8 @@ export async function createContactAction(
   // that the contact is saved and fold it into the receipt note. Outside the try
   // so a scheduling problem can't turn a completed save into an error, and after
   // the withUserDb scope so no tenant connection is held across the LLM call.
+  // scanActionId carries the scan's metered action across the request boundary,
+  // so this second model call bills against that one scan (one scan = 1 credit).
   if (id && receiptNoteId && capturedImages.length > 0) {
     scheduleCardTranscription(
       userId,
@@ -94,6 +96,7 @@ export async function createContactAction(
         mediaType: image.imageType,
         dataBase64: image.imageBase64,
       })),
+      field(formData, "scanActionId") || undefined,
     );
   }
 

@@ -14,7 +14,7 @@ import { deleteCardImagesByNote } from "@/lib/repo/card-images";
 import { deleteEmbedding, deleteEmbeddingsForNote } from "@/lib/repo/embeddings";
 import { deleteNotePositions } from "@/lib/repo/graph/position-rows";
 
-export type NoteKind = "text" | "voice" | "capture_source" | "enrichment" | "signal";
+export type NoteKind = "text" | "voice" | "photo" | "capture_source" | "enrichment" | "signal";
 
 export async function listNotes(contactId: string): Promise<NoteRow[]> {
   const db = await getDb();

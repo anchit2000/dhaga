@@ -17,6 +17,7 @@ export function QuickAddResultDialog({
   notice,
   sourceText,
   images,
+  scanActionId,
   events,
   defaultEventId,
 }: {
@@ -27,6 +28,7 @@ export function QuickAddResultDialog({
   notice?: string;
   sourceText?: string;
   images?: CaptureImage[];
+  scanActionId?: string;
   events: EventOption[];
   defaultEventId?: string;
 }): ReactElement {
@@ -40,6 +42,7 @@ export function QuickAddResultDialog({
           notice={notice}
           sourceText={sourceText}
           images={images}
+          scanActionId={scanActionId}
           events={events}
           defaultEventId={defaultEventId}
         />

@@ -1,11 +1,18 @@
 // Dhaga Cloud only — see packages/ee/LICENSE.
 import { notFound } from "next/navigation";
-import { getUser, getSubscription, aiActionsThisMonthFor, getAiCapOverrideFor } from "@dhaga/ee/admin";
+import {
+  getUser,
+  getSubscription,
+  aiCreditsThisMonthFor,
+  getAiCapOverrideFor,
+  activeGrantedCreditsFor,
+} from "@dhaga/ee/admin";
 import { isUnlimitedAiSub } from "@dhaga/ee/billing";
 import { setUserAdminAction } from "@/lib/actions/admin/users";
 import { requireAdminForPage } from "@/lib/hosted/gate";
 import { ActionForm } from "@/components/app/ActionForm";
 import { SubscriptionControls } from "@/components/app/admin/SubscriptionControls";
+import { GrantCard } from "@/components/app/admin/ai-budget/GrantCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -19,10 +26,11 @@ export default async function AdminUserDetailPage({
   const user = await getUser(id);
   if (!user) notFound();
 
-  const [subscription, aiActionsThisMonth, aiCapOverride] = await Promise.all([
+  const [subscription, aiCreditsThisMonth, aiCapOverride, grantedCredits] = await Promise.all([
     getSubscription(id),
-    aiActionsThisMonthFor(id),
+    aiCreditsThisMonthFor(id),
     getAiCapOverrideFor(id),
+    activeGrantedCreditsFor(id),
   ]);
 
   const aiDenominator =
@@ -42,8 +50,15 @@ export default async function AdminUserDetailPage({
       <div className="rounded-2xl border border-seam bg-panel p-5">
         <p className="text-sm font-medium text-paper">AI usage this month</p>
         <p className="mt-1 text-sm text-fog">
-          {aiActionsThisMonth} / {aiDenominator}
+          {aiCreditsThisMonth} credits / {aiDenominator}
         </p>
+        {grantedCredits > 0 ? (
+          <p className="mt-1 text-sm text-fog">
+            <span className="text-ember">+{grantedCredits} granted</span> on top (active
+            grants, including instance-wide ones). Usage above is what was actually spent —
+            grants never change it.
+          </p>
+        ) : null}
       </div>
 
       <div className="rounded-2xl border border-seam bg-panel p-5">
@@ -67,6 +82,8 @@ export default async function AdminUserDetailPage({
         currentExpiry={subscription?.currentPeriodEnd ?? null}
         currentCredits={aiCapOverride}
       />
+
+      <GrantCard userId={user.id} />
 
       <ActionForm
         action={setUserAdminAction}

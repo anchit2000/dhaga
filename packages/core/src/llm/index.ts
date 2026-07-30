@@ -57,6 +57,7 @@ export {
   CARD_TRANSCRIPTION_SYSTEM,
   CARD_TRANSCRIPTION_PROMPT,
 } from "./prompts/card-transcription";
+export { PHOTO_NOTE_SYSTEM, PHOTO_NOTE_PROMPT } from "./prompts/photo-note";
 export {
   SIGNAL_DETECTION_SYSTEM,
   buildSignalDetectionPrompt,

@@ -45,10 +45,12 @@ export { aiActions, settings, voiceVocab, type AiActionRow, type VoiceVocabRow }
 export {
   messagingIdentities,
   messagingLinkTokens,
+  messagingPendingQuestions,
   messagingSessions,
   messagingSessionItems,
   type MessagingIdentityRow,
   type MessagingLinkTokenRow,
+  type MessagingPendingQuestionRow,
   type MessagingSessionRow,
   type MessagingSessionItemRow,
 } from "./messaging";
@@ -65,3 +67,10 @@ export {
   type AuthUserRow,
 } from "./auth";
 export { apiKey, type ApiKeyRow } from "./api-key";
+export { notifications, type NotificationRow } from "./notifications";
+export {
+  aiBudgetSettings,
+  aiCreditGrants,
+  type AiBudgetSettingRow,
+  type AiCreditGrantRow,
+} from "./ai-budget";

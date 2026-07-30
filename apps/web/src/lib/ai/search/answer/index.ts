@@ -5,7 +5,7 @@ import {
   hasLLM,
 } from "@dhaga/core";
 import { withUserDb } from "@/lib/db/request-scope";
-import { assertAiBudget, recordAiAction } from "../../metering";
+import { assertAiBudget, newAiAction, recordAiAction, withAiAction } from "../../metering";
 import { aiFailureResult, candidateBlocks, planQuery } from "../pipeline";
 import { describePlan, retrieveHits, toNoticeEvent, toReceipt } from "./helpers";
 import type { AiAnswerResult, SearchStreamEvent } from "../types";
@@ -21,7 +21,15 @@ import type { AiAnswerResult, SearchStreamEvent } from "../types";
  * `withUserDb` scope so no tenant-pool connection is held across the model
  * round-trip; see ./helpers retrieveHits.
  */
-export async function answerSearchQuery(
+export function answerSearchQuery(
+  userId: string,
+  query: string,
+): Promise<AiAnswerResult> {
+  // Understand + answer are two model calls but ONE question the user asked.
+  return withAiAction("search", () => runAnswerSearchQuery(userId, query));
+}
+
+async function runAnswerSearchQuery(
   userId: string,
   query: string,
 ): Promise<AiAnswerResult> {
@@ -35,7 +43,7 @@ export async function answerSearchQuery(
     return withUserDb(userId, () => aiFailureResult(error, query, null));
   }
 
-  const plan = await planQuery(query);
+  const plan = await planQuery(userId, query);
   const hits = await withUserDb(userId, () => retrieveHits(plan, query));
   if (hits.length === 0) {
     return {
@@ -64,11 +72,16 @@ export async function answerSearchQuery(
  * the search exactly once, at the end, from the resolved stream usage. Every
  * failure path reuses aiFailureResult (cap → free keyword fallback, burst /
  * transient → retry, everything else → genuine error) as one notice event.
+ *
+ * The action is opened by explicit handle rather than by wrapping the whole
+ * body: AsyncLocalStorage does not survive a `yield`, so each awaited step
+ * rejoins the same action by id (see newAiAction).
  */
 export async function* streamSearchAnswer(
   userId: string,
   query: string,
 ): AsyncGenerator<SearchStreamEvent> {
+  const action = newAiAction("search");
   if (!hasLLM()) {
     yield {
       type: "notice",
@@ -86,7 +99,7 @@ export async function* streamSearchAnswer(
     return;
   }
 
-  const plan = await planQuery(query);
+  const plan = await withAiAction(action, () => planQuery(userId, query));
   if (plan) {
     yield { type: "step", label: `Finding contacts related to ${describePlan(plan)}` };
   }

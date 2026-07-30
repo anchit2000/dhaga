@@ -70,7 +70,7 @@ export interface PlanSummary {
 export interface BillingGate {
   /** Pass the request's already-scoped connection so the entitlement read
    *  reuses it instead of opening a second checkout from the small tenant pool
-   *  (the AI-metering hot path — see lib/ai/metering.ts). Optional: callers off
+   *  (the AI-metering hot path — see lib/ai/metering). Optional: callers off
    *  the hot path (e.g. settings render) may omit it. */
   hasUnlimitedAi(userId: string, db?: DhagaDb): Promise<boolean>;
   /** Null in core-only mode — the settings page renders no billing UI at

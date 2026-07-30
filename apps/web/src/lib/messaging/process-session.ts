@@ -2,28 +2,50 @@ import { getMessagingClient } from "@dhaga/core/src/messaging";
 import { withUserDb } from "@/lib/db/request-scope";
 import { logActionError } from "@/lib/actions/resilience";
 import { listSessionItems, setSessionStatus } from "@/lib/repo/messaging";
+import type { MessagingSessionItemRow } from "@/lib/db/schema";
 import {
+  awaitingAnswerReply,
   MAX_SESSION_ITEMS,
+  mediaFailedNotice,
   noContactFoundReply,
   processingFailedReply,
   summaryReply,
   truncatedNotice,
-  voiceSkippedNotice,
+  unreadableItemNotice,
 } from "@/utils/constants/messaging";
 import { processSessionItem } from "./process-item";
-import { createWalkState, type WalkState } from "./walk-state";
+import { addNotice, createWalkState, type WalkState } from "./walk-state";
 
-/** The closing summary text for a finished walk. */
+/** The closing summary: what was saved, then every item that wasn't. */
 function buildSummary(state: WalkState, truncated: boolean): string {
-  const suffix = truncated ? truncatedNotice(MAX_SESSION_ITEMS) : "";
-  if (state.contactCount === 0) return noContactFoundReply() + suffix;
-  const summary = summaryReply({
-    contactName: state.firstContactName,
-    contactCount: state.contactCount,
-    noteCount: state.noteCount,
-    factCount: state.factCount,
-  });
-  return summary + (state.droppedVoiceNote ? voiceSkippedNotice() : "") + suffix;
+  const notices = truncated ? [...state.notices, truncatedNotice(MAX_SESSION_ITEMS)] : state.notices;
+  const head =
+    state.contactCount === 0 && state.noteCount === 0
+      // A batch that ended in a question hasn't failed — it's waiting on the
+      // sender. Saying "I couldn't find a contact" there would read as a bug.
+      ? (state.askedQuestion ? awaitingAnswerReply() : noContactFoundReply())
+      : summaryReply({
+          contactName: state.firstContactName,
+          contactCount: state.contactCount,
+          noteCount: state.noteCount,
+          factCount: state.factCount,
+        });
+  return [head, ...notices.map((notice) => `• ${notice}`)].join("\n");
+}
+
+/**
+ * One item, isolated. A throw here (media that won't download, an LLM outage,
+ * a DB blip) costs that ONE item and is reported in the summary — it must not
+ * abort the batch, which would strand every later contact card the sender sent.
+ */
+async function runItem(state: WalkState, item: MessagingSessionItemRow): Promise<void> {
+  try {
+    await processSessionItem(state, item);
+  } catch (error) {
+    logActionError("messaging_process_item", error);
+    const media = item.kind === "image" || item.kind === "audio";
+    addNotice(state, media ? mediaFailedNotice() : unreadableItemNotice());
+  }
 }
 
 /**
@@ -47,9 +69,12 @@ export async function processMessagingSession(
     const truncated = items.length > MAX_SESSION_ITEMS;
     const batch = truncated ? items.slice(0, MAX_SESSION_ITEMS) : items;
 
-    const state = createWalkState(userId, client);
+    const state = createWalkState(userId, client, {
+      provider: session.provider,
+      externalId: session.externalId,
+    });
     for (const item of batch) {
-      await processSessionItem(state, item);
+      await runItem(state, item);
     }
 
     await withUserDb(userId, () => setSessionStatus({ sessionId: session.id, status: "done" }));

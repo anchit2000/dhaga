@@ -139,6 +139,37 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Important dates (birthdays/anniversaries) derived from a contact: Dhaga's own
+   data, but not a task — a soft amber wash inside a solid amber-tinted border,
+   which reads as "ours" without competing with the filled follow-up chips. Amber
+   is fill and border only; the text is paper, so it clears contrast in light and
+   dark alike. Read-only, but a click opens the contact, so it stays a pointer. */
+.dhaga-calendar .fc .fc-important-date {
+  background: color-mix(in oklch, var(--brand-amber) 12%, transparent);
+  border-color: color-mix(in oklch, var(--brand-amber) 45%, transparent);
+  color: var(--brand-paper);
+  cursor: pointer;
+}
+.dhaga-calendar .fc-important-date-body {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  overflow: hidden;
+}
+.dhaga-calendar .fc-important-date-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.dhaga-calendar .fc-important-date-meta {
+  font-size: 0.68rem;
+  opacity: 0.72;
+}
+.dhaga-calendar .fc-important-date-title,
+.dhaga-calendar .fc-important-date-meta {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .dhaga-calendar .fc .fc-more-link {
   font-size: 0.7rem;
   font-weight: 600;

@@ -102,6 +102,7 @@ export function QuickAddForm({
       notice={state.notice}
       sourceText={state.sourceText}
       images={state.images}
+      scanActionId={state.scanActionId}
       events={events}
       defaultEventId={defaultEventId}
     />

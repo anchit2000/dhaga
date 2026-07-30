@@ -63,4 +63,21 @@ CREATE TABLE IF NOT EXISTS messaging_session_items (
 -- as distinct, so items lacking a provider message id (e.g. synthesized) coexist.
 CREATE UNIQUE INDEX IF NOT EXISTS messaging_session_items_provider_msg_idx ON messaging_session_items (provider_message_id);
 CREATE INDEX IF NOT EXISTS messaging_session_items_session_idx ON messaging_session_items (session_id, seq);
+
+CREATE TABLE IF NOT EXISTS messaging_pending_questions (
+  id text PRIMARY KEY,
+  provider text NOT NULL,
+  external_id text NOT NULL,
+  subject_name text,
+  note_body text NOT NULL,
+  options jsonb NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  expires_at timestamptz NOT NULL
+);
+
+-- Looked up by chat on every inbound message (is this a reply to my question?),
+-- newest first. Deliberately NOT unique: the (provider, external_id) pair is
+-- already unique per user via messaging_identities, and a unique index on a
+-- tenant table would be enforced across tenants by Postgres, above RLS.
+CREATE INDEX IF NOT EXISTS messaging_pending_questions_chat_idx ON messaging_pending_questions (provider, external_id, created_at);
 `;

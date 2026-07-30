@@ -13,8 +13,8 @@ import { withUserDb } from "@/lib/db/request-scope";
 import { scheduleCalendarWriteOutForNote } from "@/lib/calendar/write-out";
 import { createEnrichmentMatchConfirmation } from "@/lib/repo/confirmations";
 import { applyExtraction } from "@/lib/repo/graph";
-import { listNodeTypes } from "@/lib/repo/node-types";
-import { assertAiBudget, recordAiAction } from "../metering";
+import { recordAiAction, withAiAction } from "../metering";
+import { prepareNoteExtraction } from "./prep";
 import {
   graphWriteFailedOutcome,
   mapExtractionError,
@@ -29,14 +29,33 @@ export type { ExtractionMode, NoteExtractionOutcome } from "./outcome";
  * Note → facts/edges/follow-ups, written with the note id as receipt.
  * The note itself is always saved by the caller first — extraction failing
  * never loses the user's words.
+ *
+ * Processing ONE note is one metered action, whatever that note ends up
+ * triggering. When this runs inside a bigger action — enrichment wraps a web
+ * search plus this extraction — `withAiAction` joins the open action instead of
+ * starting a second one, so the user is charged for the enrichment they asked
+ * for, once.
  */
-export async function extractAndApplyNote(
+export function extractAndApplyNote(
   userId: string,
   contactId: string,
   noteId: string,
   contactName: string,
   noteBody: string,
   mode: ExtractionMode = "note",
+): Promise<NoteExtractionOutcome> {
+  return withAiAction("note_extraction", () =>
+    runNoteExtraction(userId, contactId, noteId, contactName, noteBody, mode),
+  );
+}
+
+async function runNoteExtraction(
+  userId: string,
+  contactId: string,
+  noteId: string,
+  contactName: string,
+  noteBody: string,
+  mode: ExtractionMode,
 ): Promise<NoteExtractionOutcome> {
   if (!hasLLM()) {
     return noLlmOutcome();
@@ -46,23 +65,17 @@ export async function extractAndApplyNote(
   let model: string;
   let usage: LLMUsage;
   try {
-    // Prep phase (DB): budget check + node-type registry read run inside a
-    // short scoped-db lifetime, then the connection is released BEFORE the LLM
-    // call — see the extraction worker's connection-lifecycle fix. The user's
-    // node-type registry (names + slugs only, never entity rows) rides in the
-    // volatile user prompt so the cached system prefix stays byte-stable; an
-    // empty registry degrades to the registry-free prompt.
-    const nodeTypes = await withUserDb(userId, async () => {
-      await assertAiBudget(userId);
-      return (await listNodeTypes()).map(({ name, slug }) => ({ name, slug }));
-    });
+    // Prep phase (DB): one short scoped-db lifetime, released BEFORE the LLM
+    // call (see ./prep). The registry and the day both ride in the VOLATILE
+    // user prompt, so the cached system prefix stays byte-stable.
+    const { nodeTypes, today } = await prepareNoteExtraction(userId);
     // LLM phase: no DB connection is held across this ~minute-long call.
     const result = await getLLMClient().extract({
       schema: noteExtractionSchema,
       system: enrichment ? ENRICHMENT_EXTRACTION_SYSTEM : NOTE_EXTRACTION_SYSTEM,
       prompt: enrichment
-        ? buildEnrichmentExtractionPrompt(contactName, noteBody, nodeTypes)
-        : buildNoteExtractionPrompt(contactName, noteBody, nodeTypes),
+        ? buildEnrichmentExtractionPrompt(contactName, noteBody, nodeTypes, today)
+        : buildNoteExtractionPrompt(contactName, noteBody, nodeTypes, today),
       tier: "extract",
     });
     extraction = result.data;

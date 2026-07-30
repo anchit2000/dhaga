@@ -3,16 +3,18 @@ import { hasLLM, listConnectableCalendarProviders, listContactSyncProviders } fr
 import { getCurrentUser, requireUserIdForPage } from "@/lib/auth/guard";
 import { getAuth } from "@/lib/auth/config";
 import { getBillingGate } from "@/lib/hosted/gate";
-import { getDb } from "@/lib/db/request-scope";
-import { aiActionsUsedThisMonth, effectiveMonthlyAiCap } from "@/lib/ai/metering";
+import { aiCreditsUsedThisMonth, effectiveMonthlyAiCap, hasUnlimitedAiCredits } from "@/lib/ai/metering";
 import { shouldStoreCardPhotos } from "@/lib/repo/settings";
 import { listVocab } from "@/lib/repo/voice-vocab";
 import { listCalendarConnections } from "@/lib/repo/calendar";
 import {
   getDailySuggestionCount,
+  getImportantDateLeadDays,
+  getImportantDateRemindersEnabled,
   getSchedulePrefs,
   isConfirmationsDigestEnabled,
   isDailyDigestEnabled,
+  isJobEmailNotificationsEnabled,
   isMorningReminderEnabled,
 } from "@/lib/repo/suggestion-settings";
 import { countCardImages } from "@/lib/repo/card-images";
@@ -20,6 +22,8 @@ import { listContactConnections } from "@/lib/repo/contact-sync";
 import { CalendarConnectionsSetting } from "@/components/app/settings/CalendarConnectionsSetting";
 import { ContactSyncSetting } from "@/components/app/settings/ContactSyncSetting";
 import { SuggestionsSetting } from "@/components/app/settings/SuggestionsSetting";
+import { ImportantDatesSetting } from "@/components/app/settings/ImportantDatesSetting";
+import { TimezoneSetting } from "@/components/app/settings/TimezoneSetting";
 import { CardPhotoSetting } from "@/components/app/settings/CardPhotoSetting";
 import { VoiceTeaching } from "@/components/app/settings/VoiceTeaching";
 import { ApiKeysSetting } from "@/components/app/settings/ApiKeysSetting";
@@ -51,8 +55,10 @@ export async function BillingSection() {
   const planSummary = await gate.getPlanSummary(userId);
   if (!planSummary) return null;
   const [used, unlimited] = await Promise.all([
-    hasLLM() ? aiActionsUsedThisMonth() : Promise.resolve(0),
-    hasLLM() ? gate.hasUnlimitedAi(userId, await getDb()) : Promise.resolve(false),
+    hasLLM() ? aiCreditsUsedThisMonth() : Promise.resolve(0),
+    // The metering answer, not the billing gate's: with plan-cap enforcement on
+    // the gate would say "unlimited" while the dock correctly shows "n of 300".
+    hasLLM() ? hasUnlimitedAiCredits(userId) : Promise.resolve(false),
   ]);
   const aiUsage = hasLLM() ? { used, cap: await effectiveMonthlyAiCap(), unlimited } : null;
   return <BillingSetting summary={planSummary} aiUsage={aiUsage} />;
@@ -114,21 +120,45 @@ export async function ContactSyncSection({
 }
 
 export async function SuggestionsSection() {
-  const [count, prefs, digestEnabled, confirmationsDigestEnabled, reminderEnabled] = await Promise.all([
+  // One more pair of reads on the SAME request-pinned connection these settings
+  // lookups already share — not a new getDb() fan-out.
+  const [
+    count,
+    prefs,
+    digestEnabled,
+    confirmationsDigestEnabled,
+    reminderEnabled,
+    jobEmailEnabled,
+    importantDateRemindersEnabled,
+    importantDateLeadDays,
+  ] = await Promise.all([
     getDailySuggestionCount(),
     getSchedulePrefs(),
     isDailyDigestEnabled(),
     isConfirmationsDigestEnabled(),
     isMorningReminderEnabled(),
+    isJobEmailNotificationsEnabled(),
+    getImportantDateRemindersEnabled(),
+    getImportantDateLeadDays(),
   ]);
   return (
-    <SuggestionsSetting
-      count={count}
-      prefs={prefs}
-      digestEnabled={digestEnabled}
-      confirmationsDigestEnabled={confirmationsDigestEnabled}
-      reminderEnabled={reminderEnabled}
-    />
+    <>
+      <SuggestionsSetting
+        count={count}
+        prefs={prefs}
+        digestEnabled={digestEnabled}
+        confirmationsDigestEnabled={confirmationsDigestEnabled}
+        reminderEnabled={reminderEnabled}
+        jobEmailEnabled={jobEmailEnabled}
+      />
+      {/* Same getSchedulePrefs() read the suggestions card above already awaited
+          — the zone lives in that blob, so mounting it here costs no extra query. */}
+      <TimezoneSetting timezone={prefs.timezone} />
+      <ImportantDatesSetting
+        remindersEnabled={importantDateRemindersEnabled}
+        leadDays={importantDateLeadDays}
+      />
+    </>
   );
 }
 

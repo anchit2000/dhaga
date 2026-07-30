@@ -6,37 +6,67 @@ import type { MessagingClient } from "@dhaga/core/src/messaging";
  * card, card-scan image, or the first free-text with no contact yet) sets it,
  * and every following note/location attaches to it until the next one resets
  * it. Counters feed the closing summary. No PII is ever logged from here.
+ *
+ * `notices` is the honesty channel: anything the walk could NOT do (an
+ * unreadable photo, an attachment that wouldn't download, a pin that arrived
+ * before any contact) is appended here and reported in the summary, so no item
+ * is ever dropped without the sender being told.
  */
 export interface WalkState {
   readonly userId: string;
   readonly client: MessagingClient;
+  readonly provider: string;
+  readonly externalId: string;
   currentContactId: string | null;
   currentContactName: string | null;
   firstContactName: string | null;
   contactCount: number;
   noteCount: number;
   factCount: number;
-  droppedVoiceNote: boolean;
+  /** One disambiguation question per batch — see ./ingest-text. */
+  askedQuestion: boolean;
+  notices: string[];
 }
 
-export function createWalkState(userId: string, client: MessagingClient): WalkState {
+export function createWalkState(
+  userId: string,
+  client: MessagingClient,
+  chat: { provider: string; externalId: string },
+): WalkState {
   return {
     userId,
     client,
+    provider: chat.provider,
+    externalId: chat.externalId,
     currentContactId: null,
     currentContactName: null,
     firstContactName: null,
     contactCount: 0,
     noteCount: 0,
     factCount: 0,
-    droppedVoiceNote: false,
+    askedQuestion: false,
+    notices: [],
   };
 }
 
-/** Record a newly-established contact as the walk's current cursor. */
-export function setCurrentContact(state: WalkState, contactId: string, name: string): void {
+/**
+ * Point the cursor at a contact WITHOUT counting a new one — used when a note
+ * attaches to somebody already in the graph. The summary still names them, but
+ * "saved 2 contacts" must only ever mean two contacts were created.
+ */
+export function focusContact(state: WalkState, contactId: string, name: string): void {
   state.currentContactId = contactId;
   state.currentContactName = name;
   if (!state.firstContactName) state.firstContactName = name;
+}
+
+/** Record a newly-CREATED contact as the walk's current cursor. */
+export function setCurrentContact(state: WalkState, contactId: string, name: string): void {
+  focusContact(state, contactId, name);
   state.contactCount += 1;
+}
+
+/** Report something the walk skipped. Deduped: five bad photos say it once. */
+export function addNotice(state: WalkState, notice: string): void {
+  if (!state.notices.includes(notice)) state.notices.push(notice);
 }

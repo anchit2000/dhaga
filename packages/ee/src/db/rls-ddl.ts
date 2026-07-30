@@ -20,6 +20,9 @@ const TENANT_TABLES = [
   "ai_actions",
   "signals",
   "extraction_jobs",
+  // Persisted job notifications. Per-tenant: titles/bodies embed the user's own
+  // contact names, so an unscoped read would leak one user's graph to another.
+  "notifications",
   "calendar_connections",
   // Which follow-up Dhaga wrote as which event on which connected calendar.
   // Per-tenant: it joins a tenant's follow_ups to a tenant's calendar_connections,
@@ -46,6 +49,9 @@ const TENANT_TABLES = [
   // cross-tenant to resolve which user an inbound message belongs to.
   "messaging_sessions",
   "messaging_session_items",
+  // The open "which person did you mean?" question for one chat. Holds the
+  // pending note body — per-tenant PII, same reasoning as the session tables.
+  "messaging_pending_questions",
 ] as const;
 
 /**
@@ -133,6 +139,29 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'settings' AND policyname = 'tenant_isolation') THEN
     CREATE POLICY tenant_isolation ON settings USING (
       current_setting('app.bypass_rls', true) = 'true' OR
+      user_id = current_setting('app.current_user_id', true)
+    );
+  END IF;
+END $$;
+
+-- ai_credit_grants gets a BESPOKE policy rather than joining TENANT_TABLES: a
+-- grant row with user_id NULL means "every user on this instance", and the
+-- generic tenant_isolation policy (user_id = <tenant>) hides NULL from
+-- everybody — an instance-wide grant would silently apply to nobody. Adding
+-- "user_id IS NULL" is what makes it apply to everybody instead. Note also that
+-- NO user_id DEFAULT is set here (unlike the generic loop): every write goes
+-- through the admin bypass connection with an explicit user_id, or an explicit
+-- NULL for an instance-wide grant. Core creates the table (apps/web/src/lib/db/
+-- ddl/ai-budget.ts); this only adds tenancy. ai_budget_settings is absent on
+-- purpose — it is operator configuration, identical for every tenant.
+ALTER TABLE ai_credit_grants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ai_credit_grants FORCE ROW LEVEL SECURITY;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'ai_credit_grants' AND policyname = 'tenant_isolation') THEN
+    CREATE POLICY tenant_isolation ON ai_credit_grants USING (
+      current_setting('app.bypass_rls', true) = 'true' OR
+      user_id IS NULL OR
       user_id = current_setting('app.current_user_id', true)
     );
   END IF;

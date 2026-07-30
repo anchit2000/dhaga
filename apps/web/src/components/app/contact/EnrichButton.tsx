@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { enrichContactAction, type EnrichResult } from "@/lib/actions/enrich";
-import { FormError } from "@/components/app/feedback";
+import { FormError, toastNotice } from "@/components/app/feedback";
 import { ThreadLoader } from "@/components/brand/ThreadLoader";
 import { ENRICH_MESSAGES } from "@/utils/constants/loader-messages";
 import { SubmitButton } from "../SubmitButton";
@@ -13,7 +13,14 @@ import { SubmitButton } from "../SubmitButton";
  */
 export function EnrichButton({ contactId }: { contactId: string }) {
   const [state, formAction, pending] = useActionState<EnrichResult, FormData>(
-    enrichContactAction,
+    async (previous, formData) => {
+      const result = await enrichContactAction(previous, formData);
+      // Transient toast rather than an inline line, which had no lifetime: it
+      // sat there promising findings "shortly" long after they'd landed. The
+      // Facts panel's status pill carries progress and settles itself.
+      if (result.noticed) toastNotice(result.noticed);
+      return result;
+    },
     {},
   );
 
@@ -33,11 +40,6 @@ export function EnrichButton({ contactId }: { contactId: string }) {
           fully deletable.
         </p>
       )}
-      {state.noticed ? (
-        <p className="w-full text-xs text-ember" role="status">
-          {state.noticed}
-        </p>
-      ) : null}
       <div className="w-full empty:hidden">
         <FormError message={state.error} />
       </div>

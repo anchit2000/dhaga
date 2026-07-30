@@ -20,7 +20,7 @@ read routing safe: an entry can only ever hold one tenant's data.
 | 2 | Short transactions (no connection held across network I/O) | 🟢 **followed** on the known hot paths | `repo/graph/apply-extraction.ts`, PR #28 |
 | 3 | Read replicas (reads → replica, writes → primary) | 🔴 **not built** | — |
 | 4 | Heavy/async work off the request path | 🟢 **largely done** | `repo/extraction-jobs.ts`, `lib/jobs/*` |
-| 5 | Rate-limit + meter | 🟡 **meter done, rate-limit minimal** | `lib/ai/metering.ts` |
+| 5 | Rate-limit + meter | 🟡 **meter done, rate-limit minimal** | `lib/ai/metering/` |
 
 ---
 
@@ -251,8 +251,10 @@ Until then, lever 1 (caching) is the cheaper win and is where effort goes first.
 
 ## 5. Rate-limit + meter — 🟡 partial
 
-- **Metering — done.** Every AI call is logged to `ai_actions`; the free tier is
-  capped per month (`lib/ai/metering.ts`), enforced with a clear UI message.
+- **Metering — done.** Every AI call is logged to `ai_actions`, one row per
+  user-visible ACTION (a card scan is one row summing its two model calls — see
+  `lib/ai/metering/action-scope.ts`); the free tier is capped per month in AI
+  credits (`lib/ai/metering`), enforced with a clear UI message.
 - **Rate-limiting — minimal.** Auth endpoints use better-auth's built-in rate
   limiter; API-key access has per-key limits via the `apiKey` plugin. There is
   **no** application-level per-user/IP rate limiter on data or AI routes beyond

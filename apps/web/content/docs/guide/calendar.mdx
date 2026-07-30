@@ -1,6 +1,6 @@
 ---
 title: Calendar & reminders
-description: See every follow-up on a full-screen calendar — drag to reschedule, schedule date-less ones from the tray, and stay nudged by the nav bell and a daily reminder email.
+description: See every follow-up and upcoming birthday on a full-screen calendar — drag to reschedule, schedule date-less ones from the tray, and stay nudged by the notification bell and opt-in reminder emails.
 ---
 
 **`/app/calendar`** lays every open follow-up out on a full-screen calendar, so
@@ -42,6 +42,34 @@ you can:
 
 ![A follow-up's details dialog opened from the calendar](/docs/guide/calendar-event.png)
 
+## Birthdays and anniversaries
+
+Any **important date** you've saved on a contact — a birthday, a work
+anniversary, the day you met — shows up here too, on the day it comes round each
+year. They sit on the grid as soft amber all-day entries reading
+*"Priya — Birthday"*, with a quieter second line for the age or count where the
+saved date includes a year.
+
+They behave differently from follow-ups, on purpose:
+
+- **They aren't draggable and they can't be marked done.** A birthday isn't a
+  task you complete — it's a fact about a person. Drag one and it snaps straight
+  back.
+- **You edit them on the person.** Click one and Dhaga opens the contact; the
+  date lives under **More details → Important dates**, where a calendar picker
+  (with a year dropdown, so a 1974 birth year is two clicks) sets it. Change it
+  there and the calendar follows.
+- **They're worked out on the fly**, never stored as separate reminders. Fix a
+  date or forget a person and nothing is left behind to clean up.
+
+Dates you imported from Google Contacts or a `.vcf` sometimes arrive as plain
+text — *December 9*, or a day and month with no year. Dhaga keeps those exactly
+as they came and still works out when they next fall; it never quietly rewrites a
+date you didn't type.
+
+How far ahead a date counts as "upcoming" is yours to set, under **Suggestions**
+in [Settings](/docs/guide/settings) — 7 days by default.
+
 ## Your connected calendar, alongside
 
 By default a connected calendar tells Dhaga only when you're **busy** — blocks
@@ -73,13 +101,28 @@ Dhaga doesn't store them, doesn't log them, and doesn't send them to an AI model
 
 You don't have to keep the calendar open to stay on top of things:
 
-- The **bell** in the top nav carries a count of everything **due today** or
-  **overdue**. Open it for the short list, mark any item **done** right there, or
-  jump to the full calendar or your follow-ups list. When it's empty, you're all
-  caught up.
+- The **bell** in the top nav opens **Notifications** — one short list holding
+  three things: follow-ups **due today** or **overdue**, birthdays and
+  anniversaries coming up, and word that a background job has finished (a note
+  you added has turned into facts, an enrichment has landed). Mark a follow-up
+  **done** right there, dismiss a notification with its **×**, or jump to the
+  full calendar or your follow-ups list. When it's empty, you're all caught up.
+  The **count on the bell** is deliberately narrow — things to act on *now*: what's
+  overdue or due today, anything unread, and a date only once it's actually
+  arrived. A birthday next week is in the list without nagging you.
+- **`/app/follow-ups`** gains an **Upcoming dates** block below your open
+  follow-ups, showing who's next and how far off. It's simply absent when nothing
+  is coming.
 - Turn on the **daily reminder email** to get a morning nudge whenever follow-ups
-  are waiting. It's opt-in — flip it on under **Suggestions** in
-  [Settings](/docs/guide/settings).
+  are waiting — it now reaches you while there's still time to act, covering
+  anything due in the next few days rather than only what's already late.
+- Turn on the separate **birthday and anniversary email** to hear about a saved
+  date before it lands. You'll get at most two per occasion: one when it comes
+  into view, one on the day.
+
+Both emails are opt-in and both start off — flip them on under **Suggestions** in
+[Settings](/docs/guide/settings), where you can also set your **time zone** so a
+day starts and ends where you are.
 
 <Callout title="The calendar is an extra view, not a replacement">
 Your **Home** briefing and the **`/app/follow-ups`** list still show the same

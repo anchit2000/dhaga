@@ -2,20 +2,40 @@
 
 import type { ReactElement } from "react";
 import type { EventContentArg } from "@fullcalendar/core";
-import { isExternalEventProps, type CalendarEventProps } from "./event-map";
+import {
+  importantDateNote,
+  isExternalEventProps,
+  isImportantDateEventProps,
+  type CalendarEventProps,
+} from "./event-map";
 
 /**
- * FullCalendar's `eventContent` for both kinds of chip on the board, in both
+ * FullCalendar's `eventContent` for every kind of chip on the board, in both
  * views. A follow-up shows who it is about plus the action; a connected-calendar
  * event shows its own title (with the start time when it is not all-day) plus
- * its location. Which one we are looking at is decided by the extendedProps
+ * its location; an important date reads "Priya — Birthday" with the age on a
+ * quiet second line. Which one we are looking at is decided by the extendedProps
  * discriminator, never by inspecting the shape with `any`.
+ *
+ * Every chip is two single-line rows that ellipsise (see calendar-theme.css), so
+ * a 48px-wide month cell at 375px truncates rather than reflowing — and under
+ * 768px the board opens in listWeek anyway, where the full title has room.
  *
  * Connected-calendar titles and locations are third-party PII: they render here
  * and nowhere else — no tooltip, no log, no analytics.
  */
 export function renderEventContent(arg: EventContentArg): ReactElement {
   const props = arg.event.extendedProps as CalendarEventProps;
+
+  if (isImportantDateEventProps(props)) {
+    const note = importantDateNote(props);
+    return (
+      <div className="fc-important-date-body">
+        <span className="fc-important-date-title">{arg.event.title}</span>
+        {note ? <span className="fc-important-date-meta">{note}</span> : null}
+      </div>
+    );
+  }
 
   if (isExternalEventProps(props)) {
     return (

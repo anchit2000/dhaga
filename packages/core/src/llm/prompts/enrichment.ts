@@ -1,4 +1,5 @@
 import { todayLine } from "./today";
+import type { CalendarDay } from "../../dates/calendar-day";
 
 /**
  * User-triggered enrichment (BRD v1.1): research a contact's public
@@ -21,12 +22,15 @@ export interface EnrichmentSubject {
   links: string[];
 }
 
-export function buildEnrichmentPrompt(subject: EnrichmentSubject): string {
+export function buildEnrichmentPrompt(
+  subject: EnrichmentSubject,
+  today?: CalendarDay,
+): string {
   const lines = [
     `Name: ${subject.name}`,
     subject.title ? `Known title: ${subject.title}` : null,
     subject.company ? `Known company: ${subject.company}` : null,
     subject.links.length ? `Known links: ${subject.links.join(", ")}` : null,
   ].filter(Boolean);
-  return `${todayLine()}\n\n${lines.join("\n")}\n\nResearch this person's public footprint now.`;
+  return `${todayLine(today)}\n\n${lines.join("\n")}\n\nResearch this person's public footprint now.`;
 }

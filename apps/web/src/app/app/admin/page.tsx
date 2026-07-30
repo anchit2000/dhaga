@@ -24,6 +24,15 @@ export default async function AdminDashboardPage() {
           value={counts.activeSubscriptions}
         />
       </div>
+      <Link
+        href="/app/admin/ai-credits"
+        className="mt-4 block rounded-2xl border border-seam bg-panel p-5 transition-colors hover:border-amber/40"
+      >
+        <p className="text-sm font-medium text-paper">AI credits</p>
+        <p className="mt-1 text-sm text-fog">
+          Plan allowances, a promotional month, and make-good grants.
+        </p>
+      </Link>
     </div>
   );
 }

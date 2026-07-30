@@ -1,3 +1,11 @@
+// Domain split (File Length Rule): re-exported so `@/types` import paths hold.
+export type {
+  AiBudgetConfig,
+  AiCreditGrant,
+  AiPlanAllowances,
+  AiPromotion,
+} from "./ai-budget";
+
 export interface HowItWorksStep {
   step: string;
   title: string;

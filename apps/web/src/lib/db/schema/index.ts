@@ -66,3 +66,9 @@ export {
   type AuthUserRow,
 } from "./auth";
 export { apiKey, type ApiKeyRow } from "./api-key";
+export {
+  aiBudgetSettings,
+  aiCreditGrants,
+  type AiBudgetSettingRow,
+  type AiCreditGrantRow,
+} from "./ai-budget";

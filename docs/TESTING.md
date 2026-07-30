@@ -245,8 +245,11 @@ normally only an admin can approve. `DHAGA_ADMIN_EMAILS` breaks the circle:
       an "admin" badge if applicable); click a row → `/app/admin/users/[id]`.
 - [ ] **`/app/admin/users/[id]`** — AI usage this month vs. their cap
       (`N / unlimited` if they have an active paid subscription, else
-      `N / No AI (free tier)`), their subscription plan+status if any, and a
-      **Make admin** / **Revoke admin** toggle button.
+      `N / No AI (free tier)`), their subscription plan+status if any, a
+      **Grant credits to this user** card (see §4a), and a
+      **Make admin** / **Revoke admin** toggle button. When that user has
+      active grants, a second line reads **"+N granted"** — usage above it is
+      what was actually spent, and grants never change it.
 - [ ] **`/app/admin/subscriptions`** — table of every subscription
       (user link, plan, status, renewal date).
 - [ ] Sign out of the admin account, sign in as (or create) a **non-admin**
@@ -257,6 +260,84 @@ normally only an admin can approve. `DHAGA_ADMIN_EMAILS` breaks the circle:
 - [ ] With `DHAGA_HOSTED_MODE` unset entirely (§1b or plain §1a), `/app/admin`
       404s for *every* account including one listed in `DHAGA_ADMIN_EMAILS`
       — there is no way to reach this section at all outside hosted mode.
+
+---
+
+### 4a. AI credit controls (`/app/admin/ai-credits`, needs §3)
+
+The instance-wide AI-credit levers. Reach them from the **AI credits** card
+sitting under the three stat cards on `/app/admin` ("Plan allowances, a
+promotional month, and make-good grants"). The page header restates the
+precedence the resolver actually uses (`apps/web/src/lib/ai/metering/cap.ts`),
+highest first:
+
+> per-user override → active promotion → plan allowance (only with the master
+> switch on, and only when a plan is in play) → `DHAGA_AI_MONTHLY_CAP` → free
+> tier — then **active grants are added on top of whichever one wins**.
+
+**Nothing about today's behaviour changes until an admin turns enforcement
+on.** That is the whole safety story of this screen: with the switch off, paid
+plans still resolve through `hasUnlimitedAi` exactly as in §6, and the pricing
+page still sells Pro and Annual as "no monthly cap".
+
+- [ ] **Plan-cap enforcement** (first card) reads **Off** on a fresh instance
+      (`AI_PLAN_CAP_ENFORCEMENT_DEFAULT = false`,
+      `apps/web/src/utils/constants/ai-budget.ts`), with the copy: *"Limits are
+      not being enforced. The allowances below are stored but ignored: paid
+      plans bypass the cap entirely, exactly as they do today… Turning this on
+      gives every existing paying customer a ceiling they were never sold — a
+      pricing decision, not a metering one."* Toggle it on and the copy flips
+      to *"Limits are being enforced… The pricing page still says Pro and
+      Annual have no monthly cap — change that copy, or turn this back off."*
+      Turn it back **off** when you're done poking at it.
+- [ ] **Monthly allowance per plan** — the editable ladder (`Free`, `Pro`,
+      `Lifetime / Annual`, and `Power (sized, not sold)`), each with **Use
+      default** / **Custom monthly credits** / **No cap**. Defaults come from
+      `PLAN_AI_CREDITS_PER_MONTH` in `apps/web/src/utils/constants/plans.ts`,
+      so "Use default" is not a stored number. With enforcement off the card
+      says so: *"Stored but not applied while enforcement is off."*
+- [ ] **Promotional month** — one allowance for every user on the instance
+      ("everyone gets 1000 credits this month"), with a start date, an end
+      date and a note. It **ends at the start of the end date** (exclusive),
+      so pick the first day it should *no longer* apply; expiry is evaluated
+      on every read, so nobody has to remember to undo it. A promotion applies
+      whether or not enforcement is on, and a per-user override still beats
+      it. Clear the credits field to end it.
+- [ ] **Grant credits** — the additive make-good. *"Added on top of whatever
+      cap applies. Recorded usage is never changed — a grant repairs the
+      ceiling, not the history."* Blank user id = every user on the instance;
+      a reason is required; the expiry defaults to the first of next month
+      (blank = never expires, so it repeats every month). The same card is
+      pinned to one user on `/app/admin/users/[id]`.
+- [ ] **Grant ledger** — every grant ever made, newest first, with who/when/
+      how many/why and an **End now** button on active ones. "End now" sets
+      `ends_at`; it never deletes the row, and `ai_actions` is untouched by
+      any of it.
+- [ ] Automated: the precedence above is pinned by two vitest files —
+      `apps/web/src/lib/__tests__/ai-action-metering/budget-precedence.test.ts`
+      (every rung, plus "master switch off ⇒ byte-for-byte the old behaviour")
+      and `promotion-and-grants.test.ts` (a promotion self-expires; a grant
+      raises the ceiling without touching recorded usage). Run them with
+      `npm run test --prefix apps/web -- ai-action-metering`.
+
+**Getting a server up for this walkthrough.** `next dev` is unreliable on this
+box (leaked Turbopack workers eventually exhaust memory), so the recipe that
+has actually worked is a production build served on a free port and driven by
+the Playwright harness in `apps/web/e2e` — the config reuses an
+already-running server whenever `E2E_BASE_URL` points at one, instead of
+starting its own:
+
+```bash
+cd apps/web
+npx next build
+npx next start -p 3021          # any free port
+# in another shell, against that port:
+E2E_BASE_URL=http://localhost:3021 E2E_HEADLESS=1 npm run test:e2e
+```
+
+Admin screens still need §3's env (`DHAGA_HOSTED_MODE=true`,
+`DHAGA_ADMIN_EMAILS`, real Postgres) on the server you start — embedded PGlite
+can't serve them.
 
 ---
 

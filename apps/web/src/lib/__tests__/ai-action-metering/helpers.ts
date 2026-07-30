@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { count, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { aiActions } from "@/lib/db/schema";
@@ -48,4 +49,34 @@ export async function actionCount(): Promise<number> {
 export async function clearActions(): Promise<void> {
   const db = await getDb();
   await db.execute(sql`DELETE FROM ai_actions`);
+}
+
+/** Same in-memory PGlite. Resets the instance-wide budget controls so each case
+ *  starts from "nothing configured" — i.e. today's behaviour. */
+export async function clearBudgetControls(): Promise<void> {
+  const db = await getDb();
+  await db.execute(sql`DELETE FROM ai_budget_settings`);
+  await db.execute(sql`DELETE FROM ai_credit_grants`);
+}
+
+/**
+ * Insert a grant the way the admin panel would. Written here as raw SQL rather
+ * than through packages/ee: the core read path (lib/repo/ai-budget) is what the
+ * cap resolver uses, and it must work on a build with no EE at all.
+ */
+export async function seedGrant(input: {
+  userId: string | null;
+  credits: number;
+  reason: string;
+  startsAt?: Date;
+  endsAt?: Date | null;
+}): Promise<void> {
+  const db = await getDb();
+  await db.execute(sql`
+    insert into ai_credit_grants (id, user_id, credits, reason, granted_by, starts_at, ends_at)
+    values (
+      ${randomUUID()}, ${input.userId}, ${input.credits}, ${input.reason}, 'admin-test',
+      ${input.startsAt ?? new Date()}, ${input.endsAt ?? null}
+    )
+  `);
 }

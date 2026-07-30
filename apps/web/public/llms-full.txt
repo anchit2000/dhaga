@@ -801,7 +801,7 @@ Self-hosting or wiring up providers instead? Start at the
 
 Source: https://www.dhaga.app/docs/guide/calendar
 
-See every follow-up on a full-screen calendar — drag to reschedule, schedule date-less ones from the tray, and stay nudged by the nav bell and a daily reminder email.
+See every follow-up and upcoming birthday on a full-screen calendar — drag to reschedule, schedule date-less ones from the tray, and stay nudged by the notification bell and opt-in reminder emails.
 
 **`/app/calendar`** lays every open follow-up out on a full-screen calendar, so
 you can see what's coming instead of scrolling a list. Dated follow-ups land on
@@ -842,6 +842,34 @@ you can:
 
 ![A follow-up's details dialog opened from the calendar](/docs/guide/calendar-event.png)
 
+## Birthdays and anniversaries
+
+Any **important date** you've saved on a contact — a birthday, a work
+anniversary, the day you met — shows up here too, on the day it comes round each
+year. They sit on the grid as soft amber all-day entries reading
+*"Priya — Birthday"*, with a quieter second line for the age or count where the
+saved date includes a year.
+
+They behave differently from follow-ups, on purpose:
+
+- **They aren't draggable and they can't be marked done.** A birthday isn't a
+  task you complete — it's a fact about a person. Drag one and it snaps straight
+  back.
+- **You edit them on the person.** Click one and Dhaga opens the contact; the
+  date lives under **More details → Important dates**, where a calendar picker
+  (with a year dropdown, so a 1974 birth year is two clicks) sets it. Change it
+  there and the calendar follows.
+- **They're worked out on the fly**, never stored as separate reminders. Fix a
+  date or forget a person and nothing is left behind to clean up.
+
+Dates you imported from Google Contacts or a `.vcf` sometimes arrive as plain
+text — *December 9*, or a day and month with no year. Dhaga keeps those exactly
+as they came and still works out when they next fall; it never quietly rewrites a
+date you didn't type.
+
+How far ahead a date counts as "upcoming" is yours to set, under **Suggestions**
+in [Settings](/docs/guide/settings) — 7 days by default.
+
 ## Your connected calendar, alongside
 
 By default a connected calendar tells Dhaga only when you're **busy** — blocks
@@ -873,13 +901,28 @@ Dhaga doesn't store them, doesn't log them, and doesn't send them to an AI model
 
 You don't have to keep the calendar open to stay on top of things:
 
-- The **bell** in the top nav carries a count of everything **due today** or
-  **overdue**. Open it for the short list, mark any item **done** right there, or
-  jump to the full calendar or your follow-ups list. When it's empty, you're all
-  caught up.
+- The **bell** in the top nav opens **Notifications** — one short list holding
+  three things: follow-ups **due today** or **overdue**, birthdays and
+  anniversaries coming up, and word that a background job has finished (a note
+  you added has turned into facts, an enrichment has landed). Mark a follow-up
+  **done** right there, dismiss a notification with its **×**, or jump to the
+  full calendar or your follow-ups list. When it's empty, you're all caught up.
+  The **count on the bell** is deliberately narrow — things to act on *now*: what's
+  overdue or due today, anything unread, and a date only once it's actually
+  arrived. A birthday next week is in the list without nagging you.
+- **`/app/follow-ups`** gains an **Upcoming dates** block below your open
+  follow-ups, showing who's next and how far off. It's simply absent when nothing
+  is coming.
 - Turn on the **daily reminder email** to get a morning nudge whenever follow-ups
-  are waiting. It's opt-in — flip it on under **Suggestions** in
-  [Settings](/docs/guide/settings).
+  are waiting — it now reaches you while there's still time to act, covering
+  anything due in the next few days rather than only what's already late.
+- Turn on the separate **birthday and anniversary email** to hear about a saved
+  date before it lands. You'll get at most two per occasion: one when it comes
+  into view, one on the day.
+
+Both emails are opt-in and both start off — flip them on under **Suggestions** in
+[Settings](/docs/guide/settings), where you can also set your **time zone** so a
+day starts and ends where you are.
 
 **The calendar is an extra view, not a replacement**
 
@@ -1208,7 +1251,10 @@ footprint — cited, saved as a note, fully deletable."* Concretely:
 
 The search plus extraction takes 20–60 seconds and runs **in the background**:
 the progress pill above the Facts section tracks it, it keeps running if you
-leave the page, and it finishes with a short confirmation of what was added.
+leave the page, and it finishes with a short confirmation of what was added. Go
+elsewhere in the meantime and the result finds you through the
+[**bell**](/docs/guide/calendar#staying-reminded) in the top nav — including when
+it turns up nothing, or fails.
 
 ## Privacy
 
@@ -1771,6 +1817,12 @@ short confirmation of what landed — *"Extraction finished — 4 facts and 1
 follow-up added."* — and clears itself. If a run fails, the pill says so and
 offers **Retry**.
 
+If you've already moved on, the finished run reaches you through the
+[**bell**](/docs/guide/calendar#staying-reminded) in the top nav instead —
+*"Extracted 4 facts and 1 follow-up from your note about Priya"* — and clicking
+it takes you back to the person. Runs that failed, or that stopped because
+you're out of AI credits, say so there too, so a job never finishes in silence.
+
 ## Add facts and follow-ups by hand
 
 You don't need cloud AI to build a person's profile. On the free tier — or any
@@ -1872,7 +1924,13 @@ beneath it.
   have left this month. Credits are charged per action, not per model call: a
   card scan, note, quick-add or draft costs 1; a question to Ask Dhaga or a
   pre-meeting brief costs 2; enriching a contact from the web costs 20. Nightly
-  watchlist scans are free — they are limited by how many people you watch.
+  watchlist scans are free — they are limited by how many people you watch. The
+  allowance half of that line can be raised by whoever runs the instance — a
+  promotional month, or credits granted to you after something went wrong on
+  their side — and extra credits are only ever *added* on top: the "used" half
+  is a record of what you actually spent and is never rewritten. Operators:
+  those controls are the admin AI credits screen, documented in
+  [Self-hosting](/docs/self-hosting#instance-wide-ai-credit-controls-appadminai-credits-hostedee).
 - **Capture** — **Card photos** (whether the original card image is kept after a
   scan) and **Voice teaching** — a vocabulary manager where you teach Dhaga
   names it keeps mishearing. The fastest way to teach a word is tap-to-fix right
@@ -1890,9 +1948,14 @@ beneath it.
   digest** email (off by default) that summarises the AI confirmations waiting
   for your review. The same tab holds **Birthdays & anniversaries**: how many
   days ahead a saved date counts as upcoming (0–90, default 7), and an opt-in
-  reminder email that arrives that far in advance. Like every email preference in
-  Dhaga it starts off — the first-run walkthrough stops here so you choose, and
-  nothing is switched on for you.
+  reminder email that arrives that far in advance. **Background job alerts** sits
+  alongside them: an opt-in email for when a note extraction or web enrichment
+  **fails or is blocked** by your AI budget, at most one every 15 minutes. Runs
+  that succeed are not emailed — every job, successful or not, is recorded in
+  your notifications, and a run that worked asks nothing of you. Like every email
+  preference in Dhaga these start off — the first-run walkthrough stops here so
+  you choose, and nothing is switched on for you. It also holds your **Time
+  zone** — see below.
 - **Import** — bring an existing address book into Dhaga (see below).
 
 **Some sections depend on configuration**
@@ -1900,6 +1963,26 @@ beneath it.
 Billing only appears when the instance has Stripe configured, and calendar/
 email features need their providers wired up. On a plain self-host several of
 these sections are intentionally absent — see [Self-hosting](/docs/self-hosting).
+
+## Your time zone
+
+Under **Suggestions**, **Time zone** is the setting that decides where your day
+begins and ends. Search for a city or region, or take the **Use detected zone**
+shortcut when Dhaga notices your browser disagrees with what's saved — it fills
+the box for you and waits; nothing changes until you press Save.
+
+It matters because reminders are about *days*. With it set, a birthday reaches
+you on the day it is where **you** are, rather than wherever the server happens
+to be, and a reminder you've already had can't arrive again.
+
+**It picks the day, not the hour**
+
+Everything still goes out on one daily run, so the *time* an email lands is set
+by the instance, not by your zone. Your time zone decides which **day** a
+reminder belongs to — not what time of morning it arrives.
+
+New accounts start on **UTC** until you choose one, so nothing shifts under
+anyone who hasn't looked at this yet.
 
 ## Import your contacts
 
@@ -2993,6 +3076,54 @@ These controls live only in the EE admin panel — a core-only self-host raises
 the cap for *everyone* with `DHAGA_AI_MONTHLY_CAP` instead (see the env table
 below).
 
+### Instance-wide AI credit controls (`/app/admin/ai-credits`, hosted/EE)
+
+Beside that per-user override, `/app/admin/ai-credits` carries three levers that
+apply to the whole instance:
+
+- **Plan-cap enforcement** — a master switch that is **off on every instance**
+  (`AI_PLAN_CAP_ENFORCEMENT_DEFAULT = false`). While it is off the plan
+  allowances below are stored but ignored, and behaviour is exactly what it was
+  before these controls existed: paid plans bypass the cap through
+  `hasUnlimitedAi`, and the pricing page sells Pro and Annual as "no monthly
+  cap". Turning it on gives every existing paying customer a ceiling they were
+  never sold — a pricing decision, not a metering one.
+- **Monthly allowance per plan** — runtime-editable overrides of the shipped
+  numbers (`PLAN_AI_CREDITS_PER_MONTH`), per plan, each of which can also be set
+  to "no cap". Inert until the switch above is on.
+- **Promotional month** — lifts *every* user to one allowance for a window
+  ("everyone gets 1,000 credits this month"). It works whether or not
+  enforcement is on, and it ends at the **start** of its end date, evaluated on
+  every read — so it expires by itself with no cron job and no admin cleanup.
+
+The same page holds the **grant** ledger: additive make-good credits for one
+user (or, with the user id left blank, everyone), with a required reason and an
+expiry that defaults to the end of the current month. A grant only moves the
+ceiling — `ai_actions`, the only record of what cloud AI actually cost, is never
+rewritten, and "End now" stops a grant counting without deleting its row.
+
+Precedence, highest first (`apps/web/src/lib/ai/metering/cap.ts`): per-user
+override → active promotion → plan allowance (only with the switch on, and only
+when a plan is in play) → `DHAGA_AI_MONTHLY_CAP` → free tier. Active grants are
+added on top of whichever one wins.
+
+**What a core-only self-host gets.** The two tables this feature stores its
+state in — `ai_budget_settings` and `ai_credit_grants`
+([`apps/web/src/lib/db/ddl/ai-budget.ts`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/lib/db/ddl/ai-budget.ts))
+— belong to the AGPL core, so they are created on your database whether or not
+`packages/ee` is present. Nothing else follows from that: there is no admin UI
+to write to them (both simply stay empty), and no row-level security on them
+either — `ai_credit_grants` gets its bespoke
+`user_id IS NULL OR user_id = <tenant>` policy only from
+`packages/ee/src/db/rls-ddl.ts`, and `ai_budget_settings` deliberately gets none
+anywhere, being operator config rather than user data. The cap resolves exactly
+as it did before: whatever `DHAGA_AI_MONTHLY_CAP` says, else the free-tier
+constant. **Nothing here is required from `packages/ee` to self-host**, and the
+Level 2 removal list above needs no additions — the new admin page and its
+server actions and components live under `apps/web/src/app/app/admin/`,
+`apps/web/src/lib/actions/admin/` and `apps/web/src/components/app/admin/`,
+which are already on it.
+
 ## Running with `docker compose up`
 
 The repo root has a [`Dockerfile`](https://github.com/anchit2000/dhaga/blob/main/Dockerfile) and [`compose.yml`](https://github.com/anchit2000/dhaga/blob/main/compose.yml)
@@ -3075,6 +3206,32 @@ Requires `CRON_SECRET` and `FIRECRAWL_API_KEY` (or another `SEARCH_PROVIDER`)
 set — see `.env.example`. Without `CRON_SECRET` the route always returns
 401, so it's safe to leave unconfigured if you don't want the feature.
 
+### Daily email jobs (digests and reminders)
+
+Every recurring email — the reach-out digest, the confirmations digest, the
+morning follow-up reminder, the due-follow-up sweep, the birthday/anniversary
+reminder and the LinkedIn-export nudges — runs from the one `/api/jobs/daily`
+endpoint, on the single Vercel cron in `apps/web/vercel.json` (`"17 6 * * *"`,
+unchanged). All of them are **opt-in per user** in Settings → Suggestions and
+all degrade to a clean no-op without `RESEND_API_KEY` / `RESEND_FROM_EMAIL`
+(and, on a single-user self-host, `DHAGA_OWNER_EMAIL`).
+
+Each user's **time zone** (Settings → Suggestions → Time zone, default `UTC`)
+decides which calendar day a job is reasoning about, so a birthday lands on the
+recipient's day rather than the server's, and a re-triggered cron is a no-op for
+someone already emailed on their local day. What the time zone does **not** yet
+change is *when* the mail goes out: every send still happens on the one cron
+run, at whatever UTC time it fires. Per-user local-morning delivery needs the
+endpoint driven **hourly** with `EMAIL_JOBS_HOURLY=true` (see the env table
+below).
+
+**Don't add a sub-daily cron on Vercel Hobby**
+
+Vercel Hobby caps crons at once per day, and a more-frequent entry in
+`apps/web/vercel.json` can break Hobby deploys — so hourly delivery is not
+available there. Off Vercel, an hourly system crontab or container timer hitting
+the same URL with the same `Authorization: Bearer $CRON_SECRET` header is enough.
+
 ## Self-host env var reference
 
 Everything below lives in `apps/web/.env.local` — see
@@ -3090,8 +3247,9 @@ None of the `packages/ee/.env.example` vars (`DHAGA_HOSTED_MODE`,
 | `NEXT_PUBLIC_SITE_URL` | No | Canonical origin for sitemap/robots/OG/llms.txt; defaults to the production deployment origin when unset |
 | `DATABASE_URL` | Only on serverless (Vercel) | Otherwise defaults to embedded PGlite |
 | `ANTHROPIC_API_KEY` | No | AI features degrade to heuristic parsing / disabled without it |
-| `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `DHAGA_OWNER_EMAIL` | No | Event digests, reach-out digest, morning follow-up reminder + LinkedIn-export upload reminders (the day-1/3/6/7 nudge after "Get contacts from LinkedIn"). All degrade to a clean no-op when unset |
-| `MORNING_REMINDER_HOURLY` | No | Set `true` only if you drive `/api/jobs/daily` hourly — then the morning reminder lands at the recipient's local ~08:00; unset on the single Hobby cron |
+| `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `DHAGA_OWNER_EMAIL` | No | Event digests, reach-out digest, confirmations digest, morning follow-up reminder, due-follow-up reminder, birthday/anniversary reminder + LinkedIn-export upload reminders (the day-1/3/6/7 nudge after "Get contacts from LinkedIn"). All degrade to a clean no-op when unset |
+| `EMAIL_JOBS_HOURLY` | No | Set `true` **only** if you drive `/api/jobs/daily` hourly — then the morning reminder, reach-out digest and confirmations digest send only on the run matching the recipient's local ~08:00 (their Settings time zone). Leave it unset on a once-a-day cron, including Vercel Hobby's: the single run always sends, and a per-user local-day record is what stops duplicates. See "Daily email jobs" above |
+| `MORNING_REMINDER_HOURLY` | No | Deprecated alias for `EMAIL_JOBS_HOURLY`, still honoured for one release. Despite the name it now gates all three of those jobs, not just the morning reminder — prefer the new name |
 | `TELEGRAM_*` | No | Owner-only bot capture |
 | `DHAGA_WEBHOOK_URL` | No | Outbound automation |
 | `SEARCH_PROVIDER`, `FIRECRAWL_API_KEY` | No | Job-change detection + news watchlist |

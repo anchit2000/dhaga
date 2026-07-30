@@ -3,8 +3,7 @@ import { hasLLM, listConnectableCalendarProviders } from "@dhaga/core";
 import { getCurrentUser, requireUserIdForPage } from "@/lib/auth/guard";
 import { getAuth } from "@/lib/auth/config";
 import { getBillingGate } from "@/lib/hosted/gate";
-import { getDb } from "@/lib/db/request-scope";
-import { aiCreditsUsedThisMonth, effectiveMonthlyAiCap } from "@/lib/ai/metering";
+import { aiCreditsUsedThisMonth, effectiveMonthlyAiCap, hasUnlimitedAiCredits } from "@/lib/ai/metering";
 import { shouldStoreCardPhotos } from "@/lib/repo/settings";
 import { listVocab } from "@/lib/repo/voice-vocab";
 import { listCalendarConnections } from "@/lib/repo/calendar";
@@ -50,7 +49,9 @@ export async function BillingSection() {
   if (!planSummary) return null;
   const [used, unlimited] = await Promise.all([
     hasLLM() ? aiCreditsUsedThisMonth() : Promise.resolve(0),
-    hasLLM() ? gate.hasUnlimitedAi(userId, await getDb()) : Promise.resolve(false),
+    // The metering answer, not the billing gate's: with plan-cap enforcement on
+    // the gate would say "unlimited" while the dock correctly shows "n of 300".
+    hasLLM() ? hasUnlimitedAiCredits(userId) : Promise.resolve(false),
   ]);
   const aiUsage = hasLLM() ? { used, cap: await effectiveMonthlyAiCap(), unlimited } : null;
   return <BillingSetting summary={planSummary} aiUsage={aiUsage} />;

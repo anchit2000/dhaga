@@ -4,6 +4,7 @@ import { buildDedupIndex, indexContact, matchExisting } from "../dedup";
 import { createLink, listLinks, recordPull } from "../links";
 import { loadLocalContacts, normalizeSyncable } from "../read";
 import { offerUnlinkedCreates, tombstoneMissingLinks } from "../sweep";
+import { clearSyncTombstones, listSyncTombstones } from "../tombstones";
 import { applySyncedContact, createSyncedContact } from "../write";
 import { neutralise, pickFields } from "./fields";
 import type { ReconcileOptions } from "./fields";
@@ -34,6 +35,7 @@ export async function reconcileContacts(
   const now = new Date();
   const links = await listLinks(db, request.provider);
   const local = await loadLocalContacts(db);
+  const tombstoned = await listSyncTombstones(db, request.provider);
 
   const linkByExternal = new Map(links.map((link) => [link.externalId, link]));
   const localById = new Map(local.map((row) => [row.id, row.contact]));
@@ -44,6 +46,7 @@ export async function reconcileContacts(
   const writes: SyncWrite[] = [];
   const conflicts: SyncConflictReport[] = [];
   const seen = new Set<string>();
+  const readopted: string[] = [];
   let pulled = 0;
   let created = 0;
   let linked = 0;
@@ -56,6 +59,10 @@ export async function reconcileContacts(
     // importer's dedup ladder before it is allowed to mean "new person".
     let contactId = link?.contactId ?? matchExisting(index, observedContact);
     if (!contactId) {
+      // Deleted in Dhaga while the record survived on the device. Re-importing
+      // them is not a sync, it is an undo of the user's decision — skip the
+      // record. Its id stays in `seen`, so the sweep still counts it present.
+      if (tombstoned.has(observed.externalId)) continue;
       contactId = await createSyncedContact(observedContact);
       created++;
       // A contact created from this very observation IS its own base, so the
@@ -65,6 +72,9 @@ export async function reconcileContacts(
       localById.set(contactId, observedContact);
       indexContact(index, contactId, observedContact);
     }
+    // Reaching here with a tombstone means a contact exists for the pair again,
+    // so it has done its job (../tombstones.ts — the un-delete path).
+    if (tombstoned.has(observed.externalId)) readopted.push(observed.externalId);
 
     const localContact = localById.get(contactId);
     // Fields the provider's model cannot represent are handed the local value so
@@ -132,6 +142,7 @@ export async function reconcileContacts(
     }
   }
 
+  await clearSyncTombstones(db, request.provider, readopted);
   await tombstoneMissingLinks(db, links, request, seen);
   if (options.pushUnlinked) writes.push(...offerUnlinkedCreates(local, linkedContactIds));
 

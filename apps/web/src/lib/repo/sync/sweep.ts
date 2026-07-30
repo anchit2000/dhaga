@@ -28,12 +28,18 @@ import type { LocalContact } from "./read";
  * and "I observed nothing" is indistinguishable from "I failed to enumerate".
  * A genuinely emptied address book has to arrive as a deliberate signal, not as
  * the absence of one. Same reasoning for `full` with an empty batch.
+ *
+ * `observedEmpty` IS that deliberate signal: a positive claim that enumeration
+ * ran and found nothing. Honoured only when the batch is genuinely empty too,
+ * so a client that contradicts itself ("the container is empty, here are its
+ * contacts") cannot sweep away the very links it just reported.
  */
 function observedIds(
   request: SyncPushRequest,
   seenExternalIds: ReadonlySet<string>,
 ): ReadonlySet<string> | null {
   if (request.observedExternalIds?.length) return new Set(request.observedExternalIds);
+  if (request.observedEmpty && seenExternalIds.size === 0) return seenExternalIds;
   if (request.full && seenExternalIds.size > 0) return seenExternalIds;
   return null;
 }
@@ -75,9 +81,25 @@ export async function tombstoneMissingLinks(
 
 /**
  * Offer Dhaga contacts that have no link on this provider as creates — the
- * "push my graph to my phone" direction. Caller-gated (never the default): a
- * contact written into an address book propagates to every device signed into
- * it, so it needs the user's say-so, not a sync's initiative.
+ * "a person I added in Dhaga should reach my phone" direction. Still
+ * caller-gated: a contact written into an address book propagates to every
+ * device signed into that account, so who asks for it matters (the phone's own
+ * address book asks by default; a connected Google/Outlook account does not).
+ *
+ * Offered contacts are the ones the user CREATED in Dhaga, which is narrower
+ * than "everything unlinked":
+ *
+ *  - "mentioned" rows are AI-inferred stubs, a name lifted out of a note.
+ *    Inferred data must never be written into an external address book.
+ *  - "import" rows came from somewhere else — a CSV/vCard the user uploaded, a
+ *    connected account, or a previous sync. They are unlinked HERE by accident
+ *    of provenance, not because the user authored them, and pushing them would
+ *    turn "add my Dhaga people to my phone" into "replay every list I have ever
+ *    imported into my address book".
+ *
+ * A contact whose link is tombstoned is not offered either — its id is in
+ * `linkedContactIds` whatever the link's state — so deleting someone on the
+ * phone is never undone by this direction on the next run.
  *
  * No link row is written here. The external id does not exist until the
  * platform mints it, so the link is established by the ack.
@@ -90,9 +112,7 @@ export function offerUnlinkedCreates(
   for (const row of local) {
     if (writes.length >= SYNC_MAX_CREATES) break;
     if (linkedContactIds.has(row.id) || !row.contact.name) continue;
-    // "mentioned" rows are AI-inferred stubs (a name lifted out of a note).
-    // Inferred data must never be written into an external address book.
-    if (row.source === "mentioned") continue;
+    if (row.source === "mentioned" || row.source === "import") continue;
     writes.push({ externalId: null, contactId: row.id, fields: row.contact, etag: null });
   }
   return writes;

@@ -60,3 +60,30 @@ export const contactLinks = pgTable("contact_links", {
 });
 
 export type ContactLinkRow = typeof contactLinks.$inferSelect;
+
+/**
+ * "This external record maps to someone the user deliberately deleted in Dhaga
+ * — do not import them again."
+ *
+ * A separate table because `contactLinks.contactId` cascades on delete: the
+ * link dies with the contact, and the phone record it pointed at then looks
+ * brand new to the next sync, which re-created the person the user had just
+ * removed. The tombstone outlives the cascade.
+ *
+ * No FK, and deliberately no identity — provider, external id, timestamp. The
+ * contact it refers to no longer exists, and keeping their name or email here
+ * would make "forget this person" a lie. `deletedAt` is diagnostic only;
+ * nothing expires, because a tombstone that lapsed would resurrect the contact
+ * later and call it a sync.
+ *
+ * Under EE the `user_id` column + RLS are added by packages/ee (rls-ddl.ts
+ * TENANT_TABLES), exactly like contact_links — this schema stays tenancy-unaware.
+ */
+export const contactSyncTombstones = pgTable("contact_sync_tombstones", {
+  id: text("id").primaryKey(),
+  provider: text("provider").notNull(),
+  externalId: text("external_id").notNull(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type ContactSyncTombstoneRow = typeof contactSyncTombstones.$inferSelect;

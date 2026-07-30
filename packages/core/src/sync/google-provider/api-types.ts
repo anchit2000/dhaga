@@ -54,11 +54,22 @@ export interface GooglePersonEvent {
   formattedType?: string;
 }
 
+export interface GooglePersonMetadata {
+  /**
+   * Only ever true on an INCREMENTAL page: a syncToken request reports a person
+   * removed since the token was minted as a bare resourceName carrying this
+   * flag, with no field data at all. See ./target/list.ts for why such a record
+   * must never become an ExternalContact.
+   */
+  deleted?: boolean;
+}
+
 export interface GooglePerson {
   /** "people/c12345" — the stable id we persist as `external_id`. */
   resourceName?: string;
   /** Required by updateContact for optimistic concurrency. */
   etag?: string;
+  metadata?: GooglePersonMetadata;
   names?: GooglePersonName[];
   nicknames?: GooglePersonValue[];
   organizations?: GooglePersonOrganization[];

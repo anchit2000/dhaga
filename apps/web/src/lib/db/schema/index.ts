@@ -39,7 +39,12 @@ export {
   type CalendarConnectionRow,
   type CalendarEventLinkRow,
 } from "./calendar";
-export { contactLinks, type ContactLinkRow } from "./sync";
+export {
+  contactLinks,
+  contactSyncTombstones,
+  type ContactLinkRow,
+  type ContactSyncTombstoneRow,
+} from "./sync";
 export { contactConnections, type ContactConnectionRow } from "./contact-connections";
 export { aiActions, settings, voiceVocab, type AiActionRow, type VoiceVocabRow } from "./meta";
 export {

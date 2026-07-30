@@ -115,6 +115,35 @@ export interface ExternalRef {
 }
 
 /**
+ * One enumeration of an external address book, and — crucially — whether it was
+ * the WHOLE of one.
+ *
+ * `mode` is a discriminant rather than a boolean because of what reads it: the
+ * caller turns it into reconcile's `full` flag, which authorises the DELETION
+ * SWEEP that tombstones every link with no matching record. An incremental
+ * batch is only what changed, so treating it as complete would unlink almost
+ * the entire address book on the first incremental run. A literal that has to
+ * be spelled `"full"` at the exact site that actually enumerated everything is
+ * far harder to get wrong than a boolean that defaults, spreads or inverts.
+ *
+ * Deletions therefore surface only on a `"full"` run. An incremental page must
+ * DROP the provider's deletion tombstones rather than pass them on: they arrive
+ * as records with no fields, and the merge would honour that emptiness as the
+ * user clearing every field they own.
+ *
+ * `cursor` is the provider's own opaque resume token — Google's syncToken,
+ * Graph's deltaLink — never a timestamp, which is why `listChanged(since)`
+ * could not express it. `null` means the provider issued none this run, and the
+ * caller must then clear whatever it had stored: the cost is a full enumeration
+ * next time, which is always safe.
+ */
+export interface ChangedContactsPage {
+  mode: "full" | "incremental";
+  contacts: ExternalContact[];
+  cursor: string | null;
+}
+
+/**
  * Provider-agnostic contract for an address book Dhaga can sync with — the
  * same gateway shape as LLMClient / SearchClient / MessagingClient. Adding
  * CardDAV or a new provider is a new implementation plus one registry call,
@@ -141,6 +170,21 @@ export interface ContactSyncTarget {
   readonly unsupportedFields?: readonly SyncField[];
   listContainers(): Promise<SyncContainer[]>;
   listChanged(since: Date | null): Promise<ExternalContact[]>;
+  /**
+   * Enumerate incrementally from the provider's own opaque cursor, returning a
+   * fresh one. `null` means "no cursor yet" and must answer with a `"full"`
+   * page that also mints one.
+   *
+   * OPTIONAL, and it stays optional: the mobile device target has no cursor to
+   * offer — neither expo-contacts API exposes a modified-since query — and
+   * making this required would break it for no gain. A target without it is
+   * simply always enumerated in full via `listChanged`, exactly as before.
+   *
+   * Implementations MUST recover from an expired cursor by re-enumerating in
+   * full and returning `mode: "full"`, never by surfacing the expiry as a run
+   * failure.
+   */
+  listChangedSince?(cursor: string | null): Promise<ChangedContactsPage>;
   create(contact: SyncableContact, containerId: string | null): Promise<ExternalRef>;
   patch(
     externalId: string,

@@ -35,10 +35,16 @@ export type {
 } from "./types";
 
 /**
- * `pushUnlinked` asks the server to also offer every Dhaga contact that has no
- * link here as a create on this phone. Defaulted off: it is the user's personal
- * address book, and filling it with their whole CRM is a decision only they can
- * make.
+ * `pushUnlinked` asks the server to also offer Dhaga contacts that have no link
+ * here as creates on this phone — the "someone I added in Dhaga should be
+ * reachable from my phone" direction. The server narrows that to contacts the
+ * user actually authored in Dhaga (never AI-inferred stubs, never rows that
+ * arrived from an import or another provider), which is what makes it safe for
+ * the sync screen to switch it on by default.
+ *
+ * The parameter still defaults OFF, so a programmatic caller has to ask: the
+ * user-facing default belongs to the screen that shows the switch, not to the
+ * engine every other caller shares.
  */
 export async function runContactSync(
   settings: MobileSettings,

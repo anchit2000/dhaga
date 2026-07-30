@@ -31,11 +31,11 @@ const TENANT_TABLES = [
   "relationship_types",
   "graph_layouts",
   "voice_vocab",
-  // Address-book sync links. Per-tenant and RLS-scoped: the row maps a contact
-  // to an id in one user's device/Google/Outlook address book, and external ids
-  // collide freely across users (Android hands out small integers from the
-  // device's own sequence), so an unscoped read would cross-link tenants.
+  // Address-book sync links, and the tombstones that outlive a deleted contact.
+  // Per-tenant: external ids collide freely across users (Android hands out
+  // small integers from its own sequence), so unscoped reads cross-link tenants.
   "contact_links",
+  "contact_sync_tombstones",
   // OAuth grants to a user's Google/Outlook address book. Scoped for the
   // strongest reason on this list: the row holds access and refresh tokens, so
   // an unscoped read is an account-takeover risk, not just a data leak.

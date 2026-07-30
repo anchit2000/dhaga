@@ -8,6 +8,7 @@ import {
 } from "@dhaga/core";
 import { getDb } from "@/lib/db/request-scope";
 import { edges } from "@/lib/db/schema";
+import { scheduleCalendarWriteOutForCurrentUserNote } from "@/lib/calendar/write-out";
 import { resolveTarget, type EdgeSuggestionTarget } from "../edge-suggestions/confirm";
 import { createContact } from "../contacts";
 import { upsertEmbedding } from "../embeddings";
@@ -143,6 +144,13 @@ export async function applyConfirmation(
         throw new Error("supplement confirmation needs a source note receipt");
       }
       await applyExtraction(payload.apply.contactId, sourceNoteId, payload.apply.extraction);
+      // A confirmed supplement writes follow-ups through exactly the same
+      // applyExtraction the capture path uses, so they have to reach a
+      // write-enabled calendar the same way (lib/ai/note-extraction schedules
+      // this for the note it just extracted). Registers after() work only: the
+      // sync runs post-response in its own short DB scopes, so this mutation's
+      // tenant connection is never held across the Google/Microsoft call.
+      await scheduleCalendarWriteOutForCurrentUserNote(sourceNoteId);
       return { kind: "extraction", contactId: payload.apply.contactId };
   }
 }

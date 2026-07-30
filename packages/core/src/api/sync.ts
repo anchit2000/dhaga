@@ -24,6 +24,13 @@ export interface SyncPushRequest {
   provider: ContactSyncProviderId;
   /** Which account/container these came from (iOS CardDAV container, Android account). */
   containerId: string | null;
+  /**
+   * What the client observed. MAY be empty: an address book the user has
+   * emptied still has to be reportable, and refusing the request outright would
+   * make "I deleted everyone on my phone" the one change sync could not see.
+   * An empty list on its own reconciles nothing and sweeps nothing — see
+   * `observedEmpty` for the signal that makes it mean something.
+   */
   contacts: ObservedContact[];
   /**
    * True when `contacts` is the COMPLETE address book for this container. Only
@@ -46,6 +53,19 @@ export interface SyncPushRequest {
    * When present this takes precedence over `full`.
    */
   observedExternalIds?: string[] | null;
+
+  /**
+   * A POSITIVE claim that this container is empty: enumeration ran, succeeded,
+   * and found nothing. Only meaningful alongside an empty `contacts`.
+   *
+   * It exists because neither of the signals above can say this. `full: true`
+   * with no contacts and `observedExternalIds: []` are both what a FAILED
+   * enumeration looks like — a revoked permission, a container id that no
+   * longer resolves, a provider page that errored — and honouring either would
+   * unlink a user's whole address book on a transient fault. A dedicated flag
+   * cannot be produced by accident, so the client has to mean it.
+   */
+  observedEmpty?: boolean;
 }
 
 /**

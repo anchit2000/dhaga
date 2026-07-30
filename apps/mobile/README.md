@@ -90,7 +90,51 @@ Creates go through the legacy `addContactAsync(contact, containerId)` because
 the modern `Contact.create()` takes no container and always writes to the
 store's default one. Everything else uses the modern class API.
 
-Pure parts (field mapping, container selection, write shaping) are unit-tested:
+## Device calendar
+
+The **Calendar** header action (`src/app/calendar.tsx`) shows this phone's real
+events and your Dhaga follow-ups in one agenda, and writes the follow-ups out to
+the device calendar. Like sync, both directions are user-triggered — opening the
+screen reads, the button writes, and nothing happens in the background.
+
+There is **no OAuth here, deliberately.** The web app connects to Google/
+Microsoft with tokens; the phone does not need to. iOS and Android already relay
+the device calendar to iCloud/Google, exactly as they do the address book (see
+"Two-way contact sync" above), so a follow-up written into a calendar this phone
+owns reaches the user's laptop and watch with no token and no scope screen.
+
+**Where follow-ups land, and what that costs:**
+
+- Dhaga writes **only** into a secondary calendar named `Dhaga`
+  (`DHAGA_CALENDAR_NAME` in `packages/core/src/calendar/follow-up-event.ts` —
+  the same constant the web write-out uses). Your own calendars are read and
+  never written. Hiding or deleting that one calendar undoes the whole feature.
+- **iOS** — the new calendar is filed under the same *source* as your default
+  calendar, so if that is iCloud the follow-ups reach your other devices. That
+  is a read of the default calendar's account, not a write to the calendar. If
+  the source is local-only, the screen says so.
+- **Android** — `CalendarContract` gives no way to add a calendar to a Google
+  account that Google's sync adapter will pick up, so the Dhaga calendar is
+  created under a local account and stays on the handset. The screen says so,
+  same as it does for contact creates.
+- An open follow-up with a due date gets an all-day event; completing,
+  dismissing, clearing the due date, or deleting the follow-up **removes** it.
+  `src/lib/calendar/links.ts` maps followUpId → device event id (the phone's
+  stand-in for the web's `calendar_event_links` table), which is what makes a
+  second run update events instead of duplicating them.
+
+**Not finished:** the screen fetches follow-ups from `GET /api/follow-ups`,
+which **does not exist yet** — no api-key-authenticated route publishes
+follow-ups, and the one that carries them (`GET /api/export/json`) dumps the
+whole graph including every scanned card's base64 image. Until that route ships
+the follow-up half of the screen shows an error and the device agenda works
+normally. `FollowUpSummary` (`src/lib/calendar/types.ts`) is the contract it
+should serve, and belongs in `packages/core/src/api/follow-ups.ts` once it does.
+
+Pure parts (field mapping, container selection, write shaping; calendar
+selection, write planning, agenda merging) are unit-tested. The native I/O
+paths — `src/lib/sync/device-target.ts`, `src/lib/calendar/device.ts` and
+`src/lib/calendar/write.ts` — need a real device and are **not** covered here:
 
 ```sh
 npm run test --workspace @dhaga/mobile

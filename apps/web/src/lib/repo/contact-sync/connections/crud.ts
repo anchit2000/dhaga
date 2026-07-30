@@ -121,10 +121,15 @@ export async function markNeedsReconnect(id: string): Promise<void> {
     .where(eq(contactConnections.id, id));
 }
 
-export async function recordSyncRun(id: string, at: Date): Promise<void> {
+/**
+ * Stamp a completed run. `cursor` is the provider's opaque resume token, and
+ * null CLEARS it — the caller passes null whenever this run cannot vouch for
+ * the token, which costs the next run a full enumeration and nothing else.
+ */
+export async function recordSyncRun(id: string, at: Date, cursor: string | null): Promise<void> {
   const db = await getDb();
   await db
     .update(contactConnections)
-    .set({ lastSyncedAt: at, updatedAt: new Date() })
+    .set({ lastSyncedAt: at, syncCursor: cursor, updatedAt: new Date() })
     .where(eq(contactConnections.id, id));
 }

@@ -15,7 +15,7 @@ export const EXTRACTION_JOB_KINDS = ["note_extraction", "enrichment"] as const;
  * user capture). Re-processing REPLACES the note's prior derivations rather
  * than stacking duplicates — the worker clears them first (clearNoteDerivations).
  */
-export const REPROCESSABLE_NOTE_KINDS = ["text", "voice", "capture_source"] as const;
+export const REPROCESSABLE_NOTE_KINDS = ["text", "voice", "photo", "capture_source"] as const;
 
 export const EXTRACTION_JOB_STATUSES = [
   "pending", // queued, worker not started
@@ -43,6 +43,11 @@ export const EXTRACTION_STALLED_AFTER_MS = 90_000;
 /** Terminal jobs older than this drop out of the person page's recent-jobs
  *  render (listRecentExtractionJobs) so a finished job shows briefly, then goes. */
 export const EXTRACTION_JOB_RECENT_WINDOW_MS = 5 * 60_000;
+
+/** How long a finished job's "done — N facts added" confirmation stays on the
+ *  person page before it clears itself. Long enough to read after looking away,
+ *  short enough that it never becomes a permanent banner. */
+export const EXTRACTION_DONE_NOTICE_MS = 12_000;
 
 /** The daily cron marks jobs stuck longer than this as errored (retryable). */
 export const EXTRACTION_REAP_AFTER_MS = 15 * 60_000;

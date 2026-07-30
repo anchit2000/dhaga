@@ -8,7 +8,7 @@ import { withUserDb } from "@/lib/db/request-scope";
 import { getContact } from "@/lib/repo/contacts";
 import { listFacts, listNotes, listOpenFollowUps } from "@/lib/repo/notes";
 import { listContactEvents } from "@/lib/repo/events";
-import { AiBudgetError, assertAiBudget, recordAiAction } from "./metering";
+import { AiBudgetError, assertAiBudget, recordAiAction, withAiAction } from "./metering";
 import { FeatureNotEntitledError, requireFeature } from "@/lib/entitlements";
 
 export interface BriefResult {
@@ -17,10 +17,15 @@ export interface BriefResult {
 }
 
 /** v1.2: the pre-meeting dossier, composed strictly from the user's graph. */
-export async function generateBrief(
+export function generateBrief(
   userId: string,
   contactId: string,
 ): Promise<BriefResult> {
+  // One brief = one metered action, however many model calls it grows to need.
+  return withAiAction("brief", () => runBrief(userId, contactId));
+}
+
+async function runBrief(userId: string, contactId: string): Promise<BriefResult> {
   if (!hasLLM()) {
     return { error: "Configure an LLM provider to generate briefs." };
   }

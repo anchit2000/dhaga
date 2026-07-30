@@ -20,6 +20,9 @@ const TENANT_TABLES = [
   "ai_actions",
   "signals",
   "extraction_jobs",
+  // Persisted job notifications. Per-tenant: titles/bodies embed the user's own
+  // contact names, so an unscoped read would leak one user's graph to another.
+  "notifications",
   "calendar_connections",
   // Which follow-up Dhaga wrote as which event on which connected calendar.
   // Per-tenant: it joins a tenant's follow_ups to a tenant's calendar_connections,
@@ -42,6 +45,9 @@ const TENANT_TABLES = [
   // cross-tenant to resolve which user an inbound message belongs to.
   "messaging_sessions",
   "messaging_session_items",
+  // The open "which person did you mean?" question for one chat. Holds the
+  // pending note body — per-tenant PII, same reasoning as the session tables.
+  "messaging_pending_questions",
 ] as const;
 
 /**

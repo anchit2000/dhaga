@@ -169,9 +169,12 @@ Stripe, comp that user's access:
   cloud AI.
 - **Expiry** — an optional date on a paid plan. Once it passes, unlimited AI
   lapses automatically (leave it blank for no expiry).
-- **AI credits** — a per-user monthly cloud-AI-action allowance, stored as the
+- **AI credits** — a per-user monthly cloud-AI credit allowance, stored as the
   `ai_monthly_cap_override` setting. This overrides both the free-tier cap and
-  `DHAGA_AI_MONTHLY_CAP` for that one user; blank or `0` clears it.
+  `DHAGA_AI_MONTHLY_CAP` for that one user; blank or `0` clears it. Credits are
+  charged per user-visible action, not per model call — a card scan costs 1
+  credit whether it takes one round-trip or three, and deep research costs 20
+  (`packages/core/src/metering/credits.ts`, BRD §8.3).
 
 These controls live only in the EE admin panel — a core-only self-host raises
 the cap for *everyone* with `DHAGA_AI_MONTHLY_CAP` instead (see the env table
@@ -280,7 +283,7 @@ set — see `.env.example`. Without `CRON_SECRET` the route always returns
 
 ## Messaging capture (WhatsApp / Telegram)
 
-Forward a contact card, a note, or a voice note to a WhatsApp or Telegram bot
+Forward a contact card, a note, or a photo to a WhatsApp or Telegram bot
 and Dhaga turns it into people in your graph. Messages from one sender
 accumulate in a **session** until you reply **DONE** (or the session goes idle);
 then a positional batch processor creates and tags the contacts, keeps a receipt
@@ -330,8 +333,11 @@ you can start forwarding before wiring up per-user linking.
 ### Voice notes
 
 Server-side transcription is a pluggable gateway (`TRANSCRIPTION_PROVIDER`) that
-**ships no provider yet** — forwarded voice notes are stored "received, not
-transcribed" until one is registered. (This is separate from Dhaga Voice, the
+**ships no provider yet**, so a forwarded voice note is refused with "Voice notes
+aren't supported yet — coming soon!" rather than being stored unusable. The
+refusal is gated on the gateway itself (`hasTranscription()`), so registering a
+provider is all it takes for voice notes to start being transcribed and attached
+— no change to the messaging code. (This is separate from Dhaga Voice, the
 on-device browser dictation used in web quick-add.)
 
 ### Idle auto-flush
@@ -425,7 +431,7 @@ None of the `packages/ee/.env.example` vars (`DHAGA_HOSTED_MODE`,
 | `TELEGRAM_*` | No | Owner-only bot capture; `TELEGRAM_BOT_TOKEN`/`TELEGRAM_WEBHOOK_SECRET` are reused by WhatsApp/Telegram messaging capture (see "Messaging capture" above) |
 | `WHATSAPP_*` | No | WhatsApp inbound messaging capture (Meta Cloud API) — see "Messaging capture" above |
 | `DHAGA_MESSAGING_IDLE_MINUTES` | No | Idle auto-flush window for messaging capture (default 15) |
-| `TRANSCRIPTION_PROVIDER` | No | STT gateway for forwarded voice notes — no provider ships yet |
+| `TRANSCRIPTION_PROVIDER` | No | STT gateway for forwarded voice notes — no provider ships yet, so voice notes are refused with a "coming soon" reply |
 | `DHAGA_WEBHOOK_URL` | No | Outbound automation |
 | `SEARCH_PROVIDER`, `FIRECRAWL_API_KEY` | No | Job-change detection + news watchlist |
 | `GEOCODING_PROVIDER`, `NOMINATIM_URL`, `NOMINATIM_USER_AGENT` | No | Map view — see "Geocoding for the map view" above; all three have working defaults |

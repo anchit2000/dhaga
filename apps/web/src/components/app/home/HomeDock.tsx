@@ -1,7 +1,7 @@
 import { hasLLM } from "@dhaga/core";
 import { QuickAddForm } from "@/components/app/QuickAddForm";
 import { activeEventId } from "@/lib/active-event";
-import { aiActionsUsedThisMonth, aiUsageLabel, effectiveMonthlyAiCap } from "@/lib/ai/metering";
+import { aiCreditsUsedThisMonth, aiUsageLabel, effectiveMonthlyAiCap } from "@/lib/ai/metering";
 import { getCachedAppConfig } from "@/lib/cache/app-navigation";
 import { getDb } from "@/lib/db/request-scope";
 import { getBillingGate } from "@/lib/hosted/gate";
@@ -19,7 +19,7 @@ export async function HomeDock({ userId }: { userId: string }): Promise<ReactEle
   const [events, appConfig, used, unlimited] = await Promise.all([
     listEvents(HOME_PREVIEW_LIMIT),
     getCachedAppConfig(userId),
-    hasLLM() ? aiActionsUsedThisMonth() : Promise.resolve(0),
+    hasLLM() ? aiCreditsUsedThisMonth() : Promise.resolve(0),
     hasLLM()
       ? getBillingGate().then(async (gate) => gate.hasUnlimitedAi(userId, await getDb()))
       : Promise.resolve(false),

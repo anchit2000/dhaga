@@ -10,7 +10,7 @@ import {
   type ExtractedContact,
 } from "@dhaga/core";
 import { withUserDb } from "@/lib/db/request-scope";
-import { AiBudgetError, assertAiBudget, recordAiAction } from "./metering";
+import { AiBudgetError, assertAiBudget, recordAiAction, withAiAction } from "./metering";
 
 export interface ContactExtractionResult {
   contact: ExtractedContact;
@@ -46,6 +46,14 @@ export async function extractContactFromText(
         "Parsed offline (no cloud AI configured). Review the fields carefully.",
     };
   }
+  // One capture = one metered action, whatever it takes to parse.
+  return withAiAction("contact_parse", () => parseWithAi(userId, rawText));
+}
+
+async function parseWithAi(
+  userId: string,
+  rawText: string,
+): Promise<ContactExtractionResult> {
   try {
     // Budget check and usage-record each in their OWN short scope, released
     // before/after the LLM call, so no tenant connection is held across the

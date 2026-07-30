@@ -5,16 +5,20 @@ import { ChevronLeft, ChevronRight, Crop, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 /**
- * Horizontally scrollable tray of the images that describe ONE card/contact
- * (front, back, leaflet pages). Each thumbnail can be removed, reordered with
- * left/right move buttons (no drag-drop dependency — see docs/LIBRARIES.md),
- * and optionally cropped. The count badge reflects the MAX_CARD_IMAGES cap;
- * the "add" affordance lives in PhotoCaptureInput (which owns the LinkedIn-QR
- * pre-check), and it disables itself once the tray is full.
+ * Horizontally scrollable tray of the images that describe ONE capture — the
+ * pages of a card (front, back, leaflet) or the photos behind a photo note.
+ * Each thumbnail can be removed, reordered with left/right move buttons (no
+ * drag-drop dependency — see docs/LIBRARIES.md), and optionally cropped. The
+ * count badge reflects the caller's cap; the "add" affordance lives with the
+ * caller, which disables it once the tray is full.
+ *
+ * `subject` names what the images belong to, so the count reads truthfully on
+ * both surfaces ("2 images of this card" vs "…of this note").
  */
 export function ImageTray({
   files,
   max,
+  subject = "this card",
   onRemove,
   onMoveLeft,
   onMoveRight,
@@ -22,6 +26,7 @@ export function ImageTray({
 }: {
   files: File[];
   max: number;
+  subject?: string;
   onRemove: (index: number) => void;
   onMoveLeft: (index: number) => void;
   onMoveRight: (index: number) => void;
@@ -36,7 +41,9 @@ export function ImageTray({
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-xs text-fog">
-          {files.length === 1 ? "1 image of this card" : `${files.length} images of this card`}
+          {files.length === 1
+            ? `1 image of ${subject}`
+            : `${files.length} images of ${subject}`}
         </span>
         <span className="font-mono text-[10px] uppercase tracking-wider text-fog">
           {files.length}/{max}
@@ -49,7 +56,7 @@ export function ImageTray({
               {/* eslint-disable-next-line @next/next/no-img-element -- object URL from a local file, not an optimizable remote asset */}
               <img
                 src={urls[index]}
-                alt={`Card image ${index + 1}`}
+                alt={`Image ${index + 1}`}
                 className="size-full object-cover"
               />
               <Button

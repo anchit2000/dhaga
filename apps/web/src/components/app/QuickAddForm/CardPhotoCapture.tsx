@@ -3,9 +3,10 @@
 import { useState, type Dispatch, type SetStateAction } from "react";
 import { Button } from "@/components/ui/button";
 import { MAX_CARD_IMAGES } from "@/utils/constants/app";
+import { addToTray, moveInTray, removeFromTray, replaceInTray } from "../photoTray";
 import { PhotoCropper } from "../PhotoCropper";
 import { PhotoCaptureInput } from "./PhotoCaptureInput";
-import { ImageTray } from "./ImageTray";
+import { ImageTray } from "../ImageTray";
 import { WebcamCapture } from "./WebcamCapture";
 
 /**
@@ -31,22 +32,15 @@ export function CardPhotoCapture({
   const [cropIndex, setCropIndex] = useState<number | null>(null);
 
   function addPhotos(incoming: File[]): void {
-    if (incoming.length === 0) return;
-    setPhotos((prev) => [...prev, ...incoming].slice(0, MAX_CARD_IMAGES));
+    setPhotos((prev) => addToTray(prev, incoming, MAX_CARD_IMAGES));
   }
 
   function removeAt(index: number): void {
-    setPhotos((prev) => prev.filter((_, i) => i !== index));
+    setPhotos((prev) => removeFromTray(prev, index));
   }
 
   function move(index: number, delta: number): void {
-    setPhotos((prev) => {
-      const target = index + delta;
-      if (target < 0 || target >= prev.length) return prev;
-      const next = [...prev];
-      [next[index], next[target]] = [next[target], next[index]];
-      return next;
-    });
+    setPhotos((prev) => moveInTray(prev, index, delta));
   }
 
   function submitPhotos(): void {
@@ -98,7 +92,7 @@ export function CardPhotoCapture({
           file={photos[cropIndex]}
           onCancel={() => setCropIndex(null)}
           onConfirm={(cropped) => {
-            setPhotos((prev) => prev.map((file, i) => (i === cropIndex ? cropped : file)));
+            setPhotos((prev) => replaceInTray(prev, cropIndex, cropped));
             setCropIndex(null);
           }}
         />

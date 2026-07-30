@@ -1,54 +1,39 @@
 import { after } from "next/server";
 import type { MessagingClient, NormalizedInboundMessage } from "@dhaga/core/src/messaging";
+import { hasTranscription } from "@dhaga/core/src/transcription";
 import { withUserDb } from "@/lib/db/request-scope";
-import { logActionError } from "@/lib/actions/resilience";
-import { resolveOwnerUserId } from "@/app/api/telegram/route";
 import {
   appendSessionItem,
-  consumeLinkToken,
   getOpenSession,
   getOrCreateOpenSession,
-  linkIdentity,
-  resolveUserIdByIdentity,
   setSessionStatus,
 } from "@/lib/repo/messaging";
 import {
   ackFirstItemReply,
+  emptyMessageReply,
   emptySessionReply,
-  invalidTokenReply,
-  isDoneDelimiter,
-  linkedReply,
-  looksLikeLinkToken,
   MESSAGING_SESSION_IDLE_MINUTES,
-  notRecognizedReply,
   processingReply,
+  unsupportedAttachmentReply,
+  voiceUnsupportedReply,
 } from "@/utils/constants/messaging";
-import { normalizeContent } from "./normalize";
-import { processMessagingSession } from "./process-session";
+import { normalizeContent, type NormalizedItem } from "../normalize";
+import { processMessagingSession } from "../process-session";
 
-/** Route table for a sender we don't yet know: redeem a link token, else prompt. */
-async function handleUnlinked(client: MessagingClient, msg: NormalizedInboundMessage): Promise<void> {
-  const { externalUserId } = msg;
-  if (msg.content.type === "text" && looksLikeLinkToken(msg.content.text)) {
-    const consumed = await consumeLinkToken(msg.content.text.trim());
-    if (consumed) {
-      await linkIdentity({
-        provider: msg.provider,
-        externalId: externalUserId,
-        externalName: msg.externalUserName,
-        userId: consumed.userId,
-      });
-      await client.sendText({ externalUserId, text: linkedReply() });
-    } else {
-      await client.sendText({ externalUserId, text: invalidTokenReply() });
-    }
-    return;
+/** The one reply a refused message gets. Exhaustive over MessagingRejection. */
+function rejectionReply(item: Extract<NormalizedItem, { accepted: false }>): string {
+  switch (item.rejection) {
+    case "empty":
+      return emptyMessageReply();
+    case "voice_unsupported":
+      return voiceUnsupportedReply();
+    case "unsupported_attachment":
+      return unsupportedAttachmentReply(item.description);
   }
-  await client.sendText({ externalUserId, text: notRecognizedReply() });
 }
 
 /** DONE: flush the open batch for processing, or say there's nothing to save. */
-async function handleDone(
+export async function handleDone(
   client: MessagingClient,
   msg: NormalizedInboundMessage,
   userId: string,
@@ -68,13 +53,27 @@ async function handleDone(
   after(() => processMessagingSession(userId, { id: flushed.id, provider, externalId }));
 }
 
-/** Normal content: idle-flush any stale batch, then append this item. */
-async function handleContent(
+/**
+ * Normal content: refuse what we can't act on (with a reply — never a silent
+ * drop), idle-flush any stale batch, then append this item.
+ *
+ * The refusal check runs FIRST and needs no DB at all: a voice note or a sticker
+ * shouldn't open a batch, and the sender learns immediately. Voice is gated on
+ * whether a transcription provider is registered, so the refusal disappears by
+ * itself the day one is.
+ */
+export async function handleContent(
   client: MessagingClient,
   msg: NormalizedInboundMessage,
   userId: string,
 ): Promise<void> {
   const { provider, externalUserId: externalId } = msg;
+
+  const normalized = normalizeContent(msg.content, { transcription: hasTranscription() });
+  if (!normalized.accepted) {
+    await client.sendText({ externalUserId: externalId, text: rejectionReply(normalized) });
+    return;
+  }
 
   // IDLE SELF-FLUSH: if the open batch has gone quiet past the idle window,
   // close it for processing so this new item starts a fresh batch.
@@ -89,9 +88,6 @@ async function handleContent(
   });
   if (toFlush) after(() => processMessagingSession(userId, toFlush));
 
-  const normalized = normalizeContent(msg.content);
-  if (normalized.skip) return;
-
   const appended = await withUserDb(userId, async () => {
     const session = await getOrCreateOpenSession({ provider, externalId });
     const result = await appendSessionItem({
@@ -105,33 +101,4 @@ async function handleContent(
   if (appended.duplicate) return; // idempotent provider retry
   // Ack only the first item — subsequent ones stay silent to avoid spam.
   if (appended.wasFirst) await client.sendText({ externalUserId: externalId, text: ackFirstItemReply() });
-}
-
-/**
- * Handle one inbound message end-to-end: resolve the sender to a Dhaga user
- * (self-host owner fallback when not hosted), then route to link / DONE /
- * normal-content flows. Swallows every error (the webhook always returns 200)
- * and logs only PII-free metadata.
- */
-export async function handleInboundMessage(
-  client: MessagingClient,
-  msg: NormalizedInboundMessage,
-): Promise<void> {
-  try {
-    let userId = await resolveUserIdByIdentity(msg.provider, msg.externalUserId);
-    if (userId == null && process.env.DHAGA_HOSTED_MODE !== "true") {
-      userId = await resolveOwnerUserId();
-    }
-    if (userId == null) {
-      await handleUnlinked(client, msg);
-      return;
-    }
-    if (msg.content.type === "text" && isDoneDelimiter(msg.content.text)) {
-      await handleDone(client, msg, userId);
-      return;
-    }
-    await handleContent(client, msg, userId);
-  } catch (error) {
-    logActionError("messaging_inbound", error);
-  }
 }

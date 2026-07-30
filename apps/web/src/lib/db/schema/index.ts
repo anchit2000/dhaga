@@ -44,10 +44,12 @@ export { aiActions, settings, voiceVocab, type AiActionRow, type VoiceVocabRow }
 export {
   messagingIdentities,
   messagingLinkTokens,
+  messagingPendingQuestions,
   messagingSessions,
   messagingSessionItems,
   type MessagingIdentityRow,
   type MessagingLinkTokenRow,
+  type MessagingPendingQuestionRow,
   type MessagingSessionRow,
   type MessagingSessionItemRow,
 } from "./messaging";

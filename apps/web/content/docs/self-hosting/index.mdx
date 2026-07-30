@@ -172,9 +172,12 @@ Stripe, comp that user's access:
   cloud AI.
 - **Expiry** — an optional date on a paid plan. Once it passes, unlimited AI
   lapses automatically (leave it blank for no expiry).
-- **AI credits** — a per-user monthly cloud-AI-action allowance, stored as the
+- **AI credits** — a per-user monthly cloud-AI credit allowance, stored as the
   `ai_monthly_cap_override` setting. This overrides both the free-tier cap and
-  `DHAGA_AI_MONTHLY_CAP` for that one user; blank or `0` clears it.
+  `DHAGA_AI_MONTHLY_CAP` for that one user; blank or `0` clears it. Credits are
+  charged per user-visible action, not per model call — a card scan costs 1
+  credit whether it takes one round-trip or three, and deep research costs 20
+  (`packages/core/src/metering/credits.ts`, BRD §8.3).
 
 These controls live only in the EE admin panel — a core-only self-host raises
 the cap for *everyone* with `DHAGA_AI_MONTHLY_CAP` instead (see the env table

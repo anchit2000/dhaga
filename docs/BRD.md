@@ -143,7 +143,7 @@ The MVP must prove one loop end-to-end:
 
 | Dimension | MVP | Full Product |
 |---|---|---|
-| Capture | Card scan (single or multi-image), vCard QR, voice notes (mobile) | + badges, web quick-add (paste email/article/URL), browser extension one-click add, LinkedIn Connections CSV import, vCard import, Google Contacts CSV import, Google/Outlook OAuth connectors, mobile device import, email forwarding, LinkedIn QR, call-log prompts |
+| Capture | Card scan (single or multi-image), vCard QR, voice notes (mobile) | + badges, photo notes (whiteboard/poster/handwriting → transcribed into the note body), web quick-add (paste email/article/URL), browser extension one-click add, LinkedIn Connections CSV import, vCard import, Google Contacts CSV import, Google/Outlook OAuth connectors, mobile device import, email forwarding, LinkedIn QR, call-log prompts |
 | Intelligence | Extraction + NL search + follow-up drafts | + enrichment, change detection, decay alerts, pre-meeting briefs, warm paths |
 | Graph | Per-user, on-device, basic edges | Rich ontology, article-to-contact links, team-shared graph, cross-user dedup |
 | Platform | iOS + Android (one RN codebase) | + web app + browser extension + watch/widgets |
@@ -382,16 +382,87 @@ LLMs are the main marginal cost. Verified current pricing (Anthropic, mid-2026):
 |---|---|---|
 | 1. Don't call an LLM | OCR, transcription, embeddings, grouping, graph traversal all on-device/free | ~70% of user actions cost $0 |
 | 2. Smallest capable model | Haiku-class for extraction/parsing (they're classification-shaped tasks) | 5–25× cheaper than frontier models |
-| 3. Batch + cache | Nightly jobs via Batch API (−50%); shared system prompts cached (reads ~0.1×) | Halves background-job cost; drafts/search prompts mostly cached tokens |
+| 3. Batch + cache | Nightly jobs via Batch API (−50%); shared system prompts marked cacheable (reads ~0.1×) | Halves background-job cost. **The caching half is not live** — our system prompts are hundreds of tokens, under every model's minimum cacheable prefix, so zero cached tokens were observed in §8.3's measurements |
 | 4. BYO key / local model | Power users plug in their own API key or Ollama endpoint through the provider-agnostic gateway | Their usage costs us $0 |
 
-### 8.3 Unit economics (order-of-magnitude)
+### 8.3 Unit economics (measured 2026-07-30)
 
-Per-card pipeline (OCR parse ≈ 800 in / 200 out tokens on Haiku): **≈ $0.002**. Voice-note extraction (≈ 1,500 in / 300 out): **≈ $0.003**. NL search with cached system prompt: **≈ $0.005** on Sonnet. A *heavy* user — 100 cards + 100 notes + 200 searches + nightly digests per month — costs **≈ $1.50–2.50/month** in inference. At a $8–10/month Pro price (or $99 lifetime ≈ amortized $2.75/mo over 3 years), gross margin stays >70% even before caching/batch savings. The free tier gets no cloud AI at all — cloud AI is a paid feature (Pro and up) — and runs everything else on-device, so free users cost ~$0. Self-hosters re-enable AI on the free tier via `DHAGA_AI_MONTHLY_CAP`.
+These are **measured**, not modelled: 39 real API calls against production
+prompts, n=3 per action, at Haiku 4.5 $1/$5 per MTok, Sonnet 5 $3/$15, and
+Anthropic server-side web search $10/1k. Card scan uses the 1024px downscale the
+client actually uploads.
+
+| User action | Model calls | Models | in / out tokens | Cost |
+|---|---|---|---|---|
+| Card/badge scan (fields + verbatim transcription) | 2 | Haiku ×2 | 2,931 / 258 | **$0.0042** |
+| Quick-add parse (pasted text → contact) | 1 | Haiku | 1,549 / 129 | **$0.0022** |
+| Note processing (facts, relationships, follow-ups) | 1 | Haiku | 2,471 / 660 | **$0.0058** |
+| Ask Dhaga (query plan + reasoned answer) | 2 | Haiku + Sonnet | 1,519 / 431 | **$0.0092** |
+| Follow-up draft | 1 | Sonnet | 383 / 222 | **$0.0045** |
+| Pre-meeting brief | 1 | Sonnet | 543 / 375 | **$0.0073** |
+| Deep research / enrichment (web search + synthesis + extraction) | 2 | Sonnet + Haiku | 2,947 / 2,571 (+36k cached, 2.3 searches) | **$0.0975** |
+| Watchlist change scan, per contact per cycle | 1 | Haiku, Batch API | 1,090 / 117 | **$0.0008** |
+
+Three corrections to the earlier order-of-magnitude estimates, all of which
+this table supersedes:
+
+1. **NL search costs ~2× the old $0.005 estimate**, because the prompt-cache
+   discount it assumed does not happen. Every Dhaga system prompt is a few
+   hundred tokens, far under the minimum cacheable prefix (Haiku 4.5: 4,096
+   tokens; Sonnet 5: 1,024), so the `cache_control` breakpoint in
+   `packages/core/src/llm/anthropic-client/shared.ts` produced **zero** cached
+   tokens in 33 of 33 non-web-search calls. Layer 3 of §8.2's defense is not
+   live for our own prompts today. Do not model a cached-system discount.
+2. **Deep research is the whole cost story**, at ~23× a card scan and 95% of it
+   in one call. Most of that is not our tokens: it is 1–3 server-side web
+   searches at $0.01 each plus the search tool loop's own cached context. It is
+   the only action whose price is set by someone else's meter.
+3. **Client-side downscaling is worth real money.** Sending the raw camera file
+   instead of the 1024px/q80 downscale costs 838 more input tokens and 17% more
+   per scan, with no measured accuracy gain — see `CARD_SCAN_MAX_DIMENSION`.
+
+The old heavy-user profile (100 cards + 100 notes + 200 searches/month) measures
+at **$2.84/month**, above the $1.50–2.50 previously claimed — searches, not
+cards, are the driver.
+
+**Credits.** Usage is sold in credits, charged per user-visible **action**, not
+per model call: one card scan is one credit whether it takes one round-trip or
+three. One credit ≜ one card scan ≈ $0.0042; everything else is a whole
+multiple rounded up (`packages/core/src/metering/credits.ts`):
+
+| Action | Credits | Why |
+|---|---:|---|
+| Card scan · quick add · note · follow-up draft | 1 | All within ~1.4× of the anchor |
+| Ask Dhaga · pre-meeting brief | 2 | Sonnet reasoning over retrieved context |
+| Deep research | 20 | Web search billed on top of tokens |
+| Watchlist change scan | 0 | Throttled by the watch limit, not by credits — billing it would eat ~125 credits/month for ~$0.10 of Batch inference |
+
+**Plan sizing.** At a blended ceiling of ~$0.006 of inference per credit, and
+taking the worst month a user could physically spend an allowance on (all
+notes, the priciest credit):
+
+| Plan | Price | Credits | Worst-case inference | Typical mix | Gross margin |
+|---|---|---:|---|---|---|
+| Free | $0 | 0 | $0 | $0 | — (no cloud AI) |
+| Pro | $8/mo | 300 | $1.73 | ~$1.35 | **72–76%** |
+| Power | $24/mo | 1,000 | $5.77 | ~$4.50 | **71–77%** |
+
+(Margins are after Stripe's 2.9% + $0.30; hosting is not included.) A 100-credit
+Pro tier would clear ~94% margin but ration the product to a sixth of the heavy
+user profile above — 300 is the number that keeps >70% margin *and* covers a
+conference month. 1,000 credits for Power only works at ~$24/mo; at $12 it would
+be a 42% worst-case margin. Lifetime and self-hosted stay uncapped. The free
+tier gets no cloud AI at all, so free users cost ~$0; self-hosters re-enable it
+with `DHAGA_AI_MONTHLY_CAP` (also denominated in credits).
+
+*Plan allowances are defined (`PLAN_AI_CREDITS_PER_MONTH`) but not yet enforced:
+paid plans resolve through `hasUnlimitedAi` today and the pricing page sells
+"no monthly cap". Enforcing them is a pricing and Stripe decision, not a
+metering one.*
 
 ### 8.4 Revenue streams
 
-1. **Pro (individual):** hosted sync + unlimited AI actions + enrichment + alerts. Monthly, yearly, and a **lifetime tier** — deliberately echoing the incumbent card scanner's proven one-time-purchase psychology.
+1. **Pro (individual):** hosted sync + a monthly AI-credit allowance (§8.3; uncapped in practice today) + enrichment + alerts. Monthly, yearly, and a **lifetime tier** — deliberately echoing the incumbent card scanner's proven one-time-purchase psychology.
 2. **Teams:** per-seat, shared graph, SSO, admin. The defensible, expanding revenue line.
 3. **Self-host support** (later): paid support/SLA for companies running the AGPL stack internally.
 

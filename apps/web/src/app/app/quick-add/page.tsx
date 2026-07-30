@@ -1,6 +1,6 @@
 import { requireUserIdForPage } from "@/lib/auth/guard";
 import { getCachedAppConfig } from "@/lib/cache/app-navigation";
-import { aiActionsUsedThisMonth, aiUsageLabel, effectiveMonthlyAiCap } from "@/lib/ai/metering";
+import { aiCreditsUsedThisMonth, aiUsageLabel, effectiveMonthlyAiCap } from "@/lib/ai/metering";
 import { getDb } from "@/lib/db/request-scope";
 import { getBillingGate } from "@/lib/hosted/gate";
 import { listEvents } from "@/lib/repo/events";
@@ -14,7 +14,7 @@ export default async function QuickAddPage() {
   const userId = await requireUserIdForPage();
   const [events, used, unlimited, appConfig] = await Promise.all([
     listEvents(),
-    hasLLM() ? aiActionsUsedThisMonth() : Promise.resolve(0),
+    hasLLM() ? aiCreditsUsedThisMonth() : Promise.resolve(0),
     hasLLM()
       ? getBillingGate().then(async (g) => g.hasUnlimitedAi(userId, await getDb()))
       : Promise.resolve(false),

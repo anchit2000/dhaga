@@ -50,9 +50,9 @@ export const RECENT_REASON_LABELS: Record<RecentReason, string> = {
  * gets no cloud AI at all — AI actions are a paid feature (Pro and up). The
  * app stays fully usable manually on the free tier. Self-hosters re-enable AI
  * by raising the cap via the `DHAGA_AI_MONTHLY_CAP` env override (see
- * lib/ai/metering.ts).
+ * lib/ai/metering).
  */
-export const FREE_TIER_AI_ACTIONS_PER_MONTH = 0;
+export const FREE_TIER_AI_CREDITS_PER_MONTH = 0;
 
 export const CONTACT_SOURCES = ["manual", "quick_add", "import", "messaging"] as const;
 export type ContactSource = (typeof CONTACT_SOURCES)[number];

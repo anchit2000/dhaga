@@ -7,6 +7,7 @@ import { clearNoteDerivations, getNote } from "@/lib/repo/notes";
 import { upsertEmbedding } from "@/lib/repo/embeddings";
 import { withUserDb } from "@/lib/db/request-scope";
 import { runEnrichmentSearch } from "@/lib/ai/enrich";
+import { withAiAction } from "@/lib/ai/metering";
 import {
   extractAndApplyNote,
   type NoteExtractionOutcome,
@@ -65,7 +66,21 @@ export async function processNote(
   return extractAndApplyNote(userId, job.contactId, noteId, contactName, noteBody, "note");
 }
 
-export async function processEnrichment(
+/**
+ * Enriching one contact is ONE metered action even though it spans a web
+ * search (Sonnet + live search) and a follow-up extraction pass (Haiku): the
+ * user asked to enrich a person, not to run two models. The scope makes the
+ * nested extractAndApplyNote fold into this action rather than bill a second.
+ */
+export function processEnrichment(
+  job: ExtractionJobRow,
+  userId: string,
+  emit: ExtractionEventSink,
+): Promise<NoteExtractionOutcome> {
+  return withAiAction("enrichment", () => runEnrichment(job, userId, emit));
+}
+
+async function runEnrichment(
   job: ExtractionJobRow,
   userId: string,
   emit: ExtractionEventSink,

@@ -66,6 +66,8 @@ vi.mock("@/lib/ai/metering", () => ({
   AiBudgetError: class AiBudgetError extends Error {},
   assertAiBudget: async () => undefined,
   recordAiAction: async () => undefined,
+  // One draft is one metered action; the scope is transparent to this test.
+  withAiAction: <T>(_action: unknown, fn: () => Promise<T>): Promise<T> => fn(),
 }));
 
 import { generateFollowUpDraft } from "@/lib/ai/draft";

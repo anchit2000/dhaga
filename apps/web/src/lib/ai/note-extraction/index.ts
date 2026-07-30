@@ -14,7 +14,7 @@ import { scheduleCalendarWriteOutForNote } from "@/lib/calendar/write-out";
 import { createEnrichmentMatchConfirmation } from "@/lib/repo/confirmations";
 import { applyExtraction } from "@/lib/repo/graph";
 import { listNodeTypes } from "@/lib/repo/node-types";
-import { assertAiBudget, recordAiAction } from "../metering";
+import { assertAiBudget, recordAiAction, withAiAction } from "../metering";
 import {
   graphWriteFailedOutcome,
   mapExtractionError,
@@ -29,14 +29,33 @@ export type { ExtractionMode, NoteExtractionOutcome } from "./outcome";
  * Note → facts/edges/follow-ups, written with the note id as receipt.
  * The note itself is always saved by the caller first — extraction failing
  * never loses the user's words.
+ *
+ * Processing ONE note is one metered action, whatever that note ends up
+ * triggering. When this runs inside a bigger action — enrichment wraps a web
+ * search plus this extraction — `withAiAction` joins the open action instead of
+ * starting a second one, so the user is charged for the enrichment they asked
+ * for, once.
  */
-export async function extractAndApplyNote(
+export function extractAndApplyNote(
   userId: string,
   contactId: string,
   noteId: string,
   contactName: string,
   noteBody: string,
   mode: ExtractionMode = "note",
+): Promise<NoteExtractionOutcome> {
+  return withAiAction("note_extraction", () =>
+    runNoteExtraction(userId, contactId, noteId, contactName, noteBody, mode),
+  );
+}
+
+async function runNoteExtraction(
+  userId: string,
+  contactId: string,
+  noteId: string,
+  contactName: string,
+  noteBody: string,
+  mode: ExtractionMode,
 ): Promise<NoteExtractionOutcome> {
   if (!hasLLM()) {
     return noLlmOutcome();

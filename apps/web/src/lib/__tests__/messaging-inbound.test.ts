@@ -49,44 +49,82 @@ describe("looksLikeLinkToken", () => {
   });
 });
 
+/** Transcription registered / not — the only axis normalizeContent branches on. */
+const WITH_STT = { transcription: true };
+const NO_STT = { transcription: false };
+
 describe("normalizeContent (positional mapping)", () => {
-  it("keeps a text message, and flags empty/whitespace text to be skipped", () => {
-    expect(normalizeContent({ type: "text", text: "Met at the summit" })).toEqual({
+  it("keeps a text message, and REFUSES empty/whitespace text", () => {
+    expect(normalizeContent({ type: "text", text: "Met at the summit" }, NO_STT)).toEqual({
+      accepted: true,
       kind: "text",
       payload: { text: "Met at the summit" },
-      skip: false,
     });
-    expect(normalizeContent({ type: "text", text: "   " }).skip).toBe(true);
+    // An empty forward must be answered, not stored as a dud item.
+    expect(normalizeContent({ type: "text", text: "   " }, NO_STT)).toEqual({
+      accepted: false,
+      rejection: "empty",
+      description: "text",
+    });
   });
 
   it("routes a contact card to the contact-setter kind", () => {
     const content: InboundMessageContent = { type: "contact_card", vcard: "BEGIN:VCARD\r\nEND:VCARD", displayName: "Ada" };
-    expect(normalizeContent(content)).toEqual({
+    expect(normalizeContent(content, NO_STT)).toEqual({
+      accepted: true,
       kind: "contact_card",
       payload: { vcard: "BEGIN:VCARD\r\nEND:VCARD", displayName: "Ada" },
-      skip: false,
     });
   });
 
-  it("processes image and audio media (the kinds the processor acts on)", () => {
-    const image: InboundMessageContent = { type: "media", media: { id: "m1", mimeType: "image/jpeg", kind: "image", filename: null }, caption: null };
-    const audio: InboundMessageContent = { type: "media", media: { id: "m2", mimeType: "audio/ogg", kind: "audio", filename: null }, caption: null };
-    expect(normalizeContent(image).kind).toBe("image");
-    expect(normalizeContent(audio).kind).toBe("audio");
+  it("keeps a photo AND its caption (the caption is a note about the person)", () => {
+    const image: InboundMessageContent = {
+      type: "media",
+      media: { id: "m1", mimeType: "image/jpeg", kind: "image", filename: null },
+      caption: "met at the summit",
+    };
+    expect(normalizeContent(image, NO_STT)).toEqual({
+      accepted: true,
+      kind: "image",
+      payload: { media: image.type === "media" ? image.media : null, caption: "met at the summit" },
+    });
   });
 
-  it("degrades video/document/sticker to an 'unsupported' item so a mixed batch still saves", () => {
+  it("accepts audio ONLY while a transcription provider is registered", () => {
+    const audio: InboundMessageContent = { type: "media", media: { id: "m2", mimeType: "audio/ogg", kind: "audio", filename: null }, caption: null };
+    // No provider: refused with a reason, so the sender is told the same minute
+    // — and this branch flips on its own the day a provider is registered.
+    expect(normalizeContent(audio, NO_STT)).toMatchObject({
+      accepted: false,
+      rejection: "voice_unsupported",
+    });
+    expect(normalizeContent(audio, WITH_STT)).toMatchObject({ accepted: true, kind: "audio" });
+  });
+
+  it("refuses video/document/sticker by name, so the reply can say what it was", () => {
     for (const kind of ["video", "document", "sticker"] as const) {
       const content: InboundMessageContent = { type: "media", media: { id: "x", mimeType: null, kind, filename: null }, caption: null };
-      expect(normalizeContent(content).kind).toBe("unsupported");
+      expect(normalizeContent(content, WITH_STT)).toEqual({
+        accepted: false,
+        rejection: "unsupported_attachment",
+        description: kind,
+      });
     }
   });
 
+  it("never echoes a useless 'unknown' back at the sender", () => {
+    expect(normalizeContent({ type: "unsupported", description: "unknown" }, NO_STT)).toEqual({
+      accepted: false,
+      rejection: "unsupported_attachment",
+      description: "message like that",
+    });
+  });
+
   it("maps a location", () => {
-    expect(normalizeContent({ type: "location", latitude: 1, longitude: 2, name: "Cafe" })).toEqual({
+    expect(normalizeContent({ type: "location", latitude: 1, longitude: 2, name: "Cafe" }, NO_STT)).toEqual({
+      accepted: true,
       kind: "location",
       payload: { latitude: 1, longitude: 2, name: "Cafe" },
-      skip: false,
     });
   });
 });

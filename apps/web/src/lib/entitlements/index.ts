@@ -3,7 +3,7 @@ import { PLAN_FEATURES, type EntitlementPlan, type PlanFeature } from "@/utils/c
 
 /**
  * Payment-gate for features tied to the pricing model (utils/constants/plans.ts),
- * independent of the AI-action metering in lib/ai/metering.ts (which caps a
+ * independent of the AI-action metering in lib/ai/metering (which caps a
  * count, not a boolean). Modular by design: callers ask "can this user use
  * X" and never touch Stripe, plan strings, or the EE boundary directly.
  */

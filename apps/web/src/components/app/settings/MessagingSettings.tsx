@@ -18,7 +18,7 @@ interface LinkedIdentity {
 
 /**
  * Inbound-messaging capture settings (presentational — all data is passed in,
- * no fetching here). Forward a contact/note/voice note to the linked bot and
+ * no fetching here). Forward a contact/note/photo to the linked bot and
  * Dhaga turns the batch into people. Provider status comes from server env
  * (`configured`); the token + unlink interactivity lives in the client partner.
  */
@@ -50,7 +50,7 @@ export function MessagingSettings({
       <div>
         <p className="text-sm font-medium text-paper">Messaging</p>
         <p className="mt-1 text-sm text-fog">
-          Forward a contact, notes, or a voice note to your Dhaga bot, then reply
+          Forward a contact, notes, or a photo to your Dhaga bot, then reply
           DONE — Dhaga creates and tags the contact. Idle batches auto-save after
           a while.
         </p>

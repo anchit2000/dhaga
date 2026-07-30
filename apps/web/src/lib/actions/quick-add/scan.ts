@@ -3,9 +3,8 @@
 import { requireUserId } from "@/lib/auth/guard";
 import { withUserDb } from "@/lib/db/request-scope";
 import { scanCardImages } from "@/lib/ai/card-scan";
+import { readCapturePhotos } from "@/lib/actions/capture-photos";
 import { shouldStoreCardPhotos } from "@/lib/repo/settings";
-import { CARD_IMAGE_TYPES, MAX_CARD_IMAGES, MAX_IMAGE_BYTES } from "@/utils/constants/app";
-import type { LLMImage } from "@dhaga/core";
 import type { CaptureImage } from "@dhaga/core/src/api/capture";
 import type { QuickAddState } from "./state";
 
@@ -18,27 +17,18 @@ export async function scanCardAction(
   formData: FormData,
 ): Promise<QuickAddState> {
   const userId = await requireUserId();
-  const photos = formData
-    .getAll("photo")
-    .filter((photo): photo is File => photo instanceof File && photo.size > 0);
-  if (photos.length === 0) {
+  // Same reader (and the same type/size/count rules) as every other photo
+  // capture — see lib/actions/capture-photos.ts.
+  const read = await readCapturePhotos(formData);
+  if (!read.ok) return { error: read.error };
+  if (read.images.length === 0) {
     return { error: "Take or choose a card photo first." };
   }
-  if (photos.length > MAX_CARD_IMAGES) {
-    return { error: `Up to ${MAX_CARD_IMAGES} photos per card.` };
-  }
-  const images: LLMImage[] = [];
-  const captured: CaptureImage[] = [];
-  for (const photo of photos) {
-    const mediaType = CARD_IMAGE_TYPES.find((type) => type === photo.type);
-    if (!mediaType) return { error: "Use a JPEG, PNG, or WebP photo." };
-    if (photo.size > MAX_IMAGE_BYTES) {
-      return { error: "Photo too large — try again (max 6 MB each)." };
-    }
-    const dataBase64 = Buffer.from(await photo.arrayBuffer()).toString("base64");
-    images.push({ mediaType, dataBase64 });
-    captured.push({ imageBase64: dataBase64, imageType: mediaType });
-  }
+  const images = read.images;
+  const captured: CaptureImage[] = images.map((image) => ({
+    imageBase64: image.dataBase64,
+    imageType: image.mediaType,
+  }));
   const result = await scanCardImages(userId, images);
   if (result.error || !result.contact) {
     return { error: result.error ?? "The scan failed." };
@@ -51,5 +41,6 @@ export async function scanCardAction(
     via: "ai",
     sourceText: result.rawText,
     images: storePhoto ? captured : undefined,
+    scanActionId: result.actionId,
   };
 }

@@ -26,15 +26,22 @@ export function readContactCardPayload(
   };
 }
 
-export function readMediaPayload(payload: unknown): InboundMediaRef | null {
+/** Media plus the caption it was sent with (rows stored before captions were
+ *  kept simply read back with `caption: null`). */
+export function readMediaPayload(
+  payload: unknown,
+): { media: InboundMediaRef; caption: string | null } | null {
   if (!isRecord(payload) || !isRecord(payload.media)) return null;
   const media = payload.media;
   if (typeof media.id !== "string" || typeof media.kind !== "string") return null;
   return {
-    id: media.id,
-    mimeType: typeof media.mimeType === "string" ? media.mimeType : null,
-    kind: media.kind as InboundMediaRef["kind"],
-    filename: typeof media.filename === "string" ? media.filename : null,
+    media: {
+      id: media.id,
+      mimeType: typeof media.mimeType === "string" ? media.mimeType : null,
+      kind: media.kind as InboundMediaRef["kind"],
+      filename: typeof media.filename === "string" ? media.filename : null,
+    },
+    caption: typeof payload.caption === "string" ? payload.caption : null,
   };
 }
 

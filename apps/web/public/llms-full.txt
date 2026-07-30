@@ -776,11 +776,11 @@ moment you meet them.
 ## The sections
 
 - [Capturing people](/docs/guide/capturing-people): Quick-add by paste, card scan, voice, camera, or file — plus the review step and manual add.
-- [Messaging capture (WhatsApp & Telegram)](/docs/guide/messaging-capture): Forward a contact card, note, or voice note to the Dhaga bot on WhatsApp or Telegram, reply DONE, and it saves into your graph.
+- [Messaging capture (WhatsApp & Telegram)](/docs/guide/messaging-capture): Forward a contact card, note, or photo to the Dhaga bot on WhatsApp or Telegram, reply DONE, and it saves into your graph.
 - [Importing contacts](/docs/guide/importing-contacts): Bring in an existing address book — a .vcf or CSV file, a one-click Google or Outlook connect, or your phone's contacts.
 - [Syncing with your phone](/docs/guide/syncing-your-phone): Keep your phone's address book and Dhaga in step both ways — a three-way merge that never silently overwrites, with your notes and facts kept out of it.
 - [Bulk actions & merging](/docs/guide/merging-and-bulk-actions): Select many people at once to merge, tag, star, add to a company, or forget — and let Dhaga surface likely duplicates to clean up.
-- [Notes & facts](/docs/guide/notes-and-facts): Add notes by typing or voice; facts get extracted automatically, each with a source receipt.
+- [Notes & facts](/docs/guide/notes-and-facts): Add notes by typing, by voice, or by photo; facts get extracted automatically, each with a source receipt.
 - [Calendar & reminders](/docs/guide/calendar): See your follow-ups on a full-screen calendar, drag to reschedule, and stay nudged by the nav bell and a daily reminder email.
 - [Confirmations](/docs/guide/confirmations): The inbox where ambiguous AI extractions wait for your call — confirm or dismiss, and nothing changes your graph until you do.
 - [Enrich from the web](/docs/guide/enrich-from-web): One button to search the public web for a person's footprint — cited, saved as a deletable note.
@@ -963,7 +963,7 @@ parsing. See [Self-hosting](/docs/self-hosting) for the env var.
 
 **Prefer your phone?**
 
-You can also forward a contact card, note, or voice note straight to Dhaga on
+You can also forward a contact card, note, or photo straight to Dhaga on
 WhatsApp or Telegram — no app to install. See
 [Messaging capture](/docs/guide/messaging-capture).
 
@@ -1205,6 +1205,10 @@ footprint — cited, saved as a note, fully deletable."* Concretely:
 3. That note can, in turn, yield **facts** (each with its receipt).
 4. You can **delete** the note — and its derived facts tombstone with it — at
    any time.
+
+The search plus extraction takes 20–60 seconds and runs **in the background**:
+the progress pill above the Facts section tracks it, it keeps running if you
+leave the page, and it finishes with a short confirmation of what was added.
 
 ## Privacy
 
@@ -1556,10 +1560,10 @@ Companies have the same tools — view, merge, and dedupe them on the
 
 Source: https://www.dhaga.app/docs/guide/messaging-capture
 
-Forward a contact card, a note, or a voice note to Dhaga's WhatsApp or Telegram bot, reply DONE, and Dhaga saves the person into your graph — capture from your phone with nothing to install.
+Forward a contact card, a note, or a photo to Dhaga's WhatsApp or Telegram bot, reply DONE, and Dhaga saves the person into your graph — capture from your phone with nothing to install.
 
 Dhaga can capture people straight from a chat you already have open. **Forward
-a contact card, a note, or a voice note** to the Dhaga bot on **WhatsApp** or
+a contact card, a note, or a photo** to the Dhaga bot on **WhatsApp** or
 **Telegram**, reply **`DONE`**, and Dhaga creates and tags the contact, keeps
 every forwarded message as a **receipt**, and replies with a summary. It's the
 fastest way to capture from your phone without any app install — hand someone's
@@ -1592,24 +1596,53 @@ before wiring up per-user linking.
 
 ## What you can forward
 
-- **Contact card** — a shared vCard becomes a new person (or updates a match).
+- **Contact card** — a shared vCard is imported from its own fields (name,
+  numbers, org), never re-read as text, so nothing is lost in translation. A
+  card for someone a note already mentioned fills that person in instead of
+  duplicating them.
 - **Text** — a message you type or forward becomes a note, and Dhaga
   auto-extracts facts from it, each with a receipt back to the message.
-- **Voice note** — stored against the contact (see the caveat below).
-- **Location** or **image** — kept as a note on the current contact.
+- **Photo** — a business card or badge is scanned into a contact; a photo that
+  *isn't* a card (a whiteboard, a poster, a conference schedule) is read as text
+  and kept as a note. Send a caption with it and the caption becomes a note on
+  that person.
+- **Location** — kept as a note on the current contact.
+
+Anything else — a **voice note** (see below), a video, a document, a sticker, an
+empty message — gets a reply telling you so. Nothing is ever dropped in silence:
+if an item can't be saved, either the bot answers straight away or the batch
+summary lists what it skipped and why.
 
 ## How a batch works
 
 Forwarding is **positional**, so the order you send things in is what Dhaga
 acts on — no guessing:
 
-- A **contact card or image** sets the *current contact*.
-- **Text and voice notes that follow** attach to that contact as notes and
-  facts.
+- A **contact card or photo** sets the *current contact*.
+- **Text that follows** attaches to that contact as notes and facts.
 - A leading **text with no card** establishes the contact on its own, the same
   way pasted text does in [quick-add](/docs/guide/capturing-people).
 - Forward **several cards** in one batch and you get several contacts — each one
   collects the messages sent after it.
+
+## When Dhaga isn't sure who you mean
+
+If a forwarded note could be about more than one person in your graph, Dhaga
+asks **in the chat** rather than guessing:
+
+```
+🤔 That note could be about more than one "Ajay". Which one did you mean?
+1. Ajay Shrivastava (STPI)
+2. Ajay Kumar (Infosys)
+```
+
+Reply with the **number**, the **name**, or **`new`** for a new person. If you
+reply with something else entirely, the question is dropped, the note is saved
+under a new person so it can't be lost (merge them later if that's a duplicate),
+and your new message is handled normally. A question expires after an hour.
+
+A note that matches exactly one person is attached to them silently — no
+question, and no duplicate contact.
 
 ## Closing a batch
 
@@ -1624,13 +1657,16 @@ is ever lost:
 When a batch is saved, the bot replies with a summary of who and what it stored
 so you can open Dhaga and review.
 
-**Voice notes aren't transcribed yet**
+**Voice notes aren't supported yet**
 
-Server-side transcription is a pluggable gateway that ships with no provider
-yet, so a forwarded voice note is stored as *"received, not transcribed"* until
-one is configured. (This is separate from **Dhaga Voice**, the on-device
-dictation used in web [quick-add](/docs/guide/capturing-people) — that one does
-transcribe.)
+Forward a voice note and the bot replies *"Voice notes aren't supported yet —
+coming soon! For now please type it, send a photo, or forward a contact."* — it
+is never quietly swallowed. Server-side transcription is a pluggable gateway
+that ships with **no provider**, and the refusal is gated on that gateway: the
+day a provider is configured, voice notes start being transcribed and attached
+like any other note, with no further change. (This is separate from **Dhaga
+Voice**, the on-device dictation in web
+[quick-add](/docs/guide/capturing-people) — that one does transcribe.)
 
 ## More channels later
 
@@ -1651,7 +1687,7 @@ book from [Importing contacts](/docs/guide/importing-contacts).
 
 Source: https://www.dhaga.app/docs/guide/notes-and-facts
 
-Add notes to a person by typing or voice; Dhaga extracts structured facts automatically (or add facts and follow-ups by hand — no AI needed), keeps a receipt on each, and cascades deletions.
+Add notes to a person by typing, by voice, or by photo; Dhaga extracts structured facts automatically (or add facts and follow-ups by hand — no AI needed), keeps a receipt on each, and cascades deletions.
 
 Everything you know about a person lives on their profile at
 **`/app/people/[id]`** — their jobs, contact methods, location, relationships,
@@ -1666,9 +1702,36 @@ the mic and just talk — voice notes are transcribed for you. The box hints as
 much: *"Type — or tap the mic and just talk. Facts get extracted
 automatically."* With Dhaga Voice, the transcript comes back as tappable
 word-chips so you can fix any mis-heard word — doing so teaches Dhaga that
-spelling for next time.
+spelling for next time. Or [photograph it](#add-a-note-from-a-photo) — the
+third way into the same box.
 
 ![A person's profile showing the Facts section with two extracted facts, the Enrich from public web button, and the Notes box with Add note and Voice note buttons](/docs/guide/person-facts-enrich.png)
+
+## Add a note from a photo
+
+Some things are quicker to photograph than to write down: a whiteboard after a
+session, a conference poster, a page of handwritten notes, a receipt from the
+dinner, the badge someone was wearing.
+
+Tap **Photo note** in the same Notes box and pick or shoot the photo. Dhaga
+reads the text out of it and **that text becomes the note** — so it is searchable,
+it shows in the person's timeline, and it goes through exactly the same
+extraction as anything you type: facts, follow-ups and relationships, each with
+a receipt pointing back at this note.
+
+- **Several photos, one note.** Add up to six — pages of the same handout, or
+  two halves of a whiteboard. They are read in tray order, so reorder them with
+  the arrows if you shot them out of sequence, and crop out anything that isn't
+  the subject.
+- **Add your own line too.** Anything you type in the box is kept above the
+  transcription, as your framing of why the photo matters.
+- **The photo is kept as the receipt.** It appears under **Photos** on the
+  person's page, alongside any scanned cards, unless you have turned
+  [photo storage off in Settings](/docs/guide/settings) — in which case only the
+  transcription is kept. Deleting the note deletes its photos with it.
+
+Reading a photo is a cloud-AI action, so it costs a credit like any other. Without
+AI on your plan, type the note instead — a photo alone has nothing to save.
 
 ## Capture a note from quick-add
 
@@ -1698,6 +1761,15 @@ structured **facts** from it — for example a personal detail or an intent
 Every extracted fact carries a **receipt**: the source note it came from, shown
 as *"FROM NOTE, 23/7/2026"*. This is a core principle — no AI-derived fact
 exists without a traceable source you can open and verify.
+
+Extraction runs **in the background**, and the note is saved the moment you
+press **Add note** — so you never have to sit and watch it. A small pill above
+the Facts section reports progress (*"Extracting facts…"*), and it keeps running
+if you navigate away or close the tab: the facts are written server-side
+regardless of who is watching. While you're on the page, the pill turns into a
+short confirmation of what landed — *"Extraction finished — 4 facts and 1
+follow-up added."* — and clears itself. If a run fails, the pill says so and
+offers **Retry**.
 
 ## Add facts and follow-ups by hand
 
@@ -1796,8 +1868,11 @@ beneath it.
   (two-factor authentication, 2FA), and **API keys** — personal access tokens for
   the API and the browser extension, and for scripted
   [exports](/docs/self-hosting/deploy#backups--migration). On a hosted instance
-  the Billing section also shows your **AI credits** — how many AI actions you've
-  used and have left this month.
+  the Billing section also shows your **AI credits** — how many you have used and
+  have left this month. Credits are charged per action, not per model call: a
+  card scan, note, quick-add or draft costs 1; a question to Ask Dhaga or a
+  pre-meeting brief costs 2; enriching a contact from the web costs 20. Nightly
+  watchlist scans are free — they are limited by how many people you watch.
 - **Capture** — **Card photos** (whether the original card image is kept after a
   scan) and **Voice teaching** — a vocabulary manager where you teach Dhaga
   names it keeps mishearing. The fastest way to teach a word is tap-to-fix right
@@ -1813,7 +1888,11 @@ beneath it.
   your Home briefing, a **morning follow-up reminder** email that nudges you
   when you have follow-ups or check-ins waiting, and an opt-in **Confirmations
   digest** email (off by default) that summarises the AI confirmations waiting
-  for your review.
+  for your review. The same tab holds **Birthdays & anniversaries**: how many
+  days ahead a saved date counts as upcoming (0–90, default 7), and an opt-in
+  reminder email that arrives that far in advance. Like every email preference in
+  Dhaga it starts off — the first-run walkthrough stops here so you choose, and
+  nothing is switched on for you.
 - **Import** — bring an existing address book into Dhaga (see below).
 
 **Some sections depend on configuration**
@@ -2903,9 +2982,12 @@ Stripe, comp that user's access:
   cloud AI.
 - **Expiry** — an optional date on a paid plan. Once it passes, unlimited AI
   lapses automatically (leave it blank for no expiry).
-- **AI credits** — a per-user monthly cloud-AI-action allowance, stored as the
+- **AI credits** — a per-user monthly cloud-AI credit allowance, stored as the
   `ai_monthly_cap_override` setting. This overrides both the free-tier cap and
-  `DHAGA_AI_MONTHLY_CAP` for that one user; blank or `0` clears it.
+  `DHAGA_AI_MONTHLY_CAP` for that one user; blank or `0` clears it. Credits are
+  charged per user-visible action, not per model call — a card scan costs 1
+  credit whether it takes one round-trip or three, and deep research costs 20
+  (`packages/core/src/metering/credits.ts`, BRD §8.3).
 
 These controls live only in the EE admin panel — a core-only self-host raises
 the cap for *everyone* with `DHAGA_AI_MONTHLY_CAP` instead (see the env table
@@ -3435,7 +3517,7 @@ BETTER_AUTH_SECRET=<long random string, e.g. `openssl rand -hex 32`>
 BETTER_AUTH_URL=https://dhaga.example.com
 DHAGA_DATA_DIR=/var/lib/dhaga        # persisted dir OUTSIDE the repo
 ANTHROPIC_API_KEY=sk-ant-...         # optional; enables AI features
-DHAGA_AI_MONTHLY_CAP=500             # optional; default 0 (no cloud AI) — set >0 to enable AI
+DHAGA_AI_MONTHLY_CAP=500             # optional; monthly AI CREDITS, default 0 (no cloud AI) — set >0 to enable AI
 NODE_ENV=production
 ```
 
@@ -4076,7 +4158,7 @@ product surface** — not "we'd notice and fix it," but structurally unavailable
 
 Good guardrails are worthless if you lie to yourself about the gaps. Ours: the
 monthly AI-action budget itself. The metering lives in
-[`assertAiBudget`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/lib/ai/metering.ts),
+[`assertAiBudget`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/lib/ai/metering/index.ts),
 which enforces a free-tier cap of 0 cloud AI actions/month — cloud AI is a
 paid feature, so the free tier does no cloud AI at all — while
 `hasUnlimitedAi()` skips that cap entirely for paid tiers. So day-to-day paid

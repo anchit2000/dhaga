@@ -1,6 +1,6 @@
 // Dhaga Cloud only — see packages/ee/LICENSE.
 import { notFound } from "next/navigation";
-import { getUser, getSubscription, aiActionsThisMonthFor, getAiCapOverrideFor } from "@dhaga/ee/admin";
+import { getUser, getSubscription, aiCreditsThisMonthFor, getAiCapOverrideFor } from "@dhaga/ee/admin";
 import { isUnlimitedAiSub } from "@dhaga/ee/billing";
 import { setUserAdminAction } from "@/lib/actions/admin/users";
 import { requireAdminForPage } from "@/lib/hosted/gate";
@@ -19,9 +19,9 @@ export default async function AdminUserDetailPage({
   const user = await getUser(id);
   if (!user) notFound();
 
-  const [subscription, aiActionsThisMonth, aiCapOverride] = await Promise.all([
+  const [subscription, aiCreditsThisMonth, aiCapOverride] = await Promise.all([
     getSubscription(id),
-    aiActionsThisMonthFor(id),
+    aiCreditsThisMonthFor(id),
     getAiCapOverrideFor(id),
   ]);
 
@@ -42,7 +42,7 @@ export default async function AdminUserDetailPage({
       <div className="rounded-2xl border border-seam bg-panel p-5">
         <p className="text-sm font-medium text-paper">AI usage this month</p>
         <p className="mt-1 text-sm text-fog">
-          {aiActionsThisMonth} / {aiDenominator}
+          {aiCreditsThisMonth} credits / {aiDenominator}
         </p>
       </div>
 

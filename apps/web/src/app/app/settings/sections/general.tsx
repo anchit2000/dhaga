@@ -4,7 +4,7 @@ import { getCurrentUser, requireUserIdForPage } from "@/lib/auth/guard";
 import { getAuth } from "@/lib/auth/config";
 import { getBillingGate } from "@/lib/hosted/gate";
 import { getDb } from "@/lib/db/request-scope";
-import { aiActionsUsedThisMonth, effectiveMonthlyAiCap } from "@/lib/ai/metering";
+import { aiCreditsUsedThisMonth, effectiveMonthlyAiCap } from "@/lib/ai/metering";
 import { shouldStoreCardPhotos } from "@/lib/repo/settings";
 import { listVocab } from "@/lib/repo/voice-vocab";
 import { listCalendarConnections } from "@/lib/repo/calendar";
@@ -49,7 +49,7 @@ export async function BillingSection() {
   const planSummary = await gate.getPlanSummary(userId);
   if (!planSummary) return null;
   const [used, unlimited] = await Promise.all([
-    hasLLM() ? aiActionsUsedThisMonth() : Promise.resolve(0),
+    hasLLM() ? aiCreditsUsedThisMonth() : Promise.resolve(0),
     hasLLM() ? gate.hasUnlimitedAi(userId, await getDb()) : Promise.resolve(false),
   ]);
   const aiUsage = hasLLM() ? { used, cap: await effectiveMonthlyAiCap(), unlimited } : null;

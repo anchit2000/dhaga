@@ -34,6 +34,7 @@ export {
   cardTranscriptionSchema,
   type CardTranscription,
 } from "./schemas/card-transcription";
+export { photoNoteSchema, type PhotoNote } from "./schemas/photo-note";
 export {
   FACT_TYPES,
   RELATIONSHIP_PREDICATES,
@@ -133,3 +134,12 @@ export {
   type SyncMergeInput,
   type SyncMergeResult,
 } from "./sync/types";
+// AI credits: the user-facing unit of cloud-AI usage and its per-action price
+// table. Pure data (no I/O), shared by the app's metering and the hosted
+// admin/billing views — see ./metering/credits.ts for how it is derived.
+export {
+  AI_ACTION_CREDITS,
+  AI_ACTION_FEATURES,
+  creditsForAiAction,
+  type AiActionFeature,
+} from "./metering/credits";

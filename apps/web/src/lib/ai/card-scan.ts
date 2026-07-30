@@ -10,12 +10,23 @@ import {
 } from "@dhaga/core";
 import { withUserDb } from "@/lib/db/request-scope";
 import { isTransientConnectionError } from "@/utils/constants/db";
-import { AiBudgetError, assertAiBudget, recordAiAction } from "./metering";
+import {
+  AiBudgetError,
+  assertAiBudget,
+  currentAiActionId,
+  recordAiAction,
+  withAiAction,
+} from "./metering";
 
 export interface CardScanResult {
   contact?: ExtractedContact;
   rawText?: string;
   error?: string;
+  /** The scan's AI action id. One scan is ONE metered action, but its verbatim
+   *  transcription runs later, in the save request — pass this id back so that
+   *  second model call folds into this action instead of billing a second one
+   *  (see scheduleCardTranscription). */
+  actionId?: string;
 }
 
 /**
@@ -36,6 +47,11 @@ export async function scanCardImages(
   if (images.length === 0) {
     return { error: "Add at least one card photo to scan." };
   }
+  // One scan = one metered action, however many model calls it takes.
+  return withAiAction("card_scan", () => runScan(userId, images));
+}
+
+async function runScan(userId: string, images: LLMImage[]): Promise<CardScanResult> {
   try {
     // Budget check and usage-record each in their OWN short scope, released
     // before/after the vision call, so no tenant connection is held across the
@@ -56,7 +72,7 @@ export async function scanCardImages(
     // harmless next to losing a good scan the user waited seconds for.
     try {
       await withUserDb(userId, () =>
-        recordAiAction("contact_parse", result.model, result.usage),
+        recordAiAction("card_scan", result.model, result.usage),
       );
     } catch (recordError) {
       console.error("[card-scan] usage record failed (scan kept)", {
@@ -72,7 +88,11 @@ export async function scanCardImages(
           "Couldn't read a person off that photo — try a sharper, closer shot.",
       };
     }
-    return { contact, rawText: cardReceiptText(contact) };
+    return {
+      contact,
+      rawText: cardReceiptText(contact),
+      actionId: currentAiActionId() ?? undefined,
+    };
   } catch (error) {
     if (!(error instanceof AiBudgetError)) {
       // The scan collapsed into an opaque "try again"; without this it left no

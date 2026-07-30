@@ -8,7 +8,7 @@ import { withUserDb } from "@/lib/db/request-scope";
 import { getContact } from "@/lib/repo/contacts";
 import { listFacts, listNotes } from "@/lib/repo/notes";
 import { listContactEvents } from "@/lib/repo/events";
-import { AiBudgetError, assertAiBudget, recordAiAction } from "./metering";
+import { AiBudgetError, assertAiBudget, recordAiAction, withAiAction } from "./metering";
 
 export interface DraftResult {
   draft?: string;
@@ -16,7 +16,15 @@ export interface DraftResult {
 }
 
 /** M7: one-tap personalized follow-up draft from the contact's context. */
-export async function generateFollowUpDraft(
+export function generateFollowUpDraft(
+  userId: string,
+  contactId: string,
+): Promise<DraftResult> {
+  // One draft = one metered action, however many model calls it grows to need.
+  return withAiAction("draft", () => runFollowUpDraft(userId, contactId));
+}
+
+async function runFollowUpDraft(
   userId: string,
   contactId: string,
 ): Promise<DraftResult> {

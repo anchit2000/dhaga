@@ -26,7 +26,7 @@ function StoreToggle({ enabled }: { enabled: boolean }) {
       type="button"
       role="switch"
       aria-checked={value}
-      aria-label="Store card photos"
+      aria-label="Store captured photos"
       disabled={pending}
       onClick={() => set(!value)}
       className={`relative h-7 w-12 shrink-0 rounded-full border transition-colors disabled:opacity-60 ${
@@ -80,12 +80,13 @@ export function CardPhotoSetting({
     <div className="space-y-4 rounded-2xl border border-seam bg-panel p-5 sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-medium text-paper">Store card photos</p>
+          <p className="text-sm font-medium text-paper">Store captured photos</p>
           <p className="mt-1 text-sm text-fog">
-            Keep scanned card and badge photos in your database as visual
-            receipts, shown on the person&apos;s page. Photos stay in your own
-            storage — local, or your Postgres if you run in the cloud. When
-            off, only the transcription is kept.
+            Keep captured photos in your database as visual receipts, shown on
+            the person&apos;s page — scanned cards and badges, and any photo you
+            add to a note. Photos stay in your own storage — local, or your
+            Postgres if you run in the cloud. When off, only the transcription
+            is kept.
           </p>
         </div>
         <StoreToggle enabled={enabled} />

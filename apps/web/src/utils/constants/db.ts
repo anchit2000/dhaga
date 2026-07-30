@@ -50,7 +50,7 @@ export const DB_CONNECT_RETRY_BASE_MS_DEFAULT = 100;
 /**
  * Parse a positive-integer pool size from an env var, falling back to the
  * default on missing/NaN/non-positive input (same defensive shape as
- * monthlyAiCap() in lib/ai/metering.ts). Also reused for the retry counts above.
+ * monthlyAiCap() in lib/ai/metering). Also reused for the retry counts above.
  */
 export function poolMaxFromEnv(raw: string | undefined, fallback: number): number {
   const value = Number(raw);

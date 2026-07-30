@@ -1,19 +1,19 @@
 ---
 title: Messaging capture (WhatsApp & Telegram)
-description: Forward a contact card, a note, or a voice note to Dhaga's WhatsApp or Telegram bot, reply DONE, and Dhaga saves the person into your graph — capture from your phone with nothing to install.
+description: Forward a contact card, a note, or a photo to Dhaga's WhatsApp or Telegram bot, reply DONE, and Dhaga saves the person into your graph — capture from your phone with nothing to install.
 ---
 
 Dhaga can capture people straight from a chat you already have open. **Forward
-a contact card, a note, or a voice note** to the Dhaga bot on **WhatsApp** or
+a contact card, a note, or a photo** to the Dhaga bot on **WhatsApp** or
 **Telegram**, reply **`DONE`**, and Dhaga creates and tags the contact, keeps
 every forwarded message as a **receipt**, and replies with a summary. It's the
 fastest way to capture from your phone without any app install — hand someone's
 card straight into your graph while you're still standing at the booth.
 
 <FlowDiagram
-  caption="A forwarded batch becomes a contact — text and voice attach to the card that came before them."
+  caption="A forwarded batch becomes a contact — text and photos attach to the card that came before them."
   stages={[
-    { label: "Forward", sub: "card, note, or voice to the bot" },
+    { label: "Forward", sub: "card, note, or photo to the bot" },
     { label: "Batch", sub: "messages gather in one session" },
     { label: "Reply DONE", sub: "or walk away — it auto-saves" },
     { label: "Saved", sub: "contact + notes + facts, receipted" },
@@ -47,24 +47,53 @@ before wiring up per-user linking.
 
 ## What you can forward
 
-- **Contact card** — a shared vCard becomes a new person (or updates a match).
+- **Contact card** — a shared vCard is imported from its own fields (name,
+  numbers, org), never re-read as text, so nothing is lost in translation. A
+  card for someone a note already mentioned fills that person in instead of
+  duplicating them.
 - **Text** — a message you type or forward becomes a note, and Dhaga
   auto-extracts facts from it, each with a receipt back to the message.
-- **Voice note** — stored against the contact (see the caveat below).
-- **Location** or **image** — kept as a note on the current contact.
+- **Photo** — a business card or badge is scanned into a contact; a photo that
+  *isn't* a card (a whiteboard, a poster, a conference schedule) is read as text
+  and kept as a note. Send a caption with it and the caption becomes a note on
+  that person.
+- **Location** — kept as a note on the current contact.
+
+Anything else — a **voice note** (see below), a video, a document, a sticker, an
+empty message — gets a reply telling you so. Nothing is ever dropped in silence:
+if an item can't be saved, either the bot answers straight away or the batch
+summary lists what it skipped and why.
 
 ## How a batch works
 
 Forwarding is **positional**, so the order you send things in is what Dhaga
 acts on — no guessing:
 
-- A **contact card or image** sets the *current contact*.
-- **Text and voice notes that follow** attach to that contact as notes and
-  facts.
+- A **contact card or photo** sets the *current contact*.
+- **Text that follows** attaches to that contact as notes and facts.
 - A leading **text with no card** establishes the contact on its own, the same
   way pasted text does in [quick-add](/docs/guide/capturing-people).
 - Forward **several cards** in one batch and you get several contacts — each one
   collects the messages sent after it.
+
+## When Dhaga isn't sure who you mean
+
+If a forwarded note could be about more than one person in your graph, Dhaga
+asks **in the chat** rather than guessing:
+
+```
+🤔 That note could be about more than one "Ajay". Which one did you mean?
+1. Ajay Shrivastava (STPI)
+2. Ajay Kumar (Infosys)
+```
+
+Reply with the **number**, the **name**, or **`new`** for a new person. If you
+reply with something else entirely, the question is dropped, the note is saved
+under a new person so it can't be lost (merge them later if that's a duplicate),
+and your new message is handled normally. A question expires after an hour.
+
+A note that matches exactly one person is attached to them silently — no
+question, and no duplicate contact.
 
 ## Closing a batch
 
@@ -79,12 +108,15 @@ is ever lost:
 When a batch is saved, the bot replies with a summary of who and what it stored
 so you can open Dhaga and review.
 
-<Callout title="Voice notes aren't transcribed yet">
-Server-side transcription is a pluggable gateway that ships with no provider
-yet, so a forwarded voice note is stored as *"received, not transcribed"* until
-one is configured. (This is separate from **Dhaga Voice**, the on-device
-dictation used in web [quick-add](/docs/guide/capturing-people) — that one does
-transcribe.)
+<Callout title="Voice notes aren't supported yet">
+Forward a voice note and the bot replies *"Voice notes aren't supported yet —
+coming soon! For now please type it, send a photo, or forward a contact."* — it
+is never quietly swallowed. Server-side transcription is a pluggable gateway
+that ships with **no provider**, and the refusal is gated on that gateway: the
+day a provider is configured, voice notes start being transcribed and attached
+like any other note, with no further change. (This is separate from **Dhaga
+Voice**, the on-device dictation in web
+[quick-add](/docs/guide/capturing-people) — that one does transcribe.)
 </Callout>
 
 ## More channels later

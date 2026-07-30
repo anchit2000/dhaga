@@ -1,29 +1,31 @@
-import { randomUUID } from "node:crypto";
-import { count, gte } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
-import { aiActions } from "@/lib/db/schema";
 import { getBillingGate } from "@/lib/hosted/gate";
 import { enforceRateLimit, RateLimitError } from "@/lib/ratelimit";
 import { AI_MONTHLY_CAP_OVERRIDE_KEY, getSetting } from "@/lib/repo/settings";
-import { FREE_TIER_AI_ACTIONS_PER_MONTH } from "@/utils/constants/app";
-import type { LLMUsage } from "@dhaga/core";
+import { FREE_TIER_AI_CREDITS_PER_MONTH } from "@/utils/constants/app";
+import { currentAiActionScope } from "./action-scope";
+import { aiCreditsUsedThisMonth } from "./record";
+
+export { currentAiActionId, newAiAction, withAiAction } from "./action-scope";
+export { aiCreditsUsedThisMonth, recordAiAction } from "./record";
 
 /**
  * Self-hosters raise the cap via DHAGA_AI_MONTHLY_CAP; hosted free tier = 0
  * (cloud AI is a paid feature). A self-hoster who wants AI on the free tier
- * sets this env var to a positive number.
+ * sets this env var to a positive number. Denominated in CREDITS — a card scan
+ * costs 1, heavier actions cost more (see @dhaga/core's credit table).
  */
 export function monthlyAiCap(): number {
   const fromEnv = Number(process.env.DHAGA_AI_MONTHLY_CAP);
   return Number.isFinite(fromEnv) && fromEnv > 0
     ? fromEnv
-    : FREE_TIER_AI_ACTIONS_PER_MONTH;
+    : FREE_TIER_AI_CREDITS_PER_MONTH;
 }
 
 /**
- * A per-user monthly AI-action allowance ("credits") an admin can grant, stored
- * on the acting user's `ai_monthly_cap_override` setting. Returns a positive
- * integer or null (absent / blank / 0 / negative / non-integer → no override).
+ * A per-user monthly AI-credit allowance an admin can grant, stored on the
+ * acting user's `ai_monthly_cap_override` setting. Returns a positive integer
+ * or null (absent / blank / 0 / negative / non-integer → no override).
  */
 async function resolveAiCapOverride(): Promise<number | null> {
   const raw = await getSetting(AI_MONTHLY_CAP_OVERRIDE_KEY);
@@ -58,21 +60,9 @@ export function aiUsageLabel({
   cap: number;
   unlimited: boolean;
 }): string | null {
-  if (unlimited) return `${used} AI actions used`;
+  if (unlimited) return `${used} AI credits used`;
   if (cap <= 0) return "Cloud AI is a paid feature — upgrade to enable AI actions";
-  return `${used} of ${cap} AI actions used`;
-}
-
-export async function aiActionsUsedThisMonth(): Promise<number> {
-  const db = await getDb();
-  const monthStart = new Date();
-  monthStart.setUTCDate(1);
-  monthStart.setUTCHours(0, 0, 0, 0);
-  const [row] = await db
-    .select({ n: count() })
-    .from(aiActions)
-    .where(gte(aiActions.createdAt, monthStart));
-  return row?.n ?? 0;
+  return `${used} of ${cap} AI credits used`;
 }
 
 /**
@@ -87,7 +77,7 @@ export async function aiActionsUsedThisMonth(): Promise<number> {
 export async function hasMonthlyAiBudget(userId: string): Promise<boolean> {
   if (await (await getBillingGate()).hasUnlimitedAi(userId, await getDb())) return true;
   const cap = await effectiveMonthlyAiCap();
-  return (await aiActionsUsedThisMonth()) < cap;
+  return (await aiCreditsUsedThisMonth()) < cap;
 }
 
 export class AiBudgetError extends Error {
@@ -108,6 +98,12 @@ export class AiBudgetError extends Error {
  * call site's `instanceof AiBudgetError` catch shows its message unchanged —
  * it blocks rapid-fire abuse (SCALING.md lever 5) before we touch the DB, and
  * is distinct from the monthly billing cap below.
+ *
+ * The cap is charged per ACTION, not per call: once the action in flight has
+ * metered a call it is already counted against the month, so a second call
+ * inside it skips the cap check. Without that, a user one credit below the cap
+ * would pass the check on a card scan's first call and then be refused
+ * mid-action on its second — billed for a scan they never got.
  */
 export async function assertAiBudget(userId: string): Promise<void> {
   try {
@@ -118,31 +114,10 @@ export async function assertAiBudget(userId: string): Promise<void> {
     }
     throw error;
   }
+  if (currentAiActionScope()?.recorded) return;
   if (await (await getBillingGate()).hasUnlimitedAi(userId, await getDb())) return;
   const cap = await effectiveMonthlyAiCap();
-  if ((await aiActionsUsedThisMonth()) >= cap) {
-    throw new AiBudgetError(`Monthly AI action cap reached (${cap}).`, "cap");
+  if ((await aiCreditsUsedThisMonth()) >= cap) {
+    throw new AiBudgetError(`Monthly AI credit cap reached (${cap}).`, "cap");
   }
-}
-
-export async function recordAiAction(
-  feature:
-    | "contact_parse"
-    | "note_extraction"
-    | "search"
-    | "draft"
-    | "enrichment"
-    | "brief"
-    | "signal_detection",
-  model: string,
-  usage: LLMUsage,
-): Promise<void> {
-  const db = await getDb();
-  await db.insert(aiActions).values({
-    id: randomUUID(),
-    feature,
-    model,
-    inputTokens: usage.inputTokens,
-    outputTokens: usage.outputTokens,
-  });
 }

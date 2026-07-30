@@ -16,6 +16,10 @@ export interface QuickAddState {
    *  through the review form (as the `capturedImages` hidden field) so each
    *  is saved as a visual receipt alongside the merged contact. */
   images?: CaptureImage[];
+  /** The card scan's AI action id, carried through the review form so the
+   *  verbatim transcription — which only runs once the contact is saved, in a
+   *  SECOND request — bills against that same scan. One scan, one credit. */
+  scanActionId?: string;
   /** A pasted contact whose name matches more than one existing contact —
    *  the contact-details disambiguation panel (attach as a note to one of them). */
   matches?: ContactIdentityCandidate[];

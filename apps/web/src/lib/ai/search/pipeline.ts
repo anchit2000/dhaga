@@ -6,9 +6,10 @@ import {
   type SearchIndexResult,
   type SearchQueryPlan,
 } from "@dhaga/core";
+import { withUserDb } from "@/lib/db/request-scope";
 import { getSearchIndex } from "@/lib/repo/search-index";
 import { isTransientConnectionError } from "@/utils/constants/db";
-import { AiBudgetError } from "../metering";
+import { AiBudgetError, recordAiAction } from "../metering";
 import type { AiAnswerResult } from "./types";
 
 /** The retrieved candidates, formatted as the answer prompt's evidence blocks
@@ -25,7 +26,10 @@ export function candidateBlocks(hits: SearchIndexResult[]): string {
 }
 
 /** Stage 1: question → filters + semantic residual (Haiku). Null on failure. */
-export async function planQuery(query: string): Promise<SearchQueryPlan | null> {
+export async function planQuery(
+  userId: string,
+  query: string,
+): Promise<SearchQueryPlan | null> {
   try {
     const result = await getLLMClient().extract({
       schema: searchQueryPlanSchema,
@@ -33,10 +37,18 @@ export async function planQuery(query: string): Promise<SearchQueryPlan | null> 
       prompt: buildSearchQueryPrompt(query),
       tier: "extract",
     });
-    // NOT metered here: a search is one user-visible action, recorded once
-    // when the answer stage completes. Metering this Haiku plan call too would
-    // double-charge each search against the monthly cap (and let a user one
-    // action below the cap slip past the single assertAiBudget check).
+    // Recorded, but NOT as a second action: the caller has an open `search`
+    // action, so this Haiku plan's tokens are added to that one row. It used to
+    // go unmetered entirely (a search cost more than it billed) — the action
+    // scope is what makes recording it safe from double-charging the cap.
+    // Best-effort: a metering blip must not sink a search that already worked.
+    try {
+      await withUserDb(userId, () =>
+        recordAiAction("search", result.model, result.usage),
+      );
+    } catch {
+      // Same trade as the card scan: the call is billed upstream either way.
+    }
     return result.data;
   } catch {
     return null;

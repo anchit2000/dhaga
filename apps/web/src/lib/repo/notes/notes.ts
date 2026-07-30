@@ -36,6 +36,18 @@ export async function addNote(
   return id;
 }
 
+/**
+ * Swap a note's body in place, keeping its id, kind, and every derivation that
+ * points at it. Written for the card-scan receipt: the note is created at save
+ * time from the extracted fields, then the background transcription replaces it
+ * with the card's real text (see scheduleCardTranscription). Callers own
+ * re-embedding — the body this replaces is already indexed.
+ */
+export async function replaceNoteBody(noteId: string, body: string): Promise<void> {
+  const db = await getDb();
+  await db.update(notes).set({ body }).where(eq(notes.id, noteId));
+}
+
 export async function getNote(noteId: string): Promise<NoteRow | null> {
   const db = await getDb();
   const [row] = await db

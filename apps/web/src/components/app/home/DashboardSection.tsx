@@ -122,13 +122,14 @@ export async function DashboardSection(): Promise<ReactElement> {
         hasConfirmations={pendingConfirmations.length > 0}
         inbox={<ConfirmationsPreview confirmations={pendingConfirmations} />}
         groups={suggestedClusters.length > 0 ? (
-          <HomeTile title="Suggested groups">
+          <HomeTile
+            title="Suggested groups"
+            viewAll={{
+              href: "/app/people",
+              label: suggestedClusters.length > HOME_PREVIEW_LIMIT ? `+${suggestedClusters.length - HOME_PREVIEW_LIMIT} more groups` : "View all people",
+            }}
+          >
             <SuggestionsPanel clusters={suggestedClusters.slice(0, HOME_PREVIEW_LIMIT)} />
-            {suggestedClusters.length > HOME_PREVIEW_LIMIT ? (
-              <p className="mt-auto pt-1 text-xs text-fog">
-                +{suggestedClusters.length - HOME_PREVIEW_LIMIT} more
-              </p>
-            ) : null}
           </HomeTile>
         ) : null}
       />

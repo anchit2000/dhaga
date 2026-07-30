@@ -381,8 +381,32 @@ Singapore
 - [ ] Open Quick add on your **phone** browser (same network:
       `http://<your-ip>:3000` locally, or your deployed URL) → **Card
       photo** tab → take a photo of a real business card. Fields extract
-      into the review form; the card's transcription becomes the receipt
-      note.
+      into the review form; a receipt note is composed from those fields
+      (`cardReceiptText`) and saved with the photo.
+- [ ] **The receipt fills in afterwards**: right after saving, the receipt note
+      lists only the extracted fields. Wait ~5s and reload — the SAME note (one
+      receipt, not two; the photo still attached) now holds the card's verbatim
+      text, including whatever maps to no field: the office address, the fax
+      line, the tagline. That is a second Haiku call scheduled with `after()`
+      once the save has committed (`scheduleCardTranscription`), so it costs the
+      scan zero user-facing latency. If the note never changes, check the server
+      log for `cardTranscription` — a budget refusal is silent by design.
+- [ ] **Speed**: click Scan → review dialog in **under ~3s** (measured 3.1s
+      end-to-end locally, of which ~2.3s is the model). The scan asks for
+      fields ONLY — it used to also request a verbatim transcription of the
+      card, which tripled output tokens and took it to ~6s. If you reinstate
+      any long free-text field in `cardScanSchema`, re-measure: that is the
+      one change that reliably breaks this budget. Image size is the other
+      lever (`CARD_SCAN_MAX_DIMENSION`, 1024) — 768px started misreading
+      digits in phone numbers, so don't go lower without re-checking accuracy.
+- [ ] **Tray resets**: after a scan is saved or dismissed, reopen Card photo —
+      the tray is EMPTY. It used to keep the previous card's photos, so the
+      next scan silently merged two people's cards into one contact.
+- [ ] **Bare-domain website**: scan a card whose site is printed as
+      `pune.stpi.in` (no `https://`). It saves. The link field is `type="url"`,
+      so the scheme-less value used to fail native validation and the Save
+      button did nothing with no message — `withUrlScheme` now adds the scheme
+      at the capture→profile boundary.
 - [ ] After saving: the person's page shows the photo under **Card photo**
       (the visual receipt). Clicking it opens the full-size image.
 - [ ] Desktop: choose an image file instead — same flow.
@@ -420,10 +444,10 @@ Singapore
       photo tab says the photo is kept as the visual receipt.
 - [ ] Toggle it OFF → the Quick add photo tab now says the photo is not
       stored; scan a card → the saved contact has no Card photo section
-      (transcription receipt still there).
+      (the field-derived receipt note is still there).
 - [ ] Toggle back ON, scan again → the photo appears on the contact.
 - [ ] **Delete all stored card photos** → confirm → the count clears and
-      contacts keep their transcription notes but lose the photos.
+      contacts keep their receipt notes but lose the photos.
 - [ ] Deleting a scanned contact's receipt note (or the person) removes its
       photo too — `/api/card-image/<id>` returns 404 afterwards (confirmed
       `apps/web/src/app/api/card-image/[id]/route.ts:25`).

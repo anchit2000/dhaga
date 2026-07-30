@@ -1,4 +1,4 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { contacts, followUps } from "@/lib/db/schema";
 import { listDueReachOuts } from "./reach-outs";
@@ -13,7 +13,16 @@ export interface OpenFollowUpItem {
   createdAt: Date;
 }
 
-/** All open follow-ups across the graph, for the Home feed. */
+/**
+ * All open follow-ups across the graph, for the Home feed and /app/follow-ups.
+ *
+ * Ordered the way you actually work the list: everything with a due date first,
+ * soonest (and most overdue) at the top, then the undated ones oldest-first so
+ * the thing that has been waiting longest surfaces instead of sinking. Newest-
+ * first buried both — an item due tomorrow sat below one captured an hour ago.
+ * `due_date IS NULL` sorts false(0) before true(1) in Postgres, which is the
+ * dated-before-undated split; the two keys after it apply to one group each.
+ */
 export async function listAllOpenFollowUps(): Promise<OpenFollowUpItem[]> {
   const db = await getDb();
   return db
@@ -29,7 +38,7 @@ export async function listAllOpenFollowUps(): Promise<OpenFollowUpItem[]> {
     .from(followUps)
     .innerJoin(contacts, eq(contacts.id, followUps.contactId))
     .where(eq(followUps.status, "open"))
-    .orderBy(desc(followUps.createdAt));
+    .orderBy(sql`${followUps.dueDate} IS NULL`, asc(followUps.dueDate), asc(followUps.createdAt));
 }
 
 export interface PendingReminderSummary {

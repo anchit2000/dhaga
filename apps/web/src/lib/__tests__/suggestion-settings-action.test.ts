@@ -1,6 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
-import { getSchedulePrefs } from "@/lib/repo/suggestion-settings";
-import { setSuggestionSettingsAction } from "@/lib/actions/suggestions";
+import { getImportantDateLeadDays, getSchedulePrefs } from "@/lib/repo/suggestion-settings";
+import {
+  setImportantDateLeadDaysAction,
+  setSuggestionSettingsAction,
+} from "@/lib/actions/suggestions";
+import {
+  IMPORTANT_DATE_LEAD_DAYS_DEFAULT,
+  IMPORTANT_DATE_LEAD_DAYS_MAX,
+  IMPORTANT_DATE_LEAD_DAYS_MIN,
+} from "@/utils/constants/important-dates";
 
 // The action gates on the session and calls revalidatePath; neither is under
 // test here, so both are stubbed. The scheduling window itself round-trips
@@ -40,5 +48,40 @@ describe("setSuggestionSettingsAction hour parsing", () => {
     await setSuggestionSettingsAction(form({ endHour: "17" }));
     const prefs = await getSchedulePrefs();
     expect(prefs.startHour).toBe(9);
+  });
+});
+
+/**
+ * The lead time decides how early a birthday reminder fires, so a wrong value is
+ * a wrong email — early, late, or never. Three things have to hold: 0 means
+ * "day-of only" and is a real choice the `Number(x) || default` idiom would eat;
+ * a value the browser's number input never validated (it is only a hint — the
+ * action is the boundary) must land on the documented default rather than NaN;
+ * and a number past the ceiling has to come back as the ceiling, because a
+ * reminder a year out is not a reminder.
+ */
+describe("setImportantDateLeadDaysAction clamping", () => {
+  it("keeps an explicit 0 — day-of only is a choice, not a missing field", async () => {
+    await setImportantDateLeadDaysAction(form({ leadDays: "0" }));
+    expect(await getImportantDateLeadDays()).toBe(IMPORTANT_DATE_LEAD_DAYS_MIN);
+    expect(IMPORTANT_DATE_LEAD_DAYS_MIN).toBe(0);
+  });
+
+  it("falls back to the default when the field is absent or not a number", async () => {
+    await setImportantDateLeadDaysAction(form({ leadDays: "0" }));
+    await setImportantDateLeadDaysAction(form({ leadDays: "next week" }));
+    expect(await getImportantDateLeadDays()).toBe(IMPORTANT_DATE_LEAD_DAYS_DEFAULT);
+
+    await setImportantDateLeadDaysAction(form({ leadDays: "0" }));
+    await setImportantDateLeadDaysAction(form({}));
+    expect(await getImportantDateLeadDays()).toBe(IMPORTANT_DATE_LEAD_DAYS_DEFAULT);
+  });
+
+  it("clamps above the maximum down to the ceiling, and below zero up to it", async () => {
+    await setImportantDateLeadDaysAction(form({ leadDays: "365" }));
+    expect(await getImportantDateLeadDays()).toBe(IMPORTANT_DATE_LEAD_DAYS_MAX);
+
+    await setImportantDateLeadDaysAction(form({ leadDays: "-5" }));
+    expect(await getImportantDateLeadDays()).toBe(IMPORTANT_DATE_LEAD_DAYS_MIN);
   });
 });

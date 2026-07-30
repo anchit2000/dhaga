@@ -1,4 +1,5 @@
 import { todayLine } from "./today";
+import type { CalendarDay } from "../../dates/calendar-day";
 
 /**
  * Pre-meeting brief (BRD v1.2): assemble the dossier before you walk in.
@@ -27,7 +28,7 @@ export interface BriefContext {
   lastTouch: string;
 }
 
-export function buildBriefPrompt(context: BriefContext): string {
+export function buildBriefPrompt(context: BriefContext, today?: CalendarDay): string {
   const lines = [
     `Contact: ${context.contactName}`,
     context.title ? `Title: ${context.title}` : null,
@@ -44,5 +45,5 @@ export function buildBriefPrompt(context: BriefContext): string {
       ? `Notes:\n- ${context.noteSnippets.join("\n- ")}`
       : null,
   ].filter(Boolean);
-  return `${todayLine()}\n\n${lines.join("\n")}\n\nWrite the pre-meeting brief now.`;
+  return `${todayLine(today)}\n\n${lines.join("\n")}\n\nWrite the pre-meeting brief now.`;
 }

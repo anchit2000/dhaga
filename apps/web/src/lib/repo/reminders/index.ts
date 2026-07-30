@@ -18,3 +18,8 @@ export {
   getNotificationSummary,
   type CalendarFollowUp,
 } from "./calendar";
+export {
+  listImportantDateOccurrences,
+  listUpcomingImportantDates,
+  type UpcomingImportantDate,
+} from "./important-dates";

@@ -8,6 +8,7 @@ import { withUserDb } from "@/lib/db/request-scope";
 import { getContact } from "@/lib/repo/contacts";
 import { listFacts, listNotes } from "@/lib/repo/notes";
 import { listContactEvents } from "@/lib/repo/events";
+import { userToday } from "@/lib/repo/reminders/local-today";
 import { AiBudgetError, assertAiBudget, recordAiAction, withAiAction } from "./metering";
 
 export interface DraftResult {
@@ -44,10 +45,15 @@ async function runFollowUpDraft(
       listNotes(contactId),
       listContactEvents(contactId),
     ]);
-    return { detail, contactFacts, contactNotes, contactEvents };
+    // The user's calendar day, resolved here and not at the prompt: it is a
+    // settings READ, so it belongs in this already-open scope, sequentially
+    // (never added to the Promise.all above — see local-today.ts on the
+    // max-of-three tenant pool) and released with it, before the LLM call.
+    const today = await userToday();
+    return { detail, contactFacts, contactNotes, contactEvents, today };
   });
   if (!bundle) return { error: "Contact not found." };
-  const { detail, contactFacts, contactNotes, contactEvents } = bundle;
+  const { detail, contactFacts, contactNotes, contactEvents, today } = bundle;
 
   try {
     // Budget check in its own short scope, released BEFORE the LLM call so no
@@ -68,7 +74,7 @@ async function runFollowUpDraft(
           .map((note) =>
             note.body.length > 240 ? `${note.body.slice(0, 240)}…` : note.body,
           ),
-      }),
+      }, today),
       tier: "reason",
     });
     // Post-LLM metering write in its own short scope — nothing held across the

@@ -20,20 +20,51 @@ resolves part of the hosted email-job fan-out gap below):
   moves a follow-up to a new day, persisted through the follow-up repo/action
   layer.
 - **In-app notification bell.** A nav bell surfaces overdue + due-today counts and
-  a capped preview list (`getNotificationSummary`), the same "due soon" set the
-  email reminder uses (`isDueSoon` = overdue OR due today).
+  a capped preview list (`getNotificationSummary`), built on `isDueSoon` (= overdue
+  OR due today). The badge means "act now", so it deliberately does **not** share
+  the email's wider lead window — see the reminder email below.
+  **Widened to a notification feed (2026-07-30).** `components/app/AppNav/NotificationBell/`
+  now merges three kinds — derived follow-up reminders, derived upcoming important
+  dates, and persisted `notifications` rows written when an extraction/enrichment
+  job reaches a terminal state — under the header "Notifications" (was
+  "Reminders"). The badge predicate above is unchanged apart from adding unread
+  notifications and important dates **that land today**: a birthday six days out
+  belongs in the panel, not on a badge that means "act now". Important-date rows
+  carry no Done affordance (a birthday cannot be completed, only opened).
 - **Daily due-follow-up reminder email.** New `lib/jobs/follow-up-reminders.ts`
   (`runFollowUpReminders`), wired into `/api/jobs/daily`. For each hosted tenant it
   reads `getDueFollowUpRemindersForUser()` inside `withUserDb`, and — if the tenant
   opted in (**reuses the morning-reminder toggle `morning_reminder_enabled`**; no
   new Settings toggle, which is out of this job's scope) and has ≥1 due item —
-  emails a `"N follow-up(s) due"` summary (`followUpReminderHtml` + `emailShell`,
-  contact names/actions HTML-escaped) via Resend. Skips tenants with nothing due
-  (no empty emails), best-effort per tenant, and is a clean no-op in self-host
-  without `DHAGA_OWNER_EMAIL` or Resend. Unlike `runMorningReminder` /
-  `runDailyDigest`, it is **per-tenant from day one** (mirrors
-  `linkedin-export-reminders`); pure subject/HTML/send-guard covered by
-  `lib/jobs/follow-up-reminders.test.ts`.
+  emails a `"N follow-up(s) due soon"` summary (`followUpReminderHtml` +
+  `emailShell`, contact names/actions HTML-escaped) via Resend. Skips tenants with
+  nothing due (no empty emails), best-effort per tenant, and is a clean no-op in
+  self-host without `DHAGA_OWNER_EMAIL` or Resend. **Per-tenant from day one**
+  (mirrors `linkedin-export-reminders`); the three older email jobs have since been
+  converted to the same shape — see "Hosted (Dhaga Cloud) multi-tenant" below. Pure
+  subject/HTML/send-guard covered by `lib/jobs/follow-up-reminders.test.ts`.
+  **Lead window (2026-07-30):** the email set is `isDueWithinEmailLeadWindow` —
+  overdue, due today, **or due within `FOLLOW_UP_LEAD_DAYS` (3)**
+  (`utils/constants/reminders.ts`). Before it, an item due in three days was never
+  emailed at all; it first appeared once it was already late. Each row now carries
+  an honest tag (`Overdue` / `Due today` / `Due tomorrow` / `Due in N days`).
+  Email-only: `isDueSoon` and the bell's `dueToday`/`overdue` counts are unchanged.
+- **Daily important-date reminder email (2026-07-30).** New
+  `lib/jobs/important-date-reminders/` (`runImportantDateReminders`), wired into
+  `/api/jobs/daily` after the follow-up sweep. Same per-tenant `withUserDb`
+  fan-out and `sendEmail`-between-scopes hygiene. Opt-in via
+  `important_date_reminders_enabled` (**default off** — important dates arrive in
+  bulk from address-book imports the user never reviewed), lead time from
+  `important_date_lead_days` (default 7). **Anti-spam:** the cron runs daily, so
+  each occurrence gets at most **two** emails — one when it enters the lead window,
+  one on the day itself. `state.ts` keeps a JSON array of
+  `[contactId, label, occurrenceDate, stage]` tokens under
+  `important_date_reminders_sent` (mirroring `linkedin_export_reminders_sent`);
+  keying on the *occurrence* makes the next day's run a no-op, keying on the
+  *stage* still lets the day-of nudge through, and "not yet sent" (rather than
+  "daysUntil === leadDays") means a skipped cron run fires on the next run instead
+  of losing the reminder. Past-occurrence tokens are pruned so the row cannot grow
+  forever. Covered by `lib/jobs/important-date-reminders/index.test.ts`.
 
 ## Connection-hygiene sweeps (2026-07-26)
 
@@ -131,21 +162,83 @@ gaps and the correctness/doc items below.
 
 ## Hosted (Dhaga Cloud) multi-tenant
 
-- **Daily-digest + morning-reminder email jobs run on the default connection.**
-  Like the signal-detection job used to, `runDailyDigest` and the morning-reminder
-  job run unscoped, so in hosted (multi-tenant RLS) mode they only produce output
-  for the self-host case. Give them the same per-tenant `withUserDb` fan-out the
-  signal-detection job now uses (enumerate tenants from the non-RLS auth `user`
-  table; do **not** give the sweep an RLS bypass on tenant tables).
-- **`hostedTenants()` vs the signals sweep's private copy.** The LinkedIn-export
-  reminder job (`lib/jobs/linkedin-export-reminders.ts`) and the due-follow-up
-  reminder job (`lib/jobs/follow-up-reminders.ts`) both fan out per tenant via the
-  shared `lib/hosted/tenants.ts` helper (id + account email), so they work for real
-  users in hosted mode — unlike the `runDailyDigest` / `runMorningReminder` jobs
-  above, which are still single-owner. But `runSignalDetection` still carries its
-  own id-only tenant enumeration; fold it onto `hostedTenants()` so there is one
+- **Daily-digest + morning-reminder + confirmations-digest email jobs ran on the
+  default connection — RESOLVED (2026-07-30), and it was a live bug, not just an
+  architectural gap.** `runMorningReminder`, `runDailyDigest` and
+  `runConfirmationsDigest` read their own opt-in settings unscoped. Under
+  `packages/ee` RLS an unscoped connection sets no `app.current_user_id`, so the
+  `settings` read matched **zero rows**: `isMorningReminderEnabled()` /
+  `isDailyDigestEnabled()` / `isConfirmationsDigestEnabled()` all answered `false`
+  and `getSchedulePrefs()` silently returned defaults. **These three emails could
+  never send for a hosted user, however the user had set their toggles.** All three
+  now use the same shape as `follow-up-reminders` / `linkedin-export-reminders`:
+  `emailEnabled()` guard → `hostedTenants()` → self-host (`null`) sweeps
+  `ownerEmail()` once via `runOnGlobal`, else a **sequential** `for` loop over
+  tenants, each sweep inside `withUserDb(t.id, …)`, `isDummyAccount` skipped,
+  per-tenant `try`/`catch` + `logActionError` so one tenant failing never aborts the
+  rest, and `sendEmail` called **between** scoped units so no connection is held
+  across the network. Tenants still come from the non-RLS auth `user` table — no RLS
+  bypass on tenant tables. Each returns `{ sent: number; skipped: "no_email" |
+  "no_owner" | null }` (`/api/jobs/daily` just serialises it).
+  **Per-tenant local-day idempotency (same change).** `lib/jobs/last-run.ts` adds
+  `hasRunForLocalDay` / `markRanForLocalDay` over `getSetting`/`setSetting`, called
+  inside the tenant scope so the record is per-user (settings' PK is
+  `(user_id, key)` under EE RLS). The key is
+  `<morning_reminder|daily_digest|confirmations_digest>_last_local_day` and the
+  value is the JSON-encoded **latest** local day key only (`"2026-07-31"`,
+  `localDayKey(now, prefs.timezone)`) — overwritten, not appended, so unlike the
+  important-date / LinkedIn token arrays it is bounded by construction with nothing
+  to prune. JSON-encoded (never `"|"`-joined) so any value the job did not write
+  reads as "no record" instead of coincidentally matching. Keying on the
+  recipient's **local** day, not the UTC day, is what makes a re-triggered cron a
+  no-op for someone at UTC+14. An unreadable value counts as "not sent" — a corrupt
+  row must fail towards delivering the opted-in email, never towards suppressing it
+  forever.
+  **Timezone gate.** The old `MORNING_REMINDER_HOURLY` compared against
+  `schedule_prefs.utcOffsetMinutes` (a fixed browser-captured integer, default `0`)
+  — an hour wrong under DST and wrong entirely for anyone who never opened the
+  Daily-suggestions form — and was an hour-equality test, not a send record. It is
+  replaced by `isLocalHour(now, prefs.timezone, MORNING_REMINDER_LOCAL_HOUR)` over
+  the IANA `prefs.timezone` (`lib/time/zone.ts`), generalised across all three jobs
+  behind `REMINDER_HOUR_GATE_ENV_VARS` (`utils/constants/reminders.ts`):
+  `EMAIL_JOBS_HOURLY`, with `MORNING_REMINDER_HOURLY` still honoured **for one
+  release** so an existing deploy does not silently change behaviour. The gate is
+  **opt-in** — unset (the Vercel Hobby default of one cron a day, `"17 6 * * *"`,
+  unchanged) the single run always sends, so it can never discard the only
+  invocation the day gets; the day record is what prevents duplicates. Switching to
+  hourly per-tenant-08:00 delivery is therefore a config change, not a rewrite.
+  Covered by `lib/jobs/{morning-reminder,daily-digest,confirmations-digest}.test.ts`
+  (32 cases), which model RLS by returning rows **only** inside a tenant scope and
+  counting unscoped reads — so the old implementation fails them.
+- **`hostedTenants()` vs the signals sweep's private copy.** Every per-user email
+  job — `linkedin-export-reminders`, `follow-up-reminders`,
+  `important-date-reminders`, and now `morning-reminder` / `daily-digest` /
+  `confirmations-digest` — fans out via the shared `lib/hosted/tenants.ts` helper
+  (id + account email). But `runSignalDetection` still carries its own id-only
+  tenant enumeration; fold it onto `hostedTenants()` so there is one
   tenant-enumeration path (the shared helper returns email too, which the signals
   sweep can ignore).
+- **Residual: `getFreeBusy` is held inside its tenant scope.** `runDailyDigest`'s
+  free/busy read is the one scoped unit that talks to a calendar provider from
+  inside the connection, because it interleaves the provider call with token-refresh
+  and `needs_reconnect` writes on the tenant's own rows and cannot be split. It is
+  one connection at a time in a sequential loop (never a fan-out) and is skipped
+  entirely for tenants with no calendar connected, but it does breach the
+  "never hold a connection across slow I/O" rule and should be restructured
+  (fetch the connection rows, release, call the provider, reacquire to write) when
+  that repo module is next touched.
+- **Doc/comment updates the above change owed — DONE (2026-07-30 consolidated doc
+  pass).** All four are closed: `lib/jobs/follow-up-reminders.ts`'s header no
+  longer calls the other three jobs single-owner; `app/api/jobs/daily/route.ts`'s
+  header now names `EMAIL_JOBS_HOURLY` (with the old name flagged as a one-release
+  alias) and describes the per-recipient-zone day and last-run record across all
+  three jobs; `docs/SELF_HOSTING.md` + `apps/web/content/docs/self-hosting/index.mdx`
+  gained an `EMAIL_JOBS_HOURLY` row, a deprecation note on
+  `MORNING_REMINDER_HOURLY`, and a "Daily email jobs" section that keeps the
+  Hobby "no sub-daily cron" warning in view; `apps/web/.env.example` gained the
+  same; `docs/TESTING.md` + its mirror describe the new flag and add §7aa for the
+  hosted regression. **Still owed:** `apps/web/public/llms-full.txt` is generated
+  and was deliberately not hand-edited — it regenerates from the docs above.
 - **Telegram owner resolution.** Resolved (deterministic email-first + `orderBy`).
   Kept here only as a pointer; today's only impact was which admin's AI quota
   absorbed bot usage — no data-isolation consequence.

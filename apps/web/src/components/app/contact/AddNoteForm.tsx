@@ -4,7 +4,7 @@ import { useActionState, useRef, useState } from "react";
 import { Mic, Square } from "lucide-react";
 import { addNoteAction, type NoteFormState } from "@/lib/actions/notes";
 import { addPhotoNoteAction } from "@/lib/actions/photo-note";
-import { FormError } from "@/components/app/feedback";
+import { FormError, toastNotice } from "@/components/app/feedback";
 import { Textarea } from "@/components/ui/textarea";
 import { downscalePhoto } from "../downscalePhoto";
 import { SubmitButton } from "../SubmitButton";
@@ -47,6 +47,11 @@ export function AddNoteForm({ contactId }: { contactId: string }) {
         setDictated(false);
         setPhotos([]);
         voiceReview.reset();
+        // A toast, not an inline line: form state has no lifetime, so the old
+        // <p> kept saying "extracting facts…" long after the job had finished
+        // and only a reload cleared it. Live progress lives in the Facts panel's
+        // status pill, which settles on its own.
+        if (result.notice) toastNotice(result.notice);
       }
       return result;
     },
@@ -77,7 +82,6 @@ export function AddNoteForm({ contactId }: { contactId: string }) {
       ) : null}
       <NotePhotoTray photos={photos} setPhotos={setPhotos} />
       <FormError message={state.error} />
-      {state.notice ? <p className="text-sm text-ember/90">{state.notice}</p> : null}
       <div className="flex flex-wrap items-center gap-2">
         <SubmitButton>{photos.length > 0 ? "Read photo into a note" : "Add note"}</SubmitButton>
         <NotePhotoButton photos={photos} setPhotos={setPhotos} />

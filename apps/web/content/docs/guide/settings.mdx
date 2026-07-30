@@ -46,9 +46,14 @@ beneath it.
   digest** email (off by default) that summarises the AI confirmations waiting
   for your review. The same tab holds **Birthdays & anniversaries**: how many
   days ahead a saved date counts as upcoming (0–90, default 7), and an opt-in
-  reminder email that arrives that far in advance. Like every email preference in
-  Dhaga it starts off — the first-run walkthrough stops here so you choose, and
-  nothing is switched on for you.
+  reminder email that arrives that far in advance. **Background job alerts** sits
+  alongside them: an opt-in email for when a note extraction or web enrichment
+  **fails or is blocked** by your AI budget, at most one every 15 minutes. Runs
+  that succeed are not emailed — every job, successful or not, is recorded in
+  your notifications, and a run that worked asks nothing of you. Like every email
+  preference in Dhaga these start off — the first-run walkthrough stops here so
+  you choose, and nothing is switched on for you. It also holds your **Time
+  zone** — see below.
 - **Import** — bring an existing address book into Dhaga (see below).
 
 <Callout title="Some sections depend on configuration">
@@ -56,6 +61,26 @@ Billing only appears when the instance has Stripe configured, and calendar/
 email features need their providers wired up. On a plain self-host several of
 these sections are intentionally absent — see [Self-hosting](/docs/self-hosting).
 </Callout>
+
+## Your time zone
+
+Under **Suggestions**, **Time zone** is the setting that decides where your day
+begins and ends. Search for a city or region, or take the **Use detected zone**
+shortcut when Dhaga notices your browser disagrees with what's saved — it fills
+the box for you and waits; nothing changes until you press Save.
+
+It matters because reminders are about *days*. With it set, a birthday reaches
+you on the day it is where **you** are, rather than wherever the server happens
+to be, and a reminder you've already had can't arrive again.
+
+<Callout title="It picks the day, not the hour">
+Everything still goes out on one daily run, so the *time* an email lands is set
+by the instance, not by your zone. Your time zone decides which **day** a
+reminder belongs to — not what time of morning it arrives.
+</Callout>
+
+New accounts start on **UTC** until you choose one, so nothing shifts under
+anyone who hasn't looked at this yet.
 
 ## Import your contacts
 

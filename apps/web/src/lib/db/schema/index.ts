@@ -67,6 +67,7 @@ export {
   type AuthUserRow,
 } from "./auth";
 export { apiKey, type ApiKeyRow } from "./api-key";
+export { notifications, type NotificationRow } from "./notifications";
 export {
   aiBudgetSettings,
   aiCreditGrants,

@@ -29,7 +29,14 @@ export async function POST(request: Request): Promise<Response> {
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       const onEvent = (event: ExtractionStreamEvent): void => {
-        controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
+        try {
+          controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
+        } catch {
+          // Nobody is reading any more (the tab closed, the connection dropped).
+          // Progress has nowhere to go, but the job must still run to completion:
+          // an enqueue throw here would land in processExtractionJob's catch and
+          // mark a job that actually succeeded as failed.
+        }
       };
       try {
         await processExtractionJob(jobId, userId, onEvent);

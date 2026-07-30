@@ -8,6 +8,7 @@ import { withUserDb } from "@/lib/db/request-scope";
 import { getContact } from "@/lib/repo/contacts";
 import { listFacts, listNotes, listOpenFollowUps } from "@/lib/repo/notes";
 import { listContactEvents } from "@/lib/repo/events";
+import { userToday } from "@/lib/repo/reminders/local-today";
 import { AiBudgetError, assertAiBudget, recordAiAction, withAiAction } from "./metering";
 import { FeatureNotEntitledError, requireFeature } from "@/lib/entitlements";
 
@@ -45,10 +46,15 @@ async function runBrief(userId: string, contactId: string): Promise<BriefResult>
       listContactEvents(contactId),
       listOpenFollowUps(contactId),
     ]);
-    return { detail, facts, notes, events, followUps };
+    // The user's calendar day, resolved here and not at the prompt: it is a
+    // settings READ, so it belongs in this already-open scope, sequentially
+    // (never added to the Promise.all above — see local-today.ts on the
+    // max-of-three tenant pool) and released with it, before the LLM call.
+    const today = await userToday();
+    return { detail, facts, notes, events, followUps, today };
   });
   if (!bundle) return { error: "Contact not found." };
-  const { detail, facts, notes, events, followUps } = bundle;
+  const { detail, facts, notes, events, followUps, today } = bundle;
 
   try {
     // Pre-LLM DB work (entitlement + budget checks) in ONE short scope,
@@ -78,7 +84,7 @@ async function runBrief(userId: string, contactId: string): Promise<BriefResult>
           ),
         openFollowUps: followUps.map((followUp) => followUp.action),
         lastTouch: lastTouch.toDateString(),
-      }),
+      }, today),
       tier: "reason",
     });
     // Post-LLM metering write in its own short scope — again, no connection

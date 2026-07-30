@@ -1,6 +1,7 @@
 import type { EventInput } from "@fullcalendar/core";
-import type { CalendarFollowUp } from "@/lib/repo/reminders";
+import type { CalendarFollowUp, UpcomingImportantDate } from "@/lib/repo/reminders";
 import type { ExternalCalendarEvent } from "@/lib/repo/calendar";
+import type { ExternalEventProps, FollowUpEventProps, ImportantDateEventProps } from "./props";
 
 /** Untitled connected-calendar events are real (a private or unnamed block) —
  *  label them honestly rather than rendering an empty chip. */
@@ -8,39 +9,11 @@ const UNTITLED_EXTERNAL_EVENT = "Busy";
 
 /** Sort key feeding FullCalendar's `eventOrder` (see CalendarBoard). Follow-ups
  *  are Dhaga's own work and must never be the ones hidden behind "+N more" on a
- *  day the connected calendar has filled; connected events sort after them. */
+ *  day the connected calendar has filled; important dates are Dhaga's own data
+ *  too, so they outrank third-party context but never a task. */
 const FOLLOW_UP_RANK = 0;
-const EXTERNAL_RANK = 1;
-
-/** The typed shape we stash on every calendar event so eventContent, eventClick
- *  and the details dialog can read a follow-up's data back off FullCalendar's
- *  (loosely-typed) extendedProps bag without reaching for `any`. */
-export type FollowUpEventProps = {
-  contactId: string;
-  contactName: string;
-  action: string;
-  dueHint: string | null;
-  overdue: boolean;
-};
-
-/** The same trick for events read from a CONNECTED calendar. `external` is the
- *  discriminator — the one key a follow-up's props never carry — so the board
- *  can tell the two kinds apart (see `isExternalEventProps`). */
-export type ExternalEventProps = {
-  external: true;
-  provider: string;
-  accountEmail: string | null;
-  location: string | null;
-};
-
-/** Everything the grid can hold: a Dhaga follow-up or a connected-calendar event. */
-export type CalendarEventProps = FollowUpEventProps | ExternalEventProps;
-
-/** Narrows the extendedProps union. Connected-calendar events are read-only, so
- *  every handler that mutates a follow-up bails out through this guard. */
-export function isExternalEventProps(props: CalendarEventProps): props is ExternalEventProps {
-  return "external" in props;
-}
+const IMPORTANT_DATE_RANK = 1;
+const EXTERNAL_RANK = 2;
 
 /**
  * Pure: CalendarFollowUp[] → FullCalendar EventInput[]. Only follow-ups with a
@@ -62,6 +35,7 @@ export function toCalendarEvents(items: CalendarFollowUp[]): EventInput[] {
       classNames: item.overdue ? ["fc-overdue"] : [],
       rank: FOLLOW_UP_RANK,
       extendedProps: {
+        kind: "follow-up",
         contactId: item.contactId,
         contactName: item.contactName,
         action: item.action,
@@ -97,7 +71,7 @@ export function toExternalCalendarEvents(events: ExternalCalendarEvent[]): Event
     classNames: ["fc-external"],
     rank: EXTERNAL_RANK,
     extendedProps: {
-      external: true,
+      kind: "external",
       provider: event.provider,
       accountEmail: event.accountEmail,
       location: event.location,
@@ -105,8 +79,51 @@ export function toExternalCalendarEvents(events: ExternalCalendarEvent[]): Event
   }));
 }
 
+/**
+ * Stable id for a derived occurrence. The `important-date:` prefix means it can
+ * never be mistaken for the uuid of a follow-up by a handler that lost its
+ * guard, and the (contact, date, label) key is exactly the occurrence's identity:
+ * one contact can carry several important dates, and a window straddling a year
+ * boundary can hold the same one twice.
+ */
+function importantDateEventId(item: UpcomingImportantDate): string {
+  return `important-date:${item.contactId}:${item.date}:${item.label}`;
+}
+
+/**
+ * Pure: UpcomingImportantDate[] → FullCalendar EventInput[]. Birthdays and
+ * anniversaries are DERIVED from the contact, so they are read-only on the grid
+ * the same way connected-calendar events are: `editable`/`startEditable` false
+ * per event, so no drag can start and `handleEventDrop` can never fire with a
+ * contact id where a follow-up id belongs.
+ */
+export function toImportantDateEvents(items: UpcomingImportantDate[]): EventInput[] {
+  return items.map((item) => ({
+    id: importantDateEventId(item),
+    title: `${item.contactName} — ${item.label}`,
+    allDay: true,
+    // Already a LOCAL calendar date (YYYY-MM-DD) from listImportantDateOccurrences
+    // — passed through untouched on purpose. Any Date/ISO round-trip here lands a
+    // birthday a day early in a negative-offset timezone.
+    start: item.date,
+    display: "block",
+    editable: false,
+    startEditable: false,
+    classNames: ["fc-important-date"],
+    rank: IMPORTANT_DATE_RANK,
+    extendedProps: {
+      kind: "important-date",
+      contactId: item.contactId,
+      contactName: item.contactName,
+      label: item.label,
+      turning: item.turning,
+    } satisfies ImportantDateEventProps,
+  }));
+}
+
 /** The complement of `toCalendarEvents`: the date-less follow-ups that populate
- *  the draggable Unscheduled tray. */
+ *  the draggable Unscheduled tray. Important dates can never appear here — the
+ *  tray is typed to follow-ups, and every occurrence is dated by construction. */
 export function unscheduledFollowUps(items: CalendarFollowUp[]): CalendarFollowUp[] {
   return items.filter((item) => item.dueDate === null);
 }

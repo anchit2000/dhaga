@@ -6,7 +6,7 @@ import type { EventDropArg } from "@fullcalendar/core";
 import type { EventReceiveArg } from "@fullcalendar/interaction";
 import { rescheduleFollowUpAction } from "@/lib/actions/follow-ups";
 import type { CalendarFollowUp } from "@/lib/repo/reminders";
-import { isExternalEventProps, unscheduledFollowUps, type CalendarEventProps } from "./event-map";
+import { isFollowUpEventProps, unscheduledFollowUps, type CalendarEventProps } from "./event-map";
 
 export type Reschedule = {
   /** The date-less follow-ups still awaiting a date, for the Unscheduled tray. */
@@ -27,10 +27,14 @@ export function useReschedule(items: CalendarFollowUp[]): Reschedule {
   const [trayItems, setTrayItems] = useState<CalendarFollowUp[]>(() => unscheduledFollowUps(items));
 
   async function handleEventDrop(arg: EventDropArg): Promise<void> {
-    // Belt and braces: connected-calendar events already ship editable:false, so
-    // no drag can start on one — if that ever regresses, it must not try to
-    // reschedule a follow-up that does not exist.
-    if (isExternalEventProps(arg.event.extendedProps as CalendarEventProps)) {
+    // Belt and braces: connected-calendar events and derived important dates
+    // already ship editable:false, so no drag can start on either — if that ever
+    // regresses, this must not write. The gate is POSITIVE (follow-up or bail)
+    // rather than a blacklist, because `arg.event.id` is only a follow-up id for
+    // that one kind: an important date's id is a synthetic occurrence key built
+    // around a CONTACT id, and handing that to rescheduleFollowUpAction would at
+    // best fail and at worst re-date an unrelated row.
+    if (!isFollowUpEventProps(arg.event.extendedProps as CalendarEventProps)) {
       arg.revert();
       return;
     }

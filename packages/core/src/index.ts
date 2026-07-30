@@ -3,3 +3,6 @@
 // re-exports precisely that curated surface (nothing extra leaks).
 export * from "./models";
 export * from "./services";
+// Pure calendar-date maths (no schemas, no I/O), so it belongs to neither of the
+// two barrels above and owns its own curated ./dates/index.ts.
+export * from "./dates";

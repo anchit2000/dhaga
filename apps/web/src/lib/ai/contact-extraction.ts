@@ -10,6 +10,7 @@ import {
   type ExtractedContact,
 } from "@dhaga/core";
 import { withUserDb } from "@/lib/db/request-scope";
+import { userToday } from "@/lib/repo/reminders/local-today";
 import { AiBudgetError, assertAiBudget, recordAiAction, withAiAction } from "./metering";
 
 export interface ContactExtractionResult {
@@ -60,11 +61,18 @@ async function parseWithAi(
     // multi-second Anthropic round-trip (GOAL 1b / SCALING.md lever 2). Left
     // unscoped in a server action, these getDb()-acquiring calls pin the
     // request-scoped connection across the whole extract() — the #92 pool bug.
-    await withUserDb(userId, () => assertAiBudget(userId));
+    // The user's calendar day rides in this same pre-LLM scope, sequentially
+    // after the budget check — "next Tuesday" in a capture resolves against the
+    // user's day, not the server's UTC one — so it costs no extra connection
+    // and, like the budget read, is released before the model call.
+    const today = await withUserDb(userId, async () => {
+      await assertAiBudget(userId);
+      return userToday();
+    });
     const result = await getLLMClient().extract({
       schema: captureExtractionSchema,
       system: CAPTURE_EXTRACTION_SYSTEM,
-      prompt: buildContactParsePrompt(rawText),
+      prompt: buildContactParsePrompt(rawText, today),
       tier: "extract",
     });
     await withUserDb(userId, () =>

@@ -1,4 +1,4 @@
-import { getSetting, setSetting } from "./settings";
+import { getSetting, setSetting } from "../settings";
 import {
   DEFAULT_DAILY_SUGGESTION_COUNT,
   DEFAULT_MEETING_OVERLOAD_THRESHOLD,
@@ -7,6 +7,7 @@ import {
   MAX_DAILY_SUGGESTION_COUNT,
   MIN_DAILY_SUGGESTION_COUNT,
 } from "@/utils/constants/suggestions";
+import { coerceTimeZone } from "@/lib/time/zone";
 
 /**
  * Per-user tuning for the daily suggestion + scheduling feature. Reuses the
@@ -16,9 +17,6 @@ import {
 
 const SUGGESTION_COUNT_KEY = "daily_suggestion_count";
 const SCHEDULE_PREFS_KEY = "schedule_prefs";
-const DAILY_DIGEST_KEY = "daily_digest_enabled";
-const CONFIRMATIONS_DIGEST_KEY = "confirmations_digest_enabled";
-const MORNING_REMINDER_KEY = "morning_reminder_enabled";
 
 export interface SchedulePrefs {
   startHour: number;
@@ -26,6 +24,13 @@ export interface SchedulePrefs {
   overloadThreshold: number;
   /** Minutes offset from UTC (IST = 330, PST = -480). Set from the browser. */
   utcOffsetMinutes: number;
+  /**
+   * IANA zone id from Settings; decides when a day starts/ends for reminders (see
+   * lib/time/zone.ts). Default "UTC" is already server-local in hosted mode, so
+   * nothing changes until a user picks one. Do NOT backfill it from
+   * `utcOffsetMinutes` — -480 is America/Los_Angeles *or* Asia/Manila by season.
+   */
+  timezone: string;
 }
 
 const DEFAULT_SCHEDULE_PREFS: SchedulePrefs = {
@@ -33,6 +38,7 @@ const DEFAULT_SCHEDULE_PREFS: SchedulePrefs = {
   endHour: DEFAULT_WORKING_END_HOUR,
   overloadThreshold: DEFAULT_MEETING_OVERLOAD_THRESHOLD,
   utcOffsetMinutes: 0,
+  timezone: "UTC",
 };
 
 function clampCount(value: number): number {
@@ -60,6 +66,9 @@ export async function getSchedulePrefs(): Promise<SchedulePrefs> {
       endHour: parsed.endHour ?? DEFAULT_SCHEDULE_PREFS.endHour,
       overloadThreshold: parsed.overloadThreshold ?? DEFAULT_SCHEDULE_PREFS.overloadThreshold,
       utcOffsetMinutes: parsed.utcOffsetMinutes ?? DEFAULT_SCHEDULE_PREFS.utcOffsetMinutes,
+      // Validated on every READ: a hand-edited or retired zone id must not reach
+      // `Intl` inside a cron looping over every user.
+      timezone: coerceTimeZone(parsed.timezone, DEFAULT_SCHEDULE_PREFS.timezone),
     };
   } catch {
     return DEFAULT_SCHEDULE_PREFS;
@@ -68,35 +77,4 @@ export async function getSchedulePrefs(): Promise<SchedulePrefs> {
 
 export async function setSchedulePrefs(prefs: SchedulePrefs): Promise<void> {
   await setSetting(SCHEDULE_PREFS_KEY, JSON.stringify(prefs));
-}
-
-/** Whether the user opted into the morning email digest (default: off). */
-export async function isDailyDigestEnabled(): Promise<boolean> {
-  return (await getSetting(DAILY_DIGEST_KEY)) === "on";
-}
-
-export async function setDailyDigestEnabled(enabled: boolean): Promise<void> {
-  await setSetting(DAILY_DIGEST_KEY, enabled ? "on" : "off");
-}
-
-/** Whether the user opted into the pending-confirmations email digest (default: off). */
-export async function isConfirmationsDigestEnabled(): Promise<boolean> {
-  return (await getSetting(CONFIRMATIONS_DIGEST_KEY)) === "on";
-}
-
-export async function setConfirmationsDigestEnabled(enabled: boolean): Promise<void> {
-  await setSetting(CONFIRMATIONS_DIGEST_KEY, enabled ? "on" : "off");
-}
-
-/**
- * Whether the user opted into the morning follow-up reminder email — a daily
- * nudge to open Dhaga when items are pending (default: off; privacy-first, we
- * never email a user who hasn't asked to be emailed).
- */
-export async function isMorningReminderEnabled(): Promise<boolean> {
-  return (await getSetting(MORNING_REMINDER_KEY)) === "on";
-}
-
-export async function setMorningReminderEnabled(enabled: boolean): Promise<void> {
-  await setSetting(MORNING_REMINDER_KEY, enabled ? "on" : "off");
 }

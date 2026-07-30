@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useFormStatus } from "react-dom";
-import { Loader2, RotateCw, Sparkles, TriangleAlert } from "lucide-react";
+import { Check, Loader2, RotateCw, Sparkles, TriangleAlert } from "lucide-react";
 import { ActionForm } from "@/components/app/ActionForm";
 import {
   EXTRACTION_BLOCKED_LABEL,
@@ -10,7 +10,7 @@ import {
 } from "@/utils/constants/extraction-jobs";
 import { retryExtractionJobAction } from "@/lib/actions/extraction-jobs";
 import type { ExtractionJobView } from "@/types";
-import { isActive, useExtractionStream } from "./useExtractionStream";
+import { extractionDoneMessage, isVisible, useExtractionStream } from "./useExtractionStream";
 
 function activeLabel(job: ExtractionJobView): string {
   // "writing" is a stream-only stage carrying the final fact count.
@@ -48,10 +48,7 @@ export function ExtractionStatus({
    *  refetches instead of the whole page refreshing. */
   onFacts: () => void;
 }) {
-  const jobs = useExtractionStream(initialJobs, onFacts);
-  const visible = jobs.filter(
-    (j) => isActive(j) || j.status === "error" || j.status === "blocked",
-  );
+  const visible = useExtractionStream(initialJobs, onFacts).filter(isVisible);
   if (visible.length === 0) return null;
 
   return (
@@ -97,6 +94,21 @@ export function ExtractionStatus({
                 <input type="hidden" name="contactId" value={contactId} />
                 <RetryButton />
               </ActionForm>
+            </div>
+          );
+        }
+        // Finished: a plain receipt of what landed, in the same quiet pill the
+        // spinner used, so completion isn't just the spinner vanishing. The hook
+        // only keeps this for a job this session watched finish, and clears it
+        // after EXTRACTION_DONE_NOTICE_MS — never a permanent banner.
+        if (job.status === "done") {
+          return (
+            <div
+              key={job.id}
+              className="flex items-center gap-2 rounded-lg border border-seam bg-panel px-3 py-2 text-xs text-fog"
+            >
+              <Check className="size-3.5 shrink-0 text-ember" />
+              <span>{extractionDoneMessage(job)}</span>
             </div>
           );
         }

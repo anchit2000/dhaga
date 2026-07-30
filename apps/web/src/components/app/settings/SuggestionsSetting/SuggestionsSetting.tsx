@@ -7,6 +7,7 @@ import { SaveButton } from "@/components/app/settings/SuggestionsToggles";
 import {
   setConfirmationsDigestEnabledAction,
   setDailyDigestEnabledAction,
+  setJobEmailNotificationsEnabledAction,
   setMorningReminderEnabledAction,
   setSuggestionSettingsAction,
 } from "@/lib/actions/suggestions";
@@ -15,6 +16,7 @@ import {
   MAX_DAILY_SUGGESTION_COUNT,
   MIN_DAILY_SUGGESTION_COUNT,
 } from "@/utils/constants/suggestions";
+import { JOB_EMAIL_COOLDOWN_MINUTES } from "@/utils/constants/notifications";
 import { DigestToggle } from "./DigestToggle";
 
 const fieldLabel = "block text-xs text-fog";
@@ -27,12 +29,14 @@ export function SuggestionsSetting({
   digestEnabled,
   confirmationsDigestEnabled,
   reminderEnabled,
+  jobEmailEnabled,
 }: {
   count: number;
   prefs: SchedulePrefs;
   digestEnabled: boolean;
   confirmationsDigestEnabled: boolean;
   reminderEnabled: boolean;
+  jobEmailEnabled: boolean;
 }) {
   const offsetRef = useRef<HTMLInputElement>(null);
 
@@ -115,6 +119,18 @@ export function SuggestionsSetting({
         label="Morning follow-up reminders"
         title="Morning follow-up reminders"
         description="A daily nudge to open Dhaga when you have follow-ups or check-ins waiting. Requires email to be configured on your server."
+      />
+
+      {/* Honest copy, not the wish: successes are deliberately NOT emailed and
+          the rest is rate-limited, so the description states both rather than
+          promising an email per job. The cooldown is read from the constant the
+          send actually enforces, so the two can't drift. */}
+      <DigestToggle
+        enabled={jobEmailEnabled}
+        action={setJobEmailNotificationsEnabledAction}
+        label="Background job alerts"
+        title="Background job alerts"
+        description={`Email me when a note extraction or web enrichment fails or is blocked by your AI budget — at most one every ${JOB_EMAIL_COOLDOWN_MINUTES} minutes. Successful runs are recorded in your notifications only, where every job appears either way. Requires email to be configured on your server.`}
       />
     </section>
   );

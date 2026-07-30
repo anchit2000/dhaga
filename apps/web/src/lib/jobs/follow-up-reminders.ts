@@ -9,9 +9,14 @@ import { isMorningReminderEnabled } from "@/lib/repo/suggestion-settings";
 import type { CalendarFollowUp } from "@/lib/repo/reminders";
 import type { ScopedRunner } from "@/lib/hosted/tenants";
 
-/** Subject line for the due-follow-ups reminder (pure — unit-tested). */
+/**
+ * Subject line for the due-follow-ups reminder (pure — unit-tested). "due soon"
+ * rather than "due": the email now also carries items due within
+ * FOLLOW_UP_LEAD_DAYS, and a subject claiming they are due today would be a
+ * small lie the body then contradicts.
+ */
 export function followUpReminderSubject(count: number): string {
-  return `${count} follow-up${count === 1 ? "" : "s"} due`;
+  return `${count} follow-up${count === 1 ? "" : "s"} due soon`;
 }
 
 /** The job's send-guard: never email a tenant with nothing due (pure — unit-tested). */
@@ -25,17 +30,26 @@ export interface FollowUpReminderSummary {
 }
 
 /**
- * Daily "you have follow-ups due today or overdue" reminder. Lists the actual due
- * items (from getDueFollowUpRemindersForUser — the same overdue + due-today set the
- * calendar's notification bell shows), template-only (no AI, no metered cost).
+ * Daily "you have follow-ups due soon" reminder. Lists the actual items (from
+ * getDueFollowUpRemindersForUser — overdue, due today, or due within
+ * FOLLOW_UP_LEAD_DAYS; a WIDER set than the notification bell's overdue +
+ * due-today, so a follow-up due in three days gets emailed while there is still
+ * time to do it), template-only (no AI, no metered cost).
  * Opt-in: reuses the existing morning-reminder toggle (morning_reminder_enabled) —
  * we never email a user who hasn't asked to be emailed (privacy-first), and adding a
  * separate toggle would need a Settings UI change out of this job's scope.
  *
  * In hosted mode it fans out per tenant inside `withUserDb` so every read is
- * RLS-scoped (mirroring linkedin-export-reminders — unlike runMorningReminder /
- * runDailyDigest, which are still single-owner, see docs/FOLLOW_UPS.md). Self-host
- * runs once for the configured owner. Degrades to a clean no-op without Resend.
+ * RLS-scoped (mirroring linkedin-export-reminders). runMorningReminder /
+ * runDailyDigest / runConfirmationsDigest were converted to the same shape on
+ * 2026-07-30 — until then they read settings unscoped and could never send for a
+ * hosted user (see docs/FOLLOW_UPS.md), so this is now the single pattern rather
+ * than the exception. Self-host runs once for the configured owner. Degrades to a
+ * clean no-op without Resend.
+ *
+ * Unlike those three, this job has no hour gate and no last-run day record: it
+ * only checks the opt-in toggle, so an extra invocation would re-send. Keep it on
+ * the once-a-day cron.
  */
 export async function runFollowUpReminders(): Promise<FollowUpReminderSummary> {
   if (!emailEnabled()) return { sent: 0, skipped: "no_email" };

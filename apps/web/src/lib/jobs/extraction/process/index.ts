@@ -4,9 +4,10 @@ import {
   completeExtractionJob,
   failExtractionJob,
 } from "@/lib/repo/extraction-jobs";
+import { notifyJobOutcome } from "@/lib/repo/notifications";
 import { withUserDb } from "@/lib/db/request-scope";
 import { AiBudgetError } from "@/lib/ai/metering";
-import type { ExtractionStreamEvent } from "@/types";
+import type { ExtractionJobKind, ExtractionStreamEvent } from "@/types";
 import { processEnrichment, processNote } from "./kinds";
 
 /** Sink for the live progress events the worker route streams to the person
@@ -43,6 +44,11 @@ export async function processExtractionJob(
     emit({ type: "detached" });
     return;
   }
+  // Every terminal branch below also records a notification, so a user who
+  // navigated away still learns the job finished (the stream events reach only
+  // the tab that started it). Best effort by construction — see notifyJobOutcome.
+  const kind: ExtractionJobKind = job.kind === "enrichment" ? "enrichment" : "note_extraction";
+  const subject = { jobId, contactId: job.contactId, kind };
   try {
     const outcome =
       job.kind === "enrichment"
@@ -53,10 +59,12 @@ export async function processExtractionJob(
       // shows a calm notice; the stream reports it as "blocked".
       const message = outcome.notice ?? "Automatic fact extraction is a paid feature.";
       await withUserDb(userId, () => blockedExtractionJob(jobId, message));
+      await notifyJobOutcome(userId, subject, { status: "blocked", kind });
       emit({ type: "blocked", message });
     } else if (outcome.failed) {
       const message = outcome.notice ?? "Extraction failed.";
       await withUserDb(userId, () => failExtractionJob(jobId, message));
+      await notifyJobOutcome(userId, subject, { status: "error", kind, message });
       emit({ type: "error", message, retryable: true });
     } else {
       // Facts are already committed (extractAndApplyNote's apply phase ran
@@ -69,6 +77,12 @@ export async function processExtractionJob(
           followUpCount: outcome.followUpCount,
         }),
       );
+      await notifyJobOutcome(userId, subject, {
+        status: "done",
+        kind,
+        factCount: outcome.factCount,
+        followUpCount: outcome.followUpCount,
+      });
       emit({
         type: "done",
         factCount: outcome.factCount,
@@ -78,6 +92,7 @@ export async function processExtractionJob(
   } catch (error) {
     const message = errorMessage(error);
     await withUserDb(userId, () => failExtractionJob(jobId, message));
+    await notifyJobOutcome(userId, subject, { status: "error", kind, message });
     emit({ type: "error", message, retryable: true });
   }
 }

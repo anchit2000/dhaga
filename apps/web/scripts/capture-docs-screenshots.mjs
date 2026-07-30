@@ -59,15 +59,18 @@ async function openPasteSurface(page) {
   await sleep(400);
 }
 
-async function shoot(file) {
-  await page.screenshot({ path: resolve(OUT_DIR, file) });
+// `opts` passes straight through to Playwright (e.g. { fullPage: true } for a
+// list surface whose last row would otherwise be clipped mid-control). Optional
+// so every existing viewport-sized shot is unchanged.
+async function shoot(file, opts = {}) {
+  await page.screenshot({ path: resolve(OUT_DIR, file), ...opts });
 }
 
-async function capture(file, route, shows, fn) {
+async function capture(file, route, shows, fn, opts = {}) {
   if (ONLY && !ONLY.has(file)) return;
   try {
     await fn();
-    await shoot(file);
+    await shoot(file, opts);
     manifest.push({ file, ok: true, route, shows });
     console.log(`  ok   ${file}`);
   } catch (err) {
@@ -468,6 +471,23 @@ await capture(
     }
     await sleep(900);
   },
+);
+
+// sync-conflicts.png — the contact-sync review queue
+// Needs seeded data: the page renders only links whose `conflicts` array is
+// non-empty, which a real run produces only when the phone AND Dhaga both moved
+// the same field. Run `node --env-file=.env.vercel scripts/seed-sync-conflicts.mjs`
+// first, or this captures the empty state.
+await capture(
+  "sync-conflicts.png",
+  "/app/sync/conflicts",
+  "The contact-sync review queue: fields the phone and Dhaga both changed, each showing the phone's value that won and the Dhaga value kept for review.",
+  async () => {
+    await page.goto(`${BASE}/app/sync/conflicts`, { waitUntil: "networkidle" });
+    await sleep(900);
+    await page.evaluate(() => window.scrollTo(0, 0));
+  },
+  { fullPage: true },
 );
 
 await context.close();

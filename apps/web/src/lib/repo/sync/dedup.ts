@@ -38,7 +38,14 @@ export function indexContact(index: DedupIndex, id: string, contact: SyncableCon
     if (key && !index.byPhone.has(key)) index.byPhone.set(key, id);
   }
   const nameKey = nameCompanyKey(contact);
-  if (nameKey.replace("|", "") && !index.byNameCompany.has(nameKey)) {
+  // Content is checked by splitting on the separator rather than by
+  // `nameKey.replace("|", "")`, which strips only the FIRST one. normalizeForMatch
+  // folds diacritics and whitespace but keeps punctuation, so a contact whose
+  // name is literally "|" survived that check and got indexed under a key with
+  // no real content — then every other such contact matched it and two unrelated
+  // people merged into one. Both halves blank means there is nothing to match on.
+  const hasContent = nameKey.split("|").some((part) => part.length > 0);
+  if (hasContent && !index.byNameCompany.has(nameKey)) {
     index.byNameCompany.set(nameKey, id);
   }
 }

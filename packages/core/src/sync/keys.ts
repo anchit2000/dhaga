@@ -23,7 +23,17 @@ function methodKey(field: MultiField, m: ContactMethod): string {
     // ("+91 98765 43210" vs "098765 43210") without merging distinct numbers.
     return digits.length > 10 ? digits.slice(-10) : digits;
   }
-  if (field === "links") return value.toLowerCase().replace(/\/+$/, "");
+  if (field === "links") {
+    // Trailing slashes go via a loop, not /\/+$/. That regex backtracks
+    // polynomially on a long run of slashes — the same defect already fixed in
+    // geocoding/nominatim-client. It matters MORE here: a Nominatim base URL is
+    // operator-supplied, whereas link values arrive from imports, card scans,
+    // manual entry and now the device address book, so the input is genuinely
+    // user-controlled. This pass is linear and strips the same characters.
+    let key = value.toLowerCase();
+    while (key.endsWith("/")) key = key.slice(0, -1);
+    return key;
+  }
   return value.toLowerCase();
 }
 

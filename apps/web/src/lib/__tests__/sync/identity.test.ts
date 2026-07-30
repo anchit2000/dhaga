@@ -113,6 +113,27 @@ describe("sync identity — external id misses fall back to dedup", () => {
     expect(result.writes).toEqual([]);
   });
 
+  it("does not treat a punctuation-only name as an identity", async () => {
+    // A name+company key of nothing but separators identifies nobody. Junk names
+    // like this come out of bad .vcf imports, and normalizeForMatch keeps
+    // punctuation, so the key survives as content-free. If such a key gets
+    // indexed, the NEXT content-free contact matches it and two unrelated people
+    // are merged into one — the least recoverable failure in a contact app,
+    // which is why this must create rather than match.
+    await createContactProfile(profile({ name: "|" }), "manual");
+
+    const result = await pushContactSync(
+      USER,
+      push({
+        containerId: "container-punct",
+        contacts: [observed({ externalId: "punct-1", name: "|" })],
+      }),
+    );
+
+    expect(result.created).toBe(1);
+    expect(result.pulled).toBe(0);
+  });
+
   it("reuses the link on the next run instead of re-linking", async () => {
     await pushContactSync(
       USER,

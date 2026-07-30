@@ -69,6 +69,20 @@ describe("mergeSyncedContact — multi-value fields merge additively", () => {
     expect(result.changedRemotely).toContain("phones");
   });
 
+  it("matches the same link across a trailing slash", () => {
+    // Profile URLs arrive with and without a trailing slash from different
+    // sources (the device stores what was pasted). Without collapsing it, every
+    // sync would append a second copy of the same link, forever.
+    const link = (value: string) => ({ value, label: null, note: null });
+    const result = mergeSyncedContact({
+      base: contact({ links: [link("https://linkedin.com/in/priya")] }),
+      local: contact({ links: [link("https://linkedin.com/in/priya")] }),
+      remote: contact({ links: [link("https://linkedin.com/in/priya///")] }),
+    });
+
+    expect(result.merged.links).toHaveLength(1);
+  });
+
   it("matches the same number across formatting differences", () => {
     // The device returns "+91 98765 43210"; a vCard import stored "9876543210".
     // Without digit normalisation the merge would double every phone number on

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { DayPicker, type ClassNames } from "react-day-picker";
+import { DayPicker, type DayPickerProps } from "react-day-picker";
 import { CalendarIcon, XIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -12,39 +12,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { CALENDAR_CLASS_NAMES } from "./calendar-class-names";
+import { calendarStartMonth } from "./initial-month";
 
-/**
- * Amber/seam/panel theme for react-day-picker, applied via `classNames` only —
- * no global `style.css` import — so the primitive stays self-contained and
- * matches the token approach in `combobox.tsx`. Day cells are 44px (touch
- * target); the selected day paints its `day_button` child amber.
- */
-const CALENDAR_CLASS_NAMES: Partial<ClassNames> = {
-  root: "text-paper",
-  months: "relative",
-  month: "space-y-2",
-  month_caption: "flex h-11 items-center justify-center px-11",
-  caption_label: "text-sm font-medium text-paper",
-  nav: "absolute inset-x-0 top-0 flex h-11 items-center justify-between",
-  button_previous:
-    "inline-flex size-9 items-center justify-center rounded-lg text-fog outline-none hover:bg-wash/[0.08] hover:text-paper focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
-  button_next:
-    "inline-flex size-9 items-center justify-center rounded-lg text-fog outline-none hover:bg-wash/[0.08] hover:text-paper focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
-  chevron: "size-4 fill-current",
-  month_grid: "w-full border-collapse",
-  weekdays: "flex",
-  weekday: "flex size-11 items-center justify-center text-xs font-normal text-fog",
-  week: "flex",
-  day: "p-0 text-center",
-  day_button:
-    "inline-flex size-11 items-center justify-center rounded-lg text-sm text-paper outline-none hover:bg-wash/[0.08] focus-visible:ring-2 focus-visible:ring-ring/50",
-  today: "[&>button]:font-semibold [&>button]:text-ember",
-  selected:
-    "[&>button]:bg-amber [&>button]:font-semibold [&>button]:text-on-accent [&>button]:hover:bg-amber",
-  outside: "[&>button]:text-fog",
-  disabled: "[&>button]:pointer-events-none [&>button]:opacity-50",
-  hidden: "invisible",
-};
+export { calendarStartMonth };
 
 interface DatePickerProps {
   value: Date | null;
@@ -56,6 +27,15 @@ interface DatePickerProps {
   clearable?: boolean;
   fromDate?: Date;
   toDate?: Date;
+  /** `"dropdown"` swaps the caption for month/year selects. Needed whenever the
+   *  target can be years away (a birthday): the default label caption steps one
+   *  month per click. Omitted = the label caption, unchanged. Note the year list
+   *  only renders with BOTH `fromDate` and `toDate` — react-day-picker's
+   *  `getYearOptions` returns nothing without them, and an absent `toDate` becomes
+   *  end-of-this-year, quietly barring future days. */
+  captionLayout?: DayPickerProps["captionLayout"];
+  /** Month to open on. Defaults to the selected day's — see {@link calendarStartMonth}. */
+  defaultMonth?: Date;
 }
 
 /**
@@ -74,6 +54,8 @@ export function DatePicker({
   clearable = true,
   fromDate,
   toDate,
+  captionLayout,
+  defaultMonth,
 }: DatePickerProps): React.JSX.Element {
   const [open, setOpen] = React.useState(false);
 
@@ -108,6 +90,8 @@ export function DatePicker({
       <PopoverContent align="start">
         <DayPicker
           mode="single"
+          captionLayout={captionLayout}
+          defaultMonth={calendarStartMonth(value, defaultMonth)}
           selected={value ?? undefined}
           onSelect={(day: Date | undefined) => {
             onChange(day ?? null);

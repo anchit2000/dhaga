@@ -6,6 +6,7 @@ import {
 import { withUserDb } from "@/lib/db/request-scope";
 import { getContact } from "@/lib/repo/contacts";
 import { addNote } from "@/lib/repo/notes";
+import { userToday } from "@/lib/repo/reminders/local-today";
 import { assertAiBudget, recordAiAction } from "./metering";
 
 export interface EnrichmentFindings {
@@ -31,11 +32,15 @@ export async function runEnrichmentSearch(
 ): Promise<EnrichmentFindings> {
   // Prep phase (DB): load the contact + budget check in a short scoped-db
   // lifetime, then release the connection BEFORE the long web-search call.
-  const detail = await withUserDb(userId, async () => {
+  // `today` is resolved in this same prep scope, sequentially: it is a settings
+  // read like the two above, so it shares their one connection and is released
+  // with them — never resolved lazily at the prompt, which would reopen a scope
+  // across the web-search call below.
+  const { detail, today } = await withUserDb(userId, async () => {
     const loaded = await getContact(contactId);
     if (!loaded) throw new Error("Contact not found.");
     await assertAiBudget(userId);
-    return loaded;
+    return { detail: loaded, today: await userToday() };
   });
 
   // Search phase: no DB connection is held across this long web-search call.
@@ -47,7 +52,7 @@ export async function runEnrichmentSearch(
       company: detail.companyName,
       // getContact normalises methods to objects; the prompt wants bare URLs.
       links: detail.contact.links.map((link) => link.value),
-    }),
+    }, today),
     tier: "reason",
     maxTokens: 2048,
     webSearch: true,

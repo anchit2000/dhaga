@@ -1,4 +1,5 @@
 import { todayLine } from "./today";
+import type { CalendarDay } from "../../dates/calendar-day";
 
 /**
  * Follow-up draft prompt (M7). Pure function; the contact context is
@@ -22,7 +23,7 @@ export interface DraftContext {
   noteSnippets: string[];
 }
 
-export function buildDraftPrompt(context: DraftContext): string {
+export function buildDraftPrompt(context: DraftContext, today?: CalendarDay): string {
   const lines = [
     `Contact: ${context.contactName}`,
     context.title ? `Title: ${context.title}` : null,
@@ -35,5 +36,5 @@ export function buildDraftPrompt(context: DraftContext): string {
       ? `Notes:\n- ${context.noteSnippets.join("\n- ")}`
       : null,
   ].filter(Boolean);
-  return `${todayLine()}\n\n${lines.join("\n")}\n\nWrite the follow-up message now.`;
+  return `${todayLine(today)}\n\n${lines.join("\n")}\n\nWrite the follow-up message now.`;
 }

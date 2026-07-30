@@ -1,4 +1,5 @@
 import { todayLine } from "./today";
+import type { CalendarDay } from "../../dates/calendar-day";
 
 /**
  * Note → graph extraction prompt (BRD §6.3). Pure function, no LLM dependency.
@@ -41,8 +42,9 @@ export function buildNoteExtractionPrompt(
   contactName: string,
   noteText: string,
   nodeTypes: NodeTypeRef[] = [],
+  today?: CalendarDay,
 ): string {
-  return `${todayLine()}${nodeTypeSection(nodeTypes)}\n\nThe note is about: ${contactName}\n\nNote:\n"""\n${noteText}\n"""`;
+  return `${todayLine(today)}${nodeTypeSection(nodeTypes)}\n\nThe note is about: ${contactName}\n\nNote:\n"""\n${noteText}\n"""`;
 }
 
 /**
@@ -71,6 +73,7 @@ export function buildEnrichmentExtractionPrompt(
   contactName: string,
   findingsText: string,
   nodeTypes: NodeTypeRef[] = [],
+  today?: CalendarDay,
 ): string {
-  return `${todayLine()}${nodeTypeSection(nodeTypes)}\n\nThe contact these findings are meant to be about: ${contactName}\n\nWeb findings:\n"""\n${findingsText}\n"""`;
+  return `${todayLine(today)}${nodeTypeSection(nodeTypes)}\n\nThe contact these findings are meant to be about: ${contactName}\n\nWeb findings:\n"""\n${findingsText}\n"""`;
 }

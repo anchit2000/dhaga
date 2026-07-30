@@ -281,6 +281,27 @@ Requires `CRON_SECRET` and `FIRECRAWL_API_KEY` (or another `SEARCH_PROVIDER`)
 set — see `.env.example`. Without `CRON_SECRET` the route always returns
 401, so it's safe to leave unconfigured if you don't want the feature.
 
+### Daily email jobs (digests and reminders)
+
+Every recurring email — the reach-out digest, the confirmations digest, the
+morning follow-up reminder, the due-follow-up sweep, the birthday/anniversary
+reminder and the LinkedIn-export nudges — runs from the one `/api/jobs/daily`
+endpoint, on the single Vercel cron in `apps/web/vercel.json` (`"17 6 * * *"`,
+unchanged). All of them are **opt-in per user** in Settings → Suggestions and
+all degrade to a clean no-op without `RESEND_API_KEY` / `RESEND_FROM_EMAIL`
+(and, on a single-user self-host, `DHAGA_OWNER_EMAIL`).
+
+Each user's **time zone** (Settings → Suggestions → Time zone, default `UTC`)
+decides which calendar day a job is reasoning about, so a birthday lands on the
+recipient's day rather than the server's, and a re-triggered cron is a no-op for
+someone already emailed on their local day. What the time zone does **not** yet
+change is *when* the mail goes out: every send still happens on the one cron
+run, at whatever UTC time it fires. Per-user local-morning delivery needs the
+endpoint driven **hourly** with `EMAIL_JOBS_HOURLY=true` (see the env table
+below), which is exactly what Vercel Hobby cannot do — see the Hobby cron
+warning under "Idle auto-flush" below; it applies to this endpoint too. Off
+Vercel, an hourly system crontab or container timer is enough.
+
 ## Messaging capture (WhatsApp / Telegram)
 
 Forward a contact card, a note, or a photo to a WhatsApp or Telegram bot
@@ -426,8 +447,9 @@ None of the `packages/ee/.env.example` vars (`DHAGA_HOSTED_MODE`,
 | `NEXT_PUBLIC_SITE_URL` | No | Canonical origin for sitemap/robots/OG/llms.txt; defaults to the production deployment origin when unset |
 | `DATABASE_URL` | Only on serverless (Vercel) | Otherwise defaults to embedded PGlite |
 | `ANTHROPIC_API_KEY` | No | AI features degrade to heuristic parsing / disabled without it |
-| `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `DHAGA_OWNER_EMAIL` | No | Event digests, reach-out digest, morning follow-up reminder + LinkedIn-export upload reminders (the day-1/3/6/7 nudge after "Get contacts from LinkedIn"). All degrade to a clean no-op when unset |
-| `MORNING_REMINDER_HOURLY` | No | Set `true` only if you drive `/api/jobs/daily` hourly — then the morning reminder lands at the recipient's local ~08:00; unset on the single Hobby cron |
+| `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `DHAGA_OWNER_EMAIL` | No | Event digests, reach-out digest, confirmations digest, morning follow-up reminder, due-follow-up reminder, birthday/anniversary reminder + LinkedIn-export upload reminders (the day-1/3/6/7 nudge after "Get contacts from LinkedIn"). All degrade to a clean no-op when unset |
+| `EMAIL_JOBS_HOURLY` | No | Set `true` **only** if you drive `/api/jobs/daily` hourly — then the morning reminder, reach-out digest and confirmations digest send only on the run matching the recipient's local ~08:00 (their Settings time zone). Leave it unset on a once-a-day cron, including Vercel Hobby's: the single run always sends, and a per-user local-day record is what stops duplicates. See "Daily email jobs" above |
+| `MORNING_REMINDER_HOURLY` | No | Deprecated alias for `EMAIL_JOBS_HOURLY`, still honoured for one release. Despite the name it now gates all three of those jobs, not just the morning reminder — prefer the new name |
 | `TELEGRAM_*` | No | Owner-only bot capture; `TELEGRAM_BOT_TOKEN`/`TELEGRAM_WEBHOOK_SECRET` are reused by WhatsApp/Telegram messaging capture (see "Messaging capture" above) |
 | `WHATSAPP_*` | No | WhatsApp inbound messaging capture (Meta Cloud API) — see "Messaging capture" above |
 | `DHAGA_MESSAGING_IDLE_MINUTES` | No | Idle auto-flush window for messaging capture (default 15) |

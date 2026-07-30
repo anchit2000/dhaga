@@ -13,8 +13,8 @@ import { withUserDb } from "@/lib/db/request-scope";
 import { scheduleCalendarWriteOutForNote } from "@/lib/calendar/write-out";
 import { createEnrichmentMatchConfirmation } from "@/lib/repo/confirmations";
 import { applyExtraction } from "@/lib/repo/graph";
-import { listNodeTypes } from "@/lib/repo/node-types";
-import { assertAiBudget, recordAiAction, withAiAction } from "../metering";
+import { recordAiAction, withAiAction } from "../metering";
+import { prepareNoteExtraction } from "./prep";
 import {
   graphWriteFailedOutcome,
   mapExtractionError,
@@ -65,23 +65,17 @@ async function runNoteExtraction(
   let model: string;
   let usage: LLMUsage;
   try {
-    // Prep phase (DB): budget check + node-type registry read run inside a
-    // short scoped-db lifetime, then the connection is released BEFORE the LLM
-    // call — see the extraction worker's connection-lifecycle fix. The user's
-    // node-type registry (names + slugs only, never entity rows) rides in the
-    // volatile user prompt so the cached system prefix stays byte-stable; an
-    // empty registry degrades to the registry-free prompt.
-    const nodeTypes = await withUserDb(userId, async () => {
-      await assertAiBudget(userId);
-      return (await listNodeTypes()).map(({ name, slug }) => ({ name, slug }));
-    });
+    // Prep phase (DB): one short scoped-db lifetime, released BEFORE the LLM
+    // call (see ./prep). The registry and the day both ride in the VOLATILE
+    // user prompt, so the cached system prefix stays byte-stable.
+    const { nodeTypes, today } = await prepareNoteExtraction(userId);
     // LLM phase: no DB connection is held across this ~minute-long call.
     const result = await getLLMClient().extract({
       schema: noteExtractionSchema,
       system: enrichment ? ENRICHMENT_EXTRACTION_SYSTEM : NOTE_EXTRACTION_SYSTEM,
       prompt: enrichment
-        ? buildEnrichmentExtractionPrompt(contactName, noteBody, nodeTypes)
-        : buildNoteExtractionPrompt(contactName, noteBody, nodeTypes),
+        ? buildEnrichmentExtractionPrompt(contactName, noteBody, nodeTypes, today)
+        : buildNoteExtractionPrompt(contactName, noteBody, nodeTypes, today),
       tier: "extract",
     });
     extraction = result.data;

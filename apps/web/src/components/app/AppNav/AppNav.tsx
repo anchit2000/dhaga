@@ -9,7 +9,7 @@ import type { SearchWeights } from "@/utils/constants/search";
 import { MoreMenu } from "./MoreMenu";
 import { NavLinks } from "./NavLinks";
 import { NavQuickAdd } from "./NavQuickAdd";
-import { NotificationBell, type NotificationSummary } from "./NotificationBell";
+import { NotificationBell, type NotificationFeed } from "./NotificationBell";
 import { ProfileMenu } from "./ProfileMenu";
 
 /** App-shell header: brand, section nav, centered search, more/profile menus. */
@@ -17,12 +17,12 @@ export function AppNav({
   isAdmin,
   initialSearchWeights,
   confirmationsCount,
-  notificationSummary,
+  notificationFeed,
 }: {
   isAdmin: boolean;
   initialSearchWeights: SearchWeights;
   confirmationsCount: number;
-  notificationSummary: NotificationSummary;
+  notificationFeed: NotificationFeed;
 }) {
   return (
     <header className="sticky top-0 z-40">
@@ -62,7 +62,7 @@ export function AppNav({
 
           <div className="flex shrink-0 items-center gap-1">
             <NavQuickAdd />
-            <NotificationBell summary={notificationSummary} />
+            <NotificationBell feed={notificationFeed} />
             <ModeToggle />
             <MoreMenu />
             <ProfileMenu isAdmin={isAdmin} />

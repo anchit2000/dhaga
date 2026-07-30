@@ -24,6 +24,10 @@ export async function GET(
     id: row.id,
     stage: row.stage,
     status: row.status as ExtractionJobStatus,
+    // Counts so a tab reconciling through this route can show the same
+    // "done — N facts added" summary the streaming tab shows.
+    factCount: row.factCount,
+    followUpCount: row.followUpCount,
   }));
   return Response.json(jobs);
 }

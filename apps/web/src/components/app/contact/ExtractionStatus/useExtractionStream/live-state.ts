@@ -1,9 +1,4 @@
-import type {
-  ExtractionJobStatus,
-  ExtractionJobView,
-  ExtractionStage,
-  ExtractionStreamEvent,
-} from "@/types";
+import type { ExtractionJobStatus, ExtractionJobView, ExtractionStage } from "@/types";
 
 /** Slow, bounded reconcile for the claim-lost case ONLY (a second tab whose
  *  worker POST lost the atomic claim). Deliberately slow so it never becomes the
@@ -28,77 +23,31 @@ export function toStage(stage: string | null): ExtractionStage | null {
 }
 
 /** One job's row as the fallback status route (/api/contacts/[id]/extraction-status)
- *  returns it — enough for the slow path to drive the stage and detect terminal. */
+ *  returns it — enough for the slow path to drive the stage, detect terminal and
+ *  show the same "done — N facts" summary the streaming path shows. */
 export interface JobStatusRow {
   id: string;
   stage: string | null;
   status: ExtractionJobStatus;
+  factCount: number;
+  followUpCount: number;
 }
 
 /** Live, client-only state for one active job's stream: the current stage (which
  *  overrides the label) and, once a terminal event lands, the status it moved to
  *  — so a completed job's spinner stops and a blocked/error notice appears
- *  without a page refresh. `count` carries the fact total for the "writing" stage. */
+ *  without a page refresh. `count` carries the fact total for the "writing" stage
+ *  and, with `followUpCount`, the completion summary. */
 export interface LiveJobState {
   stage: ExtractionStage | null;
   count: number;
+  followUpCount: number;
   status: ExtractionJobStatus;
   error: string | null;
+  /** Client-observed stall: the bounded fallback poll gave up without ever
+   *  seeing a terminal status, so this tab is no longer watching the job. The
+   *  spinner must become a Retry rather than spin forever claiming progress. */
+  stalled: boolean;
 }
 
 export type LiveState = Record<string, LiveJobState>;
-
-export function applyEvent(
-  prev: LiveState,
-  jobId: string,
-  event: ExtractionStreamEvent,
-): LiveState {
-  const current = prev[jobId];
-  switch (event.type) {
-    case "stage":
-      return {
-        ...prev,
-        [jobId]: {
-          status: "running",
-          stage: event.stage,
-          count: event.count ?? current?.count ?? 0,
-          error: null,
-        },
-      };
-    case "done":
-      return {
-        ...prev,
-        [jobId]: { status: "done", stage: null, count: event.factCount, error: null },
-      };
-    case "blocked":
-      return {
-        ...prev,
-        [jobId]: { status: "blocked", stage: null, count: 0, error: event.message },
-      };
-    case "error":
-      return {
-        ...prev,
-        [jobId]: { status: "error", stage: null, count: 0, error: event.message },
-      };
-    case "detached":
-      // Nothing to render here — the fallback poll the effect starts on this
-      // event drives the job's stage/terminal state from the DB instead.
-      return prev;
-  }
-}
-
-/** Fold a fallback status-poll row into live state — the slow-path analogue of
- *  applyEvent. `error` isn't carried by the status route, so a fallback-observed
- *  error keeps whatever the server render / prior events had. */
-export function applyStatus(prev: LiveState, jobId: string, row: JobStatusRow): LiveState {
-  const current = prev[jobId];
-  return {
-    ...prev,
-    [jobId]: {
-      status: row.status,
-      stage: toStage(row.stage),
-      count: current?.count ?? 0,
-      error: current?.error ?? null,
-    },
-  };
-}

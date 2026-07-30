@@ -17,11 +17,13 @@ verified via web research the same day.
 
 **Replaces:** every hand-rolled client fetch/poll loop.
 
-- `components/app/contact/ExtractionStatus/useExtractionStream.ts` — reads a
+- `components/app/contact/ExtractionStatus/useExtractionStream/` — reads a
   single NDJSON progress stream from the extraction worker (no poll loop). This
   replaced the former 2s `setTimeout` poller + whole-page `router.refresh()`;
   because it consumes a streamed response rather than re-fetching on an interval,
-  TanStack Query's `refetchInterval` does not apply here.
+  TanStack Query's `refetchInterval` does not apply here. Its one remaining loop
+  is `use-fallback-poll.ts`, a deliberately slow, bounded reconcile for the
+  claim-lost case only.
 - `components/app/contact/OnDemandNetwork.tsx` (12 state hooks),
   `components/app/graph/WarmPathPanel/`, and
   `components/app/relationships/AddRelationshipDialog/TargetPicker.tsx` —
@@ -374,6 +376,7 @@ don't hand-roll month grids, keyboard nav, and date math.
 | `use-graph-data` SWR/ETag/IDB boot | Coupled to layout + perf beacons; revisit only with §5. |
 | Landing decor (`Particles`, `GlassSurface`, `DecryptedText`, …) | Visual identity, no state logic worth outsourcing. |
 | `WebcamCapture` | Thin `getUserMedia` wrapper; a library adds surface, not value. |
+| Timezone maths (`apps/web/src/lib/time/zone.ts`) | **`Intl` only — no `date-fns-tz`, and don't add it.** The zone-aware work we need is "which calendar day / which local hour is this instant for this user", which `Intl.DateTimeFormat.formatToParts` answers directly against the runtime's own tzdata (Node 22 also gives us `Intl.supportedValuesOf("timeZone")` for the ~418-entry Settings picker, so the zone list needs no package either). A tz library would buy formatting sugar and cost a dependency plus its own bundled tzdata to keep current. It also would not be portable: the same maths belongs in `packages/core` eventually, and core is deliberately dependency-free and has to run on React Native's Hermes — where `supportedValuesOf` is unreliable, which is exactly why `zone.ts` sits in `apps/web` for now. `date-fns` (already adopted) stays for zone-free date arithmetic. |
 | Toasts (`sonner`), onboarding (`driver.js`), UI primitives (shadcn/Base UI) | Already libraries. |
 
 ---

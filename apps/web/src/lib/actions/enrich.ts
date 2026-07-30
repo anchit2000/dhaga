@@ -59,5 +59,10 @@ export async function enrichContactAction(
     return { error: SAVE_RETRY_MESSAGE };
   }
   revalidatePath(`/app/people/${contactId}`);
-  return { noticed: "Searching the public web — findings will appear here shortly." };
+  // Same reassurance as a note's extraction: the search + extraction belong to
+  // the worker once enqueued, so navigating away doesn't lose them.
+  return {
+    noticed:
+      "Searching the public web in the background. This keeps running if you leave the page — findings land here when it's done.",
+  };
 }

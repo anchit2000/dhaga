@@ -71,7 +71,9 @@ export async function addNoteAction(
   revalidatePath(`/app/people/${contactId}`);
   return {
     notice: budgeted
-      ? "Note saved — extracting facts…"
+      // Says the part users can't see: the worker owns the job from here, so
+      // leaving the page can't cancel it (processExtractionJob commits regardless).
+      ? "Note saved — extracting facts in the background. This keeps running if you leave the page."
       : "Note saved. Automatic fact extraction is a paid feature.",
   };
 }

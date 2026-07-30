@@ -1,12 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
-  applyEvent,
-  applyStatus,
   isTerminalStatus,
   toStage,
   type JobStatusRow,
   type LiveState,
 } from "./live-state";
+import { applyEvent, applyStatus } from "./reducers";
 import type { ExtractionJobStatus } from "@/types";
 
 const JOB = "job-1";
@@ -22,7 +21,14 @@ const JOB = "job-1";
 describe("extraction detached → fallback reconcile", () => {
   it("a detached stream writes nothing — the poll fallback owns reconciliation", () => {
     const prev: LiveState = {
-      [JOB]: { status: "running", stage: "searching", count: 0, error: null },
+      [JOB]: {
+        status: "running",
+        stage: "searching",
+        count: 0,
+        followUpCount: 0,
+        error: null,
+        stalled: false,
+      },
     };
     const next = applyEvent(prev, JOB, { type: "detached" });
     // Same reference: if detached ever mutated state, the second tab would flash
@@ -31,20 +37,37 @@ describe("extraction detached → fallback reconcile", () => {
   });
 
   it("folds a fallback status row so the second tab shows the owner's live stage", () => {
-    const row: JobStatusRow = { id: JOB, stage: "searching", status: "running" };
+    const row: JobStatusRow = {
+      id: JOB,
+      stage: "searching",
+      status: "running",
+      factCount: 0,
+      followUpCount: 0,
+    };
     expect(applyStatus({}, JOB, row)[JOB]).toEqual({
       status: "running",
       stage: "searching",
       count: 0,
+      followUpCount: 0,
       error: null,
+      stalled: false,
     });
   });
 
   it("recognizes a terminal 'done' row so the fallback stops and refreshes facts", () => {
-    const row: JobStatusRow = { id: JOB, stage: null, status: "done" };
+    const row: JobStatusRow = {
+      id: JOB,
+      stage: null,
+      status: "done",
+      factCount: 2,
+      followUpCount: 1,
+    };
     const state = applyStatus({}, JOB, row)[JOB];
     expect(state.status).toBe("done");
     expect(isTerminalStatus(state.status)).toBe(true);
+    // Counts ride along so the reconciling tab can name what landed.
+    expect(state.count).toBe(2);
+    expect(state.followUpCount).toBe(1);
   });
 
   it("keeps polling while a job is still active (pending/running are non-terminal)", () => {

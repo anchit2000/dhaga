@@ -1,4 +1,5 @@
 import { todayLine } from "./today";
+import type { CalendarDay } from "../../dates/calendar-day";
 
 /**
  * Prompt builders are pure functions — no LLM dependency, unit-testable.
@@ -15,8 +16,8 @@ Rules:
 - Put job titles in "title" and organisations in "company" — when a line is ambiguous, prefer the interpretation consistent with the rest of the text.
 - Include every email, phone number, and URL found.`;
 
-export function buildContactParsePrompt(rawText: string): string {
-  return `${todayLine()}\n\nCaptured text:\n"""\n${rawText}\n"""`;
+export function buildContactParsePrompt(rawText: string, today?: CalendarDay): string {
+  return `${todayLine(today)}\n\nCaptured text:\n"""\n${rawText}\n"""`;
 }
 
 /**

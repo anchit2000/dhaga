@@ -1,24 +1,5 @@
 import type { DriveStep } from "driver.js";
 
-/** Fired on `window` to (re)start the walkthrough on the already-mounted Home
- *  page — used by the "Take the tour" menu item when the user is already on /app. */
-export const START_TOUR_EVENT = "dhaga:start-tour";
-
-/** `/app?tour=1` deep-links into the walkthrough (menu item's target when the
- *  user is on another page and Home has to mount first). */
-export const TOUR_QUERY_PARAM = "tour";
-
-/** Where the Home tour's finale sends the user to continue onto the import
- *  step. The `#import` hash selects the Import tab on the settings page. */
-export const IMPORT_TOUR_PATH = "/app/settings#import";
-
-/** sessionStorage key set as the Home tour navigates to the import page, read
- *  back by OnboardingTour on the settings page to resume the tour there. */
-export const TOUR_RESUME_KEY = "dhaga:tour-resume";
-
-/** The one value {@link TOUR_RESUME_KEY} takes — resume on the import step. */
-export const TOUR_RESUME_IMPORT = "import";
-
 /**
  * The five first-run steps. Anchors resolve to elements that always render on
  * Home — even for a brand-new account with no data — so no step can miss its
@@ -73,24 +54,6 @@ export const HOME_TOUR_STEPS: DriveStep[] = [
       title: "Take the tour anytime",
       description:
         "Replay this walkthrough whenever you like — it lives right here under the More menu.",
-    },
-  },
-];
-
-/**
- * The tour's finale, shown on `/app/settings#import` (the `#import` hash selects
- * that page's Import tab, so this step's anchor is visible when it drives). One
- * step, highlighting the import card so a new user's next move is obvious.
- */
-export const IMPORT_TOUR_STEPS: DriveStep[] = [
-  {
-    element: '[data-tour="import"]',
-    popover: {
-      side: "top",
-      align: "center",
-      title: "Bring in your contacts",
-      description:
-        "Already have a network? Import it from LinkedIn, Google, Apple, or a CSV — start with LinkedIn and we'll remind you the moment your export is ready.",
     },
   },
 ];

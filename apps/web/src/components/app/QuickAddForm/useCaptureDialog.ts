@@ -35,15 +35,22 @@ export function useCaptureDialog(
   homeDock: boolean,
   setMode: (mode: CaptureMode) => void,
   setCaptureOpen: (open: boolean) => void,
+  /** Empties the card-photo tray. The tray outlives the dialog otherwise, so
+   *  the next capture opened on a stale one — shoot a card, save it, reopen the
+   *  camera, and the previous card's photos were still queued for the scan. */
+  resetPhotos: () => void,
 ): CaptureDialogController {
   const [dismissed, setDismissed] = useState<QuickAddState | undefined>(undefined);
   const { resultOpen, captureErrorOpen } = captureDialogState(state, dismissed, homeDock);
 
   const dismissResult = (): void => {
     setDismissed(state);
+    resetPhotos();
     if (homeDock) setCaptureOpen(false);
   };
   const reopenAfterScanError = (next: CaptureMode): void => {
+    // Deliberately keeps the tray: a failed scan is the one case where the user
+    // wants the same photos back, to retry or crop them.
     setDismissed(state);
     setMode(next);
     setCaptureOpen(true);

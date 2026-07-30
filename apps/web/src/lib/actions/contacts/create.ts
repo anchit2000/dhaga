@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { requireUserId } from "@/lib/auth/guard";
 import { withUserDb } from "@/lib/db/request-scope";
 import { SAVE_RETRY_MESSAGE, logActionError } from "@/lib/actions/resilience";
+import { scheduleCardTranscription } from "@/lib/ai/card-transcription";
 import { createContactProfile } from "@/lib/repo/contacts";
 import { addNote } from "@/lib/repo/notes";
 import { upsertEmbedding } from "@/lib/repo/embeddings";
@@ -37,21 +38,25 @@ export async function createContactAction(
   // writes each open their own — enough to exhaust the max-3 tenant pool and
   // time out the save (a server action gets no cache() getDb() dedupe).
   let id = "";
+  const capturedImages = parseCapturedImages(formData);
+  let receiptNoteId: string | null = null;
   try {
     id = await withUserDb(userId, async () => {
       const contactId = await createContactProfile(parsed.profile, source);
 
       // Quick-add receipts: the pasted text becomes the contact's first note.
+      // For a card scan that text is composed from the extracted fields
+      // (cardReceiptText) and the real card text replaces it below.
       const sourceText = field(formData, "sourceText");
       let noteId: string | null = null;
       if (sourceText) {
         noteId = await addNote(contactId, "capture_source", sourceText);
         await upsertEmbedding("note", noteId, contactId, sourceText);
       }
+      receiptNoteId = noteId;
 
       // Card scans carry every photo through the review form; store each as a
       // visual receipt (re-check the setting — it may have changed since scan).
-      const capturedImages = parseCapturedImages(formData);
       if (capturedImages.length > 0 && (await shouldStoreCardPhotos())) {
         await saveCardImages(
           contactId,
@@ -74,6 +79,22 @@ export async function createContactAction(
   } catch (error) {
     logActionError("createContact", error);
     return { error: SAVE_RETRY_MESSAGE };
+  }
+
+  // The scan traded the card's verbatim text for a ~3s round trip; fetch it now
+  // that the contact is saved and fold it into the receipt note. Outside the try
+  // so a scheduling problem can't turn a completed save into an error, and after
+  // the withUserDb scope so no tenant connection is held across the LLM call.
+  if (id && receiptNoteId && capturedImages.length > 0) {
+    scheduleCardTranscription(
+      userId,
+      id,
+      receiptNoteId,
+      capturedImages.map((image) => ({
+        mediaType: image.imageType,
+        dataBase64: image.imageBase64,
+      })),
+    );
   }
 
   // A write that resolves without throwing but yields no id would redirect to

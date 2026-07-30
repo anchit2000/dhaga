@@ -1,16 +1,23 @@
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ComponentProps, ReactNode } from "react";
 
 /**
- * One cell of Home's bento grid — shared shell (border, padding, header row)
- * so every tile reads identically. `tone="amber"` marks needs-attention tiles.
- * Children sit in a flex column, so a tile footer can pin itself to the
- * bottom of a stretched cell with `mt-auto`.
+ * One cell of Home's grid — shared shell (border, padding, header row) so every
+ * tile reads identically. `tone="amber"` marks needs-attention tiles.
+ *
+ * `viewAll` renders the footer link every tile ends on. It lives here rather
+ * than in each tile because the cells are equal-height: the link has to sit on
+ * the SAME baseline across the row, which only holds if one component owns the
+ * `mt-auto` and the spacing. Children still sit in a flex column, so a tile with
+ * extra footer content of its own can pin that with `mt-auto` too.
  */
 export function HomeTile({
   title,
   meta,
   tone = "default",
+  viewAll,
   className,
   children,
   ...props
@@ -18,6 +25,7 @@ export function HomeTile({
   title: string;
   meta?: ReactNode;
   tone?: "default" | "amber";
+  viewAll?: { href: string; label?: string };
 }) {
   return (
     <section
@@ -35,6 +43,15 @@ export function HomeTile({
         {meta}
       </div>
       <div className="flex min-h-0 flex-1 flex-col gap-3">{children}</div>
+      {viewAll ? (
+        <Link
+          href={viewAll.href}
+          className="-mb-1 inline-flex min-h-11 items-center gap-1.5 border-t border-seam pt-3 text-xs text-ember hover:underline"
+        >
+          {viewAll.label ?? "View all"}
+          <ArrowRight className="size-3.5" aria-hidden />
+        </Link>
+      ) : null}
     </section>
   );
 }

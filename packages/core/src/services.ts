@@ -8,6 +8,8 @@ export {
   CAPTURE_EXTRACTION_SYSTEM,
   CARD_SCAN_PROMPT,
   CARD_SCAN_SYSTEM,
+  CARD_TRANSCRIPTION_PROMPT,
+  CARD_TRANSCRIPTION_SYSTEM,
   CONTACT_PARSE_SYSTEM,
   DRAFT_SYSTEM,
   ENRICHMENT_SYSTEM,
@@ -55,6 +57,8 @@ export {
   type SignalDetectionSubject,
 } from "./llm";
 export { heuristicContactParse } from "./parse/heuristic-contact";
+export { cardReceiptText } from "./parse/card-receipt";
+export { withUrlScheme } from "./parse/web-url";
 export {
   FirecrawlSearchClient,
   getSearchClient,

@@ -54,6 +54,10 @@ export {
 } from "./prompts/brief";
 export { CARD_SCAN_SYSTEM, CARD_SCAN_PROMPT } from "./prompts/card-scan";
 export {
+  CARD_TRANSCRIPTION_SYSTEM,
+  CARD_TRANSCRIPTION_PROMPT,
+} from "./prompts/card-transcription";
+export {
   SIGNAL_DETECTION_SYSTEM,
   buildSignalDetectionPrompt,
   type SignalDetectionSubject,

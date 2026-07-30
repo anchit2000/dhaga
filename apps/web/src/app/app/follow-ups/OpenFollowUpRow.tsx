@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { FollowUpDueChip } from "@/components/app/FollowUpDueChip";
 import type { OpenFollowUpItem } from "@/lib/repo/reminders";
 
 /** One open-follow-up row. The complete/dismiss buttons call back into
@@ -31,12 +32,15 @@ export function OpenFollowUpRow({
       </Button>
       <div className="min-w-0 flex-1">
         <p className="text-sm leading-snug text-paper">{item.action}</p>
-        <Link
-          href={`/app/people/${item.contactId}`}
-          className="mt-0.5 inline-block text-xs text-ember hover:underline"
-        >
-          {item.contactName}
-        </Link>
+        <div className="mt-0.5 flex flex-wrap items-center gap-x-2">
+          <Link
+            href={`/app/people/${item.contactId}`}
+            className="text-xs text-ember hover:underline"
+          >
+            {item.contactName}
+          </Link>
+          <FollowUpDueChip item={item} />
+        </div>
       </div>
       <Button
         type="button"

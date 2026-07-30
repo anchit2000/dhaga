@@ -2292,7 +2292,10 @@ Privacy is the product's moat — violations are bugs, not style issues.
   in `apps/web` and commit the regenerated `public/llms.txt` +
   `public/llms-full.txt`. They are generated from `content/**`, never
   hand-edited; the output is deterministic, so a clean tree means you're
-  in sync. New pages default into `## Optional` (linked, not inlined) — a
+  in sync — and the pre-commit hook runs the generator itself, blocking
+  only when that actually produces a diff you haven't staged. Pages the
+  generator excludes (`development/**`, `roadmap/**`) therefore need no
+  regeneration. New pages default into `## Optional` (linked, not inlined) — a
   new comparison post must be added to `COMPARISON_POSTS` in the generator
   to reach the promoted section, and a new product-guide page to
   `START_ORDER`. The generator fails loudly on a dead URL rather than

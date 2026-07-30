@@ -401,10 +401,11 @@ Singapore
       frames → **Done** → the capture dialog opens on **Card photo** with those
       frames already in the tray (crop / reorder / remove available); pressing
       **Scan** starts the extraction. Done never scans blind.
-- [ ] **Scanning feedback**: while a scan is in flight the branded loader
-      covers the visible capture surface — including with a full six-image tray,
-      where the dialog scrolls (the overlay must stay centred in view, not
-      scroll off with the form).
+- [ ] **Scanning feedback**: from the moment **Scan** is pressed until the
+      review dialog opens, the branded loader covers the whole viewport —
+      *above* the capture dialog, and identically for a dock **Upload** (which
+      scans with that dialog shut). Check it with a full six-image tray, where
+      the dialog itself scrolls: the scrim must not scroll away with the form.
 - [ ] Without a key: honest "Card scanning needs cloud AI" error
       (`hasLLM()` gate, `apps/web/src/lib/ai/card-scan.ts:30`).
 

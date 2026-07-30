@@ -8,6 +8,7 @@ import {
   ApiKeysSection,
   BillingSection,
   CalendarSection,
+  ContactSyncSection,
   CardPhotoSection,
   MessagingSection,
   ProfileSection,
@@ -21,7 +22,7 @@ export const metadata = { title: "Settings — Dhaga" };
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ calendar?: string }>;
+  searchParams: Promise<{ calendar?: string; contacts?: string }>;
 }) {
   // Auth guard: the one lookup that must resolve before any card renders.
   // Memoized, so each section re-reading the session/user costs nothing more.
@@ -68,6 +69,9 @@ export default async function SettingsPage({
             </Suspense>
             <Suspense fallback={<ListSkeleton rows={2} />}>
               <VoiceTeachingSection />
+            </Suspense>
+            <Suspense fallback={<ListSkeleton rows={2} />}>
+              <ContactSyncSection searchParams={searchParams} />
             </Suspense>
           </>
         }

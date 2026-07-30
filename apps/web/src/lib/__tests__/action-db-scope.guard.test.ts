@@ -45,6 +45,13 @@ const EXEMPT: Record<string, string> = {
   // the LLM — the exact bug the short-scope pattern avoids.
   generateBriefAction: "delegates to lib/ai/brief.ts, which short-scopes DB around the LLM",
   draftFollowUpAction: "delegates to lib/ai/draft.ts, which short-scopes DB around the LLM",
+  // Same short-scope reasoning, and the strongest case for it on this list.
+  // runContactSync opens its OWN withUserDb per phase (token → reconcile → ack)
+  // precisely so no connection is held across the provider HTTP calls, which
+  // page an entire address book and can run for many seconds. Wrapping the
+  // action would hold one across all of it — the exact pool exhaustion the phase
+  // separation exists to prevent.
+  runContactSyncAction: "lib/repo/contact-sync/run short-scopes DB around each provider call",
 };
 
 function listTsFiles(dir: string): string[] {

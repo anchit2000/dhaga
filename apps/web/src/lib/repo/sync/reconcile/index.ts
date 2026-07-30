@@ -1,11 +1,12 @@
 import { mergeSyncedContact } from "@dhaga/core";
-import { nextLinkConflicts } from "./conflicts";
-import { buildDedupIndex, indexContact, matchExisting } from "./dedup";
-import { createLink, listLinks, recordPull } from "./links";
-import { loadLocalContacts, normalizeSyncable } from "./read";
-import { offerUnlinkedCreates, tombstoneMissingLinks } from "./sweep";
-import { applySyncedContact, createSyncedContact } from "./write";
-import type { SyncableContact, SyncField } from "@dhaga/core";
+import { nextLinkConflicts } from "../conflicts";
+import { buildDedupIndex, indexContact, matchExisting } from "../dedup";
+import { createLink, listLinks, recordPull } from "../links";
+import { loadLocalContacts, normalizeSyncable } from "../read";
+import { offerUnlinkedCreates, tombstoneMissingLinks } from "../sweep";
+import { applySyncedContact, createSyncedContact } from "../write";
+import { neutralise, pickFields } from "./fields";
+import type { ReconcileOptions } from "./fields";
 import type {
   SyncConflictReport,
   SyncPushRequest,
@@ -13,26 +14,9 @@ import type {
   SyncWrite,
 } from "@dhaga/core/src/api/sync";
 import type { DhagaDb } from "@/lib/db";
-import type { CompanyMemo } from "./write";
+import type { CompanyMemo } from "../write";
 
-export interface ReconcileOptions {
-  /**
-   * Also offer Dhaga contacts that have NO link on this provider as creates.
-   * Off by default — see offerUnlinkedCreates in ./sweep.ts.
-   */
-  pushUnlinked?: boolean;
-}
-
-/** The merged value of exactly the fields that moved. Partial by contract: the
- *  client applies these and leaves every other field on the record untouched. */
-function pickFields(
-  contact: SyncableContact,
-  fields: readonly SyncField[],
-): Partial<SyncableContact> {
-  const out: Partial<SyncableContact> = {};
-  for (const field of fields) Object.assign(out, { [field]: contact[field] });
-  return out;
-}
+export type { ReconcileOptions } from "./fields";
 
 /**
  * Reconcile one batch of observed contacts against the graph.
@@ -66,25 +50,31 @@ export async function reconcileContacts(
 
   for (const observed of request.contacts) {
     seen.add(observed.externalId);
-    const remote = normalizeSyncable(observed);
+    const observedContact = normalizeSyncable(observed);
     const link = linkByExternal.get(observed.externalId) ?? null;
     // External ids are not stable across a restore, so a miss falls back to the
     // importer's dedup ladder before it is allowed to mean "new person".
-    let contactId = link?.contactId ?? matchExisting(index, remote);
+    let contactId = link?.contactId ?? matchExisting(index, observedContact);
     if (!contactId) {
-      contactId = await createSyncedContact(remote);
+      contactId = await createSyncedContact(observedContact);
       created++;
       // A contact created from this very observation IS its own base, so the
       // merge below is a no-op rather than a first-link conflict against data we
       // just wrote. Indexing it also stops two device records for one person in
       // the same batch from creating that person twice.
-      localById.set(contactId, remote);
-      indexContact(index, contactId, remote);
+      localById.set(contactId, observedContact);
+      indexContact(index, contactId, observedContact);
     }
+
+    const localContact = localById.get(contactId);
+    // Fields the provider's model cannot represent are handed the local value so
+    // the merge sees no divergence — see neutralise() for the silent deletion
+    // this prevents on the second run.
+    const remote = neutralise(observedContact, localContact, options.unsupportedFields);
 
     const result = mergeSyncedContact({
       base: link?.baseSnapshot ?? null,
-      local: localById.get(contactId) ?? remote,
+      local: localContact ?? remote,
       remote,
     });
 
@@ -111,7 +101,7 @@ export async function reconcileContacts(
     // the response body is discarded by the client, and once it is, an edit the
     // user made in Dhaga would be gone with no way back. Written on the SAME
     // update the base snapshot already needed — no extra query, no extra
-    // connection. See ./conflicts.ts for when an entry survives and when it goes.
+    // connection. See ../conflicts.ts for when an entry survives and when it goes.
     const linkConflicts = nextLinkConflicts(
       link?.conflicts ?? [],
       result.conflicts,

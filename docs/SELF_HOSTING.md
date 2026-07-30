@@ -266,10 +266,25 @@ merge (`packages/core/src/sync`), the repo layer, and `POST /api/sync/contacts`
 Level 2 and don't belong on the deletion list above. There's no env var and no
 new API key: the mobile app authenticates with the same per-user key it already
 uses, and on iOS the change is handed to the operating system, which relays it to
-iCloud or Google itself — so a self-host never needs a Google or Microsoft
-contacts-write scope. The one EE-side touch is additive and inert without hosted
-mode: `packages/ee` adds `contact_links` to its `TENANT_TABLES` so the table gets
-RLS when multi-tenancy is on. See
+iCloud or Google itself — so **phone sync** never needs a Google or Microsoft
+contacts-write scope.
+
+**Server-side account sync (Google People / Outlook) is also core, and is opt-in.**
+`packages/core/src/sync/{google,microsoft}-provider`, `lib/repo/contact-sync` and
+`/api/contact-sync/*` import nothing from `@dhaga/ee`. Unlike phone sync it DOES
+need credentials, and it reuses the calendar integration's:
+`GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`, `MICROSOFT_CLIENT_ID`/`MICROSOFT_CLIENT_SECRET`.
+Two extra steps on that OAuth app: enable the **People API** (Google) or
+**Contacts.ReadWrite** (Microsoft), and register
+`/api/contact-sync/callback/{google,microsoft}` as redirect URIs. Set nothing and
+the Settings card reports no configured providers while phone sync keeps working.
+Google's contacts scope is **sensitive, not restricted** — standard verification,
+no CASA assessment, no annual audit, no fee.
+
+The EE-side touches are additive and inert without hosted mode: `packages/ee` adds
+`contact_links` and `contact_connections` to its `TENANT_TABLES` so both get RLS
+when multi-tenancy is on. `contact_connections` holds OAuth tokens, so on a
+multi-tenant deployment that scoping is doing real work. See
 `apps/web/content/docs/guide/syncing-your-phone.mdx` for the user-facing behaviour
 (including the Android limitation).
 

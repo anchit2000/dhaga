@@ -186,8 +186,9 @@ to test §3–§6 via Docker you'd need to add those vars to `compose.yml`'s
       immediately and lands on **People**. Refresh — still signed in.
 - [ ] Wrong password on `/login` → error stays on the form.
 - [ ] `curl -s -o /dev/null -w "%{http_code}" <url>/api/export/csv` →
-      `401` (API routes are gated too — confirmed
-      `apps/web/src/app/api/export/[format]/route.ts:14-18`).
+      `401` (API routes are gated too — confirmed: `GET` in
+      `apps/web/src/app/api/export/[format]/route.ts` calls
+      `requireUserIdFromRequest` before it reads anything).
 - [ ] Sign out (top right) → back to `/login`, and `/app/people` redirects
       again.
 
@@ -634,6 +635,23 @@ On a contact, add this note:
 - [ ] CSV opens in a spreadsheet with correct columns; vCard imports into a
       contacts app; JSON contains contacts, companies, events, notes,
       facts, edges, follow_ups.
+- [ ] **Address-book seed scope** (there is no UI for it — edit the URL).
+      `/api/export/vcard?scope=authored` drops contacts whose `source` is
+      `mentioned` or `import` and any with no name, while the plain
+      `/api/export/vcard` still contains every one of them. Check both files:
+      the portability download must not have narrowed.
+- [ ] Adding `&provider=device` (or `google` / `microsoft`) also drops anyone
+      already linked on that provider — **including a tombstoned link**. Delete
+      a synced contact on the phone, sync, then re-download: they must not be
+      in the seed file, or a bulk import would resurrect them.
+- [ ] Bad parameters are rejected, never ignored: `?scope=nope`,
+      `?provider=nope`, `?provider=device` without `scope=authored`, and
+      either parameter on `/api/export/json` → **400** with a message.
+- [ ] An unlabeled email/phone exports as a bare `EMAIL:` / `TEL:` line with
+      **no `TYPE`**, and a contact with a nickname and dates exports
+      `NICKNAME`, `BDAY` and `itemN.X-ABDATE` / `itemN.X-ABLabel`. This is
+      round-trip correctness, not tidiness: a field the seed drops comes back
+      from the address book empty and the *second* sync reads it as a deletion.
 
 ### 7n. Forget this person (privacy cascade)
 

@@ -4,6 +4,7 @@ import { router, useFocusEffect } from "expo-router";
 
 import { runContactSync } from "@/lib/sync";
 import { isConfigured, loadSettings } from "@/lib/settings";
+import { PUSH_UNLINKED_DEFAULT } from "@/utils/constants/sync";
 
 import type { SyncOutcome, SyncPhase, SyncProgress } from "@/lib/sync";
 import type { MobileSettings } from "@/types";
@@ -28,15 +29,11 @@ export function useContactSync(): {
   const [phase, setPhase] = useState<SyncPhase | null>(null);
   const [progress, setProgress] = useState<SyncProgress | null>(null);
   const [outcome, setOutcome] = useState<SyncOutcome | null>(null);
-  // On by default: a person added in Dhaga should be reachable from the phone,
-  // which is the whole point of syncing the phone's OWN address book. The
-  // server keeps that promise narrow — only contacts the user authored in
-  // Dhaga, never AI-inferred stubs and never rows that came from an import —
-  // so switching it on does not replay every list they ever uploaded onto the
-  // handset. Connected Google/Outlook accounts stay opt-in
-  // (contact_connections.push_unlinked): writing into someone's cloud account
-  // reaches every device signed into it and is a different kind of decision.
-  const [pushUnlinked, setPushUnlinked] = useState(true);
+  // OFF, and deliberately so — writing into an address book is the user's call,
+  // and the onboarding tour surfaces the switch instead of a pre-flipped one
+  // making the choice for them. The full reasoning lives with the constant
+  // (@/utils/constants/sync), which is also what a test pins.
+  const [pushUnlinked, setPushUnlinked] = useState(PUSH_UNLINKED_DEFAULT);
 
   useFocusEffect(
     useCallback(() => {

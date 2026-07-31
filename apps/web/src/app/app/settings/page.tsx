@@ -35,8 +35,9 @@ export default async function SettingsPage({
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      {/* Renders null; resumes the onboarding tour's import step when handed
-          off from Home (guarded by a sessionStorage flag). */}
+      {/* Renders null; resumes the onboarding tour's settings leg (notifications
+          → contact sync → import) when handed off from Home, guarded by a
+          sessionStorage flag. */}
       <OnboardingTour autoStart={false} />
       <div>
         <h1 className="font-display text-2xl tracking-tight">Settings</h1>

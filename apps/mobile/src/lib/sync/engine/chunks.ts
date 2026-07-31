@@ -84,5 +84,11 @@ export function mergePushResponses(responses: readonly SyncPushResponse[]): Sync
     pulled: responses.reduce((total, response) => total + response.pulled, 0),
     created: responses.reduce((total, response) => total + response.created, 0),
     linked: responses.reduce((total, response) => total + response.linked, 0),
+    // Summed like the rest, though only ONE response can carry a non-zero
+    // remainder: `pushUnlinked` rides the last chunk alone (../engine/index.ts),
+    // so every other chunk answers 0. Summing keeps that invariant visible — if
+    // a caller ever asks on every chunk, the number goes obviously wrong rather
+    // than quietly right, which is the same call this file makes about writes.
+    remaining: responses.reduce((total, response) => total + response.remaining, 0),
   };
 }

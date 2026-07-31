@@ -106,6 +106,7 @@ async function runOne(userId: string, row: ContactConnectionRow): Promise<Contac
     created: summary.created,
     linked: summary.linked,
     pushed: results.length,
+    remaining: summary.remaining,
     conflicts: summary.conflicts.length,
     error: failed > 0 ? `${failed} change(s) could not be written and will retry.` : null,
   };

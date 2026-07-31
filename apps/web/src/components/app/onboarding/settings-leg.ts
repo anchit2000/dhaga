@@ -3,7 +3,7 @@ import { SETTINGS_TOUR_STEPS, TOUR_ANCHOR_WAIT_FRAMES } from "@/utils/constants/
 
 /**
  * Drives the tour's second leg on /app/settings (notification preferences, then
- * import) and returns its teardown.
+ * contact sync, then import) and returns its teardown.
  *
  * It lives outside OnboardingTour because the leg is a small state machine: each
  * step's anchor sits in a different settings tab, and the tabs render every panel

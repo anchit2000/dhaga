@@ -1,5 +1,36 @@
 import { entriesEqual, indexByKey } from "../keys";
+import { isBlank } from "./blank";
 import type { MultiField } from "../types";
+
+/**
+ * Reconcile two versions of the SAME entry (they share a key) on a first link,
+ * where there is no base to attribute the difference to.
+ *
+ * Field by field: a blank on either side yields to the side that has a value,
+ * and only two real values that differ are a conflict — see ./blank.ts for why
+ * silence must not be adjudicated. On conflict the entry is left exactly as
+ * Dhaga holds it and flagged, which is the behaviour this branch always had.
+ */
+function reconcileFirstLink(local: unknown, remote: unknown): { value: unknown; conflict: boolean } {
+  if (!local || !remote || typeof local !== "object" || typeof remote !== "object") {
+    return { value: local, conflict: true };
+  }
+  const l = local as Record<string, unknown>;
+  const r = remote as Record<string, unknown>;
+  const filled: Record<string, unknown> = { ...l };
+  for (const key of new Set([...Object.keys(l), ...Object.keys(r)])) {
+    if (l[key] === r[key]) continue;
+    if (isBlank(l[key])) {
+      // Dhaga said nothing here; take what the address book knows.
+      if (!isBlank(r[key])) filled[key] = r[key];
+      continue;
+    }
+    // Both sides carry a real, different value: a genuine competing claim.
+    if (!isBlank(r[key])) return { value: local, conflict: true };
+    // Otherwise the remote is the silent one — keep Dhaga's value, say nothing.
+  }
+  return { value: filled, conflict: false };
+}
 
 /**
  * Multi-value half of the three-way merge (phones, emails, links, addresses,
@@ -38,8 +69,9 @@ export function mergeMultiField(
       if (entriesEqual(l, r)) {
         value.push(l);
       } else if (!hasBase) {
-        value.push(l);
-        conflict = true;
+        const reconciled = reconcileFirstLink(l, r);
+        value.push(reconciled.value);
+        if (reconciled.conflict) conflict = true;
       } else if (entriesEqual(r, base.get(key))) {
         value.push(l); // only Dhaga edited this entry
       } else if (entriesEqual(l, base.get(key))) {

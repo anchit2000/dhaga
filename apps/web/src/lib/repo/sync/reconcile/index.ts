@@ -1,12 +1,13 @@
 import { mergeSyncedContact } from "@dhaga/core";
 import { nextLinkConflicts } from "../conflicts";
-import { buildDedupIndex, indexContact, matchExisting } from "../dedup";
-import { createLink, listLinks, recordPull } from "../links";
-import { loadLocalContacts, normalizeSyncable } from "../read";
+import { indexContact, matchExisting } from "../dedup";
+import { createLink, recordPull } from "../links";
+import { normalizeSyncable } from "../read";
 import { offerUnlinkedCreates, tombstoneMissingLinks } from "../sweep";
-import { clearSyncTombstones, listSyncTombstones } from "../tombstones";
+import { clearSyncTombstones } from "../tombstones";
 import { applySyncedContact, createSyncedContact } from "../write";
 import { neutralise, pickFields } from "./fields";
+import { loadReconcileState } from "./state";
 import type { ReconcileOptions } from "./fields";
 import type {
   SyncConflictReport,
@@ -33,14 +34,8 @@ export async function reconcileContacts(
   options: ReconcileOptions = {},
 ): Promise<SyncPushResponse> {
   const now = new Date();
-  const links = await listLinks(db, request.provider);
-  const local = await loadLocalContacts(db);
-  const tombstoned = await listSyncTombstones(db, request.provider);
-
-  const linkByExternal = new Map(links.map((link) => [link.externalId, link]));
-  const localById = new Map(local.map((row) => [row.id, row.contact]));
-  const linkedContactIds = new Set(links.map((link) => link.contactId));
-  const index = buildDedupIndex(local);
+  const { links, local, tombstoned, linkByExternal, localById, linkedContactIds, index } =
+    await loadReconcileState(db, request.provider);
   const memo: CompanyMemo = new Map();
 
   const writes: SyncWrite[] = [];
@@ -144,7 +139,10 @@ export async function reconcileContacts(
 
   await clearSyncTombstones(db, request.provider, readopted);
   await tombstoneMissingLinks(db, links, request, seen);
-  if (options.pushUnlinked) writes.push(...offerUnlinkedCreates(local, linkedContactIds));
+  // A run that never asked to push outward held nothing back: its remainder is
+  // 0, not "the whole graph" — there is nothing there for the user to drain.
+  const offer = options.pushUnlinked ? offerUnlinkedCreates(local, linkedContactIds) : null;
+  writes.push(...(offer?.writes ?? []));
 
-  return { writes, conflicts, pulled, created, linked };
+  return { writes, conflicts, pulled, created, linked, remaining: offer?.remaining ?? 0 };
 }

@@ -159,7 +159,62 @@ Alternatively export a `.vcf` from iCloud.com and import it at
 
 ---
 
-## 7. What needs verification before public launch (summary)
+## 7. The other direction — seeding an address book from Dhaga
+
+Everything above brings contacts **into** Dhaga. Going the other way — getting
+Dhaga-only people into a phone, a Google account or Outlook — is normally the job
+of two-way sync, which writes them **one at a time** and therefore caps a run at
+`SYNC_MAX_CREATES` (500). No platform offers a bulk-create call: not iOS, not
+Android, not Google People, not Microsoft Graph. Importing a vCard, by contrast,
+is a single bulk operation on the platform's side — which is exactly why 700
+contacts land in a second coming in and take several runs going out.
+
+So for a large back-catalogue, use the importer that is already fast and leave
+sync the matching:
+
+1. **Download a seed file.** In the app: **Settings › Contact accounts ›
+   Seed an address book in one go**, or the per-account **Download for …**
+   button beside a run's remaining count. The endpoint behind those buttons,
+   if you are scripting it:
+   ```
+   GET /api/export/vcard?scope=authored&provider=device
+   ```
+   `scope=authored` is the address-book seed scope, and `provider` is one of
+   `device` / `google` / `microsoft`. Both parameters also work on
+   `/api/export/csv`, but the vCard is the one to seed from — the CSV columns
+   carry no nickname and no important dates.
+2. **Import it** into the target address book by its own bulk path: iCloud.com →
+   Contacts → **Import vCard**, contacts.google.com → **Import**, Outlook →
+   **Manage contacts → Import contacts**, or open the file on the handset.
+3. **Sync.** The first run matches those records back to the contacts they came
+   from — email, then phone, then name + company, the same ladder
+   `lib/repo/import.ts` uses — and **links** them instead of creating a second
+   copy of everyone.
+
+What the seed scope filters, and why it is not the export you leave with:
+
+- `scope=authored` keeps only contacts the user authored: it excludes
+  `source = "mentioned"` (AI-inferred stubs lifted from notes), `source =
+  "import"` (rows from a CSV, a connected account or an earlier sync) and
+  nameless rows. This is the same predicate the sync push uses — literally the
+  same function, `apps/web/src/lib/repo/sync/authored.ts` — so the fast path
+  cannot write into an address book something the safe path refuses to.
+- `provider=` additionally drops contacts already linked on that provider **in
+  any state, tombstoned included**, so a bulk seed cannot resurrect someone the
+  user deleted on their phone.
+- An unknown `scope` or `provider`, a `provider` without `scope=authored`, or
+  either on `format=json` returns **400** rather than being ignored — a silently
+  dropped filter would hand the user a file they believe is safe for their phone.
+- **The plain export is unchanged.** `/api/export/vcard`, `/api/export/csv` and
+  `/api/export/json` with no parameters still return every contact. `scope` is an
+  opt-in narrowing for seeding, not a change to data portability.
+
+The user-facing walkthrough is in `apps/web/content/docs/guide/syncing-your-phone.mdx`
+("Copying a big back-catalogue across").
+
+---
+
+## 8. What needs verification before public launch (summary)
 
 - **Google:** publish + pass OAuth verification for the sensitive `contacts.readonly`
   scope (works now for you + up to 100 test users).

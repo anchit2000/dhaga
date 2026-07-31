@@ -6,6 +6,7 @@ import { OnboardingTour } from "@/components/app/onboarding";
 import { SettingsTabs } from "@/components/app/settings/SettingsTabs";
 import {
   ApiKeysSection,
+  AppearanceSection,
   BillingSection,
   CalendarSection,
   ContactSyncSection,
@@ -50,6 +51,9 @@ export default async function SettingsPage({
           <>
             <Suspense fallback={<ListSkeleton rows={2} />}>
               <ProfileSection />
+            </Suspense>
+            <Suspense fallback={<ListSkeleton rows={3} />}>
+              <AppearanceSection />
             </Suspense>
             <Suspense fallback={<ListSkeleton rows={2} />}>
               <BillingSection />

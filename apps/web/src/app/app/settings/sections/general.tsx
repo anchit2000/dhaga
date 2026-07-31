@@ -4,7 +4,7 @@ import { getCurrentUser, requireUserIdForPage } from "@/lib/auth/guard";
 import { getAuth } from "@/lib/auth/config";
 import { getBillingGate } from "@/lib/hosted/gate";
 import { aiCreditsUsedThisMonth, effectiveMonthlyAiCap, hasUnlimitedAiCredits } from "@/lib/ai/metering";
-import { shouldStoreCardPhotos } from "@/lib/repo/settings";
+import { getUiTheme, shouldStoreCardPhotos } from "@/lib/repo/settings";
 import { listVocab } from "@/lib/repo/voice-vocab";
 import { listCalendarConnections } from "@/lib/repo/calendar";
 import {
@@ -29,6 +29,7 @@ import { VoiceTeaching } from "@/components/app/settings/VoiceTeaching";
 import { ApiKeysSetting } from "@/components/app/settings/ApiKeysSetting";
 import { BillingSetting } from "@/components/app/settings/BillingSetting";
 import { ProfileSetting } from "@/components/app/settings/ProfileSetting";
+import { AppearanceSetting } from "@/components/app/settings/AppearanceSetting";
 import { SecuritySetting } from "@/components/app/settings/SecuritySetting";
 
 /**
@@ -43,6 +44,12 @@ import { SecuritySetting } from "@/components/app/settings/SecuritySetting";
 export async function ProfileSection() {
   const user = await getCurrentUser();
   return user ? <ProfileSetting name={user.name} email={user.email} /> : null;
+}
+
+/** Palette + font for this user's /app. Core — the presets are constants, so it
+ *  renders the same in self-host and hosted mode. */
+export async function AppearanceSection() {
+  return <AppearanceSetting theme={await getUiTheme()} />;
 }
 
 /** Only renders on a hosted instance with EE billing (getPlanSummary non-null).

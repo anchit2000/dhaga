@@ -237,6 +237,14 @@
   /* amber focus rings are invisible on a cream ground (1.4:1); ember is 6.6:1
      on light and resolves back to amber on dark. */
   --ring: var(--brand-ember);
+  /* The cast glow under the primary button (see components/ui/button.tsx),
+     which used to hardcode the amber literal. Derived from --brand-amber so a
+     user's Appearance theme re-tints the halo with it — otherwise a Monochrome
+     or Rose button keeps an amber ring around it, which is exactly how the
+     hardcode showed up. Custom properties resolve at USE time, so this picks up
+     the overridden --brand-amber without needing to be re-declared per theme. */
+  --shadow-accent: color-mix(in srgb, var(--brand-amber) 55%, transparent);
+  --shadow-accent-strong: color-mix(in srgb, var(--brand-amber) 80%, transparent);
 }
 
 ::selection {

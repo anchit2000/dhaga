@@ -18,16 +18,34 @@ export interface SettingsTourStep {
 /**
  * The tour's second leg, on /app/settings.
  *
- * Notifications come first and import is the finale: the reminder choice is a
- * preference the user can settle in one click while still in onboarding, while
- * importing is the "now go do this" call to action that reads better last (and
- * ends the tour on the same note it always did).
+ * Appearance opens, notifications follow, import is the finale: picking a theme
+ * is the lightest thing a new user can do and costs them nothing, the reminder
+ * choice is a preference they can settle in one click while still in onboarding,
+ * and importing is the "now go do this" call to action that reads better last
+ * (and ends the tour on the same note it always did).
  *
  * Nothing here enables anything. Every email preference in Dhaga ships off, and
- * this step exists to surface that choice, not to make it — a pre-flipped switch
+ * that step exists to surface the choice, not to make it — a pre-flipped switch
  * would defeat the whole point.
  */
 export const SETTINGS_TOUR_STEPS: SettingsTourStep[] = [
+  {
+    hash: "appearance",
+    selector: '[data-tour="appearance"]',
+    step: {
+      element: '[data-tour="appearance"]',
+      // Same reasoning as the notifications step below: this one is meant to be
+      // played with, so the overlay lets clicks through to the theme picker.
+      disableActiveInteraction: false,
+      popover: {
+        side: "bottom",
+        align: "center",
+        title: "Make it yours",
+        description:
+          "Pick a colour theme and a font for the app. It changes what you see in Dhaga and nothing else — the website, docs and blog stay as they are. Light and dark is still the toggle in the top bar, and every theme here works in both.",
+      },
+    },
+  },
   {
     hash: "suggestions",
     selector: '[data-tour="notifications"]',

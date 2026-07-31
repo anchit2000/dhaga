@@ -9,8 +9,14 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
+        // The cast glow reads through --shadow-accent rather than the amber
+        // literal it used to hardcode, so a user's Appearance theme re-tints it
+        // (globals.css derives both from --brand-amber). Without this a
+        // Monochrome or Rose primary button kept an amber halo. The inset
+        // highlight/shade and the neutral drop stay literal — they are black and
+        // white at low alpha, not brand colour.
         default:
-          "bg-gradient-to-b from-amber-lift to-amber-sink font-semibold text-on-accent shadow-[inset_0_1px_0_rgba(255,255,255,0.4),inset_0_-1px_0_rgba(0,0,0,0.2),0_1px_2px_rgba(0,0,0,0.4),0_12px_32px_-12px_rgba(226,164,76,0.55)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.4),inset_0_-1px_0_rgba(0,0,0,0.2),0_1px_2px_rgba(0,0,0,0.4),0_16px_40px_-12px_rgba(226,164,76,0.8)] hover:brightness-[1.06] active:brightness-95",
+          "bg-gradient-to-b from-amber-lift to-amber-sink font-semibold text-on-accent shadow-[inset_0_1px_0_rgba(255,255,255,0.4),inset_0_-1px_0_rgba(0,0,0,0.2),0_1px_2px_rgba(0,0,0,0.4),0_12px_32px_-12px_var(--shadow-accent)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.4),inset_0_-1px_0_rgba(0,0,0,0.2),0_1px_2px_rgba(0,0,0,0.4),0_16px_40px_-12px_var(--shadow-accent-strong)] hover:brightness-[1.06] active:brightness-95",
         outline:
           "border-wash/15 bg-wash/[0.04] text-paper backdrop-blur-sm hover:border-wash/30 hover:bg-wash/[0.08]",
         secondary:

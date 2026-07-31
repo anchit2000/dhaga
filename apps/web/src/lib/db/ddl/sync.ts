@@ -29,6 +29,19 @@
  * so two users WILL collide on the same external_id. Core cannot see the
  * tenancy column, so a core-side unique index would be wrong. Uniqueness is
  * enforced in app code instead — the same call company_aliases makes.
+ *
+ * `contact_sync_tombstones` records that the user deleted a Dhaga contact which
+ * WAS linked to an external record. It has to be a separate table precisely
+ * because contact_links.contact_id cascades: forgetting the contact takes its
+ * links with it, and on the next sync the phone's record looks like a stranger
+ * — unknown external id, no contact left for the dedup ladder to match — so it
+ * was re-created and the user's deletion silently undid itself. This survives
+ * the cascade and is consulted before any create.
+ *
+ * It deliberately stores NO identity: provider + external id and a timestamp,
+ * nothing about the person. A "forget this person" that kept their name or
+ * email in a side table would not be a deletion. The id alone is enough,
+ * because all this table ever answers is "may this record create a contact?".
  */
 export const SYNC_DDL = `
 CREATE TABLE IF NOT EXISTS contact_links (
@@ -49,4 +62,13 @@ CREATE TABLE IF NOT EXISTS contact_links (
 CREATE INDEX IF NOT EXISTS contact_links_contact_idx ON contact_links (contact_id);
 CREATE INDEX IF NOT EXISTS contact_links_lookup_idx ON contact_links (provider, external_id);
 ALTER TABLE contact_links ADD COLUMN IF NOT EXISTS conflicts jsonb NOT NULL DEFAULT '[]'::jsonb;
+
+CREATE TABLE IF NOT EXISTS contact_sync_tombstones (
+  id text PRIMARY KEY,
+  provider text NOT NULL,
+  external_id text NOT NULL,
+  deleted_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS contact_sync_tombstones_lookup_idx
+  ON contact_sync_tombstones (provider, external_id);
 `;

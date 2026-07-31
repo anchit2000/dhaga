@@ -15,6 +15,7 @@ import type { DhagaDb } from "@/lib/db";
 import { deleteEmbeddingsByContact } from "../embeddings";
 import { deleteCardImagesByContact } from "../card-images";
 import { deleteNotePositions } from "../graph/position-rows";
+import { recordSyncTombstones } from "../sync/tombstones";
 
 export async function promoteMentionedContact(id: string): Promise<boolean> {
   const db = await getDb();
@@ -84,6 +85,14 @@ export async function forgetContact(id: string): Promise<void> {
  * notes, since card_images references notes.id).
  */
 export async function cascadeForget(tx: DhagaDb, id: string): Promise<void> {
+  // FIRST, before anything is deleted: contact_links.contact_id is ON DELETE
+  // CASCADE, so the only moment we can learn which external address-book
+  // records this person occupied is now. Without that record the next sync
+  // sees an unknown external id with no contact to match, treats it as a new
+  // person, and re-creates the contact the user just deleted — their deletion
+  // silently undoing itself. Merging contacts does NOT come through here, and
+  // must not: a merged-away duplicate is re-adopted by the survivor.
+  await recordSyncTombstones(tx, [id]);
   // Rows derived from this contact's notes can reference other contacts —
   // remove by source note first so no receipt outlives its note.
   const noteIds = (

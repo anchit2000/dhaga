@@ -34,10 +34,22 @@ function chunksOf(count: number): ReturnType<typeof buildPushChunks> {
 }
 
 describe("buildPushChunks", () => {
-  it("sends nothing at all for an empty address book", () => {
-    // The push schema requires at least one contact, so there is no legal
-    // request to make — and an empty batch is not evidence of anything either.
-    expect(chunksOf(0)).toEqual([]);
+  it("reports an emptied address book instead of staying silent", () => {
+    // Sending nothing left the user's links claiming to be synced against
+    // records they had deleted — the one change sync could not see. The claim
+    // has to be explicit: `contacts: []` alone is also what a failed
+    // enumeration looks like, and the server refuses to sweep on that.
+    const chunks = chunksOf(0);
+    expect(chunks).toHaveLength(1);
+    expect(chunks[0].contacts).toEqual([]);
+    expect(chunks[0].observedEmpty).toBe(true);
+    expect(chunks[0].full).toBe(false);
+  });
+
+  it("never claims emptiness when it observed contacts", () => {
+    // The server only honours the flag on a genuinely empty batch, but a client
+    // that sets both is confused about what it saw — don't be that client.
+    expect(chunksOf(3).every((chunk) => chunk.observedEmpty === undefined)).toBe(true);
   });
 
   it("keeps a book that fits in one request as one request", () => {

@@ -33,15 +33,20 @@ const syncableContactSchema = z.object({
 export const syncPushRequestSchema = z.object({
   provider: z.enum(CONTACT_SYNC_PROVIDERS),
   containerId: z.string().max(300).nullable(),
+  // No lower bound: a user who empties their address book must still be able to
+  // report it. `min(1)` made that one state unsendable, so deleting everything
+  // on the phone left every link in Dhaga claiming to still be synced. A batch
+  // of nothing is harmless on its own — it reconciles nothing, and only
+  // `observedEmpty` below turns it into a deletion the sweep may act on.
   contacts: z
     .array(syncableContactSchema.extend({ externalId: ID, etag: z.string().max(300).nullable() }))
-    .min(1)
     .max(SYNC_MAX_CONTACTS),
   full: z.boolean(),
   // Ids, not contacts, so this cap is its own — it is what lets a chunked run
   // authorise the deletion sweep in one small request. Optional: a chunk that
   // is not the last one omits it, and omitting it means "sweep nothing".
   observedExternalIds: z.array(ID).max(SYNC_MAX_OBSERVED_IDS).nullable().optional(),
+  observedEmpty: z.boolean().optional(),
 });
 
 export const syncAckRequestSchema = z.object({

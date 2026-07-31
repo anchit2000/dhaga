@@ -38,4 +38,21 @@ CREATE TABLE IF NOT EXISTS contact_connections (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS contact_connections_provider_idx ON contact_connections (provider);
+
+-- The provider's own opaque resume token: Google's syncToken, Graph's
+-- deltaLink. NOT a timestamp, which is why no last_modified column would do —
+-- neither API answers "what changed since 3pm", only "what changed since this
+-- token". Text and unbounded because a deltaLink is a full URL.
+--
+-- SAFETY: holding a cursor is what makes the next run INCREMENTAL, and an
+-- incremental batch is NOT the whole address book. It must therefore never be
+-- handed to reconcileContacts as a full batch, or the sweep would tombstone
+-- every link whose contact simply did not change (lib/repo/contact-sync/run/
+-- enumerate.ts is where that decision is made and tested).
+--
+-- Written null whenever a run cannot vouch for it — the provider issued none,
+-- or a write failed and must be re-derived from a complete enumeration. Losing
+-- a cursor only costs the next run a full pass, so clearing is always the safe
+-- direction.
+ALTER TABLE contact_connections ADD COLUMN IF NOT EXISTS sync_cursor text;
 `;

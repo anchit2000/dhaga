@@ -41,8 +41,8 @@ export function ContactSyncScreen(): React.JSX.Element {
         <View style={styles.toggleText}>
           <Text style={styles.toggleLabel}>Add Dhaga-only contacts to this phone</Text>
           <Text style={styles.toggleHint}>
-            Off by default — this copies people you have in Dhaga but not on this phone into your
-            address book.
+            Copies people you added in Dhaga but don&apos;t have on this phone into your address
+            book. Contacts you imported from a file or another account stay in Dhaga.
           </Text>
         </View>
         <Switch

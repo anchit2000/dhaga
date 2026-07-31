@@ -33,14 +33,23 @@ export interface PushChunkInput {
  * Ids are cheap, so completeness costs one small field rather than a second
  * pass over the address book.
  *
- * An empty address book produces NO requests: the push schema requires at least
- * one contact, so there is nothing legal to send and nothing to reconcile.
+ * An empty address book still produces ONE request, carrying `observedEmpty`.
+ * Sending nothing was the obvious reading — there is nothing to reconcile — but
+ * it made emptying the address book the single change sync could not see: every
+ * link stayed "synced" against a record that no longer existed, forever. The
+ * flag is a positive claim rather than an inference from `contacts: []`,
+ * because a FAILED enumeration produces an empty list too and must never
+ * unlink anything. This is only reached once enumeration has succeeded, and the
+ * request is scoped to the container that was enumerated.
  */
 export function buildPushChunks({
   provider,
   containerId,
   contacts,
 }: PushChunkInput): SyncPushRequest[] {
+  if (contacts.length === 0) {
+    return [{ provider, containerId, contacts: [], full: false, observedEmpty: true }];
+  }
   const chunks: SyncPushRequest[] = [];
   for (let start = 0; start < contacts.length; start += SYNC_MAX_CONTACTS) {
     const isLast = start + SYNC_MAX_CONTACTS >= contacts.length;
@@ -64,8 +73,9 @@ export function buildPushChunks({
  * same contact twice — and collapsing a duplicate here would hide that
  * invariant breaking rather than let the user see two writes for one person.
  *
- * No responses (empty address book) is a legitimate run that did nothing, not
- * an error: zero counts, nothing to write back.
+ * No responses at all is a legitimate run that did nothing, not an error: zero
+ * counts, nothing to write back. (An emptied address book no longer reaches
+ * this state — it sends one request and gets one answer.)
  */
 export function mergePushResponses(responses: readonly SyncPushResponse[]): SyncPushResponse {
   return {

@@ -7,6 +7,7 @@ import {
   syncableConnectionRows,
   usableAccessToken,
 } from "../connections";
+import { authorisesSweep, enumerateRemote, nextCursor } from "./enumerate";
 import { emptyResult, type ContactSyncRunResult } from "./types";
 import { applyWrites, toObserved } from "./writes";
 import type { ContactSyncProviderId } from "@dhaga/core/src/api/sync";
@@ -55,10 +56,11 @@ async function runOne(userId: string, row: ContactConnectionRow): Promise<Contac
 
   const target = provider.createTarget({ accessToken });
 
-  // 2. network. `full: true` below depends on this being the COMPLETE address
-  //    book, which is why listChanged throws rather than truncating.
+  // 2. network. Incremental when the connection holds a provider cursor; the
+  //    page reports which it was, and ./enumerate.ts explains why that answer
+  //    is the only thing allowed to decide `full` below.
   const [container] = await target.listContainers();
-  const remote = await target.listChanged(null);
+  const page = await enumerateRemote(target, row.syncCursor);
 
   // 3. DB
   const summary = await withUserDb(userId, async () =>
@@ -67,10 +69,10 @@ async function runOne(userId: string, row: ContactConnectionRow): Promise<Contac
       {
         provider: row.provider as ContactSyncProviderId,
         containerId: container?.id ?? null,
-        contacts: toObserved(remote),
-        // The server enumerated everything, so a link with no matching record
-        // really is a deletion — this is what authorises the sweep.
-        full: true,
+        contacts: toObserved(page.contacts),
+        // Only a COMPLETE enumeration can tell a deletion from a contact that
+        // simply did not change, so only a complete one authorises the sweep.
+        full: authorisesSweep(page),
       },
       {
         pushUnlinked: row.pushUnlinked,
@@ -93,7 +95,9 @@ async function runOne(userId: string, row: ContactConnectionRow): Promise<Contac
         results,
       });
     }
-    await recordSyncRun(row.id, new Date());
+    // Advancing the cursor is what makes the NEXT run incremental, so it is
+    // withheld whenever this run left work behind — see nextCursor().
+    await recordSyncRun(row.id, new Date(), nextCursor(page, failed));
   });
 
   return {

@@ -28,9 +28,15 @@ export function useContactSync(): {
   const [phase, setPhase] = useState<SyncPhase | null>(null);
   const [progress, setProgress] = useState<SyncProgress | null>(null);
   const [outcome, setOutcome] = useState<SyncOutcome | null>(null);
-  // Off until the user asks: adding every Dhaga contact to their personal
-  // address book is a big write, and an unwanted one is tedious to undo.
-  const [pushUnlinked, setPushUnlinked] = useState(false);
+  // On by default: a person added in Dhaga should be reachable from the phone,
+  // which is the whole point of syncing the phone's OWN address book. The
+  // server keeps that promise narrow — only contacts the user authored in
+  // Dhaga, never AI-inferred stubs and never rows that came from an import —
+  // so switching it on does not replay every list they ever uploaded onto the
+  // handset. Connected Google/Outlook accounts stay opt-in
+  // (contact_connections.push_unlinked): writing into someone's cloud account
+  // reaches every device signed into it and is a different kind of decision.
+  const [pushUnlinked, setPushUnlinked] = useState(true);
 
   useFocusEffect(
     useCallback(() => {

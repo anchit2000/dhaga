@@ -30,6 +30,13 @@ export const contactConnections = pgTable("contact_connections", {
   syncEnabled: boolean("sync_enabled").notNull().default(true),
   /** Copy Dhaga-only people into the account. Opt-in, default false — see the DDL. */
   pushUnlinked: boolean("push_unlinked").notNull().default(false),
+  /**
+   * The provider's opaque incremental cursor (Google syncToken, Graph
+   * deltaLink) — never a timestamp. Non-null means the next run may enumerate
+   * incrementally, which also means that run must NOT authorise the deletion
+   * sweep. See lib/db/ddl/contact-connections.ts.
+   */
+  syncCursor: text("sync_cursor"),
   lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),

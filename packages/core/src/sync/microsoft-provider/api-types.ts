@@ -19,9 +19,20 @@ export interface GraphPhysicalAddress {
   countryOrRegion?: string;
 }
 
+/**
+ * Present ONLY on a delta page: Graph reports a contact removed since the
+ * deltaLink was issued as a bare id carrying this, with no properties at all.
+ * See ./target/list.ts for why such a record must never become an
+ * ExternalContact.
+ */
+export interface GraphRemoved {
+  reason?: string;
+}
+
 export interface GraphContact {
   id?: string;
   "@odata.etag"?: string;
+  "@removed"?: GraphRemoved;
   displayName?: string;
   givenName?: string;
   surname?: string;
@@ -43,6 +54,8 @@ export interface GraphContact {
 export interface GraphContactsResponse {
   value?: GraphContact[];
   "@odata.nextLink"?: string;
+  /** Delta only, and only on the FINAL page: the opaque cursor for the next run. */
+  "@odata.deltaLink"?: string;
 }
 
 export interface MicrosoftTokenResponse {

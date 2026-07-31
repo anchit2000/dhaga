@@ -4,6 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { COLORS, VOCAB_HREF, VOCAB_SCREEN } from "@/utils/constants";
+import { CALENDAR_HREF, CALENDAR_SCREEN } from "@/utils/constants/calendar";
 import { SYNC_HREF, SYNC_SCREEN } from "@/utils/constants/sync";
 
 function HeaderActions() {
@@ -17,6 +18,9 @@ function HeaderActions() {
       </Pressable>
       <Pressable onPress={() => router.push("/import")} hitSlop={12} accessibilityLabel="Import contacts">
         <Feather name="users" size={20} color={COLORS.paper} />
+      </Pressable>
+      <Pressable onPress={() => router.push(CALENDAR_HREF)} hitSlop={12} accessibilityLabel="Calendar">
+        <Feather name="calendar" size={20} color={COLORS.paper} />
       </Pressable>
       <Pressable onPress={() => router.push(SYNC_HREF)} hitSlop={12} accessibilityLabel="Sync contacts">
         <Feather name="refresh-cw" size={20} color={COLORS.paper} />
@@ -47,6 +51,7 @@ export default function RootLayout() {
         <Stack.Screen name="index" options={{ title: "Dhaga", headerRight: HeaderActions }} />
         <Stack.Screen name="setup" options={{ title: "Connect to Dhaga" }} />
         <Stack.Screen name="import" options={{ title: "Import contacts" }} />
+        <Stack.Screen name={CALENDAR_SCREEN} options={{ title: "Calendar" }} />
         <Stack.Screen name={SYNC_SCREEN} options={{ title: "Sync contacts" }} />
         <Stack.Screen name={VOCAB_SCREEN} options={{ title: "Voice vocabulary" }} />
         <Stack.Screen name="wrapped" options={{ title: "Network Wrapped" }} />

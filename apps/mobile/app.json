@@ -15,7 +15,9 @@
       "package": "com.dhaga.app",
       "permissions": [
         "android.permission.READ_CONTACTS",
-        "android.permission.WRITE_CONTACTS"
+        "android.permission.WRITE_CONTACTS",
+        "android.permission.READ_CALENDAR",
+        "android.permission.WRITE_CALENDAR"
       ],
       "adaptiveIcon": {
         "backgroundColor": "#0d0b09",
@@ -62,6 +64,12 @@
         "expo-contacts",
         {
           "contactsPermission": "Dhaga reads your device contacts so you can import people you already know, and — only when you start a sync — writes your Dhaga edits back to them."
+        }
+      ],
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "Dhaga shows your calendar alongside your follow-ups, and — only when you tap Add follow-ups — writes them to a separate calendar named Dhaga. Your own calendars are never written to."
         }
       ],
       "expo-secure-store"

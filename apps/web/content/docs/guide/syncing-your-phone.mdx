@@ -61,13 +61,32 @@ never enter your graph.
 **Pulling in** — changes on the phone flow into Dhaga on every run.
 
 **Pushing out** — edits to contacts Dhaga is *already linked to* are written back
-to the phone on every run. Copying people who exist **only in Dhaga** into your
-address book is a separate, opt-in step: turn on **Add Dhaga-only contacts to
-this phone** on the sync screen. It's **off by default**, because most people
-don't want every business card they scanned landing in their phone's contacts.
+to the phone on every run. People who exist **only in Dhaga** are copied into
+your address book too: **Add Dhaga-only contacts to this phone** is **on by
+default** on the sync screen. It is your own device, so a person you added in
+Dhaga belongs in your contacts.
 
-People Dhaga only ever heard *mentioned* in a note — the stub contacts it infers
-rather than ones you captured — are never pushed out, even with the toggle on.
+Two kinds of person are never pushed out, toggle or not:
+
+- People Dhaga only ever heard **mentioned** in a note — the stubs it infers
+  rather than ones you captured.
+- People who arrived by **import** — a CSV, a vCard, a connected account, or an
+  earlier sync. You didn't author those, and pushing them would turn "add my
+  Dhaga people to my phone" into "replay every list I ever imported".
+
+That leaves the people you actually created here: typed in, quick-added, scanned
+from a card, or captured from a message.
+
+<Callout type="warn" title="The first run pushes your back-catalogue">
+This applies to every contact you have ever authored, not just new ones — there
+is no "created after I turned this on" marker. If you have hundreds of scanned
+cards you may not want all of them in your phone, so turn the switch off before
+your first sync. Runs are capped at 500 new contacts each.
+</Callout>
+
+Connected **Google and Outlook accounts are different** — there the same switch
+stays **off** by default, because writing into a cloud account propagates to
+every device signed into it, which is a bigger decision than your own handset.
 
 ## How conflicts are handled
 
@@ -129,6 +148,21 @@ away while it is still undecided.
 
 ## Nothing is ever deleted in Dhaga
 
+Deletion is deliberately asymmetric, in both directions.
+
+**A contact you delete on your phone** is not deleted in Dhaga. The link between
+the two is marked broken and the person, their notes and their facts all stay.
+Deleting a phone contact is not consent to destroy everything hanging off it in
+your graph. If that contact reappears later, the link is picked back up.
+
+**A contact you delete in Dhaga** is not deleted from your phone either — Dhaga
+never removes anything from an address book. It also will not quietly come back:
+Dhaga remembers that you removed that person, so the next sync leaves the phone
+record alone instead of re-importing it as somebody new. That memory holds only
+the address-book id, never a name or an email, because keeping those would make
+"forget this person" untrue. Add the person back in Dhaga and the two re-link
+normally.
+
 If a contact disappears from your address book, Dhaga does **not** delete the
 person, their notes, or their facts — it only marks the link between the two as
 broken. Deleting a phone contact is not consent to destroy everything hanging off
@@ -187,7 +221,9 @@ works. Batches are sent one after another, never in parallel.
 
 Each run reads the **whole** address book — neither iOS nor Android offers a
 "what changed since last time?" query, so there's no incremental fast path. A very
-large address book takes as long on the tenth run as on the first.
+large address book takes as long on the tenth run as on the first. (Connected
+Google and Outlook accounts *do* have one — see
+[It only reads what changed](#it-only-reads-what-changed).)
 
 ## Google and Outlook, without a phone
 
@@ -204,6 +240,20 @@ from a handset.
 It runs when you press **Sync now**. There is no background schedule — reading and
 writing your address book without you asking is precisely what this product
 doesn't do.
+
+### It only reads what changed
+
+The first run reads the whole account. After that Dhaga keeps the bookmark Google
+and Microsoft hand back, and the next run asks only for **what changed since** —
+so a ten-thousand-contact account costs one small request instead of thousands.
+
+One consequence is worth knowing. A contact you **delete** in Google or Outlook is
+unlinked in Dhaga only on a run that reads the whole account again, which happens
+when the provider expires the bookmark (both do, on their own schedule), and after
+any run that couldn't finish writing everything it had to. Until then the link
+just sits there. Nothing is lost either way: unlinking never deletes the person,
+their notes or their facts from Dhaga — see
+[Nothing is ever deleted in Dhaga](#nothing-is-ever-deleted-in-dhaga).
 
 ### The two switches
 

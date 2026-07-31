@@ -20,6 +20,24 @@ export function SyncReport({ result }: { result: SyncRunResult }): React.JSX.Ele
         {result.container ? result.container.name : "this phone"} · wrote {result.created} new and{" "}
         {result.updated} updated back to it.
       </Text>
+      {/* One run can only add so many at a time, and saying nothing about the
+          rest is how a half-copied address book passes for a finished one.
+          The bulk alternative is named but not built here: this app has no
+          file-download or share-sheet flow, and pointing at the web app is
+          honest where a button that opens nothing would not be. */}
+      {result.remaining > 0 ? (
+        <View style={styles.gap}>
+          <Text style={styles.notice}>
+            {result.remaining} contact{result.remaining === 1 ? "" : "s"} still to add — sync again
+            to continue.
+          </Text>
+          <Text style={styles.detail}>
+            Faster: open Dhaga on the web, then Settings › Contact accounts, and download
+            everyone you have added as one contacts file. Import that into this phone in one go and
+            the next sync recognises them and links them up instead of adding them again.
+          </Text>
+        </View>
+      ) : null}
       <Text style={styles.line}>
         In Dhaga: {result.createdInDhaga} added, {result.pulled} updated, {result.linked} newly
         linked.
@@ -60,6 +78,7 @@ export function SyncReport({ result }: { result: SyncRunResult }): React.JSX.Ele
 
 const styles = StyleSheet.create({
   wrap: { gap: 12 },
+  gap: { gap: 6 },
   notice: { color: COLORS.amber, fontSize: 14, lineHeight: 20 },
   line: { color: COLORS.paper, fontSize: 15, lineHeight: 22 },
   block: {

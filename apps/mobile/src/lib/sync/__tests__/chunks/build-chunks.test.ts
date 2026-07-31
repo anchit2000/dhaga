@@ -2,36 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { SYNC_MAX_CONTACTS } from "@/utils/constants/sync";
 
-import { buildPushChunks, mergePushResponses } from "../engine/chunks";
-
-import type { ObservedContact, SyncPushResponse } from "@dhaga/core/src/api/sync";
-
-/**
- * The boundary these tests defend is not cosmetic. `observedExternalIds` is
- * what authorises the server's deletion sweep, so putting it on anything but a
- * complete enumeration would tombstone every link absent from that chunk — the
- * user's address book, unlinked, silently. Getting the split wrong in the other
- * direction drops people from the sync entirely.
- */
-function observed(count: number): ObservedContact[] {
-  return Array.from({ length: count }, (_unused, index) => ({
-    externalId: `ext-${index}`,
-    etag: null,
-    name: `Person ${index}`,
-    nickname: null,
-    title: null,
-    company: null,
-    emails: [],
-    phones: [],
-    links: [],
-    addresses: [],
-    importantDates: [],
-  }));
-}
-
-function chunksOf(count: number): ReturnType<typeof buildPushChunks> {
-  return buildPushChunks({ provider: "device", containerId: "container-1", contacts: observed(count) });
-}
+import { chunksOf, observed } from "./helpers";
 
 describe("buildPushChunks", () => {
   it("reports an emptied address book instead of staying silent", () => {
@@ -101,48 +72,5 @@ describe("buildPushChunks", () => {
     const chunks = chunksOf(SYNC_MAX_CONTACTS + 1);
     expect(chunks.every((chunk) => chunk.provider === "device")).toBe(true);
     expect(chunks.every((chunk) => chunk.containerId === "container-1")).toBe(true);
-  });
-});
-
-function response(over: Partial<SyncPushResponse>): SyncPushResponse {
-  return { writes: [], conflicts: [], pulled: 0, created: 0, linked: 0, ...over };
-}
-
-describe("mergePushResponses", () => {
-  it("reports a run that sent nothing as a run that did nothing", () => {
-    expect(mergePushResponses([])).toEqual(response({}));
-  });
-
-  it("adds the counters and concatenates the work across chunks", () => {
-    // Each chunk answers only for the contacts it carried, so the run's totals
-    // exist nowhere but here — dropping a chunk's counts would under-report the
-    // sync to the user, and dropping its writes would silently skip contacts.
-    const merged = mergePushResponses([
-      response({
-        writes: [{ externalId: "ext-1", contactId: "c1", fields: { name: "A" }, etag: null }],
-        pulled: 2,
-        created: 1,
-        linked: 3,
-      }),
-      response({
-        writes: [{ externalId: null, contactId: "c2", fields: { name: "B" }, etag: null }],
-        conflicts: [
-          {
-            contactId: "c3",
-            contactName: "C",
-            conflicts: [{ field: "name", kind: "both_edited", local: "C", remote: "C." }],
-          },
-        ],
-        pulled: 5,
-        created: 4,
-        linked: 6,
-      }),
-    ]);
-
-    expect(merged.writes.map((write) => write.contactId)).toEqual(["c1", "c2"]);
-    expect(merged.conflicts).toHaveLength(1);
-    expect(merged.pulled).toBe(7);
-    expect(merged.created).toBe(5);
-    expect(merged.linked).toBe(9);
   });
 });

@@ -35,6 +35,10 @@ describe("sync push outward", () => {
 
     const withoutFlag = await pushContactSync(USER, batch);
     expect(withoutFlag.writes.filter((write) => write.externalId === null)).toEqual([]);
+    // A run that never asked to push outward held nothing back. Reporting the
+    // unoffered graph here would put "sync again to continue" on every run of a
+    // pull-only connection, which no amount of syncing would ever clear.
+    expect(withoutFlag.remaining).toBe(0);
 
     const withFlag = await pushContactSync(USER, batch, { pushUnlinked: true });
     const creates = withFlag.writes.filter((write) => write.externalId === null);

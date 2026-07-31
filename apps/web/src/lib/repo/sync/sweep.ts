@@ -1,4 +1,5 @@
 import { SYNC_LINK_UNLINKED, SYNC_MAX_CREATES } from "@/utils/constants/sync";
+import { isAuthoredContact } from "./authored";
 import { markLinksUnlinked } from "./links";
 import type { SyncPushRequest, SyncWrite } from "@dhaga/core/src/api/sync";
 import type { ContactLinkRow } from "@/lib/db/schema";
@@ -79,23 +80,26 @@ export async function tombstoneMissingLinks(
   );
 }
 
+/** What one run offers outward, and what its ceiling made it hold back. */
+export interface UnlinkedCreates {
+  writes: SyncWrite[];
+  /** Eligible contacts left for the next run — see SyncPushResponse.remaining. */
+  remaining: number;
+}
+
 /**
  * Offer Dhaga contacts that have no link on this provider as creates — the
  * "a person I added in Dhaga should reach my phone" direction. Still
- * caller-gated: a contact written into an address book propagates to every
- * device signed into that account, so who asks for it matters (the phone's own
- * address book asks by default; a connected Google/Outlook account does not).
+ * caller-gated, and nothing asks by default: a contact written into an address
+ * book propagates to every device signed into that account, so both the phone's
+ * sync screen and a connected Google/Outlook account have to be switched on
+ * before they ask for it.
  *
  * Offered contacts are the ones the user CREATED in Dhaga, which is narrower
- * than "everything unlinked":
- *
- *  - "mentioned" rows are AI-inferred stubs, a name lifted out of a note.
- *    Inferred data must never be written into an external address book.
- *  - "import" rows came from somewhere else — a CSV/vCard the user uploaded, a
- *    connected account, or a previous sync. They are unlinked HERE by accident
- *    of provenance, not because the user authored them, and pushing them would
- *    turn "add my Dhaga people to my phone" into "replay every list I have ever
- *    imported into my address book".
+ * than "everything unlinked" — see isAuthoredContact (./authored.ts) for which
+ * provenances are excluded and why. That predicate is shared with the bulk
+ * seed export (@/lib/export/data) so the two ways a contact can reach an
+ * address book cannot disagree about which contacts may.
  *
  * A contact whose link is tombstoned is not offered either — its id is in
  * `linkedContactIds` whatever the link's state — so deleting someone on the
@@ -103,17 +107,34 @@ export async function tombstoneMissingLinks(
  *
  * No link row is written here. The external id does not exist until the
  * platform mints it, so the link is established by the ack.
+ *
+ * The client applies writes one at a time, so a run offers at most
+ * SYNC_MAX_CREATES and reports the rest as `remaining`. A cap the user cannot
+ * see is a first sync that looks finished with hundreds of people still missing
+ * from their phone.
  */
 export function offerUnlinkedCreates(
   local: LocalContact[],
   linkedContactIds: ReadonlySet<string>,
-): SyncWrite[] {
-  const writes: SyncWrite[] = [];
-  for (const row of local) {
-    if (writes.length >= SYNC_MAX_CREATES) break;
-    if (linkedContactIds.has(row.id) || !row.contact.name) continue;
-    if (row.source === "mentioned" || row.source === "import") continue;
-    writes.push({ externalId: null, contactId: row.id, fields: row.contact, etag: null });
-  }
-  return writes;
+): UnlinkedCreates {
+  // Eligibility FIRST, cap second. The cap used to `break` mid-loop, leaving
+  // every row past it untested — so the only leftover it could have reported was
+  // "everything unreached", a number padded with stubs, imports and already
+  // linked people that no amount of syncing would ever drain. Counting what
+  // would actually have been offered is what makes "sync again" a promise the
+  // next run can keep.
+  const eligible = local.filter(
+    (row) =>
+      !linkedContactIds.has(row.id) &&
+      isAuthoredContact({ source: row.source, name: row.contact.name }),
+  );
+  return {
+    writes: eligible.slice(0, SYNC_MAX_CREATES).map((row) => ({
+      externalId: null,
+      contactId: row.id,
+      fields: row.contact,
+      etag: null,
+    })),
+    remaining: Math.max(eligible.length - SYNC_MAX_CREATES, 0),
+  };
 }

@@ -21,11 +21,14 @@ export interface SettingsTourStep {
  * Notifications come first and import is the finale: the reminder choice is a
  * preference the user can settle in one click while still in onboarding, while
  * importing is the "now go do this" call to action that reads better last (and
- * ends the tour on the same note it always did).
+ * ends the tour on the same note it always did). Contact sync sits between
+ * them, where the two directions read in order — what Dhaga sends out, then
+ * what you bring in — and where it cannot displace either bookend.
  *
  * Nothing here enables anything. Every email preference in Dhaga ships off, and
- * this step exists to surface that choice, not to make it — a pre-flipped switch
- * would defeat the whole point.
+ * so does copying your contacts out into an address book; these steps exist to
+ * surface those choices, not to make them — a pre-flipped switch would defeat
+ * the whole point.
  */
 export const SETTINGS_TOUR_STEPS: SettingsTourStep[] = [
   {
@@ -42,6 +45,28 @@ export const SETTINGS_TOUR_STEPS: SettingsTourStep[] = [
         title: "Decide what gets emailed",
         description:
           "Dhaga emails you nothing until you ask. Switch on a heads-up before a saved birthday or anniversary here — the daily digest and follow-up nudges just above work the same way. Leave them off and nothing is sent.",
+      },
+    },
+  },
+  {
+    hash: "capture",
+    selector: '[data-tour="contact-sync"]',
+    step: {
+      element: '[data-tour="contact-sync"]',
+      // Overlay stays blocking (BASE_CONFIG's disableActiveInteraction), unlike
+      // the notifications step. Nothing here is a one-click preference: the
+      // switch this names is not even rendered until an account is connected,
+      // so the only live controls on the card are "Connect Google/Outlook" —
+      // which leaves for a consent screen and destroys the tour — and a file
+      // download. And a contact written into an address book reaches every
+      // device signed into it and can never be pulled back, which is not a
+      // decision to take under the momentum of a walkthrough.
+      popover: {
+        side: "top",
+        align: "center",
+        title: "Contacts can go back out",
+        description:
+          "Nothing in Dhaga reaches an address book unless you ask. Add Dhaga-only people — on a Google or Outlook account you connect here, or on the phone app's sync screen — is off until you turn it on, and turning it on copies the people you added in Dhaga across.",
       },
     },
   },

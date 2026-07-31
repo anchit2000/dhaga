@@ -39,12 +39,12 @@ export type {
  * here as creates on this phone — the "someone I added in Dhaga should be
  * reachable from my phone" direction. The server narrows that to contacts the
  * user actually authored in Dhaga (never AI-inferred stubs, never rows that
- * arrived from an import or another provider), which is what makes it safe for
- * the sync screen to switch it on by default.
+ * arrived from an import or another provider), so what it offers is bounded
+ * whoever asks.
  *
- * The parameter still defaults OFF, so a programmatic caller has to ask: the
- * user-facing default belongs to the screen that shows the switch, not to the
- * engine every other caller shares.
+ * The parameter defaults OFF, and so does the switch on the sync screen: the
+ * user-facing default belongs to the screen that shows the switch, and it
+ * answers the same way (see components/contact-sync/use-contact-sync.ts).
  */
 export async function runContactSync(
   settings: MobileSettings,
@@ -143,6 +143,7 @@ async function sync(
     pulled: response.pulled,
     createdInDhaga: response.created,
     linked: response.linked,
+    remaining: response.remaining,
     conflicts: response.conflicts,
     failures,
     container,

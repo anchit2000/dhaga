@@ -59,11 +59,17 @@ export async function setContactPushUnlinkedAction(formData: FormData): Promise<
  * runContactSync opens its own scoped connections per phase, so this is
  * deliberately NOT wrapped in `mutation` (which would hold one across the whole
  * run, including its HTTP calls).
+ *
+ * Returns how many Dhaga-only contacts the run's create ceiling held back,
+ * added up across every account it ran. The caller renders it verbatim: an
+ * account left mid-copy is only fixed by the user running the sync again, and
+ * they cannot decide to do that if nothing tells them it happened.
  */
-export async function runContactSyncAction(): Promise<void> {
+export async function runContactSyncAction(): Promise<number> {
   const userId = await requireUserId();
-  await runContactSync(userId);
+  const results = await runContactSync(userId);
   revalidatePath("/app/settings");
   revalidatePath("/app/sync/conflicts");
   revalidatePath("/app/people");
+  return results.reduce((total, result) => total + result.remaining, 0);
 }

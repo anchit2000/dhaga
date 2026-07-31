@@ -5,9 +5,10 @@ import { setPlanCapEnforcementAction } from "@/lib/actions/admin/ai-budget";
 import type { ReactElement } from "react";
 
 /**
- * The master switch. Its copy is the point: an admin must be able to see, in one
- * glance, that the allowances below are inert and WHY turning them on is a
- * pricing decision — the pricing page sells Pro and Annual as "no monthly cap".
+ * The master switch. ON is the shipped default, so the copy's job has flipped:
+ * the ON state describes normal operation, and the OFF state is the one that has
+ * to say loudly what has been given up — every plan's allowance stops applying
+ * and paid users fall back to their raw billing entitlement.
  */
 export function EnforcementCard({ enabled }: { enabled: boolean }): ReactElement {
   return (
@@ -23,20 +24,19 @@ export function EnforcementCard({ enabled }: { enabled: boolean }): ReactElement
       </div>
       {enabled ? (
         <p className="text-sm text-fog">
-          <span className="text-ember">Limits are being enforced.</span> Every paid user is
-          now held to the monthly allowance for their plan, below. The pricing page still
-          says Pro and Annual have{" "}
-          <span className="text-paper">no monthly cap</span> — change that copy, or turn
-          this back off.
+          <span className="text-paper">Limits are being enforced</span> — the shipped
+          default. Every user is held to the monthly allowance for their plan, below:
+          Free and Pro have a number, Lifetime / Annual has no cap. This is what the
+          pricing page states, so leave it on unless you have a reason not to.
         </p>
       ) : (
         <p className="text-sm text-fog">
-          <span className="text-paper">Limits are not being enforced.</span> The allowances
-          below are stored but ignored: paid plans bypass the cap entirely, exactly as they
-          do today, and the pricing page sells Pro and Annual as{" "}
-          <span className="text-paper">&ldquo;no monthly cap&rdquo;</span>. Turning this on
-          gives every existing paying customer a ceiling they were never sold — a pricing
-          decision, not a metering one.
+          <span className="text-ember">Limits are not being enforced.</span> You have
+          turned off the shipped default. The allowances below are stored but ignored:
+          every plan resolves through its raw billing entitlement instead, and users with
+          no plan fall back to the instance default. The pricing page still states a
+          monthly allowance per plan, so this is a temporary escape hatch — a migration or
+          an incident — not a setting to leave here.
         </p>
       )}
       <p className="text-sm text-fog">

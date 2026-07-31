@@ -31,6 +31,20 @@ export interface AiCreditGrant {
   createdAt: Date;
 }
 
+/**
+ * The instance-wide default ceiling — what a user no plan governs gets — plus
+ * WHERE it came from, so the admin screen can name the live number instead of
+ * leaving an operator to guess between the database and `DHAGA_AI_MONTHLY_CAP`.
+ * `credits: null` = no ceiling. Resolved by `instanceDefaultCap` in
+ * lib/ai/metering/cap/instance-default.ts.
+ */
+export type AiCapDefaultSource = "admin" | "env" | "shipped";
+
+export interface AiCapDefault {
+  credits: number | null;
+  source: AiCapDefaultSource;
+}
+
 /** Everything the admin AI-credits screen and the cap resolver need, in one read. */
 export interface AiBudgetConfig {
   enforcePlanCaps: boolean;

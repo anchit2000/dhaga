@@ -21,12 +21,17 @@ export function QuickAddForm({
   storeCardPhotos,
   homeDock = false,
   aiUsage,
+  aiGate = null,
 }: {
   events: EventOption[];
   defaultEventId?: string;
   storeCardPhotos: boolean;
   homeDock?: boolean;
   aiUsage?: string;
+  /** Why the AI capture modes are greyed out (no credits left), or null. Only
+   *  paste-extract and card-scan are gated — Manual capture is not an AI path
+   *  and must stay fully usable at zero credits. */
+  aiGate?: string | null;
 }) {
   const [mode, setMode] = useState<CaptureMode>(DEFAULT_CAPTURE_MODE);
   const [manualTab, setManualTab] = useState<SubTab>("person");
@@ -76,6 +81,7 @@ export function QuickAddForm({
       captureOpen={captureOpen}
       onCaptureToggle={homeDock ? () => setCaptureOpen((open) => !open) : undefined}
       inDialog={homeDock}
+      aiGate={aiGate}
     />
   );
 

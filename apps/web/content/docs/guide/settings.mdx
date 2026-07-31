@@ -18,16 +18,26 @@ beneath it.
   (two-factor authentication, 2FA), and **API keys** — personal access tokens for
   the API and the browser extension, and for scripted
   [exports](/docs/self-hosting/deploy#backups--migration). On a hosted instance
-  the Billing section also shows your **AI credits** — how many you have used and
-  have left this month. Credits are charged per action, not per model call: a
+  the Billing section also shows a one-line **AI credits** summary — *"3 of 10 AI
+  credits used"*. Free accounts have a monthly allowance like any other: **10
+  credits a month**. The line only reads *"No monthly AI credits on this plan —
+  upgrade to enable AI actions"* if whoever runs the instance has explicitly set
+  your allowance to 0, which isn't the normal free-tier state. The full picture
+  lives in its own tab, next door.
+- **Credits** — your AI-credit ledger: how many are left this month and when they
+  reset, a breakdown of where the rest went by kind of action, and a list of your
+  most recent AI actions. Credits are charged per action, not per model call: a
   card scan, note, quick-add or draft costs 1; a question to Ask Dhaga or a
   pre-meeting brief costs 2; enriching a contact from the web costs 20. Nightly
-  watchlist scans are free — they are limited by how many people you watch. The
-  allowance half of that line can be raised by whoever runs the instance — a
+  watchlist scans are free — they show in the breakdown marked *Free* rather than
+  being hidden. Credits aren't the only gate: enrichment and pre-meeting briefs
+  are Pro-and-up features whatever your balance says. Your allowance can be
+  raised by whoever runs the instance — a
   promotional month, or credits granted to you after something went wrong on
-  their side — and extra credits are only ever *added* on top: the "used" half
-  is a record of what you actually spent and is never rewritten. Operators:
-  those controls are the admin AI credits screen, documented in
+  their side — and extra credits are only ever *added* on top: what you spent is
+  a record and is never rewritten. Full walkthrough:
+  [AI credits](/docs/guide/ai-credits). Operators: those controls are the admin
+  AI credits screen, documented in
   [Self-hosting](/docs/self-hosting#instance-wide-ai-credit-controls-appadminai-credits-hostedee).
 - **Capture** — **Card photos** (whether the original card image is kept after a
   scan) and **Voice teaching** — a vocabulary manager where you teach Dhaga

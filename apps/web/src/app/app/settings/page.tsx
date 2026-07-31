@@ -10,6 +10,7 @@ import {
   CalendarSection,
   ContactSyncSection,
   CardPhotoSection,
+  CreditsSection,
   MessagingSection,
   ProfileSection,
   SecuritySection,
@@ -62,6 +63,11 @@ export default async function SettingsPage({
               <ApiKeysSection />
             </Suspense>
           </>
+        }
+        credits={
+          <Suspense fallback={<ListSkeleton rows={4} />}>
+            <CreditsSection />
+          </Suspense>
         }
         capture={
           <>

@@ -6,7 +6,7 @@ Dhaga (धागा — Hindi for "thread") is built for people whose work *is* 
 
 What separates it from Dex, Monica or a notes app: the whole CRM is AGPL-licensed and self-hostable, every external dependency (LLM, web search, embeddings, vector store, messaging) sits behind a swappable provider gateway so you can point it at a local model or your own API key, enrichment only ever runs when you ask for it, and full export always works. The free tier is a complete CRM at $0 forever with unlimited capture and notes; cloud AI is the paid feature, from $8/month billed yearly. Start free at https://www.dhaga.app/signup.
 
-Complete markdown of the 42 pages that answer what Dhaga is, what it does, how it compares, and how to run it yourself — in the same order as the sections of https://www.dhaga.app/llms.txt: start here, then how dhaga compares, then using dhaga, then self-hosting, extending & contributing, then engineering deep dives.
+Complete markdown of the 43 pages that answer what Dhaga is, what it does, how it compares, and how to run it yourself — in the same order as the sections of https://www.dhaga.app/llms.txt: start here, then how dhaga compares, then using dhaga, then self-hosting, extending & contributing, then engineering deep dives.
 
 Deliberately excluded to keep this file inside a single model context: the ~153 generated TypeDoc API pages, and the 28 pages listed under `## Optional` in https://www.dhaga.app/llms.txt (the internal build checklist, BRD and manual test plan, plus the per-profession and general networking guides). Fetch any of those individually from the index. Source: https://github.com/anchit2000/dhaga
 
@@ -791,9 +791,141 @@ moment you meet them.
 - [Companies](/docs/guide/companies): View, create, rename, delete, and merge the companies in your graph — with duplicate detection — from their own page.
 - [Share & invite](/docs/guide/share-and-invite): Post a contact-free Wrapped card of your networking, and invite friends for a free month of Pro on both sides.
 - [Settings & import](/docs/guide/settings): Profile, billing, 2FA, calendar, suggestions, voice, API keys, and bringing in your existing contacts.
+- [AI credits](/docs/guide/ai-credits): What's left this month, what each AI action costs, and exactly where the credits you spent went.
 
 Self-hosting or wiring up providers instead? Start at the
 [documentation home](/docs).
+
+---
+
+# AI credits
+
+Source: https://www.dhaga.app/docs/guide/ai-credits
+
+The Credits tab in Settings — how many AI credits you have left this month, what each action costs, and exactly where the ones you spent went.
+
+Every cloud-AI action in Dhaga costs **credits**. `/app/settings` → **Credits**
+is the page that tells you how many you have left, where the rest went, and
+what you did to spend them.
+
+![The Credits tab in Dhaga settings: a "Credits this month" card showing 33 of 85 credits left with a used-bar, a reset date, and a Monthly allowance / Credits added for you / Total breakdown, above a "Where your credits went" card listing deep research, card scans, Ask Dhaga, notes, briefs, drafts, quick adds, and free watchlist scans with their counts and credit costs](/docs/guide/credits.png)
+
+## How many are left
+
+The first card is the headline: **credits remaining out of your total for the
+month**, a bar showing how much of it you have used, and the date the counter
+resets. Allowances do not roll over — a fresh month starts from the full
+number.
+
+Every plan has an allowance, including the free one: a **free account gets 10
+credits a month**. That is ten card scans, or five scans and five notes, or five
+questions to Ask Dhaga — enough to keep capturing with AI, not enough to lean on
+it all month.
+
+If your plan has no monthly ceiling, the card says **Unlimited** and shows what
+you have used so far instead of a number left.
+
+If something has been *added* to your allowance, the card breaks it down rather
+than just showing a bigger number:
+
+- **Monthly allowance** — what your plan (or this instance's configuration)
+  includes.
+- **Promotion this month** — replaces the line above when whoever runs the
+  instance is running a promotional month.
+- **Credits added for you** — a one-off grant, e.g. after something went wrong
+  on their side. Grants are always *added on top*; they never rewrite what you
+  spent.
+
+## Where your credits went
+
+The second card is the breakdown for the current month: one row per kind of
+action, how many of them you ran, and what they cost. **The rows add up to the
+total** — that is the same number your monthly cap is measured against, so
+nothing is counted twice or quietly left out.
+
+Credits are charged per **action**, not per model call — a card scan that takes
+two round-trips behind the scenes is still one scan:
+
+| Action | Credits |
+|---|---|
+| Card scan | 1 |
+| Quick add (pasted text or a signature) | 1 |
+| Note (text) | 1 |
+| Follow-up draft | 1 |
+| Ask Dhaga (a question) | 2 |
+| Pre-meeting brief | 2 |
+| Deep research (enrich from the web) | 20 |
+| Watchlist scan (nightly) | Free |
+
+A **photo note** costs 2 — reading the image and extracting from the resulting
+text happen as two separate actions.
+
+**Deep research** is the expensive one on purpose: it pays for live web
+searches on top of the model, and it is the only action whose real cost is
+dominated by something other than Dhaga's own tokens.
+
+**Watchlist scans are free.** They appear in the breakdown marked *Free* rather
+than being hidden, so a month of nightly scanning is visible and accounted for
+without costing you anything. You never asked for any individual scan — how
+many people you can watch is what limits them instead.
+
+**Credits aren't the only gate**
+
+Deep research costs more than a free month holds, and **deep research and
+pre-meeting briefs are Pro-and-up features** anyway — having credits left over
+doesn't unlock them. What a free allowance realistically buys is card scans,
+notes, quick add, follow-up drafts and questions to Ask Dhaga.
+
+## Recent activity
+
+The last card is a plain list of your most recent AI actions — *"Card scan · 1
+credit · 2 hours ago"*. It is deliberately capped at the **20 most recent**
+actions: the month's accounting lives in the breakdown above, and this list is
+just there to jog your memory. It is not limited to this month, so opening the
+page on the 1st still shows you what you last did.
+
+**This page is yours alone**
+
+Everything here is derived from your own usage records. Whoever runs the
+instance has a separate [admin
+screen](/docs/self-hosting#instance-wide-ai-credit-controls-appadminai-credits-hostedee)
+for setting allowances and granting credits — it never shows them what you
+asked or what you captured.
+
+## Running out
+
+When the month's credits are gone, you find out **before** you click: the AI
+buttons are greyed out, with the reason sitting next to them — *"You're out of
+AI credits this month — all 10 used. They reset on the 1st."* — and a **See
+credits** link back to this page. Nothing fails silently, and nothing is charged
+for an action you didn't get.
+
+Greyed out until the counter resets: **Extract contact** on the paste tab,
+**Scan card**, **Ask Dhaga**, **Brief me**, **Draft follow-up**, and **Enrich
+from public web**.
+
+Everything that doesn't spend credits keeps working exactly as before — manual
+capture and editing, adding a fact or a follow-up by hand, search by name, the
+graph, import, export, and voice dictation (which runs on your own device).
+Adding photos to a card-scan tray still works too; only the **Scan** button
+itself is greyed.
+
+**Notes are deliberately never greyed out**, typed or photo — writing something
+down must not depend on having credits. What you had already typed is never
+thrown away either: save a note with an empty balance and it still saves — you
+just get told what didn't happen: *"Note saved.
+You're out of AI credits this month, so facts weren't extracted."* (a photo note
+says *"Photo note saved…"*). You can add facts by hand, or re-run extraction on
+that note once the counter resets.
+
+Seeing *"No monthly AI credits on this plan — upgrade to enable AI actions"*
+instead? That is a cap of **0**, which only happens when whoever runs the
+instance has deliberately set your allowance there. It is not what a free
+account normally looks like.
+
+Self-hosting? `DHAGA_AI_MONTHLY_CAP` seeds your instance's monthly allowance —
+it applies until an admin sets a number in the app, and from then on the stored
+number is the one that counts. See [Self-hosting](/docs/self-hosting).
 
 ---
 
@@ -943,14 +1075,17 @@ capture dialog on **every** `/app` screen — the fastest path in. The same
 capture also lives in the **capture dock** at the bottom of every screen and on
 the dedicated **`/app/quick-add`** page, which additionally lets you attach the
 new person to an existing event (below). All run the same extraction, keep the
-original input as a **receipt**, and meter AI usage per account. Cloud AI is a
-paid feature (Pro and up) — the free tier has no cloud AI, though the app stays
-fully usable for manual capture.
+original input as a **receipt**, and meter AI usage per account. A card scan or
+a paste-to-contact costs **1 credit**, and the free tier includes **10 AI
+credits a month** — ten card scans, say, or five scans and five notes. Run out
+and the app stays fully usable for manual capture. See
+[AI credits](/docs/guide/ai-credits).
 
 ## Quick-add modes
 
 The capture panel opens on the **Manual** tab — the fastest, no-AI path, and the
-one that works on the free tier and self-hosted instances with no API key. Three
+one that keeps working when you're out of credits, or on a self-hosted instance
+with no API key. Three
 pills across the top switch between **Manual**, **Paste text**, and **Card
 photo**.
 
@@ -1255,6 +1390,11 @@ leave the page, and it finishes with a short confirmation of what was added. Go
 elsewhere in the meantime and the result finds you through the
 [**bell**](/docs/guide/calendar#staying-reminded) in the top nav — including when
 it turns up nothing, or fails.
+
+Enrichment is a **Pro-and-up feature**, and the most expensive action in Dhaga
+at **20 [credits](/docs/guide/ai-credits)** — it pays for live web searches on
+top of the model. A free account's monthly allowance doesn't stretch to one, and
+wouldn't unlock the button even if it did.
 
 ## Privacy
 
@@ -1776,8 +1916,10 @@ a receipt pointing back at this note.
   [photo storage off in Settings](/docs/guide/settings) — in which case only the
   transcription is kept. Deleting the note deletes its photos with it.
 
-Reading a photo is a cloud-AI action, so it costs a credit like any other. Without
-AI on your plan, type the note instead — a photo alone has nothing to save.
+Reading a photo is a cloud-AI action, so it costs credits like any other — 2 in
+total, since reading the image and extracting facts from it are two actions.
+With no credits left, or on an instance with no AI configured, type the note
+instead — a photo alone has nothing to save.
 
 ## Capture a note from quick-add
 
@@ -1799,7 +1941,7 @@ add on their page.
 
 ## Facts get extracted automatically
 
-When you save a note *and cloud AI is enabled on your plan*, Dhaga extracts
+When you save a note *and you have AI credits left this month*, Dhaga extracts
 structured **facts** from it — for example a personal detail or an intent
 ("wants an intro to a designer"). Each fact is tagged by kind (**PERSONAL**,
 **INTENT**, and so on).
@@ -1823,10 +1965,18 @@ If you've already moved on, the finished run reaches you through the
 it takes you back to the person. Runs that failed, or that stopped because
 you're out of AI credits, say so there too, so a job never finishes in silence.
 
+A note costs **1 credit** to extract (a photo note costs 2 — reading the image
+and extracting from it are two actions). Run out and the note is still saved,
+with the shortfall spelled out: *"Note saved. You're out of AI credits this
+month, so facts weren't extracted."* Add the facts by hand below, or re-run
+extraction after the counter resets. See
+[AI credits](/docs/guide/ai-credits).
+
 ## Add facts and follow-ups by hand
 
-You don't need cloud AI to build a person's profile. On the free tier — or any
-time you'd rather just type it — use **＋ Add fact** in the Facts section and
+You don't need cloud AI to build a person's profile. When your credits are gone
+— or any time you'd rather just type it — use **＋ Add fact** in the Facts
+section and
 **＋ Add follow-up** in the Follow-ups section. Manual facts have no source note
 (nothing to trace back to) and are saved as already-verified, since you entered
 them yourself. Everything else in Dhaga — contacts, jobs, contact methods,
@@ -1920,16 +2070,26 @@ beneath it.
   (two-factor authentication, 2FA), and **API keys** — personal access tokens for
   the API and the browser extension, and for scripted
   [exports](/docs/self-hosting/deploy#backups--migration). On a hosted instance
-  the Billing section also shows your **AI credits** — how many you have used and
-  have left this month. Credits are charged per action, not per model call: a
+  the Billing section also shows a one-line **AI credits** summary — *"3 of 10 AI
+  credits used"*. Free accounts have a monthly allowance like any other: **10
+  credits a month**. The line only reads *"No monthly AI credits on this plan —
+  upgrade to enable AI actions"* if whoever runs the instance has explicitly set
+  your allowance to 0, which isn't the normal free-tier state. The full picture
+  lives in its own tab, next door.
+- **Credits** — your AI-credit ledger: how many are left this month and when they
+  reset, a breakdown of where the rest went by kind of action, and a list of your
+  most recent AI actions. Credits are charged per action, not per model call: a
   card scan, note, quick-add or draft costs 1; a question to Ask Dhaga or a
   pre-meeting brief costs 2; enriching a contact from the web costs 20. Nightly
-  watchlist scans are free — they are limited by how many people you watch. The
-  allowance half of that line can be raised by whoever runs the instance — a
+  watchlist scans are free — they show in the breakdown marked *Free* rather than
+  being hidden. Credits aren't the only gate: enrichment and pre-meeting briefs
+  are Pro-and-up features whatever your balance says. Your allowance can be
+  raised by whoever runs the instance — a
   promotional month, or credits granted to you after something went wrong on
-  their side — and extra credits are only ever *added* on top: the "used" half
-  is a record of what you actually spent and is never rewritten. Operators:
-  those controls are the admin AI credits screen, documented in
+  their side — and extra credits are only ever *added* on top: what you spent is
+  a record and is never rewritten. Full walkthrough:
+  [AI credits](/docs/guide/ai-credits). Operators: those controls are the admin
+  AI credits screen, documented in
   [Self-hosting](/docs/self-hosting#instance-wide-ai-credit-controls-appadminai-credits-hostedee).
 - **Capture** — **Card photos** (whether the original card image is kept after a
   scan) and **Voice teaching** — a vocabulary manager where you teach Dhaga
@@ -3261,36 +3421,48 @@ From a user's detail page (`/app/admin/users/[id]`) an admin can, without
 Stripe, comp that user's access:
 
 - **Plan** — set `free`, `pro`, or `lifetime`. `free` removes the subscription
-  row (the account falls back to free tier); `pro`/`lifetime` grant unlimited
-  cloud AI.
-- **Expiry** — an optional date on a paid plan. Once it passes, unlimited AI
-  lapses automatically (leave it blank for no expiry).
+  row (the account falls back to the instance default allowance); `pro` and
+  `lifetime` move it onto that plan's monthly allowance — 300 credits a month
+  for Pro, no ceiling at all for Lifetime.
+- **Expiry** — an optional date on a paid plan. Once it passes the plan stops
+  being in play and the account drops back to the instance default allowance
+  (leave it blank for no expiry).
 - **AI credits** — a per-user monthly cloud-AI credit allowance, stored as the
-  `ai_monthly_cap_override` setting. This overrides both the free-tier cap and
-  `DHAGA_AI_MONTHLY_CAP` for that one user; blank or `0` clears it. Credits are
+  `ai_monthly_cap_override` setting. It sits at the top of the precedence ladder
+  for that one user, beating a running promotion, the plan allowance and the
+  instance default alike; blank or `0` clears it. Credits are
   charged per user-visible action, not per model call — a card scan costs 1
   credit whether it takes one round-trip or three, and deep research costs 20
   (`packages/core/src/metering/credits.ts`, BRD §8.3).
 
-These controls live only in the EE admin panel — a core-only self-host raises
-the cap for *everyone* with `DHAGA_AI_MONTHLY_CAP` instead (see the env table
-below).
+These controls live only in the EE admin panel. On a core-only self-host billing
+isn't running, so no plan is ever in play and every user resolves through the
+instance-wide default — which is what `DHAGA_AI_MONTHLY_CAP` seeds (see the env
+table below).
 
 ### Instance-wide AI credit controls (`/app/admin/ai-credits`, hosted/EE)
 
 Beside that per-user override, `/app/admin/ai-credits` carries three levers that
 apply to the whole instance:
 
-- **Plan-cap enforcement** — a master switch that is **off on every instance**
-  (`AI_PLAN_CAP_ENFORCEMENT_DEFAULT = false`). While it is off the plan
-  allowances below are stored but ignored, and behaviour is exactly what it was
-  before these controls existed: paid plans bypass the cap through
-  `hasUnlimitedAi`, and the pricing page sells Pro and Annual as "no monthly
-  cap". Turning it on gives every existing paying customer a ceiling they were
-  never sold — a pricing decision, not a metering one.
+- **Plan-cap enforcement** — a master switch that is **on by default**
+  (`AI_PLAN_CAP_ENFORCEMENT_DEFAULT = true`). In the shipped state every user is
+  held to the monthly allowance for their plan: Free and Pro have a number,
+  Lifetime / Annual has no cap. That is what the pricing page states — it sells
+  Pro and Annual as **300 credits a month** and says what runs out when they do
+  — so leave it on unless you have a reason not to. Turning it **off** is an
+  escape hatch (a migration, an incident), not a resting state: the allowances
+  below are then stored but ignored, every plan resolves through its raw billing
+  entitlement (`hasUnlimitedAi`) instead, and users with no plan fall back to the
+  instance default. Promotions and grants keep working either way.
 - **Monthly allowance per plan** — runtime-editable overrides of the shipped
   numbers (`PLAN_AI_CREDITS_PER_MONTH`), per plan, each of which can also be set
-  to "no cap". Inert until the switch above is on.
+  to "no cap". **Free** is editable here exactly like Pro and Power, and it does
+  double duty: whatever it is set to is also the instance-wide default (rung 4
+  below). The card names the live number and where it came from — e.g.
+  "Effective default: 10 credits / month — from the shipped default in code",
+  or from "the Free allowance set here", or from "the `DHAGA_AI_MONTHLY_CAP`
+  seed".
 - **Promotional month** — lifts *every* user to one allowance for a window
   ("everyone gets 1,000 credits this month"). It works whether or not
   enforcement is on, and it ends at the **start** of its end date, evaluated on
@@ -3302,10 +3474,33 @@ expiry that defaults to the end of the current month. A grant only moves the
 ceiling — `ai_actions`, the only record of what cloud AI actually cost, is never
 rewritten, and "End now" stops a grant counting without deleting its row.
 
-Precedence, highest first (`apps/web/src/lib/ai/metering/cap.ts`): per-user
-override → active promotion → plan allowance (only with the switch on, and only
-when a plan is in play) → `DHAGA_AI_MONTHLY_CAP` → free tier. Active grants are
-added on top of whichever one wins.
+Precedence, highest first
+(`apps/web/src/lib/ai/metering/cap/index.ts`):
+
+1. **Per-user admin override** (`ai_monthly_cap_override`) — wins outright,
+   including over a running promotion.
+2. **Active instance-wide promotion** — applies whether or not enforcement is on.
+3. **Plan allowance** — when the master switch is on (it is, by default) *and* a
+   **paid** plan is in play. The admin-edited value if one is set, else the
+   constant in `apps/web/src/utils/constants/plans.ts`; `null` means no ceiling.
+4. **The instance default** (`instanceDefaultCap()` in
+   `apps/web/src/lib/ai/metering/cap/instance-default.ts`): the admin-set
+   **Free** allowance, else `DHAGA_AI_MONTHLY_CAP`, else the shipped
+   `FREE_TIER_AI_CREDITS_PER_MONTH` (10 credits a month).
+
+Then, on top of whichever rung won, **every active grant for this user** is
+added.
+
+Rung 4 is the one that catches a free user, a user no plan governs (a self-host,
+where billing isn't running), and everyone when the master switch is off. Free
+users resolving *there* rather than through the plan ladder is deliberate: it
+means `DHAGA_AI_MONTHLY_CAP` means the same thing on a self-host as it does on
+an instance that has billing. Note what "seed" implies — the env var supplies
+the instance default only while nothing has been set in the database. The moment
+an admin sets a number (a per-user override, a promotion, a plan allowance, or
+the Free allowance), that stored number wins and the env var stops mattering.
+Nothing is copied into the database at boot; env is simply read last, so there
+is one live number and the admin screen can say where it came from.
 
 **What a core-only self-host gets.** The two tables this feature stores its
 state in — `ai_budget_settings` and `ai_credit_grants`
@@ -3316,10 +3511,11 @@ to write to them (both simply stay empty), and no row-level security on them
 either — `ai_credit_grants` gets its bespoke
 `user_id IS NULL OR user_id = <tenant>` policy only from
 `packages/ee/src/db/rls-ddl.ts`, and `ai_budget_settings` deliberately gets none
-anywhere, being operator config rather than user data. The cap resolves exactly
-as it did before: whatever `DHAGA_AI_MONTHLY_CAP` says, else the free-tier
-constant. **Nothing here is required from `packages/ee` to self-host**, and the
-Level 2 removal list above needs no additions — the new admin page and its
+anywhere, being operator config rather than user data. With both tables empty and
+no billing running, every user resolves at rung 4 and one number governs the
+whole instance: whatever `DHAGA_AI_MONTHLY_CAP` seeds, else the shipped 10
+credits a month. **Nothing here is required from `packages/ee` to self-host**,
+and the Level 2 removal list above needs no additions — the new admin page and its
 server actions and components live under `apps/web/src/app/app/admin/`,
 `apps/web/src/lib/actions/admin/` and `apps/web/src/components/app/admin/`,
 which are already on it.
@@ -3579,9 +3775,12 @@ cache writes 1.25× (5-min) / 2× (1-hour).*
 
 A moderately active user costs roughly **~$1–2 / month**: ~$0.20 extraction
 (Haiku, cached) + ~$0.50 search (Sonnet) + ~$0.50 enrichment (Sonnet via
-Batch). On the hosted tier cloud AI is a paid feature — the free tier's cap of
-**0 cloud AI actions/month** (`DHAGA_AI_MONTHLY_CAP` raises it) is exactly the
-right instrument — it bounds the worst case per user before it starts.
+Batch). Every plan carries a monthly credit ceiling and plan-cap enforcement
+ships **on**, so that instrument is exactly the right one — it bounds the worst
+case per user before it starts. The free tier's ceiling is **10 credits/month**
+— the instance-wide default, which `DHAGA_AI_MONTHLY_CAP` seeds and an admin can
+raise — and the expensive action, deep research at 20 credits, is feature-gated
+to paid plans, so it can never land on a free account at all.
 
 **Proactive & uncapped — the blow-up**
 
@@ -3875,7 +4074,7 @@ BETTER_AUTH_SECRET=<long random string, e.g. `openssl rand -hex 32`>
 BETTER_AUTH_URL=https://dhaga.example.com
 DHAGA_DATA_DIR=/var/lib/dhaga        # persisted dir OUTSIDE the repo
 ANTHROPIC_API_KEY=sk-ant-...         # optional; enables AI features
-DHAGA_AI_MONTHLY_CAP=500             # optional; monthly AI CREDITS, default 0 (no cloud AI) — set >0 to enable AI
+DHAGA_AI_MONTHLY_CAP=500             # optional; seeds the default AI CREDITS/month until an admin sets one at /app/admin/ai-credits (default 10)
 NODE_ENV=production
 ```
 

@@ -76,7 +76,8 @@ export function SubscriptionControls({
         <div>
           <p className="text-sm font-medium text-paper">AI credits</p>
           <p className="mt-1 text-sm text-fog">
-            Monthly cloud-AI credits this user gets (free tier is 0). Blank or 0 clears the override.
+            Monthly cloud-AI credits this user gets, overriding their plan allowance and
+            everything else. Blank or 0 clears it and they fall back to their plan.
           </p>
         </div>
 

@@ -52,8 +52,12 @@ export async function FollowUpsSection({
 // extraction stream reports them landing.
 export async function FactsSection({
   contactId,
+  aiGate,
 }: {
   contactId: string;
+  /** Why AI is unavailable (no credits left), or null. Resolved once by the
+   *  page and passed down — see aiGateReason. */
+  aiGate: string | null;
 }): Promise<React.ReactElement> {
   const [facts, jobRows] = await Promise.all([
     listFacts(contactId),
@@ -64,7 +68,7 @@ export async function FactsSection({
     <section className="space-y-3">
       <h2 className="font-display text-lg">Facts</h2>
       <FactsPanel contactId={contactId} initialJobs={extractionJobs} initialFacts={facts} />
-      <EnrichButton contactId={contactId} />
+      <EnrichButton contactId={contactId} aiGate={aiGate} />
     </section>
   );
 }

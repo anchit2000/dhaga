@@ -451,7 +451,7 @@ notes, the priciest credit):
 
 | Plan | Price | Credits | Worst-case inference | Typical mix | Gross margin |
 |---|---|---:|---|---|---|
-| Free | $0 | 0 | $0 | $0 | — (no cloud AI) |
+| Free | $0 | 10 | $0.06 | ~$0.05 | — (a taster we fund) |
 | Pro | $8/mo | 300 | $1.73 | ~$1.35 | **72–76%** |
 | Power | $24/mo | 1,000 | $5.77 | ~$4.50 | **71–77%** |
 
@@ -460,28 +460,48 @@ Pro tier would clear ~94% margin but ration the product to a sixth of the heavy
 user profile above — 300 is the number that keeps >70% margin *and* covers a
 conference month. 1,000 credits for Power only works at ~$24/mo; at $12 it would
 be a 42% worst-case margin. Lifetime and self-hosted stay uncapped. The free
-tier gets no cloud AI at all, so free users cost ~$0; self-hosters re-enable it
-with `DHAGA_AI_MONTHLY_CAP` (also denominated in credits).
+tier gets **10 credits** — 10 card scans, or 5 scans plus 5 notes, or 5
+Ask-Dhaga questions — which costs at most $0.06 per free user per month (10 ×
+the all-notes credit, ~$0.05 on the typical mix). Deep research can never be
+spent there: enrichment and pre-meeting briefs stay feature-gated to paid plans
+(`PLAN_FEATURES`), and one run is 20 credits anyway. That same 10 is the
+instance-wide default where no plan is in play (self-host, billing not running),
+and `DHAGA_AI_MONTHLY_CAP` seeds it (also denominated in credits).
 
-*Plan allowances are defined (`PLAN_AI_CREDITS_PER_MONTH`) and, since 2026-07-30,
-runtime-editable defaults an admin can override per plan at `/app/admin/ai-credits`
-— but they are **still not enforced**, and that status is unchanged until an admin
-flips the master switch there (`AI_PLAN_CAP_ENFORCEMENT_DEFAULT = false`, off on
-every instance). With it off, paid plans resolve through `hasUnlimitedAi` exactly
-as before and the pricing page sells "no monthly cap"; turning it on would hand
-every existing paying customer a ceiling they were never sold, so enforcing them
-remains a pricing and Stripe decision, not a metering one. Two levers do work
-regardless of that switch: an instance-wide **promotion** ("everyone gets 1,000
-credits this month", self-expiring) and an additive **grant** ledger for making
-users whole after a bug. Grants only move the ceiling — `ai_actions`, the sole
-record of what cloud AI actually cost, is never rewritten. Precedence, highest
-first: per-user override → promotion → plan allowance (only when enforced) →
-`DHAGA_AI_MONTHLY_CAP` → free tier, with active grants added on top
-(`apps/web/src/lib/ai/metering/cap.ts`).*
+*Plan allowances are defined (`PLAN_AI_CREDITS_PER_MONTH`), runtime-editable per
+plan by an admin at `/app/admin/ai-credits` (since 2026-07-30), and — since
+2026-07-31 — **enforced by default** (`AI_PLAN_CAP_ENFORCEMENT_DEFAULT = true`).
+The master switch is still there, but turning it off is now an escape hatch for a
+migration or an incident, not a resting state: with it off, paid plans fall back
+to the raw billing entitlement (`hasUnlimitedAi`) and everyone else falls to the
+instance default. The marketing prerequisite landed first — **the pricing page no
+longer sells "no monthly cap"**: as of 2026-07-31 it sells the allowance itself,
+in activities rather than credits ("300 credits — 300 card scans, or 150 scans
+plus 150 notes, or 15 deep-research runs; about 100 new people a month"), and
+states plainly that a conference week can spend a Pro month. The **10-credit free
+taster** that copy assumes is now the shipped constant
+(`PLAN_AI_CREDITS_PER_MONTH.free = 10`, which `FREE_TIER_AI_CREDITS_PER_MONTH`
+derives from so there is one number), admin-editable like any other plan; if the
+free number moves, the plan copy in `apps/web/src/utils/constants/landing/pricing/*`
+moves with it. Two levers work regardless of that switch: an instance-wide
+**promotion** ("everyone gets 1,000 credits this month", self-expiring) and an
+additive **grant** ledger for making users whole after a bug. Grants only move
+the ceiling — `ai_actions`, the sole record of what cloud AI actually cost, is
+never rewritten. Precedence, highest first: per-user override → active promotion
+→ plan allowance (only when the switch is on **and** a paid plan is in play) →
+the instance default (`instanceDefaultCap()`: the admin-set Free allowance, else
+`DHAGA_AI_MONTHLY_CAP`, else `FREE_TIER_AI_CREDITS_PER_MONTH`), with every active
+grant added on top of whichever rung won
+(`apps/web/src/lib/ai/metering/cap/index.ts`; rung 4 in
+`cap/instance-default.ts`). Free users resolve through that instance-default
+rung, not the plan ladder, so `DHAGA_AI_MONTHLY_CAP` means the same thing on a
+self-host and on an instance that has billing — and it is a **seed**, not an
+override: the moment an admin sets a number, the stored one wins and the env var
+stops mattering.*
 
 ### 8.4 Revenue streams
 
-1. **Pro (individual):** hosted sync + a monthly AI-credit allowance (§8.3; uncapped in practice today) + enrichment + alerts. Monthly, yearly, and a **lifetime tier** — deliberately echoing the incumbent card scanner's proven one-time-purchase psychology.
+1. **Pro (individual):** hosted sync + a monthly AI-credit allowance (§8.3 — 300 credits, sold as such on /pricing since 2026-07-31 and enforced by default since the same date) + enrichment + alerts. Monthly, yearly, and a **lifetime tier** — deliberately echoing the incumbent card scanner's proven one-time-purchase psychology.
 2. **Teams:** per-seat, shared graph, SSO, admin. The defensible, expanding revenue line.
 3. **Self-host support** (later): paid support/SLA for companies running the AGPL stack internally.
 

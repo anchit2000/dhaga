@@ -28,6 +28,7 @@ export {
   OSS_PILLARS,
 } from "./sections";
 export {
+  CREDIT_EXAMPLES,
   FAQ_ITEMS,
   PLAN_COMPARISON_CELL_KEYS,
   PLAN_COMPARISON_ROWS,

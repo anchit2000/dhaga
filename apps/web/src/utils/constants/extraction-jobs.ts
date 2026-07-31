@@ -25,10 +25,11 @@ export const EXTRACTION_JOB_STATUSES = [
   "blocked", // terminal: no AI budget — a calm paid-feature notice, NOT retryable
 ] as const;
 
-/** Copy shown for a "blocked" job (free tier / monthly cap reached): the note
- *  is saved, automatic extraction is a paid feature. Calm, never an error. */
+/** Copy shown for a "blocked" job (this month's AI credits are spent — every
+ *  plan has an allowance, including free): the note is saved and only the
+ *  automatic extraction was skipped. Calm, never an error. */
 export const EXTRACTION_BLOCKED_LABEL =
-  "Automatic fact extraction is a paid feature. Your note is saved.";
+  "You're out of AI credits this month, so facts weren't extracted. Your note is saved.";
 
 /** Human-readable label per worker stage, shown in the status pill. */
 export const EXTRACTION_STAGE_LABELS: Record<string, string> = {

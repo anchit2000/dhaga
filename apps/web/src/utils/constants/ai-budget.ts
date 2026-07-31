@@ -7,9 +7,9 @@ import {
 /**
  * Runtime AI-budget controls. The constants in ./plans.ts are DEFAULTS — an
  * admin can override any of them at runtime (stored in `ai_budget_settings`,
- * read by lib/repo/ai-budget). Nothing here changes behaviour on its own:
- * plan-cap enforcement ships OFF, and with it off the effective cap is exactly
- * what it was before these controls existed.
+ * read by lib/repo/ai-budget), and an admin-set number always outranks the
+ * constant it replaces and the `DHAGA_AI_MONTHLY_CAP` env seed. See
+ * lib/ai/metering/cap/index.ts for the one authoritative precedence list.
  */
 
 /** "on" | "off" — the master switch for plan-cap enforcement. */
@@ -20,13 +20,17 @@ export const AI_PLAN_ALLOWANCES_KEY = "plan_allowances";
 export const AI_PROMOTION_KEY = "promotion";
 
 /**
- * Enforcement is OFF unless an admin turns it on, and that default is the whole
- * safety story: paid plans resolve through `hasUnlimitedAi` today and the
- * pricing page sells Pro and Annual as "no monthly cap"
- * (utils/constants/landing/pricing/*). Defaulting this on would hand every
- * existing paying customer a ceiling they were never sold.
+ * Enforcement is ON by default: the allowances in ./plans.ts are the product,
+ * so a plan's monthly credits are real unless an operator deliberately turns
+ * the switch off. It shipped OFF originally only because the pricing page still
+ * sold Pro and Annual as "no monthly cap"; that copy now states the allowance,
+ * so the safe default is the one that matches what is sold.
+ *
+ * The switch stays — an operator running a self-host, a migration, or an
+ * incident can turn enforcement off and fall back to `hasUnlimitedAi` plus the
+ * instance default. Turning it off does NOT disable promotions or grants.
  */
-export const AI_PLAN_CAP_ENFORCEMENT_DEFAULT = false;
+export const AI_PLAN_CAP_ENFORCEMENT_DEFAULT = true;
 
 /**
  * The plans whose monthly allowance an admin can edit. `self_hosted` is absent

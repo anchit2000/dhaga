@@ -53,10 +53,10 @@ async function seedContact(name: string): Promise<string> {
   );
 }
 
-// Enrichment is a metered AI action. This suite tests note durability and
-// fact-verification, not the free-tier gate — cloud AI is now paid (free
-// cap = 0), so grant budget via DHAGA_AI_MONTHLY_CAP (the self-host/paid path)
-// or assertAiBudget throws before the enrichment job saves anything.
+// Enrichment is a metered AI action, and an expensive one (20 credits — more
+// than a whole free month). This suite tests note durability and fact
+// verification, not the cap, so seed a large instance default via
+// DHAGA_AI_MONTHLY_CAP or assertAiBudget throws before the job saves anything.
 beforeEach(() => {
   vi.stubEnv("DHAGA_AI_MONTHLY_CAP", "1000");
 });

@@ -33,12 +33,18 @@ export default async function AdminUserDetailPage({
     activeGrantedCreditsFor(id),
   ]);
 
+  // Only the per-user override is a number this page can state outright. With no
+  // override the ceiling comes from the ladder in lib/ai/metering/cap — plan
+  // allowance, or the instance default — and resolving that here would read the
+  // ACTING admin's settings, not this user's, so name the rung instead of
+  // printing a number that could be wrong. "No AI (free tier)" was that number
+  // being wrong: free carries a real allowance now.
   const aiDenominator =
     aiCapOverride !== null
       ? String(aiCapOverride)
       : isUnlimitedAiSub(subscription)
         ? "unlimited"
-        : "No AI (free tier)";
+        : "their plan's monthly allowance";
 
   return (
     <div className="max-w-xl space-y-6">

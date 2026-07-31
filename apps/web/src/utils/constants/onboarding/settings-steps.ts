@@ -21,9 +21,12 @@ export interface SettingsTourStep {
  * Notifications come first and import is the finale: the reminder choice is a
  * preference the user can settle in one click while still in onboarding, while
  * importing is the "now go do this" call to action that reads better last (and
- * ends the tour on the same note it always did). Contact sync sits between
- * them, where the two directions read in order — what Dhaga sends out, then
- * what you bring in — and where it cannot displace either bookend.
+ * ends the tour on the same note it always did). Credits and contact sync sit
+ * between them, and in that order: credits answer a question the AI steps have
+ * just raised, rather than leaving a new user to meet the answer as a cap
+ * message, and contact sync lands immediately before import so the two
+ * directions read in order — what Dhaga sends out, then what you bring in.
+ * Neither displaces a bookend.
  *
  * Nothing here enables anything. Every email preference in Dhaga ships off, and
  * so does copying your contacts out into an address book; these steps exist to
@@ -45,6 +48,23 @@ export const SETTINGS_TOUR_STEPS: SettingsTourStep[] = [
         title: "Decide what gets emailed",
         description:
           "Dhaga emails you nothing until you ask. Switch on a heads-up before a saved birthday or anniversary here — the daily digest and follow-up nudges just above work the same way. Leave them off and nothing is sent.",
+      },
+    },
+  },
+  {
+    // The user has just been told AI does the reading, so this is the moment
+    // "and here is what that costs you" answers a question they already have —
+    // before the import step sends them off to do something.
+    hash: "credits",
+    selector: '[data-tour="credits"]',
+    step: {
+      element: '[data-tour="credits"]',
+      popover: {
+        side: "bottom",
+        align: "center",
+        title: "Know what the AI costs you",
+        description:
+          "Every AI action spends credits — a card scan is one, deep research is more. This tab shows what's left this month and exactly where the rest went, action by action.",
       },
     },
   },

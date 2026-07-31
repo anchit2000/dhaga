@@ -86,8 +86,8 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
-  // Cloud AI is paid (free cap = 0); without budget assertAiBudget throws
-  // before any prompt is built and every assertion below would be vacuous.
+  // Every user has a finite monthly allowance; without budget assertAiBudget
+  // throws before any prompt is built and every assertion below would be vacuous.
   vi.stubEnv("DHAGA_AI_MONTHLY_CAP", "100000");
   // Fake ONLY Date: the timers the PGlite/pg drivers rely on must stay real.
   vi.useFakeTimers({ toFake: ["Date"] });

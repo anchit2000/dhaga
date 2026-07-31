@@ -93,6 +93,6 @@ export async function addPhotoNoteAction(
   return {
     notice: budgeted
       ? "Photo note saved — extracting facts…"
-      : "Photo note saved. Automatic fact extraction is a paid feature.",
+      : "Photo note saved. You're out of AI credits this month, so facts weren't extracted.",
   };
 }

@@ -21,12 +21,16 @@ export function CardPhotoCapture({
   setPhotos,
   pending,
   formAction,
+  aiGate = null,
 }: {
   storeCardPhotos: boolean;
   photos: File[];
   setPhotos: Dispatch<SetStateAction<File[]>>;
   pending: boolean;
   formAction: (formData: FormData) => void;
+  /** No AI credits left: the scan submit is greyed out. Adding, cropping and
+   *  reordering photos still work, so the tray survives until credits do. */
+  aiGate?: string | null;
 }) {
   const [webcamOpen, setWebcamOpen] = useState(false);
   const [cropIndex, setCropIndex] = useState<number | null>(null);
@@ -73,7 +77,13 @@ export function CardPhotoCapture({
         disabled={photos.length >= MAX_CARD_IMAGES}
       />
       {photos.length > 0 ? (
-        <Button type="button" className="w-full" loading={pending} onClick={submitPhotos}>
+        <Button
+          type="button"
+          className="w-full"
+          loading={pending}
+          disabled={aiGate !== null}
+          onClick={submitPhotos}
+        >
           {photos.length > 1 ? `Scan ${photos.length} images` : "Scan card"}
         </Button>
       ) : null}

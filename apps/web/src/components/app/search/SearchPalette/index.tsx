@@ -10,6 +10,7 @@ import { PaletteBody } from "./PaletteBody";
 import { SearchTrigger } from "./SearchTrigger";
 import { WeightTuner } from "./WeightTuner";
 import { useSearchPalette, type SearchMode } from "./useSearchPalette";
+import { useAiGate } from "@/components/app/useAiGate";
 import { DictationProgress } from "@/components/app/contact/DictationProgress";
 
 /**
@@ -22,6 +23,10 @@ export function SearchPalette({
   initialWeights?: SearchWeights;
 }) {
   const p = useSearchPalette(initialWeights);
+  // The palette mounts from the client-only app shell, so the AI-credit gate is
+  // fetched rather than passed down — lazily, once the palette is opened. Only
+  // Ask Dhaga is gated; the keyword Search tab spends no credits and stays live.
+  const aiGate = useAiGate(p.open);
 
   return (
     <>
@@ -133,6 +138,7 @@ export function SearchPalette({
             formId={p.formId}
             onNavigate={() => p.setOpen(false)}
             onAsk={p.runAsk}
+            aiGate={aiGate}
           />
         </DialogContent>
       </Dialog>

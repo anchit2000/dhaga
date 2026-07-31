@@ -30,10 +30,10 @@ function parseCount(raw: FormDataEntryValue | null): number | null {
 }
 
 /**
- * The master switch for plan-cap enforcement. OFF is the shipped default and
- * means the effective cap is exactly what it was before these controls existed:
- * paid plans keep resolving through `hasUnlimitedAi`, which is what the pricing
- * page sells. Turning it ON makes the credit ladder below authoritative.
+ * The master switch for plan-cap enforcement. ON is the shipped default and
+ * makes the credit ladder below authoritative. Turning it OFF drops back to the
+ * raw billing entitlement (`hasUnlimitedAi`) plus the instance default — an
+ * escape hatch, not a resting state.
  */
 export async function setPlanCapEnforcementAction(formData: FormData): Promise<void> {
   const adminId = await assertAdmin();
@@ -43,11 +43,16 @@ export async function setPlanCapEnforcementAction(formData: FormData): Promise<v
 }
 
 /**
- * Per-plan monthly allowances. Three modes per plan: "default" writes no
- * override at all so the constant in utils/constants/plans.ts applies again
- * (the constants stay the defaults), "nocap" stores null, "custom" stores the
- * number. A "custom" row with an unusable number is left unset rather than
+ * Per-plan monthly allowances, Free included. Three modes per plan: "default"
+ * writes no override at all so the constant in utils/constants/plans.ts applies
+ * again (the constants stay the defaults), "nocap" stores null, "custom" stores
+ * the number. A "custom" row with an unusable number is left unset rather than
  * silently coerced — the admin sees it snap back to the default.
+ *
+ * Setting Free to anything also retires `DHAGA_AI_MONTHLY_CAP`: the free
+ * allowance IS the instance default, and env only seeds it while unset (see
+ * `instanceDefaultCap` in lib/ai/metering/cap/instance-default.ts). Reverting
+ * Free to "Use default" hands the seed back.
  */
 export async function setPlanAllowancesAction(formData: FormData): Promise<void> {
   const adminId = await assertAdmin();

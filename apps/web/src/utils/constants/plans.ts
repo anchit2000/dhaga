@@ -34,17 +34,19 @@ export const PLAN_FEATURES: Record<EntitlementPlan, readonly PlanFeature[]> = {
  *   Pro   $8/mo  →  300 credits, ≤$1.73 inference worst case (~72% margin)
  *   Power $24/mo → 1000 credits, ≤$5.77 inference worst case (~72% margin)
  *
- * NOT ENFORCED TODAY, on purpose. Paid plans currently resolve through
- * `hasUnlimitedAi`, which short-circuits the cap entirely — and the pricing
- * page sells Pro and Annual as "no monthly cap". Turning these numbers on is a
- * pricing decision plus a Stripe and marketing-copy change (see
- * ./landing/pricing/{plans,comparison}.ts), not a metering one. What IS enforced
- * is the free-tier/self-host cap (FREE_TIER_AI_CREDITS_PER_MONTH in ./app.ts,
- * `DHAGA_AI_MONTHLY_CAP`, and per-user admin overrides) — now denominated in
- * these same credits. `null` = no ceiling.
+ * These are DEFAULTS, and they are ENFORCED: plan-cap enforcement ships on
+ * (AI_PLAN_CAP_ENFORCEMENT_DEFAULT in ./ai-budget.ts), so a plan listed here
+ * with a number is held to it. An admin can re-size any of them at runtime from
+ * /app/admin/ai-credits, and that stored number wins over the constant. `null`
+ * = no ceiling. See lib/ai/metering/cap/index.ts for the full precedence.
+ *
+ * Free gets 10 credits — enough to actually try cloud AI (10 card scans, or 5
+ * scans plus 5 notes, or 5 Ask-Dhaga questions) without the free tier becoming
+ * something we have to fund. It is the same rung as the instance-wide default
+ * used when no plan is in play, which `DHAGA_AI_MONTHLY_CAP` seeds.
  */
 export const PLAN_AI_CREDITS_PER_MONTH: Record<EntitlementPlan, number | null> = {
-  free: 0,
+  free: 10,
   pro: 300,
   lifetime: null,
   self_hosted: null,

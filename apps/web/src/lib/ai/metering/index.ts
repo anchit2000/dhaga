@@ -5,14 +5,21 @@ import { aiCreditsUsedThisMonth } from "./record";
 
 export { currentAiActionId, newAiAction, withAiAction } from "./action-scope";
 export { aiCreditsUsedThisMonth, recordAiAction } from "./record";
-export { effectiveMonthlyAiCap, hasUnlimitedAiCredits, monthlyAiCap } from "./cap";
+export {
+  effectiveMonthlyAiCap,
+  hasUnlimitedAiCredits,
+  instanceDefaultCap,
+  monthlyAiCap,
+} from "./cap";
 
 /**
- * The AI-usage line shown in-app. Free tier has no cloud AI (cap 0), so a raw
- * "0 of 0 used" would read as broken — surface that AI is a paid feature
- * instead. Unlimited (paid) users see their running count; self-hosters who
- * raised the cap via DHAGA_AI_MONTHLY_CAP see "used of cap". Returns null when
- * there is nothing meaningful to show. Server-safe (no DB or client imports).
+ * The AI-usage line shown in-app. Everyone with a ceiling — free tier included,
+ * at 10 credits a month — sees "used of cap". A cap of 0 is still reachable (an
+ * admin can set a plan's allowance to 0, or an operator can pin
+ * DHAGA_AI_MONTHLY_CAP=0 on a self-host with no LLM budget), and "0 of 0 used"
+ * would read as broken, so that case says AI is off instead. Unlimited plans see
+ * their running count. Returns null when there is nothing meaningful to show.
+ * Server-safe (no DB or client imports).
  */
 export function aiUsageLabel({
   used,
@@ -24,15 +31,16 @@ export function aiUsageLabel({
   unlimited: boolean;
 }): string | null {
   if (unlimited) return `${used} AI credits used`;
-  if (cap <= 0) return "Cloud AI is a paid feature — upgrade to enable AI actions";
+  if (cap <= 0) return "No monthly AI credits on this plan — upgrade to enable AI actions";
   return `${used} of ${cap} AI credits used`;
 }
 
 /**
  * Whether the acting user has any monthly AI budget left. The pre-flight check
- * for "should we even enqueue a background AI job?" — a 0-cap free-tier user (or
- * an exhausted paid month) has none, so callers can skip queuing a job that
- * would only fail. Composes the same unlimited/cap/usage accessors
+ * for "should we even enqueue a background AI job?" — a user who has spent the
+ * month's credits (10 on free, their plan's allowance otherwise) has none, so
+ * callers can skip queuing a job that would only fail. Composes the same
+ * unlimited/cap/usage accessors
  * assertAiBudget enforces with (minus the burst guard, which is about rate, not
  * budget), so there is one definition of "is there budget". Uses the
  * request-scoped getDb().

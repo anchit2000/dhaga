@@ -19,11 +19,15 @@ export function PasteCapture({
   pasteTextareaRef,
   voice,
   showVoice,
+  aiGate = null,
 }: {
   formAction: (formData: FormData) => void;
   pasteTextareaRef: RefObject<HTMLTextAreaElement | null>;
   voice: CaptureVoice;
   showVoice: boolean;
+  /** No AI credits left: extraction is greyed out. Typing and on-device voice
+   *  dictation still work — the text stays, ready for Manual or a new month. */
+  aiGate?: string | null;
 }) {
   const busy = voice.transcribing || voice.loadingProgress !== null;
   const toggleVoice = (): void => {
@@ -76,7 +80,7 @@ export function PasteCapture({
           onWordFix={voice.review.onWordFix}
         />
       ) : null}
-      <SubmitButton>Extract contact</SubmitButton>
+      <SubmitButton disabled={aiGate !== null}>Extract contact</SubmitButton>
     </form>
   );
 }

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setPromotion } from "@/lib/repo/ai-budget";
+import { PLAN_AI_CREDITS_PER_MONTH } from "@/utils/constants/plans";
 import { AI_MONTHLY_CAP_OVERRIDE_KEY, setSetting } from "@/lib/repo/settings";
 import { actionCount, clearActions, clearBudgetControls, seedGrant } from "./helpers";
 
@@ -28,10 +29,15 @@ vi.mock("@/lib/auth/guard", () => ({
 vi.mock("@/lib/hosted/gate", () => ({
   getTenantGate: async () => ({ scopedDb: async () => null }),
   getBillingGate: async () => ({
-    hasUnlimitedAi: async () => false, // a free-tier user: cap 0 without help
+    hasUnlimitedAi: async () => false, // nobody is entitled to bypass the cap
     getPlanSummary: async () => null, // billing isn't running — no plan in play
   }),
 }));
+
+/** With no plan in play and nothing configured, every case below starts from the
+ *  instance default — the shipped free-tier allowance. Spelled out once so the
+ *  numbers in the assertions stay readable when that constant is re-sized. */
+const BASE = PLAN_AI_CREDITS_PER_MONTH.free ?? 0;
 
 const { aiCreditsUsedThisMonth, effectiveMonthlyAiCap, recordAiAction, withAiAction } =
   await import("@/lib/ai/metering");
@@ -48,8 +54,8 @@ afterEach(() => {
 });
 
 describe("a promotional month lifts everyone, then ends by itself", () => {
-  it("raises a free-tier user from 0 to the promotional allowance", async () => {
-    expect(await effectiveMonthlyAiCap("user-1")).toBe(0); // AI is a paid feature
+  it("raises a free-tier user from their small allowance to the promotional one", async () => {
+    expect(await effectiveMonthlyAiCap("user-1")).toBe(BASE); // the instance default
 
     await setPromotion({
       credits: 1000,
@@ -69,7 +75,7 @@ describe("a promotional month lifts everyone, then ends by itself", () => {
       note: "last month's promo, never cleaned up",
     });
 
-    expect(await effectiveMonthlyAiCap("user-1")).toBe(0);
+    expect(await effectiveMonthlyAiCap("user-1")).toBe(BASE);
   });
 
   it("does not apply before it starts", async () => {
@@ -80,7 +86,7 @@ describe("a promotional month lifts everyone, then ends by itself", () => {
       note: "scheduled for next week",
     });
 
-    expect(await effectiveMonthlyAiCap("user-1")).toBe(0);
+    expect(await effectiveMonthlyAiCap("user-1")).toBe(BASE);
   });
 });
 
@@ -120,6 +126,6 @@ describe("a grant is additive and never rewrites what was spent", () => {
       endsAt: new Date(Date.now() - DAY),
     });
 
-    expect(await effectiveMonthlyAiCap("user-1")).toBe(0);
+    expect(await effectiveMonthlyAiCap("user-1")).toBe(BASE);
   });
 });

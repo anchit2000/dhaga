@@ -6,6 +6,7 @@ import {
   effectiveMonthlyAiCap,
   hasUnlimitedAiCredits,
 } from "@/lib/ai/metering";
+import { aiGateReason } from "@/lib/ai/gate";
 import { listEvents } from "@/lib/repo/events";
 import { activeEventId } from "@/lib/active-event";
 import { QuickAddForm } from "@/components/app/QuickAddForm";
@@ -25,6 +26,7 @@ export default async function QuickAddPage() {
   const usageLabel = hasLLM()
     ? aiUsageLabel({ used, cap: await effectiveMonthlyAiCap(userId), unlimited })
     : null;
+  const aiGate = await aiGateReason(userId);
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -44,6 +46,7 @@ export default async function QuickAddPage() {
         events={events.map(({ id, name, emoji }) => ({ id, name, emoji }))}
         defaultEventId={activeEventId(events)}
         storeCardPhotos={storeCardPhotos}
+        aiGate={aiGate}
       />
     </div>
   );

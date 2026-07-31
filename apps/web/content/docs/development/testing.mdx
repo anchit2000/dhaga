@@ -265,41 +265,54 @@ normally only an admin can approve. `DHAGA_ADMIN_EMAILS` breaks the circle:
       404s for *every* account including one listed in `DHAGA_ADMIN_EMAILS`
       — there is no way to reach this section at all outside hosted mode.
 
----
-
 ### 4a. AI credit controls (`/app/admin/ai-credits`, needs §3)
 
 The instance-wide AI-credit levers. Reach them from the **AI credits** card
 sitting under the three stat cards on `/app/admin` ("Plan allowances, a
 promotional month, and make-good grants"). The page header restates the
-precedence the resolver actually uses (`apps/web/src/lib/ai/metering/cap.ts`),
-highest first:
+precedence the resolver actually uses
+(`apps/web/src/lib/ai/metering/cap/index.ts`), highest first:
 
 > per-user override → active promotion → plan allowance (only with the master
-> switch on, and only when a plan is in play) → `DHAGA_AI_MONTHLY_CAP` → free
-> tier — then **active grants are added on top of whichever one wins**.
+> switch on, and only when a **paid** plan is in play) → the instance default
+> (`instanceDefaultCap()`,
+> `apps/web/src/lib/ai/metering/cap/instance-default.ts` — the admin-set
+> **Free** allowance, else `DHAGA_AI_MONTHLY_CAP`, else the shipped 10) — then
+> **active grants are added on top of whichever one wins**.
 
-**Nothing about today's behaviour changes until an admin turns enforcement
-on.** That is the whole safety story of this screen: with the switch off, paid
-plans still resolve through `hasUnlimitedAi` exactly as in §6, and the pricing
-page still sells Pro and Annual as "no monthly cap".
+**Enforcement is on out of the box**, so a fresh instance already holds every
+user to the allowance for their plan — free included, at 10 credits a month.
+The master switch survives as an escape hatch (a migration, an incident), and
+it is turning it *off* that changes behaviour: paid plans then fall back to the
+raw `hasUnlimitedAi` entitlement of §6, and everyone else falls to the instance
+default. `DHAGA_AI_MONTHLY_CAP` is a **seed**, not an override — it supplies
+that instance default only while nothing has been set in the database, and the
+first number an admin saves here retires it for good.
 
-- [ ] **Plan-cap enforcement** (first card) reads **Off** on a fresh instance
-      (`AI_PLAN_CAP_ENFORCEMENT_DEFAULT = false`,
+- [ ] **Plan-cap enforcement** (first card) reads **On** on a fresh instance
+      (`AI_PLAN_CAP_ENFORCEMENT_DEFAULT = true`,
       `apps/web/src/utils/constants/ai-budget.ts`), with the copy: *"Limits are
-      not being enforced. The allowances below are stored but ignored: paid
-      plans bypass the cap entirely, exactly as they do today… Turning this on
-      gives every existing paying customer a ceiling they were never sold — a
-      pricing decision, not a metering one."* Toggle it on and the copy flips
-      to *"Limits are being enforced… The pricing page still says Pro and
-      Annual have no monthly cap — change that copy, or turn this back off."*
-      Turn it back **off** when you're done poking at it.
+      being enforced — the shipped default. Every user is held to the monthly
+      allowance for their plan, below: Free and Pro have a number, Lifetime /
+      Annual has no cap. This is what the pricing page states, so leave it on
+      unless you have a reason not to."* Toggle it off and the copy flips
+      to *"Limits are not being enforced. You have turned off the shipped
+      default… every plan resolves through its raw billing entitlement instead,
+      and users with no plan fall back to the instance default… a temporary
+      escape hatch — a migration or an incident — not a setting to leave here."*
+      Turn it back **on** when you're done poking at it.
 - [ ] **Monthly allowance per plan** — the editable ladder (`Free`, `Pro`,
       `Lifetime / Annual`, and `Power (sized, not sold)`), each with **Use
       default** / **Custom monthly credits** / **No cap**. Defaults come from
-      `PLAN_AI_CREDITS_PER_MONTH` in `apps/web/src/utils/constants/plans.ts`,
-      so "Use default" is not a stored number. With enforcement off the card
-      says so: *"Stored but not applied while enforcement is off."*
+      `PLAN_AI_CREDITS_PER_MONTH` in `apps/web/src/utils/constants/plans.ts`
+      (free 10, pro 300, Lifetime / Annual no cap), so "Use default" is not a
+      stored number. **Free is editable exactly like the paid rows**, and it
+      doubles as the instance default — the card's closing line names the live
+      number and where it came from: *"Effective default: 10 credits / month —
+      from the shipped default in code"*, or "…from the Free allowance set
+      here", or "…from the DHAGA_AI_MONTHLY_CAP seed". Set Free and that seed
+      stops mattering. With enforcement off the card says so: *"Stored but not
+      applied while enforcement is off."*
 - [ ] **Promotional month** — one allowance for every user on the instance
       ("everyone gets 1000 credits this month"), with a start date, an end
       date and a note. It **ends at the start of the end date** (exclusive),
@@ -317,11 +330,14 @@ page still sells Pro and Annual as "no monthly cap".
       how many/why and an **End now** button on active ones. "End now" sets
       `ends_at`; it never deletes the row, and `ai_actions` is untouched by
       any of it.
-- [ ] Automated: the precedence above is pinned by two vitest files —
+- [ ] Automated: the precedence above is pinned by three vitest files —
       `apps/web/src/lib/__tests__/ai-action-metering/budget-precedence.test.ts`
-      (every rung, plus "master switch off ⇒ byte-for-byte the old behaviour")
-      and `promotion-and-grants.test.ts` (a promotion self-expires; a grant
-      raises the ceiling without touching recorded usage). Run them with
+      (enforcement on by default, every rung, plus "master switch off ⇒ fall
+      back to the raw billing entitlement"), `env-seed.test.ts` (the seed
+      semantics: env supplies the instance default only until an admin sets a
+      number, and is still the only control on a core-only self-host with no
+      admin panel) and `promotion-and-grants.test.ts` (a promotion self-expires;
+      a grant raises the ceiling without touching recorded usage). Run them with
       `npm run test --prefix apps/web -- ai-action-metering`.
 
 **Getting a server up for this walkthrough.** `next dev` is unreliable on this
@@ -409,8 +425,12 @@ to at least `checkout.session.completed`, `customer.subscription.updated`,
 - [ ] **Unverified (needs a live run):** complete a test-mode purchase with
       Stripe's [test card `4242 4242 4242 4242`](https://docs.stripe.com/testing)
       → redirected to `/app/settings?checkout=success` → webhook fires →
-      subscription row created → AI action cap becomes "unlimited" for that
-      user (`hasUnlimitedAi`, same file, checked against `active` status and
+      subscription row created → that user's AI cap becomes their plan's
+      allowance: **300 credits a month** on Pro, no ceiling at all on Lifetime /
+      Annual (`PLAN_AI_CREDITS_PER_MONTH`, applied because plan-cap enforcement
+      is on by default — §4a). Only with that switch off does it fall back to
+      the raw billing entitlement and read "unlimited" for both
+      (`hasUnlimitedAi`, same file, checked against `active` status and
       `pro`/`lifetime` plan). Nobody has run an actual Stripe test purchase
       against this code yet — the webhook handler is typechecked/tested but
       not click-verified end to end.
@@ -453,13 +473,16 @@ Singapore
 - [ ] On the new contact: the event chip appears, and the pasted text is
       stored as a **capture source** note — that's the receipt for the
       fields.
-- [ ] With a key **and AI enabled** (a paid subscription, or
-      `DHAGA_AI_MONTHLY_CAP` set on a self-host): the "N of \{cap\} AI actions
-      used" counter (confirmed `apps/web/src/app/app/quick-add/page.tsx`, cap
-      from `monthlyAiCap()` — default `0`, cloud AI is a paid feature,
-      `FREE_TIER_AI_CREDITS_PER_MONTH`, `apps/web/src/utils/constants/app.ts`)
-      increased by one. On the free tier with no override the line instead
-      reads "Cloud AI is a paid feature".
+- [ ] With a key: the "N of \{cap\} AI credits used" counter (confirmed
+      `apps/web/src/app/app/quick-add/page.tsx`, cap from
+      `effectiveMonthlyAiCap()`,
+      `apps/web/src/lib/ai/metering/cap/index.ts`) increased by one. A free
+      account has a cap of its own — 10 credits a month
+      (`FREE_TIER_AI_CREDITS_PER_MONTH`, `apps/web/src/utils/constants/app.ts`,
+      derived from `PLAN_AI_CREDITS_PER_MONTH.free`) — so it reads "N of 10"
+      like any other plan. Only a cap of literally 0 — an admin set a plan's
+      allowance to 0, or an operator pinned `DHAGA_AI_MONTHLY_CAP=0` — reads
+      "No monthly AI credits on this plan — upgrade to enable AI actions".
 
 ### 7c. Card photo scan (needs `ANTHROPIC_API_KEY`)
 
@@ -712,8 +735,105 @@ On a contact, add this note:
 
 - [ ] Set `DHAGA_AI_MONTHLY_CAP=1`, restart/redeploy, run one extraction,
       then try another AI action — friendly "cap reached" message, and
-      capture falls back to the offline parser instead of failing.
-- [ ] Remove the override and restart/redeploy.
+      capture falls back to the offline parser instead of failing. The var is a
+      **seed**, so it only bites while nothing has been set in the database: an
+      admin-set **Free** allowance (§4a) wins over it without a restart.
+- [ ] Remove the seed and restart/redeploy — the instance default falls back to
+      the shipped 10 credits a month, not to zero.
+- [ ] Hosted/EE only: the same ceiling can be raised from the admin panel
+      without an env change or a restart — a per-user override, an
+      instance-wide promotion, or a grant (§4a).
+
+### 7r-i. Your own credits page (`/app/settings` → Credits)
+
+- [ ] Run a few AI actions (a card scan, a note, one Ask Dhaga question), then
+      open **Settings → Credits**. Three cards, top to bottom:
+      **credits remaining of your total** with a used-bar and the reset date;
+      **Where your credits went** — one row per action kind with counts; and
+      **Recent activity** — "Card scan · 1 credit · 2 hours ago".
+- [ ] Add the row credits in the breakdown by hand: they must equal the
+      **Total** line, and the Total must match the "used" figure on the Home
+      dock / quick-add usage line. Those are the same number by construction —
+      a mismatch is a bug, not rounding.
+- [ ] Turn on a watchlist and let a nightly scan run (or insert a
+      `signal_detection` row): it appears in the breakdown marked **Free**,
+      raises the action count, and adds **nothing** to the credit total.
+- [ ] Hosted/EE only: grant yourself credits from §4a. The allowance card
+      splits into *Monthly allowance* / *Credits added for you* / *Total*, the
+      total rises, and the **used** figure and the breakdown are unchanged.
+- [ ] On an unlimited plan the card reads **Unlimited** with "you have used N
+      credits so far this month" — never "N of 0", never a broken bar.
+- [ ] The activity list stops at **20 rows** however many actions the account
+      has run (`AI_ACTIVITY_LIMIT`) — `ai_actions` is append-only, so an
+      unbounded list here would grow forever.
+- [ ] At 375px: no horizontal scroll, the tab strip scrolls sideways to reach
+      **Credits**, and every row stays on one line or wraps cleanly.
+- [ ] First-run walkthrough: from Home, take the tour to the end. After the
+      notification step it stops on **Credits** ("Know what the AI costs you")
+      and then finishes on Import.
+
+### 7r-ii. Running out of credits (the pre-click gate)
+
+The AI controls no longer wait for a failed click to tell you the month is
+spent: at zero credits they render **disabled with the reason beside them** — a
+calm amber pill reading *"You're out of AI credits this month — all 10 used.
+They reset on the 1st."* with a **See credits** link to `/app/settings#credits`.
+`assertAiBudget` is unchanged and is still the enforcement; this is purely the
+pre-click layer (`aiGateReason`, `apps/web/src/lib/ai/gate.ts`), composed from
+the same three accessors in the same order so the UI can never disagree with the
+server. The gate is **"zero left", not "can I afford this one"** — a user with 5
+credits left may genuinely start a 20-credit deep research and go over, because
+the server refuses on `used >= cap` and never prices the action.
+
+**Getting to zero — `DHAGA_AI_MONTHLY_CAP=0` does NOT do it.** This is the trap:
+`instanceDefaultCap()` (`apps/web/src/lib/ai/metering/cap/instance-default.ts`)
+only honours the env var when it parses as `> 0`; a `0` falls straight through to
+`FREE_TIER_AI_CREDITS_PER_MONTH` (10, from `PLAN_AI_CREDITS_PER_MONTH.free`), so
+an instance you think you pinned to zero is quietly handing out ten credits.
+Two routes that actually work:
+
+- Set `DHAGA_AI_MONTHLY_CAP=1`, restart, then spend the one credit (any
+  extraction) — or insert a single `ai_actions` row for the account.
+- Hosted/EE: `/app/admin/ai-credits` → set the **Free** allowance (or that
+  user's per-user override) to **0**. An admin-set `0` *is* honoured; it is only
+  the env seed that isn't.
+
+- [ ] **Greyed, each with the reason next to it**: **Extract contact** (paste
+      capture), **Scan card** / **Scan N images**, **Ask Dhaga ✦** (both the
+      palette's Ask tab and the search-tab bridge rail), **Brief me ✦** /
+      **Refresh brief ✦**, **Draft follow-up ✦** / **Redraft ✦**, and **Enrich
+      from public web ✦**.
+- [ ] **Still fully usable — this is the half that matters**: the Manual capture
+      tab, manual person create/edit, adding a fact or a follow-up by hand,
+      keyword search, the graph, import, export, on-device voice dictation, and
+      adding photos to the card tray (only the **Scan** submit is greyed).
+- [ ] **Typed and photo notes still save.** Add a note at zero balance: it saves
+      and degrades to the existing *"Note saved. You're out of AI credits this
+      month, so facts weren't extracted."* Note re-process, confirmation-
+      resolution cards, "Add as note" on a signal and an extraction-job retry are
+      deliberately **not** greyed either — they're manual paths where AI is a
+      bonus that already degrades. Greying them would break the free/no-AI
+      product commitment.
+- [ ] A cap of literally **0** shows the other sentence instead — *"No monthly AI
+      credits on this plan — upgrade to enable AI actions."* — the same string
+      `aiUsageLabel` uses, so the usage line and the greyed control never say two
+      different things.
+- [ ] The nav **Add** dialog and the **Ask Dhaga** palette live in the
+      client-only app shell with no server component above them to hand a prop
+      down, so they read `/api/ai/gate` lazily when opened
+      (`useAiGate`). Open each one cold and confirm the greyed state still
+      arrives.
+- [ ] **Unset `ANTHROPIC_API_KEY` entirely → nothing is greyed for credits.**
+      `aiGateReason` returns `null` without `hasLLM()`, so the existing
+      "needs cloud AI" / "Configure an LLM provider…" messages still own that
+      case (§8) and a self-hosted instance doesn't look broken for a second
+      reason.
+- [ ] Automated: `npm run test --prefix apps/web -- ai-gate` — 8 tests across
+      `src/lib/__tests__/ai-gate/reason.test.ts` (the two sentences, no gate
+      while credits remain, no gate when unlimited, no gate with no LLM) and
+      `never-over-gates.test.ts` (price is never consulted; the gate opens
+      exactly when the server would refuse; manual fact/follow-up entry works at
+      zero).
 
 ### 7s. PWA install
 
@@ -938,7 +1058,10 @@ you a background job finished after you navigated away.
       marks read and opens the contact. Also exercise the **X** (dismiss) and
       **Mark all read**.
 - [ ] Exhaust the AI budget (§7r) and add a note → a *blocked* notification
-      saying extraction is a paid feature, **and the note is still saved**. Force
+      reading *"You're out of AI credits this month, so facts weren't extracted.
+      Your note is saved."* (`EXTRACTION_BLOCKED_LABEL`), **and the note is
+      still saved** — the save itself reports *"Note saved. You're out of AI
+      credits this month, so facts weren't extracted."* Force
       a failure → a failed notification whose body carries the reason, with
       **Retry** on the contact page.
 - [ ] **Forget a contact that has notifications** → its rows go with it. Titles
@@ -1034,6 +1157,13 @@ Confirmed via `hasLLM()` (`packages/core/src/llm/index.ts:46-48`, `Boolean(
 process.env.ANTHROPIC_API_KEY)`) and its callers — every AI-shaped feature
 checks this before calling out, and degrades to an honest message or an
 offline fallback rather than failing:
+
+**No key ≠ no credits.** These are two separate gates with two separate
+messages, and this table is only about the first. Without a key the features on
+the right degrade exactly as described here (offline parser, "needs cloud AI");
+with a key but an empty credit balance they are instead **greyed out before the
+click** with a credits reason (§7r-ii). `aiGateReason` returns `null` when
+`hasLLM()` is false precisely so the two never stack.
 
 | Works with **zero** API keys | Needs `ANTHROPIC_API_KEY` | Needs something else too |
 |---|---|---|

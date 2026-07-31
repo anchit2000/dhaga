@@ -7,7 +7,7 @@ import type { PlanComparisonRow } from "@/types";
  */
 export const PLAN_COMPARISON_ROWS: PlanComparisonRow[] = [
   {
-    feature: "Capture & notes",
+    feature: "Contacts, notes, facts & follow-ups",
     free: "✓ Unlimited",
     annual: "✓ Unlimited",
     pro: "✓ Unlimited",
@@ -32,9 +32,15 @@ export const PLAN_COMPARISON_ROWS: PlanComparisonRow[] = [
   },
   {
     feature: "Cloud AI — card reads, note extraction, NL search, drafts",
-    free: "✗ Paid feature",
-    annual: "✓ No monthly cap",
-    pro: "✓ No monthly cap",
+    free: "✓ 10 credits a month",
+    annual: "✓ 300 credits a month",
+    pro: "✓ 300 credits a month",
+  },
+  {
+    feature: "When the month's credits run out",
+    free: "✓ App keeps working; AI resumes on the 1st",
+    annual: "✓ Same — never an overage bill",
+    pro: "✓ Same — never an overage bill",
   },
   {
     feature: "Pre-meeting briefs",

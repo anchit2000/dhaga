@@ -11,6 +11,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { QuickAddForm } from "@/components/app/QuickAddForm";
+import { useAiGate } from "@/components/app/useAiGate";
 
 /**
  * Global capture entry point in the app nav: an amber primary action that opens
@@ -25,6 +26,10 @@ import { QuickAddForm } from "@/components/app/QuickAddForm";
  */
 export function NavQuickAdd(): ReactElement {
   const [open, setOpen] = useState(false);
+  // Same reason `events` is empty here: the nav is a client component with no
+  // server data to hand down, so the AI-credit gate is fetched — lazily, only
+  // once this dialog is opened.
+  const aiGate = useAiGate(open);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -44,7 +49,7 @@ export function NavQuickAdd(): ReactElement {
         <DialogDescription>
           Paste an intro, speak a note, or scan a card. Dhaga keeps the source as a receipt.
         </DialogDescription>
-        <QuickAddForm events={[]} storeCardPhotos />
+        <QuickAddForm events={[]} storeCardPhotos aiGate={aiGate} />
       </DialogContent>
     </Dialog>
   );

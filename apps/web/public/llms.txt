@@ -34,6 +34,7 @@ Sections run in order of what a reader needs first, not by directory. `## Option
 ## Using Dhaga
 
 - [Using Dhaga](https://www.dhaga.app/docs/guide): A task-oriented tour of the Dhaga app — capture people anywhere, turn notes into a private knowledge graph, and query it in plain language.
+- [AI credits](https://www.dhaga.app/docs/guide/ai-credits): The Credits tab in Settings — how many AI credits you have left this month, what each action costs, and exactly where the ones you spent went.
 - [Calendar & reminders](https://www.dhaga.app/docs/guide/calendar): See every follow-up and upcoming birthday on a full-screen calendar — drag to reschedule, schedule date-less ones from the tray, and stay nudged by the notification bell and opt-in reminder emails.
 - [Capturing people](https://www.dhaga.app/docs/guide/capturing-people): Add a person to your graph from pasted text, a card photo, voice, your webcam, or a file — with a review step that confirms the fields before saving.
 - [Companies](https://www.dhaga.app/docs/guide/companies): View, create, rename, delete, and merge the companies in your graph — with duplicate detection — from a dedicated management page.

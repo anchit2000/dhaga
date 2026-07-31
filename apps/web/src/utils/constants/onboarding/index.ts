@@ -13,9 +13,10 @@ export const START_TOUR_EVENT = "dhaga:start-tour";
 export const TOUR_QUERY_PARAM = "tour";
 
 /** Where the Home tour's finale sends the user to continue onto the settings
- *  leg. The `#suggestions` hash selects the tab that owns the reminder
- *  preferences — the settings leg re-points the hash per step from there. */
-export const SETTINGS_TOUR_PATH = "/app/settings#suggestions";
+ *  leg. The hash must be the FIRST settings step's own hash (`#appearance` →
+ *  the Account tab): the leg re-points the hash per step anyway, so any other
+ *  value just flashes the wrong tab on arrival before it corrects itself. */
+export const SETTINGS_TOUR_PATH = "/app/settings#appearance";
 
 /** sessionStorage key set as the Home tour navigates to the settings page, read
  *  back by OnboardingTour on that page to resume the tour there. */

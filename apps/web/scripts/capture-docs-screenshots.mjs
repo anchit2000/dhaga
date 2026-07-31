@@ -59,6 +59,79 @@ async function openPasteSurface(page) {
   await sleep(400);
 }
 
+// --- Appearance (per-user /app theme + font) ---------------------------------
+// The Appearance card is the `[data-tour="appearance"]` anchor in the Account
+// tab of /app/settings. Account is the default tab, so the #appearance hash is
+// belt-and-braces (it also drives the tab shell's deep-link handler).
+const APPEARANCE = '[data-tour="appearance"]';
+
+// Set as soon as a preset click is attempted, so the restore at the end runs
+// even if the click half-succeeded.
+let themeTouched = false;
+
+async function openAppearance(page) {
+  await page.goto(`${BASE}/app/settings#appearance`, { waitUntil: "networkidle" });
+  await page.waitForSelector(APPEARANCE, { timeout: 20_000 });
+  const card = page.locator(APPEARANCE);
+  await card.scrollIntoViewIfNeeded();
+  await sleep(600);
+  return card;
+}
+
+// Waits for the picker's write to reach the SERVER. This matters because the
+// theme shots then load a FRESH /app document, which is painted from the stored
+// value — the picker's optimistic <style> preview dies with the old document.
+// "Reset to default" is the available signal: it is disabled while the mutation
+// is in flight AND while the theme is still the default, so `enabled` means a
+// non-default theme is committed and `disabled` means a reset landed.
+async function waitForThemeSaved(page, { expectDefault }) {
+  await page.waitForFunction(
+    ({ selector, wantDisabled }) => {
+      const card = document.querySelector(selector);
+      if (!card) return false;
+      const reset = Array.from(card.querySelectorAll("button")).find(
+        (button) => button.textContent?.trim() === "Reset to default",
+      );
+      return Boolean(reset) && reset.disabled === wantDisabled;
+    },
+    { selector: APPEARANCE, wantDisabled: expectDefault },
+    { timeout: 30_000 },
+  );
+}
+
+// Picks a preset by its visible label. The radio sits inside a <label> carrying
+// that same label, so clicking the label is both what a user does and
+// independent of how the Base UI radio resolves its accessible name.
+async function applyPreset(page, label) {
+  const card = await openAppearance(page);
+  themeTouched = true;
+  await card.locator("label").filter({ hasText: label }).first().click();
+  await waitForThemeSaved(page, { expectDefault: false });
+  await sleep(400);
+}
+
+// Puts the seeded load-test account back on the stock Dhaga preset. This MUST
+// run whatever happened above: the choice is persisted server-side per user, so
+// leaving it set would silently re-colour every OTHER screenshot in this script
+// on the next run — a run-order dependency that would be very hard to spot in a
+// diff. Never throws; a failure is loud but must not abort the remaining work.
+async function restoreDefaultTheme(page) {
+  try {
+    const card = await openAppearance(page);
+    const reset = card.getByRole("button", { name: "Reset to default" });
+    // Disabled means the theme is already the default — nothing to undo.
+    if (!(await reset.isDisabled())) {
+      await reset.click();
+      await waitForThemeSaved(page, { expectDefault: true });
+    }
+    console.log("  ok   theme restored to the default (Dhaga) preset");
+  } catch (err) {
+    console.log(
+      `  WARN theme NOT restored (${err?.message ?? err}) — the load-test account may still be on a non-default preset; reset it at /app/settings#appearance before re-running this script`,
+    );
+  }
+}
+
 // `opts` passes straight through to Playwright (e.g. { fullPage: true } for a
 // list surface whose last row would otherwise be clipped mid-control). Optional
 // so every existing viewport-sized shot is unchanged.
@@ -489,6 +562,60 @@ await capture(
   },
   { fullPage: true },
 );
+
+// --- Shots for the per-user /app theme + font presets -------------------------
+
+// 31. settings-appearance.png — the Appearance card in the Account tab.
+// Shot first, and before any preset is applied, so it shows the default (Dhaga)
+// selection. Viewport-sized like every other single-card shot here
+// (import-contacts.png does the same scroll-then-shoot).
+await capture(
+  "settings-appearance.png",
+  "/app/settings#appearance",
+  "The Appearance card in Settings → Account: the Colour theme grid (Dhaga, Monochrome, High contrast, Rose, Ocean, Forest, Violet) with swatches, the Font dropdown, and Reset to default.",
+  async () => {
+    await openAppearance(page);
+  },
+);
+
+// 32/33. app-theme-*.png — Home under two non-default presets, driven through
+// the real picker (no direct DB write). Wrapped so the restore below runs even
+// if a pick or a shot fails partway.
+//
+// Home is the right subject: metric tiles, sparklines, the briefing and the
+// capture dock put more themed surface in one frame than any list does.
+const THEME_SHOT_ROUTE = "/app";
+
+async function shootThemedHome(page, preset) {
+  await applyPreset(page, preset);
+  await page.goto(`${BASE}${THEME_SHOT_ROUTE}`, { waitUntil: "networkidle" });
+  await sleep(1500);
+  await page.evaluate(() => window.scrollTo(0, 0));
+}
+
+try {
+  await capture(
+    "app-theme-monochrome.png",
+    `${THEME_SHOT_ROUTE} (Monochrome preset)`,
+    "The Dhaga Home briefing under the Monochrome theme — the same metric tiles, briefing and follow-ups, with every amber accent replaced by neutral greys on a black-and-white ground.",
+    async () => {
+      await shootThemedHome(page, "Monochrome");
+    },
+  );
+
+  await capture(
+    "app-theme-rose.png",
+    `${THEME_SHOT_ROUTE} (Rose preset)`,
+    "The Dhaga Home briefing under the Rose theme — the same layout again, on a pink-tinted ground with rose accents on the buttons, sparklines and highlighted rows.",
+    async () => {
+      await shootThemedHome(page, "Rose");
+    },
+  );
+} finally {
+  // Only if something was actually changed — with `ONLY=` set to other files the
+  // captures above return early and the account was never touched.
+  if (themeTouched) await restoreDefaultTheme(page);
+}
 
 await context.close();
 await browser.close();

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { noteExtractionSchema } from "./extraction";
+import { storedNoteExtractionSchema } from "./extraction";
 
 /**
  * The unified "confirmations / doubts" contract (generalizes edge_suggestions).
@@ -46,11 +46,18 @@ export const verifyFactApplySchema = z.object({
   factId: z.string(),
 });
 
-/** Fold a whole note extraction into a contact via applyExtraction. */
+/**
+ * Fold a whole note extraction into a contact via applyExtraction.
+ *
+ * Uses the STORED variant of the extraction schema: a confirmation payload is
+ * by definition read back out of Postgres, often long after it was written, so
+ * it has to tolerate rows that predate a later-added relationship field. See
+ * storedRelationshipSchema for the full reasoning.
+ */
 export const applyExtractionApplySchema = z.object({
   kind: z.literal("apply_extraction"),
   contactId: z.string(),
-  extraction: noteExtractionSchema,
+  extraction: storedNoteExtractionSchema,
 });
 
 /** Write one edge whose SRC (subject contact) is chosen at resolve time. */

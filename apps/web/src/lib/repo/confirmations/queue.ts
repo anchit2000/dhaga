@@ -42,18 +42,37 @@ export async function listPendingConfirmations(): Promise<ConfirmationView[]> {
     .where(and(eq(confirmations.status, "pending"), ne(confirmations.type, "note_subject")))
     .orderBy(desc(confirmations.createdAt));
 
-  const views: ConfirmationView[] = rows.map((row) => {
-    const payload = confirmationPayloadSchema.parse(row.payload);
-    return {
+  // safeParse, not parse: this runs over EVERY pending row, so one payload the
+  // current schema can't read used to throw here and take out the whole inbox —
+  // and Home with it, via its pending-confirmations tile. A row we cannot
+  // interpret is one card the user doesn't see; it is not a reason to fail the
+  // page. The row stays pending and untouched, so it returns as soon as the
+  // schema can read it again.
+  //
+  // Nothing from the payload is logged: it carries contact names and
+  // note-derived text (CLAUDE.md — never log contact PII in plaintext). The row
+  // id plus the Zod paths are enough to find it.
+  const views: ConfirmationView[] = [];
+  for (const row of rows) {
+    const parsed = confirmationPayloadSchema.safeParse(row.payload);
+    if (!parsed.success) {
+      console.warn(
+        `[confirmations] skipping unreadable payload id=${row.id}: ${parsed.error.issues
+          .map((issue) => `${issue.path.join(".")} ${issue.code}`)
+          .join("; ")}`,
+      );
+      continue;
+    }
+    views.push({
       id: row.id,
-      type: payload.type,
-      payload,
+      type: parsed.data.type,
+      payload: parsed.data,
       contactId: row.contactId,
       contactName: row.contactName,
       sourceNoteId: row.sourceNoteId,
       createdAt: row.createdAt,
-    };
-  });
+    });
+  }
 
   // Backfill the claim for legacy enrichment_match rows. Older rows were
   // written with an empty `options` array (the fact text was threaded in

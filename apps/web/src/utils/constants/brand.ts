@@ -16,3 +16,27 @@ export const BRAND_COLOR_FALLBACKS = {
 
 /** Brand CSS custom-property names that resolve through `BRAND_COLOR_FALLBACKS`. */
 export type BrandColorVar = keyof typeof BRAND_COLOR_FALLBACKS;
+
+/**
+ * Ground / panel / accent for Dhaga's own palette in BOTH modes — the three
+ * swatches the appearance picker shows for the `default` preset.
+ *
+ * It cannot read those live: a user who has another preset applied has the
+ * `--brand-*` properties overridden at `:root`, so `getComputedStyle` would hand
+ * back THEIR palette for the swatch whose entire job is to show the stock one.
+ * The two light values below therefore mirror `:root` in `globals.css` (which
+ * stays the source of truth); the dark three reuse the fallbacks above rather
+ * than restating them.
+ */
+export const BRAND_STOCK_SWATCHES = {
+  light: {
+    ink: "#f2ebdc",
+    panel: "#fdfbf6",
+    accent: BRAND_COLOR_FALLBACKS["--brand-amber"],
+  },
+  dark: {
+    ink: BRAND_COLOR_FALLBACKS["--brand-ink"],
+    panel: BRAND_COLOR_FALLBACKS["--brand-panel"],
+    accent: BRAND_COLOR_FALLBACKS["--brand-amber"],
+  },
+} as const;

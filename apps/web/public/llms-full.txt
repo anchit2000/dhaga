@@ -790,7 +790,7 @@ moment you meet them.
 - [Custom entities](/docs/guide/entities): Non-person nodes — gyms, schools, projects — that connect the people in your graph.
 - [Companies](/docs/guide/companies): View, create, rename, delete, and merge the companies in your graph — with duplicate detection — from their own page.
 - [Share & invite](/docs/guide/share-and-invite): Post a contact-free Wrapped card of your networking, and invite friends for a free month of Pro on both sides.
-- [Settings & import](/docs/guide/settings): Profile, billing, 2FA, calendar, suggestions, voice, API keys, and bringing in your existing contacts.
+- [Settings & import](/docs/guide/settings): Profile, appearance (theme + font), billing, 2FA, calendar, suggestions, voice, API keys, and bringing in your existing contacts.
 
 Self-hosting or wiring up providers instead? Start at the
 [documentation home](/docs).
@@ -1903,7 +1903,7 @@ without it.
 
 Source: https://www.dhaga.app/docs/guide/settings
 
-The Settings page — profile, billing, 2FA, calendar, suggestions, card-photo storage, voice teaching, API keys — and importing your contacts from a file, a Google or Outlook connect, or your phone.
+The Settings page — profile, appearance, billing, 2FA, calendar, suggestions, card-photo storage, voice teaching, API keys — and importing your contacts from a file, a Google or Outlook connect, or your phone.
 
 **`/app/settings`** is where you tune how Dhaga behaves and connect it to the
 rest of your tools.
@@ -1916,7 +1916,8 @@ Settings is grouped into tabs — pick a tab along the top and its sections sit
 beneath it.
 
 - **Account** — your **Profile** (edit your display name; your sign-in email is
-  shown read-only and can't be changed here), **Billing** and plan, **Security**
+  shown read-only and can't be changed here), **Appearance** (the app's colour
+  theme and font — see below), **Billing** and plan, **Security**
   (two-factor authentication, 2FA), and **API keys** — personal access tokens for
   the API and the browser extension, and for scripted
   [exports](/docs/self-hosting/deploy#backups--migration). On a hosted instance
@@ -1963,6 +1964,64 @@ beneath it.
 Billing only appears when the instance has Stripe configured, and calendar/
 email features need their providers wired up. On a plain self-host several of
 these sections are intentionally absent — see [Self-hosting](/docs/self-hosting).
+
+## Appearance
+
+**Account → Appearance** — or the direct link **`/app/settings#appearance`** —
+changes how the Dhaga app looks: a **colour theme** and a **font**, both yours
+alone. It's also where the first-run walkthrough's settings leg opens — you can
+click a theme while the tour is still on screen.
+
+![The Appearance card in the Settings Account tab: a "Colour theme" grid of seven radio options — Dhaga, Monochrome, High contrast, Rose, Ocean, Forest, Violet — each showing three colour swatches, with Dhaga selected, a Font dropdown below it, and a Reset to default button](/docs/guide/settings-appearance.png)
+
+### Pick a theme
+
+Seven themes ship: **Dhaga** (the default warm near-black and amber),
+**Monochrome**, **High contrast**, **Rose**, **Ocean**, **Forest** and
+**Violet**. Pick one and the app repaints immediately — there's no Save button
+on this card.
+
+**A theme changes the colours, not light vs dark**
+
+**Light and dark stay where they always were** — on the toggle in the top bar.
+Every theme here ships *both* a light and a dark palette, so whichever you pick,
+the toggle keeps doing exactly what it did: a theme decides the hues, the toggle
+decides which of its two palettes you see.
+
+![The Dhaga Home briefing rendered under the Monochrome theme — the same metric tiles, sparklines, daily briefing and follow-ups as usual, with every amber accent replaced by neutral greys on a black-and-white ground](/docs/guide/app-theme-monochrome.png)
+
+![The Dhaga Home briefing rendered under the Rose theme — the same layout again, this time on a deep pink-tinted ground with rose accents on the buttons, sparklines and highlighted rows](/docs/guide/app-theme-rose.png)
+
+The list is a fixed set rather than a free colour picker on purpose. Every
+theme's palette is contrast-tested in CI on every change — body and secondary text and
+accent text against WCAG AA, and control borders against the 3:1 minimum — in
+both of its modes. A hand-mixed colour can't be held to that, and unreadable
+timestamps are a much worse outcome than a shorter list.
+
+### Pick a font
+
+The **Font** dropdown offers **Geist Pixel** (Dhaga's own display face, and the
+default), **System** (your OS's own UI font — downloads nothing), and **Inter**,
+**Roboto**, **Open Sans**, **Lato**, **Montserrat** and **Poppins**. The
+dropdown and each option render in the face they name, so you can see the
+choice before you make it. Nothing is downloaded until you actually open the
+list — staying on Geist Pixel costs you no extra font download at all.
+
+### It follows you, and it stops at the app
+
+Your choice is saved **against your account on the server**, not in the browser
+— so it's there on your laptop, your phone browser and any machine you sign in
+on next, and clearing your browser data doesn't lose it. Because it's stored
+server-side, the app arrives already wearing your theme: there's no flash of the
+default palette while a page loads.
+
+It applies to **`/app` only**. The public site, this documentation and the blog
+keep Dhaga's own colours. That's deliberate rather than an omission — those
+pages are pre-rendered and shared with everyone, and making them per-reader
+would mean rendering them fresh on every visit and giving up their page speed.
+
+**Reset to default** puts both back: the Dhaga theme and Geist Pixel. It's
+greyed out when you're already on both.
 
 ## Your time zone
 
@@ -3099,9 +3158,9 @@ Run the full AGPL core without Dhaga Cloud — what you get, what you don't, and
 This repo ships two things in one codebase:
 
 1. **The AGPL core** — the whole CRM (capture, notes, graph, search, drafts,
-   export, Telegram, the browser extension API) plus real user accounts
-   (better-auth). This is what you get when you self-host. Nothing here is
-   crippled or trial-limited.
+   export, Telegram, the browser extension API, the per-user `/app` theme and
+   font presets) plus real user accounts (better-auth). This is what you get
+   when you self-host. Nothing here is crippled or trial-limited.
 2. **`packages/ee`** — Dhaga Cloud only: multi-tenant row-level security,
    the "request access" gate, the admin panel, and Stripe billing. Licensed
    separately (source-available, noncompete — see

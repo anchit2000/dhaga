@@ -6,6 +6,7 @@ import { countUnreadNotifications, listRecentNotifications } from "@/lib/repo/no
 import { getImportantDateLeadDays } from "@/lib/repo/suggestion-settings";
 import { DataProvider } from "@/lib/data";
 import { AppNav } from "@/components/app/AppNav";
+import { AppThemeStyle } from "@/components/app/AppThemeStyle";
 import { buildNotificationFeed } from "@/components/app/AppNav/NotificationBell";
 import { BusyOverlayProvider } from "@/components/app/BusyOverlay";
 import { NavigationFeedback } from "@/components/app/NavigationFeedback";
@@ -19,7 +20,7 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const userId = await requireUserIdForPage();
-  const [{ isAdmin, searchWeights }, confirmationsCount, reminders] = await Promise.all([
+  const [{ isAdmin, searchWeights, uiTheme }, confirmationsCount, reminders] = await Promise.all([
     getCachedAppConfig(userId),
     countPendingConfirmations(),
     getNotificationSummary(),
@@ -42,6 +43,12 @@ export default async function AppLayout({
 
   return (
     <DataProvider>
+      {/* Mounted HERE and not in the root layout: that is what scopes user
+          theming to /app/**. The marketing pages, /blog and /docs render
+          statically off the stock brand tokens and must stay that way — one
+          user's palette is not the product's identity. First in the tree so the
+          override is parsed before the markup it repaints. */}
+      <AppThemeStyle theme={uiTheme} />
       {/* Above every page Suspense boundary on purpose — see BusyOverlay. */}
       <BusyOverlayProvider>
         <NavigationFeedback>

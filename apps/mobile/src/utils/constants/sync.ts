@@ -34,6 +34,24 @@ export const SYNC_SCREEN = "sync" as const;
 export const SYNC_HREF = "/sync" as const;
 
 /**
+ * Whether the sync screen starts with "Add Dhaga-only contacts to this phone"
+ * switched ON. It does not, and that is a decision rather than an oversight:
+ * writing into an address book is the user's call to make. It is their device,
+ * its contacts sync onward to everything else they own, and one run copies
+ * every person they have EVER authored in Dhaga — not only the ones added
+ * since, because there is no "created after I turned this on" marker.
+ * Discoverability comes from onboarding instead: the tour's settings leg points
+ * the switch out without touching it, the same way it surfaces the email
+ * preferences (which all ship off too). Connected Google/Outlook accounts
+ * default off for the same reason (contact_connections.push_unlinked), so the
+ * answer is the same everywhere.
+ *
+ * Named here rather than left as a literal inside useState so the decision is
+ * greppable and testable — a refactor cannot flip it without a test noticing.
+ */
+export const PUSH_UNLINKED_DEFAULT = false;
+
+/**
  * The ImportantDate label that maps to the address book's dedicated birthday
  * slot; every other label rides the generic `dates` list. Matches the label
  * @/lib/contacts/map already writes on import, so a contact imported and then

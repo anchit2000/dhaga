@@ -4,6 +4,7 @@ import {
   cardImages,
   companies,
   companyAliases,
+  contactLinks,
   contacts,
   edges,
   facts,
@@ -16,19 +17,69 @@ import {
   voiceVocab,
   type ContactRow,
 } from "@/lib/db/schema";
+import { isAuthoredContact } from "@/lib/repo/sync/authored";
+import type { ContactSyncProviderId } from "@dhaga/core/src/api/sync";
+import type { ExportScope } from "@dhaga/core/src/api/export";
+import type { DhagaDb } from "@/lib/db";
 
 export interface ExportContact extends ContactRow {
   companyName: string | null;
 }
 
-export async function exportContacts(): Promise<ExportContact[]> {
+export interface ExportContactsOptions {
+  /** Omitted or "all" = every contact, unchanged: the M8 portability dump. */
+  scope?: ExportScope;
+  /** Drop contacts already linked on this provider. Omitted = no filtering. */
+  provider?: ContactSyncProviderId | null;
+}
+
+/**
+ * Contacts already tied to a record on this provider, whatever the link's
+ * state. Tombstoned ("unlinked") links count exactly as offerUnlinkedCreates
+ * counts them: the user deleted that person on their phone, and a bulk seed
+ * that re-imported them would undo that decision as surely as a sync create.
+ */
+async function linkedContactIds(
+  db: DhagaDb,
+  provider: ContactSyncProviderId,
+): Promise<Set<string>> {
+  const rows = await db
+    .select({ contactId: contactLinks.contactId })
+    .from(contactLinks)
+    .where(eq(contactLinks.provider, provider));
+  return new Set(rows.map((row) => row.contactId));
+}
+
+/**
+ * Contacts for the CSV/vCard export.
+ *
+ * With no options this returns every row — the "you can always leave with all
+ * your data" guarantee (M8), which must not be narrowed. The options exist for
+ * the other job the same file does: seeding an address book in bulk by
+ * importing a .vcf, where provenance decides what may be written outward.
+ */
+export async function exportContacts(
+  options: ExportContactsOptions = {},
+): Promise<ExportContact[]> {
   const db = await getDb();
   const rows = await db
     .select({ contact: contacts, companyName: companies.name })
     .from(contacts)
     .leftJoin(companies, eq(contacts.companyId, companies.id))
     .orderBy(contacts.createdAt);
-  return rows.map((row) => ({ ...row.contact, companyName: row.companyName }));
+  let out: ExportContact[] = rows.map((row) => ({
+    ...row.contact,
+    companyName: row.companyName,
+  }));
+  // Filtered in TS against the shared predicate rather than as a SQL WHERE:
+  // a second, SQL-shaped copy of "authored" is exactly the drift the shared
+  // predicate exists to prevent.
+  if (options.scope === "authored") out = out.filter(isAuthoredContact);
+  if (options.provider) {
+    const linked = await linkedContactIds(db, options.provider);
+    out = out.filter((row) => !linked.has(row.id));
+  }
+  return out;
 }
 
 /** Full graph dump — the "you can always leave" JSON (M8). */

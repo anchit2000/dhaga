@@ -2166,12 +2166,20 @@ never enter your graph.
 **Pulling in** — changes on the phone flow into Dhaga on every run.
 
 **Pushing out** — edits to contacts Dhaga is *already linked to* are written back
-to the phone on every run. People who exist **only in Dhaga** are copied into
-your address book too: **Add Dhaga-only contacts to this phone** is **on by
-default** on the sync screen. It is your own device, so a person you added in
-Dhaga belongs in your contacts.
+to the phone on every run. People who exist **only in Dhaga** can be copied into
+your address book too, but only if you ask: **Add Dhaga-only contacts to this
+phone**, on the sync screen, is **off by default**. Turn it on and everyone you
+added in Dhaga — typed in, quick-added, scanned from a card — starts landing in
+your contacts on each run.
 
-Two kinds of person are never pushed out, toggle or not:
+Your address book is yours, and it carries onward to every device signed into
+it, so Dhaga will not start filling it on a default you never chose. Connected
+**Google and Outlook accounts** answer the same way: **Add Dhaga-only people to
+this account**, under **Settings › Contact accounts**, is **off** until you turn
+it on. (Dhaga's onboarding tour stops on that card to point the switch out —
+without touching it.)
+
+Two kinds of person are never pushed out, switch or not:
 
 - People Dhaga only ever heard **mentioned** in a note — the stubs it infers
   rather than ones you captured.
@@ -2182,16 +2190,101 @@ Two kinds of person are never pushed out, toggle or not:
 That leaves the people you actually created here: typed in, quick-added, scanned
 from a card, or captured from a message.
 
-**The first run pushes your back-catalogue**
+**Turning it on pushes your back-catalogue**
 
-This applies to every contact you have ever authored, not just new ones — there
-is no "created after I turned this on" marker. If you have hundreds of scanned
-cards you may not want all of them in your phone, so turn the switch off before
-your first sync. Runs are capped at 500 new contacts each.
+The switch applies to every contact you have ever authored, not just the ones
+you add afterwards — there is no "created after I turned this on" marker. If you
+have hundreds of scanned cards you may not want all of them in your phone, leave
+it off. And if you *do* want all of them, don't get there 500 at a time — see
+[Copying a big back-catalogue across](#copying-a-big-back-catalogue-across).
 
-Connected **Google and Outlook accounts are different** — there the same switch
-stays **off** by default, because writing into a cloud account propagates to
-every device signed into it, which is a bigger decision than your own handset.
+### Copying a big back-catalogue across
+
+Once the switch is on, one run adds at most **500 new contacts**, and it tells
+you what it held back: *"437 contacts still to add — sync again to continue."*
+That count is only people a later run could actually add, so running it again
+really does drain it — it never pads the number with people who would never be
+pushed anyway.
+
+You have two ways to get through the rest.
+
+**Just sync again.** Repeat until the line stops appearing. Nothing else to do,
+but each run writes contacts **one at a time** — that is all an address book
+offers. Neither iOS, Android, Google People nor Microsoft Graph has an "add
+these 700" call, so 700 people is 700 writes, however they are spread out.
+
+**Or seed it in one go.** Importing a vCard is the opposite shape: one file, one
+bulk insert, done in about a second — which is why the same 700 contacts land
+instantly on the way *in*. So let the import do the copying and leave sync the
+job it is actually good at, matching:
+
+1. Open **Settings › Contact accounts**. **Seed an address book in one go**
+   downloads everyone you have added in Dhaga as a single `.vcf`. If you have
+   already synced once and only want the stragglers, use the **Download for …**
+   button beside the remaining count instead — that file leaves out whoever the
+   account already has, so nobody arrives twice.
+2. Import that `.vcf` where the contacts should go — **iCloud.com › Contacts ›
+   Import vCard**, **contacts.google.com › Import**, **Outlook › Manage contacts
+   › Import contacts**, or just open the file on the phone.
+3. Sync. Dhaga recognises the people it just seeded — matching on email, then
+   phone, then name + company, the same ladder the importer uses — and **links**
+   them to the contacts they came from instead of creating a second copy.
+
+Those buttons are `/api/export/vcard?scope=authored`, plus `&provider=device`,
+`google` or `microsoft` for the per-account version. The same two parameters
+work on `/api/export/csv`, but seed from the **vCard** — the CSV columns carry
+no nickname and no important dates, and a field the seed drops is a field the
+round trip can later mistake for one you deleted. A mistyped `scope` or
+`provider` is rejected outright rather than quietly falling back to everything.
+
+The **Export** links on the People page are a different thing and stay that way:
+they download *everything*, `mentioned` stubs included, because that is the
+leave-with-all-your-data file. Don't seed an address book from those.
+
+### What the seed file leaves out, and why
+
+`scope=authored` applies exactly the rule sync applies, from the same shared
+code: no people Dhaga only heard **mentioned** in a note, no people who arrived
+by **import**, and nobody with no name. A file you are about to hand to iCloud is
+the wrong place to discover that distinction, and it is the same reason those two
+kinds of person are never pushed out by sync either.
+
+`provider=` then drops anyone already linked on that platform — **including
+people you deleted there**, so seeding in bulk cannot quietly resurrect someone
+you removed from your phone.
+
+### What the seed file carries
+
+Name, nickname, job title, company, emails, phones, links, postal addresses,
+birthdays and other important dates — every field sync itself moves. That
+matters more than it sounds: a field the seed file *drops* looks to the next
+sync like a field you deleted, so the export deliberately carries all of them.
+
+Two honest gaps, neither of which loses a value outright:
+
+- **A custom label on an email, phone or link is not preserved.** `Home`, `Work`
+  and `Other` survive the round trip; something like `Newsletter` comes back
+  unlabelled, and a later sync can then clear the label in Dhaga. The value
+  itself is never lost. Custom labels on **addresses and important dates** do
+  survive.
+- **The free-text location** (the "Pune" or "Bay Area" on a contact) is not in
+  the vCard at all. It is a display field, not a postal address, and writing it
+  into one would invent a street address you never entered. The CSV and JSON
+  exports still carry it.
+
+For the people it does contain, the card carries name, nickname, job title,
+company, emails, phones, links, the contact's **location** and their **important
+dates** — including birthdays, which land in the address book's own birthday
+slot. The one synced field it does not carry is the separate **addresses** list;
+those stay in Dhaga and reach the phone through sync as usual.
+
+**This does not narrow the export you leave with**
+
+The plain **`/api/export/vcard`**, **`/api/export/csv`** and
+**`/api/export/json`** downloads are unchanged and still contain **everything**,
+whatever its provenance. `scope=authored` is an extra, opt-in filter for seeding
+an address book — a different job with a different safe answer. Leaving Dhaga
+with all of your data never goes through it.
 
 ## How conflicts are handled
 
@@ -3879,7 +3972,13 @@ dhaga.example.com {
   plus a periodic `curl -H "x-api-key: …" .../api/export/json` (create a
   personal access token from `/app/settings`).
 - **Leaving** = the JSON/CSV/vCard export endpoints give you everything;
-  no lock-in is a feature.
+  no lock-in is a feature. That is the default and it is not filtered: called
+  plainly, `/api/export/json`, `/api/export/csv` and `/api/export/vcard` each
+  return every contact, whatever its provenance. The CSV and vCard routes also
+  accept an opt-in `?scope=authored` used for [seeding an address
+  book](/docs/guide/syncing-your-phone) — a deliberately narrower file for a
+  different job. Omit it and you get everything; nothing about the portability
+  guarantee changed.
 
 ## Option C — Production deployment with Docker
 

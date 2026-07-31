@@ -217,7 +217,13 @@ dhaga.example.com {
   plus a periodic `curl -H "x-api-key: …" .../api/export/json` (create a
   personal access token from `/app/settings`).
 - **Leaving** = the JSON/CSV/vCard export endpoints give you everything;
-  no lock-in is a feature.
+  no lock-in is a feature. That is the default and it is not filtered: called
+  plainly, `/api/export/json`, `/api/export/csv` and `/api/export/vcard` each
+  return every contact, whatever its provenance. The CSV and vCard routes also
+  accept an opt-in `?scope=authored` used for seeding an address book in bulk
+  (`apps/web/content/docs/guide/syncing-your-phone.mdx`) — a deliberately
+  narrower file for a different job. Omit it and you get everything; nothing
+  about the portability guarantee changed.
 
 ## Option C — Production deployment with Docker
 

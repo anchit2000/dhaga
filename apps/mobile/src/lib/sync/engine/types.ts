@@ -32,6 +32,12 @@ export interface SyncRunResult {
   pulled: number;
   createdInDhaga: number;
   linked: number;
+  /**
+   * Dhaga contacts this run was not allowed to offer because it hit the server's
+   * per-run create ceiling. Shown, never acted on: the next run drains them, and
+   * retrying automatically would write to the address book without being asked.
+   */
+  remaining: number;
   /** Divergences the server could not resolve. Shown, never hidden. */
   conflicts: SyncConflictReport[];
   /** Writes that could not be applied to the device. */

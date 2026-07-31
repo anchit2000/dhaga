@@ -34,8 +34,9 @@ const BASE_CONFIG = {
  * settings page so the tour can span pages. On Home it auto-starts once
  * (`autoStart`), replays via START_TOUR_EVENT / `/app?tour=1`, and its finale
  * navigates to the settings page — where this same component (resume mode) hands
- * the tour to `startSettingsTourLeg` for its notification + import steps. Marks
- * the tour seen only on a real finish/skip/ESC, never on the hand-off nav.
+ * the tour to `startSettingsTourLeg` for its notification, contact-sync and
+ * import steps. Marks the tour seen only on a real finish/skip/ESC, never on the
+ * hand-off nav.
  * Renders nothing.
  */
 export function OnboardingTour({ autoStart }: { autoStart: boolean }): null {

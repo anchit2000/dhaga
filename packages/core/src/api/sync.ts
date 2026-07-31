@@ -96,6 +96,20 @@ export interface SyncPushResponse {
   created: number;
   /** New contact↔external links established this run. */
   linked: number;
+  /**
+   * Eligible contacts this run did NOT offer as creates because it reached the
+   * per-run ceiling on them. Counts only contacts that WOULD have been offered —
+   * everything an unbounded run would have written out — so an AI-inferred stub,
+   * an imported row or an already-linked contact never inflates it. Anything
+   * else would report a backlog the user could never drain, which is worse than
+   * reporting nothing. 0 means nothing was held back, including on every run
+   * that never asked to push outward.
+   *
+   * A SNAPSHOT of this run, not a stable backlog: it moves as the user adds and
+   * deletes people, so read it as "left over just now" and re-read it from the
+   * next run. Never store it and count it down.
+   */
+  remaining: number;
 }
 
 /**

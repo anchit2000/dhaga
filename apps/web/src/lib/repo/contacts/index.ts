@@ -27,6 +27,7 @@ export {
   mergeMentionedContact,
   promoteMentionedContact,
 } from "./mutations";
+export { countAuthoredContacts } from "./authored-count";
 export { setStarred } from "./star";
 export { mergeContacts } from "./merge";
 export { getContactsForMerge, type ContactMergeRecord } from "./merge-preview";

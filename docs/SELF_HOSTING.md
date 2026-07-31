@@ -3,9 +3,9 @@
 This repo ships two things in one codebase:
 
 1. **The AGPL core** — the whole CRM (capture, notes, graph, search, drafts,
-   export, Telegram, the browser extension API) plus real user accounts
-   (better-auth). This is what you get when you self-host. Nothing here is
-   crippled or trial-limited.
+   export, Telegram, the browser extension API, the per-user `/app` theme and
+   font presets) plus real user accounts (better-auth). This is what you get
+   when you self-host. Nothing here is crippled or trial-limited.
 2. **`packages/ee`** — Dhaga Cloud only: multi-tenant row-level security,
    the "request access" gate, the admin panel, and Stripe billing. Licensed
    separately (source-available, noncompete — see

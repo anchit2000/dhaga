@@ -18,11 +18,12 @@ export interface SettingsTourStep {
 /**
  * The tour's second leg, on /app/settings.
  *
- * Notifications come first and import is the finale: the reminder choice is a
- * preference the user can settle in one click while still in onboarding, while
- * importing is the "now go do this" call to action that reads better last (and
- * ends the tour on the same note it always did). Credits and contact sync sit
- * between them, and in that order: credits answer a question the AI steps have
+ * Appearance opens and import is the finale. Picking a theme is the lightest
+ * thing a new user can do and costs them nothing, so it earns the first slot;
+ * the reminder choice is a preference they can settle in one click while still
+ * in onboarding; and importing is the "now go do this" call to action that reads
+ * better last (and ends the tour on the same note it always did). The middle
+ * runs credits, then contact sync: credits answer a question the AI steps have
  * just raised, rather than leaving a new user to meet the answer as a cap
  * message, and contact sync lands immediately before import so the two
  * directions read in order — what Dhaga sends out, then what you bring in.
@@ -31,9 +32,28 @@ export interface SettingsTourStep {
  * Nothing here enables anything. Every email preference in Dhaga ships off, and
  * so does copying your contacts out into an address book; these steps exist to
  * surface those choices, not to make them — a pre-flipped switch would defeat
- * the whole point.
+ * the whole point. Appearance is the one exception in kind rather than degree:
+ * it writes a preference the moment you click a swatch, but it only changes
+ * what you see and is one button from being undone.
  */
 export const SETTINGS_TOUR_STEPS: SettingsTourStep[] = [
+  {
+    hash: "appearance",
+    selector: '[data-tour="appearance"]',
+    step: {
+      element: '[data-tour="appearance"]',
+      // Same reasoning as the notifications step below: this one is meant to be
+      // played with, so the overlay lets clicks through to the theme picker.
+      disableActiveInteraction: false,
+      popover: {
+        side: "bottom",
+        align: "center",
+        title: "Make it yours",
+        description:
+          "Pick a colour theme and a font for the app. It changes what you see in Dhaga and nothing else — the website, docs and blog stay as they are. Light and dark is still the toggle in the top bar, and every theme here works in both.",
+      },
+    },
+  },
   {
     hash: "suggestions",
     selector: '[data-tour="notifications"]',

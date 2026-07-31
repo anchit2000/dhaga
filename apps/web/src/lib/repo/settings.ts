@@ -2,11 +2,13 @@ import { eq, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { settings } from "@/lib/db/schema";
 import { parseSearchWeights, type SearchWeights } from "@/utils/constants/search";
+import { parseUiTheme, serializeUiTheme, type UiTheme } from "@/utils/constants/theme";
 
 export const STORE_CARD_PHOTOS_KEY = "store_card_photos";
 export const SIGNAL_DETECTION_BATCH_KEY = "signal_detection_pending_batch";
 export const SEARCH_WEIGHTS_KEY = "search_weights";
 export const ONBOARDING_TOUR_KEY = "onboarding_tour_seen";
+export const UI_THEME_KEY = "ui_theme";
 /** Per-user monthly cloud-AI action allowance ("credits") an admin can grant. */
 export const AI_MONTHLY_CAP_OVERRIDE_KEY = "ai_monthly_cap_override";
 
@@ -106,4 +108,19 @@ export async function hasSeenOnboardingTour(): Promise<boolean> {
 
 export async function setOnboardingTourSeen(): Promise<void> {
   await setSetting(ONBOARDING_TOUR_KEY, "yes");
+}
+
+/**
+ * The user's /app palette + font choice. No DDL: it is one small JSON blob with
+ * nothing relational about it, so it rides this key/value table like every other
+ * preference (Rule 2). setSetting conflicts on the constraint NAME, so the write
+ * behaves identically self-hosted (plain `key` PK) and under EE's per-tenant RLS
+ * (composite `(user_id, key)` PK) — see the comment there.
+ */
+export async function getUiTheme(): Promise<UiTheme> {
+  return parseUiTheme(await getSetting(UI_THEME_KEY));
+}
+
+export async function setUiTheme(theme: UiTheme): Promise<void> {
+  await setSetting(UI_THEME_KEY, serializeUiTheme(theme));
 }

@@ -1,5 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { IBM_Plex_Mono } from "next/font/google";
+import {
+  IBM_Plex_Mono,
+  Inter,
+  Lato,
+  Montserrat,
+  Open_Sans,
+  Poppins,
+  Roboto,
+} from "next/font/google";
 import localFont from "next/font/local";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -26,6 +34,68 @@ const geistPixel = localFont({
   weight: "400",
   style: "normal",
 });
+
+// Optional /app body faces (utils/constants/theme/fonts.ts). Every one is
+// `preload: false` on purpose: a user on the default Geist Pixel must download
+// none of them, and the browser only fetches a face once something actually
+// resolves to it — which happens only when that user's theme rule points
+// --font-sans at its variable. The variable names must stay in step with
+// THEME_FONT_VARS in utils/constants/theme/fonts.ts; next/font requires
+// explicitly written literals here, so they cannot be imported (a test pins
+// them). Variable-font form (no `weight`) wherever Google ships one; Lato and
+// Poppins have no variable axis, so they name their weights.
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+  display: "swap",
+  preload: false,
+});
+
+const roboto = Roboto({
+  variable: "--font-roboto",
+  subsets: ["latin"],
+  display: "swap",
+  preload: false,
+});
+
+const openSans = Open_Sans({
+  variable: "--font-open-sans",
+  subsets: ["latin"],
+  display: "swap",
+  preload: false,
+});
+
+const lato = Lato({
+  variable: "--font-lato",
+  subsets: ["latin"],
+  display: "swap",
+  preload: false,
+  weight: ["400", "700"],
+});
+
+const montserrat = Montserrat({
+  variable: "--font-montserrat",
+  subsets: ["latin"],
+  display: "swap",
+  preload: false,
+});
+
+const poppins = Poppins({
+  variable: "--font-poppins",
+  subsets: ["latin"],
+  display: "swap",
+  preload: false,
+  weight: ["400", "600"],
+});
+
+const themeFontVariables = [
+  inter.variable,
+  roboto.variable,
+  openSans.variable,
+  lato.variable,
+  montserrat.variable,
+  poppins.variable,
+].join(" ");
 
 export const metadata: Metadata = {
   metadataBase: new URL(
@@ -88,7 +158,7 @@ export default function RootLayout({
       // on <html> from a pre-hydration script, which never matches the
       // server-rendered markup by design (see next-themes docs).
       suppressHydrationWarning
-      className={`${plexMono.variable} ${geistPixel.variable} h-full antialiased`}
+      className={`${plexMono.variable} ${geistPixel.variable} ${themeFontVariables} h-full antialiased`}
     >
       {/* suppressHydrationWarning: browser extensions (Grammarly et al.)
           inject attributes into <body> before React hydrates; the warning is

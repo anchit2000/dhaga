@@ -578,21 +578,15 @@ await capture(
   },
 );
 
-// 32/33. app-theme-*.png — the People list under two non-default presets, driven
-// through the real picker (no direct DB write). Wrapped so the restore below
-// runs even if a pick or a shot fails partway.
+// 32/33. app-theme-*.png — Home under two non-default presets, driven through
+// the real picker (no direct DB write). Wrapped so the restore below runs even
+// if a pick or a shot fails partway.
 //
-// The People list, not Home: a theme shot has to show the theme, so the surface
-// has to render. On the seeded Supabase account Home currently trips its error
-// boundary before any of this — a confirmation row whose
-// `apply.extraction.relationships[0]` is missing its required fields fails Zod
-// at render — and it does so on the DEFAULT theme too, so it is not a theming
-// bug. People exercises the same chrome (nav, search, cards, primary button,
-// avatars, tag chips) and is a better theme subject anyway. Point these back at
-// `/app` once that data is fixed.
-const THEME_SHOT_ROUTE = "/app/people";
+// Home is the right subject: metric tiles, sparklines, the briefing and the
+// capture dock put more themed surface in one frame than any list does.
+const THEME_SHOT_ROUTE = "/app";
 
-async function shootThemedList(page, preset) {
+async function shootThemedHome(page, preset) {
   await applyPreset(page, preset);
   await page.goto(`${BASE}${THEME_SHOT_ROUTE}`, { waitUntil: "networkidle" });
   await sleep(1500);
@@ -603,18 +597,18 @@ try {
   await capture(
     "app-theme-monochrome.png",
     `${THEME_SHOT_ROUTE} (Monochrome preset)`,
-    "The Dhaga People list under the Monochrome theme — the same nav, search bar and person cards, with every amber accent replaced by neutral greys on a black-and-white ground.",
+    "The Dhaga Home briefing under the Monochrome theme — the same metric tiles, briefing and follow-ups, with every amber accent replaced by neutral greys on a black-and-white ground.",
     async () => {
-      await shootThemedList(page, "Monochrome");
+      await shootThemedHome(page, "Monochrome");
     },
   );
 
   await capture(
     "app-theme-rose.png",
     `${THEME_SHOT_ROUTE} (Rose preset)`,
-    "The Dhaga People list under the Rose theme — the same layout again, on a pink-tinted ground with rose accents on the buttons and highlighted rows.",
+    "The Dhaga Home briefing under the Rose theme — the same layout again, on a pink-tinted ground with rose accents on the buttons, sparklines and highlighted rows.",
     async () => {
-      await shootThemedList(page, "Rose");
+      await shootThemedHome(page, "Rose");
     },
   );
 } finally {

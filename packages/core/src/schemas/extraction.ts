@@ -111,6 +111,38 @@ export const noteExtractionSchema = z.object({
     .describe("Lowercase topical tags, e.g. fintech, decision-maker"),
 });
 
+/**
+ * Read-side variant of {@link relationshipSchema}, for extractions that were
+ * already PERSISTED (a `confirmations.payload`) rather than just returned by
+ * the model.
+ *
+ * The schema above must keep every late-added field `.nullable()` and never
+ * `.optional()`, so the Zod-derived JSON schema stays strict-mode compatible
+ * for structured outputs. But that strictness is a contract with the MODEL,
+ * not with rows written before those fields existed: in an older payload they
+ * are ABSENT, and `.nullable()` rejects `undefined`. Parsing one then throws —
+ * which is how a single legacy confirmation took out the whole /app inbox, and
+ * Home with it, since the queue parses every row inside a `map()`.
+ *
+ * So on the read path the six required-but-nullable fields default to null when
+ * missing. Output type is unchanged (still non-optional), so writers and every
+ * consumer of `NoteExtraction` are unaffected.
+ */
+export const storedRelationshipSchema = relationshipSchema.extend({
+  entity_type_hint: z.string().nullable().default(null),
+  object_is_named: z.boolean().nullable().default(null),
+  role_title: z.string().nullable().default(null),
+  is_current: z.boolean().nullable().default(null),
+  started_at: z.string().nullable().default(null),
+  ended_at: z.string().nullable().default(null),
+});
+
+/** {@link noteExtractionSchema} for already-persisted payloads — see
+ *  {@link storedRelationshipSchema} for why the read path is more forgiving. */
+export const storedNoteExtractionSchema = noteExtractionSchema.extend({
+  relationships: z.array(storedRelationshipSchema),
+});
+
 export type Fact = z.infer<typeof factSchema>;
 export type Relationship = z.infer<typeof relationshipSchema>;
 export type FollowUp = z.infer<typeof followUpSchema>;

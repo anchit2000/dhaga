@@ -2,6 +2,7 @@
 
 import type { Dispatch, RefObject, SetStateAction } from "react";
 import { FormError } from "@/components/app/feedback";
+import { AiGateNotice } from "../AiGateNotice";
 import { CardPhotoCapture } from "./CardPhotoCapture";
 import { CAPTURE_MODES, type CaptureMode } from "./capture-mode";
 import { PasteCapture } from "./PasteCapture";
@@ -27,6 +28,7 @@ export function CaptureForm({
   captureOpen,
   onCaptureToggle,
   inDialog = false,
+  aiGate = null,
 }: {
   mode: CaptureMode;
   setMode: (mode: CaptureMode) => void;
@@ -47,6 +49,10 @@ export function CaptureForm({
   /** True when rendered inside the capture Dialog, where the dock must sit
    *  in-flow instead of floating (see QuickAddDock's `floating` prop). */
   inDialog?: boolean;
+  /** Why extract/scan are greyed out (no AI credits left), or null. Capture
+   *  itself (camera, upload, on-device voice) stays live — only the submits
+   *  that spend a credit are gated, and Manual never is. */
+  aiGate?: string | null;
 }) {
   const voice = useCaptureVoice(pasteTextareaRef);
   // Off the home dock (the standalone page / nav dialog) the paste tab carries
@@ -85,6 +91,8 @@ export function CaptureForm({
         ))}
       </div>
 
+      {aiGate ? <AiGateNotice reason={aiGate} /> : null}
+
       {mode === "photo" ? (
         <CardPhotoCapture
           storeCardPhotos={storeCardPhotos}
@@ -92,6 +100,7 @@ export function CaptureForm({
           setPhotos={setPhotos}
           pending={pending}
           formAction={formAction}
+          aiGate={aiGate}
         />
       ) : (
         <PasteCapture
@@ -99,6 +108,7 @@ export function CaptureForm({
           pasteTextareaRef={pasteTextareaRef}
           voice={voice}
           showVoice={inlineVoice}
+          aiGate={aiGate}
         />
       )}
 

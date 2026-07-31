@@ -7,6 +7,7 @@ import {
   effectiveMonthlyAiCap,
   hasUnlimitedAiCredits,
 } from "@/lib/ai/metering";
+import { aiGateReason } from "@/lib/ai/gate";
 import { getCachedAppConfig } from "@/lib/cache/app-navigation";
 import { listEvents } from "@/lib/repo/events";
 import { HOME_PREVIEW_LIMIT } from "@/utils/constants/app";
@@ -16,7 +17,9 @@ import type { ReactElement } from "react";
  * Home's bottom capture dock. Its own Suspense boundary: every query here is
  * fast (no calendar / suggestions chain), so it paints without waiting on the
  * dashboard's slow serial chain. The AI-usage line routes through aiUsageLabel
- * so free-tier users (cap 0) see "cloud AI is a paid feature", not "0 of 0 used".
+ * so a plan an admin has zeroed reads as "no credits on this plan" rather than
+ * the broken-looking "0 of 0 used"; everyone else, free tier included, sees
+ * their running "N of M AI credits used".
  */
 export async function HomeDock({ userId }: { userId: string }): Promise<ReactElement> {
   const [events, appConfig, used, unlimited] = await Promise.all([
@@ -36,6 +39,7 @@ export async function HomeDock({ userId }: { userId: string }): Promise<ReactEle
       storeCardPhotos={appConfig.storeCardPhotos}
       homeDock
       aiUsage={usageLabel ?? undefined}
+      aiGate={await aiGateReason(userId)}
     />
   );
 }

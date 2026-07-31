@@ -55,9 +55,10 @@ export async function addNoteAction(
   try {
     budgeted = await withUserDb(userId, async () => {
       const noteId = await addNote(contactId, kind, body);
-      // Free tier (cap 0) / an exhausted paid month has no AI budget: skip enqueuing
-      // a job that would only fail, and surface a calm paid-feature notice instead
-      // of "extracting facts…". The note is still saved either way.
+      // A month whose credits are spent — free (10) or paid — has no AI budget:
+      // skip enqueuing a job that would only fail, and surface a calm
+      // out-of-credits notice instead of "extracting facts…". The note is still
+      // saved either way.
       const hasBudget = await hasMonthlyAiBudget(userId);
       if (hasBudget) {
         await createExtractionJob({ contactId, kind: "note_extraction", noteId });
@@ -74,7 +75,7 @@ export async function addNoteAction(
       // Says the part users can't see: the worker owns the job from here, so
       // leaving the page can't cancel it (processExtractionJob commits regardless).
       ? "Note saved — extracting facts in the background. This keeps running if you leave the page."
-      : "Note saved. Automatic fact extraction is a paid feature.",
+      : "Note saved. You're out of AI credits this month, so facts weren't extracted.",
   };
 }
 

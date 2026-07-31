@@ -26,6 +26,7 @@ function isSettingsTab(value: string): value is SettingsTab {
 export function SettingsTabs({
   calendarActive,
   account,
+  credits,
   capture,
   calendar,
   messaging,
@@ -34,6 +35,7 @@ export function SettingsTabs({
 }: {
   calendarActive: boolean;
   account: ReactNode;
+  credits: ReactNode;
   capture: ReactNode;
   calendar: ReactNode;
   messaging: ReactNode;
@@ -65,6 +67,7 @@ export function SettingsTabs({
 
   const panels: Record<SettingsTab, ReactNode> = {
     account,
+    credits,
     capture,
     calendar,
     messaging,

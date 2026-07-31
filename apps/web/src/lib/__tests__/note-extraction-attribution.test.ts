@@ -39,8 +39,9 @@ vi.mock("@dhaga/core", async (importOriginal) => {
 });
 
 // This test is about failure attribution (graph write vs. AI call), not the
-// free-tier gate. Cloud AI is now paid (free cap = 0), so grant budget via
-// DHAGA_AI_MONTHLY_CAP or assertAiBudget throws before extraction runs.
+// monthly cap. Every user has a finite allowance (10 on free), so seed a large
+// instance default via DHAGA_AI_MONTHLY_CAP or assertAiBudget throws before
+// extraction runs.
 beforeEach(() => {
   vi.stubEnv("DHAGA_AI_MONTHLY_CAP", "1000");
 });

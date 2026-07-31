@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Pencil, Waypoints } from "lucide-react";
 import { requireUserIdForPage } from "@/lib/auth/guard";
+import { aiGateReason } from "@/lib/ai/gate";
 import { getContact } from "@/lib/repo/contacts";
 import { isReachOutDue } from "@/lib/repo/reminders";
 import { Button } from "@/components/ui/button";
@@ -36,11 +37,15 @@ export default async function PersonPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireUserIdForPage();
+  const userId = await requireUserIdForPage();
   const { id } = await params;
   const detail = await getContact(id);
   if (!detail) notFound();
   const { contact, companyName } = detail;
+  // Resolved ONCE for the whole page and handed to each AI control — the three
+  // AI sections here must not each open their own metering read (aiGateReason is
+  // React-cached, but the explicit prop keeps the single-read contract visible).
+  const aiGate = await aiGateReason(userId);
   const lastTouch = contact.lastReachedOutAt ?? contact.createdAt;
   const isDue = isReachOutDue(contact.reachOutEveryDays, lastTouch);
 
@@ -102,7 +107,7 @@ export default async function PersonPage({
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="space-y-6">
-          <BriefSection contactId={id} />
+          <BriefSection contactId={id} aiGate={aiGate} />
           <Suspense fallback={<ListSkeleton rows={2} />}>
             <RelationshipsSection contactId={id} name={contact.name} />
           </Suspense>
@@ -111,12 +116,12 @@ export default async function PersonPage({
             <FollowUpsSection contactId={id} />
           </Suspense>
           <Suspense fallback={<ListSkeleton rows={3} />}>
-            <FactsSection contactId={id} />
+            <FactsSection contactId={id} aiGate={aiGate} />
           </Suspense>
           <Suspense fallback={<ListSkeleton rows={3} />}>
             <NotesSection contactId={id} />
           </Suspense>
-          <DraftSection contactId={id} />
+          <DraftSection contactId={id} aiGate={aiGate} />
           <Suspense fallback={<ListSkeleton rows={3} />}>
             <TimelineSection
               contactId={id}

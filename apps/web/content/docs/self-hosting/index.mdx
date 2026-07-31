@@ -168,36 +168,48 @@ From a user's detail page (`/app/admin/users/[id]`) an admin can, without
 Stripe, comp that user's access:
 
 - **Plan** — set `free`, `pro`, or `lifetime`. `free` removes the subscription
-  row (the account falls back to free tier); `pro`/`lifetime` grant unlimited
-  cloud AI.
-- **Expiry** — an optional date on a paid plan. Once it passes, unlimited AI
-  lapses automatically (leave it blank for no expiry).
+  row (the account falls back to the instance default allowance); `pro` and
+  `lifetime` move it onto that plan's monthly allowance — 300 credits a month
+  for Pro, no ceiling at all for Lifetime.
+- **Expiry** — an optional date on a paid plan. Once it passes the plan stops
+  being in play and the account drops back to the instance default allowance
+  (leave it blank for no expiry).
 - **AI credits** — a per-user monthly cloud-AI credit allowance, stored as the
-  `ai_monthly_cap_override` setting. This overrides both the free-tier cap and
-  `DHAGA_AI_MONTHLY_CAP` for that one user; blank or `0` clears it. Credits are
+  `ai_monthly_cap_override` setting. It sits at the top of the precedence ladder
+  for that one user, beating a running promotion, the plan allowance and the
+  instance default alike; blank or `0` clears it. Credits are
   charged per user-visible action, not per model call — a card scan costs 1
   credit whether it takes one round-trip or three, and deep research costs 20
   (`packages/core/src/metering/credits.ts`, BRD §8.3).
 
-These controls live only in the EE admin panel — a core-only self-host raises
-the cap for *everyone* with `DHAGA_AI_MONTHLY_CAP` instead (see the env table
-below).
+These controls live only in the EE admin panel. On a core-only self-host billing
+isn't running, so no plan is ever in play and every user resolves through the
+instance-wide default — which is what `DHAGA_AI_MONTHLY_CAP` seeds (see the env
+table below).
 
 ### Instance-wide AI credit controls (`/app/admin/ai-credits`, hosted/EE)
 
 Beside that per-user override, `/app/admin/ai-credits` carries three levers that
 apply to the whole instance:
 
-- **Plan-cap enforcement** — a master switch that is **off on every instance**
-  (`AI_PLAN_CAP_ENFORCEMENT_DEFAULT = false`). While it is off the plan
-  allowances below are stored but ignored, and behaviour is exactly what it was
-  before these controls existed: paid plans bypass the cap through
-  `hasUnlimitedAi`, and the pricing page sells Pro and Annual as "no monthly
-  cap". Turning it on gives every existing paying customer a ceiling they were
-  never sold — a pricing decision, not a metering one.
+- **Plan-cap enforcement** — a master switch that is **on by default**
+  (`AI_PLAN_CAP_ENFORCEMENT_DEFAULT = true`). In the shipped state every user is
+  held to the monthly allowance for their plan: Free and Pro have a number,
+  Lifetime / Annual has no cap. That is what the pricing page states — it sells
+  Pro and Annual as **300 credits a month** and says what runs out when they do
+  — so leave it on unless you have a reason not to. Turning it **off** is an
+  escape hatch (a migration, an incident), not a resting state: the allowances
+  below are then stored but ignored, every plan resolves through its raw billing
+  entitlement (`hasUnlimitedAi`) instead, and users with no plan fall back to the
+  instance default. Promotions and grants keep working either way.
 - **Monthly allowance per plan** — runtime-editable overrides of the shipped
   numbers (`PLAN_AI_CREDITS_PER_MONTH`), per plan, each of which can also be set
-  to "no cap". Inert until the switch above is on.
+  to "no cap". **Free** is editable here exactly like Pro and Power, and it does
+  double duty: whatever it is set to is also the instance-wide default (rung 4
+  below). The card names the live number and where it came from — e.g.
+  "Effective default: 10 credits / month — from the shipped default in code",
+  or from "the Free allowance set here", or from "the `DHAGA_AI_MONTHLY_CAP`
+  seed".
 - **Promotional month** — lifts *every* user to one allowance for a window
   ("everyone gets 1,000 credits this month"). It works whether or not
   enforcement is on, and it ends at the **start** of its end date, evaluated on
@@ -209,10 +221,33 @@ expiry that defaults to the end of the current month. A grant only moves the
 ceiling — `ai_actions`, the only record of what cloud AI actually cost, is never
 rewritten, and "End now" stops a grant counting without deleting its row.
 
-Precedence, highest first (`apps/web/src/lib/ai/metering/cap.ts`): per-user
-override → active promotion → plan allowance (only with the switch on, and only
-when a plan is in play) → `DHAGA_AI_MONTHLY_CAP` → free tier. Active grants are
-added on top of whichever one wins.
+Precedence, highest first
+(`apps/web/src/lib/ai/metering/cap/index.ts`):
+
+1. **Per-user admin override** (`ai_monthly_cap_override`) — wins outright,
+   including over a running promotion.
+2. **Active instance-wide promotion** — applies whether or not enforcement is on.
+3. **Plan allowance** — when the master switch is on (it is, by default) *and* a
+   **paid** plan is in play. The admin-edited value if one is set, else the
+   constant in `apps/web/src/utils/constants/plans.ts`; `null` means no ceiling.
+4. **The instance default** (`instanceDefaultCap()` in
+   `apps/web/src/lib/ai/metering/cap/instance-default.ts`): the admin-set
+   **Free** allowance, else `DHAGA_AI_MONTHLY_CAP`, else the shipped
+   `FREE_TIER_AI_CREDITS_PER_MONTH` (10 credits a month).
+
+Then, on top of whichever rung won, **every active grant for this user** is
+added.
+
+Rung 4 is the one that catches a free user, a user no plan governs (a self-host,
+where billing isn't running), and everyone when the master switch is off. Free
+users resolving *there* rather than through the plan ladder is deliberate: it
+means `DHAGA_AI_MONTHLY_CAP` means the same thing on a self-host as it does on
+an instance that has billing. Note what "seed" implies — the env var supplies
+the instance default only while nothing has been set in the database. The moment
+an admin sets a number (a per-user override, a promotion, a plan allowance, or
+the Free allowance), that stored number wins and the env var stops mattering.
+Nothing is copied into the database at boot; env is simply read last, so there
+is one live number and the admin screen can say where it came from.
 
 **What a core-only self-host gets.** The two tables this feature stores its
 state in — `ai_budget_settings` and `ai_credit_grants`
@@ -223,10 +258,11 @@ to write to them (both simply stay empty), and no row-level security on them
 either — `ai_credit_grants` gets its bespoke
 `user_id IS NULL OR user_id = <tenant>` policy only from
 `packages/ee/src/db/rls-ddl.ts`, and `ai_budget_settings` deliberately gets none
-anywhere, being operator config rather than user data. The cap resolves exactly
-as it did before: whatever `DHAGA_AI_MONTHLY_CAP` says, else the free-tier
-constant. **Nothing here is required from `packages/ee` to self-host**, and the
-Level 2 removal list above needs no additions — the new admin page and its
+anywhere, being operator config rather than user data. With both tables empty and
+no billing running, every user resolves at rung 4 and one number governs the
+whole instance: whatever `DHAGA_AI_MONTHLY_CAP` seeds, else the shipped 10
+credits a month. **Nothing here is required from `packages/ee` to self-host**,
+and the Level 2 removal list above needs no additions — the new admin page and its
 server actions and components live under `apps/web/src/app/app/admin/`,
 `apps/web/src/lib/actions/admin/` and `apps/web/src/components/app/admin/`,
 which are already on it.

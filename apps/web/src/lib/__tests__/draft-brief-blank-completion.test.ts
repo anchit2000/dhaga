@@ -39,10 +39,10 @@ vi.mock("@dhaga/core", async (importOriginal) => {
 
 const emptyFields = { emails: [], phones: [], links: [], location: null };
 
-// This suite is about blank-completion handling, not the free-tier AI gate.
-// Cloud AI is now a paid feature (free cap = 0), so grant budget via the same
-// DHAGA_AI_MONTHLY_CAP override a self-hoster/paid tier uses — otherwise
-// assertAiBudget throws before draft/brief ever run.
+// This suite is about blank-completion handling, not the monthly credit cap.
+// Every user has a finite allowance (10 on free), so seed a large instance
+// default via DHAGA_AI_MONTHLY_CAP — otherwise a long run could exhaust the
+// budget and assertAiBudget would throw before draft/brief ever run.
 beforeEach(() => {
   vi.stubEnv("DHAGA_AI_MONTHLY_CAP", "1000");
 });

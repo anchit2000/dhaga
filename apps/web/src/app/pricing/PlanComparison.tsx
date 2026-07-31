@@ -16,11 +16,18 @@ export function PlanComparison(): ReactElement {
         Compare every plan
       </h2>
       <p className="mt-3 max-w-2xl text-fog">
-        The only hard limit anywhere is the job-change watchlist, capped at 25
-        contacts on every paid plan. Everything else is either included or a
-        paid feature — no per-action meter, no overage bill.
+        Cloud AI runs on a monthly credit allowance — 10 free, 300 on Pro and
+        Annual. Everything else is unlimited on every plan. The job-change
+        watchlist is capped at 25 contacts on the paid plans, and its nightly
+        scans cost no credits.
       </p>
-      <div className="mt-10 overflow-x-auto rounded-2xl border border-wash/10 bg-panel/40">
+      {/* `relative` is load-bearing, not decoration: each cell carries an
+          `sr-only` span, which is `position: absolute`. Without a positioned
+          wrapper their containing block is `main`, so at 375px they sit at the
+          720px table's far edge OUTSIDE this scroller's clip and drag the whole
+          page 236px sideways. Positioning the scroller makes it their
+          containing block, and the overflow is contained again. */}
+      <div className="relative mt-10 overflow-x-auto rounded-2xl border border-wash/10 bg-panel/40">
         <table className="w-full min-w-[720px] border-collapse text-sm">
           <caption className="sr-only">
             Dhaga plan comparison: what the Free, Annual, and Pro plans include.

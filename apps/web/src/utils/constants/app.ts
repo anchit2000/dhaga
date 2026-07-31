@@ -3,6 +3,7 @@
 import { BookOpen, Building2, CalendarDays, CirclePlus, Gift, GitMerge, Home, Inbox, MapPin, Newspaper, Shapes, Sparkles, Star, Upload, Users, Waypoints } from "lucide-react";
 import type { CaptureImageType } from "@dhaga/core/src/api/capture";
 import type { RecentReason } from "@/lib/repo/last-touch";
+import { PLAN_AI_CREDITS_PER_MONTH } from "./plans";
 
 export const SESSION_COOKIE = "dhaga_session";
 
@@ -46,13 +47,19 @@ export const RECENT_REASON_LABELS: Record<RecentReason, string> = {
 };
 
 /**
- * Free-tier cloud AI action cap per calendar month (BRD §8.3). The free tier
- * gets no cloud AI at all — AI actions are a paid feature (Pro and up). The
- * app stays fully usable manually on the free tier. Self-hosters re-enable AI
- * by raising the cap via the `DHAGA_AI_MONTHLY_CAP` env override (see
- * lib/ai/metering).
+ * Free-tier cloud AI credit cap per calendar month (BRD §8.3), and the
+ * shipped floor of the whole cap ladder. Free gets a real, small taste of
+ * cloud AI — 10 credits buys 10 card scans, or 5 scans plus 5 notes, or 5
+ * Ask-Dhaga questions (per-action prices: `packages/core/src/metering/
+ * credits.ts`). Deep research is 20, so it never fits in a free month, and
+ * enrichment/briefs stay feature-gated to paid plans regardless (PLAN_FEATURES).
+ *
+ * Derived from PLAN_AI_CREDITS_PER_MONTH.free so the free tier has ONE number:
+ * an admin re-sizing "Free" at /app/admin/ai-credits overrides it at runtime,
+ * and `DHAGA_AI_MONTHLY_CAP` seeds it when nothing is set in the DB (see
+ * lib/ai/metering/cap/index.ts).
  */
-export const FREE_TIER_AI_CREDITS_PER_MONTH = 0;
+export const FREE_TIER_AI_CREDITS_PER_MONTH = PLAN_AI_CREDITS_PER_MONTH.free ?? 0;
 
 export const CONTACT_SOURCES = ["manual", "quick_add", "import", "messaging"] as const;
 export type ContactSource = (typeof CONTACT_SOURCES)[number];

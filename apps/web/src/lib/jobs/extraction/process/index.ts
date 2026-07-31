@@ -7,6 +7,7 @@ import {
 import { notifyJobOutcome } from "@/lib/repo/notifications";
 import { withUserDb } from "@/lib/db/request-scope";
 import { AiBudgetError } from "@/lib/ai/metering";
+import { EXTRACTION_BLOCKED_LABEL } from "@/utils/constants/extraction-jobs";
 import type { ExtractionJobKind, ExtractionStreamEvent } from "@/types";
 import { processEnrichment, processNote } from "./kinds";
 
@@ -57,7 +58,7 @@ export async function processExtractionJob(
     if (outcome.blocked) {
       // No AI budget: a terminal, non-retryable state (not a failure). The UI
       // shows a calm notice; the stream reports it as "blocked".
-      const message = outcome.notice ?? "Automatic fact extraction is a paid feature.";
+      const message = outcome.notice ?? EXTRACTION_BLOCKED_LABEL;
       await withUserDb(userId, () => blockedExtractionJob(jobId, message));
       await notifyJobOutcome(userId, subject, { status: "blocked", kind });
       emit({ type: "blocked", message });

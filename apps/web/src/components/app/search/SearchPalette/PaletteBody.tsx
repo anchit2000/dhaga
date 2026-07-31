@@ -17,6 +17,9 @@ interface PaletteBodyProps {
   formId: string;
   onNavigate: () => void;
   onAsk: (question: string) => void;
+  /** Why Ask Dhaga is greyed out (no AI credits left), or null. Never applied
+   *  to the Search tab — keyword search spends no credits. */
+  aiGate: string | null;
 }
 
 /**
@@ -36,6 +39,7 @@ export function PaletteBody({
   formId,
   onNavigate,
   onAsk,
+  aiGate,
 }: PaletteBodyProps): ReactElement {
   return (
     <div className="max-h-[60vh] overflow-y-auto p-3">
@@ -55,6 +59,7 @@ export function PaletteBody({
               hasQuery={query.trim().length > 0}
               formId={formId}
               onNavigate={onNavigate}
+              aiGate={aiGate}
             />
           )}
         </div>
@@ -69,7 +74,7 @@ export function PaletteBody({
             {mode === "ask" ? (
               <Receipts receipts={ask.state.receipts} pending={ask.pending} onNavigate={onNavigate} />
             ) : (
-              <SearchAskBridge query={query} onAsk={onAsk} />
+              <SearchAskBridge query={query} onAsk={onAsk} aiGate={aiGate} />
             )}
           </aside>
         ) : null}

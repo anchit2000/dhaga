@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { AiGateNotice } from "@/components/app/AiGateNotice";
 import { ThreadLoader } from "@/components/brand/ThreadLoader";
 import { ASK_MESSAGES } from "@/utils/constants/loader-messages";
 import type { AskStreamState } from "../useAskStream";
@@ -19,30 +20,36 @@ export function AskPanel({
   hasQuery,
   formId,
   onNavigate,
+  aiGate,
 }: {
   state: AskStreamState;
   pending: boolean;
   hasQuery: boolean;
   formId: string;
   onNavigate: () => void;
+  /** Why Ask Dhaga is greyed out (no AI credits left), or null. Advisory — the
+   *  /api/search/ask route still asserts the budget for a stale client. */
+  aiGate: string | null;
 }) {
   const { steps, answer, notice } = state;
 
   return (
     <div className="space-y-3">
       {hasQuery ? (
-        <div className="flex items-center justify-between gap-3 rounded-2xl border border-amber/25 bg-amber/[0.05] p-4">
-          <p className="text-sm text-fog">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber/25 bg-amber/[0.05] p-4">
+          <p className="min-w-0 flex-1 text-sm text-fog">
             Get a reasoned answer with receipts, not just matches.
           </p>
           <Button
             type="submit"
             form={formId}
             loading={pending}
+            disabled={aiGate !== null}
             className="h-9 shrink-0 px-4 text-sm"
           >
             Ask Dhaga ✦
           </Button>
+          {aiGate ? <AiGateNotice reason={aiGate} className="w-full" /> : null}
         </div>
       ) : (
         <p className="px-1 py-8 text-center text-sm text-fog">

@@ -2,6 +2,7 @@
 
 export const SETTINGS_TABS = [
   { value: "account", label: "Account" },
+  { value: "credits", label: "Credits" },
   { value: "capture", label: "Capture" },
   { value: "calendar", label: "Calendar" },
   { value: "messaging", label: "Messaging" },
@@ -23,6 +24,7 @@ export type SettingsTab = (typeof SETTINGS_TABS)[number]["value"];
 export const SETTINGS_HASH_TO_TAB: Record<string, SettingsTab> = {
   account: "account",
   appearance: "account",
+  credits: "credits",
   capture: "capture",
   "voice-dictation": "capture",
   "voice-teaching": "capture",

@@ -4,13 +4,15 @@ import { getBillingGate } from "@/lib/hosted/gate";
 import { activeGrantedCredits, getAiBudgetConfig, resolvePlanAllowance } from "@/lib/repo/ai-budget";
 import { AI_MONTHLY_CAP_OVERRIDE_KEY, getSetting } from "@/lib/repo/settings";
 import { isAiAllowancePlan } from "@/utils/constants/ai-budget";
-import { FREE_TIER_AI_CREDITS_PER_MONTH } from "@/utils/constants/app";
 import type { AiBudgetConfig, AiPlanAllowances } from "@/types";
+import { instanceDefaultCap, monthlyAiCap } from "./instance-default";
+
+export { instanceDefaultCap, monthlyAiCap } from "./instance-default";
 
 /**
  * THE ONE PLACE the monthly AI-credit ceiling is decided. Precedence, highest
- * first — this list is the contract, and lib/__tests__/ai-action-metering pins
- * every rung of it:
+ * first — this list is the contract, the admin screen restates it verbatim, and
+ * lib/__tests__/ai-action-metering pins every rung of it:
  *
  *   1. Per-user admin override (`settings.ai_monthly_cap_override`). Wins
  *      OUTRIGHT, including over a running promotion: an admin who typed a number
@@ -20,27 +22,27 @@ import type { AiBudgetConfig, AiPlanAllowances } from "@/types";
  *   2. Active instance-wide promotion ("everyone gets 1000 credits this month").
  *      Applies whether or not plan-cap enforcement is on, because a generous
  *      month must not require turning caps on for everybody.
- *   3. Plan allowance — ONLY when the master switch is on AND a plan is actually
- *      in play. Admin-edited value if set, else the constant in
+ *   3. Plan allowance — when the master switch is on (it is, by default) AND a
+ *      PAID plan is in play. Admin-edited value if set, else the constant in
  *      utils/constants/plans.ts. A `null` allowance means no ceiling.
- *   4. `DHAGA_AI_MONTHLY_CAP` (the self-host env override).
- *   5. FREE_TIER_AI_CREDITS_PER_MONTH (0 — cloud AI is a paid feature).
+ *   4. The INSTANCE DEFAULT — `instanceDefaultCap()`, ./instance-default.ts:
+ *      the admin-set FREE allowance, else `DHAGA_AI_MONTHLY_CAP`, else
+ *      FREE_TIER_AI_CREDITS_PER_MONTH. This is the rung for a free user, for a
+ *      user no plan governs (self-host, billing not running), and for everyone
+ *      the master switch is turned off for.
  *
  * Then, on top of whichever rung won: + every active GRANT for this user. Grants
  * are additive make-goods and never touch `ai_actions`, so recorded usage is
  * unchanged and still auditable.
+ *
+ * THE ENV VAR IS A SEED, NOT AN OVERRIDE. `DHAGA_AI_MONTHLY_CAP` supplies the
+ * starting number for an instance where nothing has been set in the database;
+ * the moment an admin sets one — an override, a promotion, a plan allowance, or
+ * the free allowance that doubles as the instance default — that stored number
+ * wins and the env var stops mattering. Nothing is copied into the DB at boot:
+ * env is simply read last, so there is one live number and the admin screen can
+ * name where it came from.
  */
-
-/**
- * Self-hosters raise the cap via DHAGA_AI_MONTHLY_CAP; hosted free tier = 0
- * (cloud AI is a paid feature). A self-hoster who wants AI on the free tier
- * sets this env var to a positive number. Denominated in CREDITS — a card scan
- * costs 1, heavier actions cost more (see @dhaga/core's credit table).
- */
-export function monthlyAiCap(): number {
-  const fromEnv = Number(process.env.DHAGA_AI_MONTHLY_CAP);
-  return Number.isFinite(fromEnv) && fromEnv > 0 ? fromEnv : FREE_TIER_AI_CREDITS_PER_MONTH;
-}
 
 /**
  * A per-user monthly AI-credit allowance an admin can grant, stored on the
@@ -65,8 +67,13 @@ async function actingUserId(userId?: string): Promise<string | null> {
 /**
  * `number` = this plan's ceiling, `null` = this plan has none, `undefined` = no
  * plan is in play (billing isn't running on this instance, or there's no user),
- * in which case plan-cap enforcement simply doesn't apply and the env/free-tier
+ * in which case plan-cap enforcement simply doesn't apply and the instance
  * default governs. A self-hosted build always lands on `undefined`.
+ *
+ * FREE resolves through `instanceDefaultCap` rather than the plan ladder, so
+ * "free" and "no plan is in play" are one number with one seed. Without that,
+ * `DHAGA_AI_MONTHLY_CAP` would silently do nothing for a free user on an
+ * instance that has billing — the exact confusion the seed rule exists to end.
  */
 async function planAllowanceFor(
   userId: string,
@@ -76,10 +83,11 @@ async function planAllowanceFor(
   if (!summary) return undefined;
   const plan = summary.status === "active" ? summary.plan : "free";
   if (!isAiAllowancePlan(plan)) return undefined;
+  if (plan === "free") return instanceDefaultCap(allowances).credits;
   return resolvePlanAllowance(plan, allowances);
 }
 
-/** Rungs 1–3 without the grant layer. Returns `null` for "no ceiling". */
+/** Rungs 1–4 without the grant layer. Returns `null` for "no ceiling". */
 async function resolveCeiling(
   config: AiBudgetConfig,
   userId: string | null,
@@ -93,7 +101,7 @@ async function resolveCeiling(
     const allowance = await planAllowanceFor(userId, config.allowances);
     if (allowance !== undefined) return allowance;
   }
-  return monthlyAiCap();
+  return instanceDefaultCap(config.allowances).credits;
 }
 
 /**
@@ -113,11 +121,12 @@ export async function effectiveMonthlyAiCap(userId?: string): Promise<number> {
 /**
  * Whether this user bypasses the monthly cap entirely.
  *
- * WITH THE MASTER SWITCH OFF (the default) this is exactly `hasUnlimitedAi` —
- * the behaviour every paying customer has today, and what the pricing page
- * sells. WITH IT ON, the credit ladder decides instead: a plan whose allowance
- * is `null` still has no ceiling, but Pro (300 by default) now does. A per-user
- * override or a running promotion is an explicit number, so it beats both.
+ * WITH THE MASTER SWITCH ON (the default) the credit ladder decides: a plan
+ * whose allowance is `null` — Lifetime/Annual — still has no ceiling, but Free
+ * (10) and Pro (300) do. A per-user override or a running promotion is an
+ * explicit number, so it beats both. WITH IT OFF this falls back to
+ * `hasUnlimitedAi`, i.e. the raw billing entitlement, which is the escape hatch
+ * an operator reaches for during a migration or an incident.
  */
 export async function hasUnlimitedAiCredits(userId: string): Promise<boolean> {
   const config = await getAiBudgetConfig();

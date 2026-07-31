@@ -43,6 +43,24 @@ export function formatWeekdayTime(date: Date): string {
   return WEEKDAY_TIME_FORMAT.format(date);
 }
 
+const RELATIVE_FORMAT = new Intl.RelativeTimeFormat("en-GB", { numeric: "auto" });
+
+/**
+ * "2 hours ago", "yesterday", "3 days ago" — and the absolute date once the gap
+ * passes a month, where "37 days ago" stops being easier to read than "16 Jul
+ * 2026". `now` is a parameter so callers (and tests) fix the clock rather than
+ * the function reading an ambient one mid-render.
+ */
+export function formatRelativeTime(date: Date, now: Date = new Date()): string {
+  const seconds = Math.round((date.getTime() - now.getTime()) / 1000);
+  const elapsed = Math.abs(seconds);
+  if (elapsed < 45) return "just now";
+  if (elapsed < 3600) return RELATIVE_FORMAT.format(Math.round(seconds / 60), "minute");
+  if (elapsed < 86_400) return RELATIVE_FORMAT.format(Math.round(seconds / 3600), "hour");
+  if (elapsed < 86_400 * 30) return RELATIVE_FORMAT.format(Math.round(seconds / 86_400), "day");
+  return formatDate(date);
+}
+
 const WEEKDAY_FORMAT = new Intl.DateTimeFormat("en-GB", { weekday: "long" });
 
 const DAY_MONTH_FORMAT = new Intl.DateTimeFormat("en-GB", {

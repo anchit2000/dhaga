@@ -52,6 +52,11 @@ export function PricingPlanCard({
             {plan.price}
           </p>
           <p className="mt-1 text-sm text-fog">{plan.per}</p>
+          {plan.suits ? (
+            <p className="mt-5 border-t border-seam pt-5 text-sm text-paper">
+              {plan.suits}
+            </p>
+          ) : null}
           <ul className="mt-6 flex-1 space-y-2.5">
             {plan.features.map((feature) => (
               <li key={feature} className="flex gap-2 text-sm text-fog">

@@ -1,0 +1,127 @@
+---
+title: AI credits
+description: The Credits tab in Settings — how many AI credits you have left this month, what each action costs, and exactly where the ones you spent went.
+---
+
+Every cloud-AI action in Dhaga costs **credits**. `/app/settings` → **Credits**
+is the page that tells you how many you have left, where the rest went, and
+what you did to spend them.
+
+![The Credits tab in Dhaga settings: a "Credits this month" card showing 33 of 85 credits left with a used-bar, a reset date, and a Monthly allowance / Credits added for you / Total breakdown, above a "Where your credits went" card listing deep research, card scans, Ask Dhaga, notes, briefs, drafts, quick adds, and free watchlist scans with their counts and credit costs](/docs/guide/credits.png)
+
+## How many are left
+
+The first card is the headline: **credits remaining out of your total for the
+month**, a bar showing how much of it you have used, and the date the counter
+resets. Allowances do not roll over — a fresh month starts from the full
+number.
+
+Every plan has an allowance, including the free one: a **free account gets 10
+credits a month**. That is ten card scans, or five scans and five notes, or five
+questions to Ask Dhaga — enough to keep capturing with AI, not enough to lean on
+it all month.
+
+If your plan has no monthly ceiling, the card says **Unlimited** and shows what
+you have used so far instead of a number left.
+
+If something has been *added* to your allowance, the card breaks it down rather
+than just showing a bigger number:
+
+- **Monthly allowance** — what your plan (or this instance's configuration)
+  includes.
+- **Promotion this month** — replaces the line above when whoever runs the
+  instance is running a promotional month.
+- **Credits added for you** — a one-off grant, e.g. after something went wrong
+  on their side. Grants are always *added on top*; they never rewrite what you
+  spent.
+
+## Where your credits went
+
+The second card is the breakdown for the current month: one row per kind of
+action, how many of them you ran, and what they cost. **The rows add up to the
+total** — that is the same number your monthly cap is measured against, so
+nothing is counted twice or quietly left out.
+
+Credits are charged per **action**, not per model call — a card scan that takes
+two round-trips behind the scenes is still one scan:
+
+| Action | Credits |
+|---|---|
+| Card scan | 1 |
+| Quick add (pasted text or a signature) | 1 |
+| Note (text) | 1 |
+| Follow-up draft | 1 |
+| Ask Dhaga (a question) | 2 |
+| Pre-meeting brief | 2 |
+| Deep research (enrich from the web) | 20 |
+| Watchlist scan (nightly) | Free |
+
+A **photo note** costs 2 — reading the image and extracting from the resulting
+text happen as two separate actions.
+
+**Deep research** is the expensive one on purpose: it pays for live web
+searches on top of the model, and it is the only action whose real cost is
+dominated by something other than Dhaga's own tokens.
+
+**Watchlist scans are free.** They appear in the breakdown marked *Free* rather
+than being hidden, so a month of nightly scanning is visible and accounted for
+without costing you anything. You never asked for any individual scan — how
+many people you can watch is what limits them instead.
+
+<Callout title="Credits aren't the only gate">
+Deep research costs more than a free month holds, and **deep research and
+pre-meeting briefs are Pro-and-up features** anyway — having credits left over
+doesn't unlock them. What a free allowance realistically buys is card scans,
+notes, quick add, follow-up drafts and questions to Ask Dhaga.
+</Callout>
+
+## Recent activity
+
+The last card is a plain list of your most recent AI actions — *"Card scan · 1
+credit · 2 hours ago"*. It is deliberately capped at the **20 most recent**
+actions: the month's accounting lives in the breakdown above, and this list is
+just there to jog your memory. It is not limited to this month, so opening the
+page on the 1st still shows you what you last did.
+
+<Callout title="This page is yours alone">
+Everything here is derived from your own usage records. Whoever runs the
+instance has a separate [admin
+screen](/docs/self-hosting#instance-wide-ai-credit-controls-appadminai-credits-hostedee)
+for setting allowances and granting credits — it never shows them what you
+asked or what you captured.
+</Callout>
+
+## Running out
+
+When the month's credits are gone, you find out **before** you click: the AI
+buttons are greyed out, with the reason sitting next to them — *"You're out of
+AI credits this month — all 10 used. They reset on the 1st."* — and a **See
+credits** link back to this page. Nothing fails silently, and nothing is charged
+for an action you didn't get.
+
+Greyed out until the counter resets: **Extract contact** on the paste tab,
+**Scan card**, **Ask Dhaga**, **Brief me**, **Draft follow-up**, and **Enrich
+from public web**.
+
+Everything that doesn't spend credits keeps working exactly as before — manual
+capture and editing, adding a fact or a follow-up by hand, search by name, the
+graph, import, export, and voice dictation (which runs on your own device).
+Adding photos to a card-scan tray still works too; only the **Scan** button
+itself is greyed.
+
+**Notes are deliberately never greyed out**, typed or photo — writing something
+down must not depend on having credits. What you had already typed is never
+thrown away either: save a note with an empty balance and it still saves — you
+just get told what didn't happen: *"Note saved.
+You're out of AI credits this month, so facts weren't extracted."* (a photo note
+says *"Photo note saved…"*). You can add facts by hand, or re-run extraction on
+that note once the counter resets.
+
+Seeing *"No monthly AI credits on this plan — upgrade to enable AI actions"*
+instead? That is a cap of **0**, which only happens when whoever runs the
+instance has deliberately set your allowance there. It is not what a free
+account normally looks like.
+
+Self-hosting? `DHAGA_AI_MONTHLY_CAP` seeds your instance's monthly allowance —
+it applies until an admin sets a number in the app, and from then on the stored
+number is the one that counts. See [Self-hosting](/docs/self-hosting).

@@ -7,10 +7,18 @@ import { draftFollowUpAction, type DraftState } from "@/lib/actions/drafts";
 import { Textarea } from "@/components/ui/textarea";
 import { ThreadLoader } from "@/components/brand/ThreadLoader";
 import { DRAFT_MESSAGES } from "@/utils/constants/loader-messages";
+import { AiGateNotice } from "../AiGateNotice";
 import { SubmitButton } from "../SubmitButton";
 
 /** M7: one-tap follow-up draft — editable, copy-to-clipboard. */
-export function DraftSection({ contactId }: { contactId: string }) {
+export function DraftSection({
+  contactId,
+  aiGate,
+}: {
+  contactId: string;
+  /** Why AI is unavailable (no credits left), or null when it is usable. */
+  aiGate: string | null;
+}) {
   const [state, formAction, pending] = useActionState<DraftState, FormData>(
     draftFollowUpAction,
     {},
@@ -26,12 +34,13 @@ export function DraftSection({ contactId }: { contactId: string }) {
         <h2 className="font-display text-lg">Follow-up draft</h2>
         <form action={formAction}>
           <input type="hidden" name="contactId" value={contactId} />
-          <SubmitButton className="h-9 px-4 text-sm">
+          <SubmitButton className="h-9 px-4 text-sm" disabled={aiGate !== null}>
             {state.draft ? "Redraft ✦" : "Draft follow-up ✦"}
           </SubmitButton>
         </form>
       </div>
       <FormError message={state.error} />
+      {aiGate ? <AiGateNotice reason={aiGate} /> : null}
       {pending ? (
         <ThreadLoader messages={DRAFT_MESSAGES} />
       ) : state.draft ? (

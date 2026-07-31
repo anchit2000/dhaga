@@ -11,13 +11,19 @@ const SHUTDOWN_FAQ: FaqItem = {
 const AI_PRICING_FAQ: FaqItem = {
   question: "How does the AI pricing work?",
   answer:
-    "Most of Dhaga is free and unmetered — voice transcription runs on-device (no audio leaves your browser), and event grouping and keyword search over your graph never touch cloud AI. The free tier is fully usable manually, but cloud AI (card reads, note extraction, NL search, drafts, briefs, enrichment) is a paid feature: it starts on Pro at $8/mo, with no monthly cap on Pro and Annual. The one place cost could compound — the job-change/news watchlist — stays capped at 25 contacts per plan regardless of tier. Power users can self-host and plug in their own API key or a local model and pay us nothing for AI.",
+    "Cloud AI runs on a monthly allowance of credits. One credit is one card scan, one pasted email signature, one note turned into facts, or one drafted follow-up. Asking your network a question or getting a pre-meeting brief costs 2. Deep research on a person or company — which pays for live web searches — costs 20. The nightly job-change and news watch costs nothing at all, and stays capped at 25 watched contacts on every plan. Free accounts get 10 credits a month; Pro and the founding Annual plan get 300, which comfortably covers about 100 new people a month, each scanned, noted, and asked about. Everything that isn't cloud AI — contacts, notes, facts, follow-ups, keyword search, event grouping, on-device voice transcription, export — is unlimited on every plan, free ones included. Self-hosters can plug in their own API key or a local model and pay us nothing for AI.",
+};
+
+const CREDITS_RUN_OUT_FAQ: FaqItem = {
+  question: "What happens when I run out of credits?",
+  answer:
+    "Nothing breaks and nothing is billed. Contacts and notes still save, keyword search and event grouping still work, and export still works — those never used credits. The AI parts pause: a note is kept but not turned into facts until the reset, card scanning stops (you can still add the person by hand), and asking your network a question falls back to keyword matches instead of a reasoned answer. Credits reset on the 1st of each month. They don't roll over, and there is no overage charge — the allowance is a ceiling, not a meter.",
 };
 
 const ANNUAL_FAQ: FaqItem = {
   question: "Why annual instead of monthly?",
   answer:
-    "We'd rather sell you a year at a fair, fixed price than meter every action and surprise you with a bill after a busy conference month. Subscriptions fund the hosted sync and team features; the annual tier exists for people who'd rather make one pricing decision a year, not twelve. The $79 founding price is capped at 500 seats, then it goes to $99/yr.",
+    "We'd rather sell you a year at a fair, fixed price than bill you per action and surprise you after a busy conference month. Credits are an allowance, not a meter: they never turn into a bill. Be aware of the flip side, though — a heavy conference month can outrun 300 credits. Scanning and noting 150 badges in a week spends the whole month, and AI then waits for the 1st. The $79 founding price is capped at 500 seats, then it goes to $99/yr.",
 };
 
 export const FAQ_ITEMS: FaqItem[] = [
@@ -47,8 +53,9 @@ export const PRICING_FAQ_ITEMS: FaqItem[] = [
   {
     question: "What exactly do I get for free?",
     answer:
-      "Unlimited capture and notes, the full CRM used manually, on-device voice transcription, keyword search and event grouping over your graph, full export at any time, and the right to self-host everything. What the free tier does not include is cloud AI — card reads, note extraction, natural-language search, drafts, briefs, and enrichment are a paid feature, so free accounts cost us nothing to run and we never need to meter you.",
+      "Unlimited contacts, notes, facts and follow-ups, the full CRM used manually, on-device voice transcription, keyword search and event grouping over your graph, full export at any time, and the right to self-host everything — none of that is metered, on any plan. On top of it, 10 AI credits a month: about 10 business cards scanned, or 5 cards plus 5 notes turned into facts, or 5 questions asked of your network. Enough to judge whether the AI earns its keep on your own contacts. Pre-meeting briefs, enrichment and encrypted multi-device sync stay on the paid plans.",
   },
+  CREDITS_RUN_OUT_FAQ,
   ANNUAL_FAQ,
   {
     question: "Can I self-host and pay nothing?",

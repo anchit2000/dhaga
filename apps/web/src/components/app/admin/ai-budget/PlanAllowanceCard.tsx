@@ -10,7 +10,7 @@ import {
   DEFAULT_AI_PLAN_ALLOWANCES,
   type AiAllowancePlan,
 } from "@/utils/constants/ai-budget";
-import type { AiPlanAllowances } from "@/types";
+import type { AiCapDefault, AiPlanAllowances } from "@/types";
 import type { ReactElement } from "react";
 
 function defaultLabel(plan: AiAllowancePlan): string {
@@ -23,17 +23,28 @@ function modeOf(plan: AiAllowancePlan, allowances: AiPlanAllowances): string {
   return allowances[plan] === null ? "nocap" : "custom";
 }
 
+/** Where the live instance default came from, said plainly — the one question
+ *  an operator with a `DHAGA_AI_MONTHLY_CAP` set actually has. */
+const SOURCE_LABELS: Record<AiCapDefault["source"], string> = {
+  admin: "the Free allowance set here",
+  env: "the DHAGA_AI_MONTHLY_CAP seed",
+  shipped: "the shipped default in code",
+};
+
 /**
  * The credit ladder. The constants in utils/constants/plans.ts are the
- * DEFAULTS; anything set here wins at runtime. Inert until plan-cap enforcement
- * is on — the card above says so.
+ * DEFAULTS; anything set here wins at runtime, including over
+ * `DHAGA_AI_MONTHLY_CAP`. Live as soon as enforcement is on, which it is by
+ * default — the card above says so.
  */
 export function PlanAllowanceCard({
   allowances,
   enforced,
+  instanceDefault,
 }: {
   allowances: AiPlanAllowances;
   enforced: boolean;
+  instanceDefault: AiCapDefault;
 }): ReactElement {
   return (
     <ActionForm
@@ -79,6 +90,19 @@ export function PlanAllowanceCard({
           </div>
         </div>
       ))}
+
+      <p className="text-sm text-fog">
+        <span className="text-paper">
+          Effective default:{" "}
+          {instanceDefault.credits === null
+            ? "no cap"
+            : `${instanceDefault.credits} credits / month`}
+        </span>{" "}
+        — from {SOURCE_LABELS[instanceDefault.source]}. This is what a user gets when no
+        plan governs them: on a self-host with no billing, or with enforcement off.
+        &ldquo;Free&rdquo; above is that control, so setting it also retires the{" "}
+        <code>DHAGA_AI_MONTHLY_CAP</code> seed.
+      </p>
 
       <SubmitButton className="w-full sm:w-auto">Save allowances</SubmitButton>
     </ActionForm>

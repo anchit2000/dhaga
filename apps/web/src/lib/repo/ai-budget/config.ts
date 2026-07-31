@@ -43,10 +43,11 @@ async function writeKey(key: string, value: string): Promise<void> {
 }
 
 /**
- * THE MASTER SWITCH. Off unless an admin explicitly turns it on; with it off,
- * plan allowances are inert and the effective cap is exactly what it was before
- * these controls existed. Anything other than the literal "on" reads as OFF —
- * the safe direction, since ON is what could newly refuse a paying customer.
+ * THE MASTER SWITCH. ON unless an admin explicitly turns it off (see
+ * AI_PLAN_CAP_ENFORCEMENT_DEFAULT). Once a row exists, only the literal "on"
+ * reads as on — the value is written by `setPlanCapEnforcement`, so anything
+ * else is corruption, and the readable-but-wrong direction to fail is the one
+ * that stops enforcing rather than the one that newly refuses a paying customer.
  */
 function readEnforcement(values: Map<string, string>): boolean {
   const raw = values.get(AI_PLAN_CAP_ENFORCEMENT_KEY);

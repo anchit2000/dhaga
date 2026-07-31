@@ -22,7 +22,7 @@ export function Pricing() {
         <SectionHeading
           eyebrow="Pricing"
           heading="Renew once a year. Not every month."
-          intro="One annual plan, simple as that — no monthly meter running while you're not looking. The founding price locks in before public launch."
+          intro="One annual plan, simple as that. Contacts, notes and export are unlimited and free; the AI runs on a monthly credit allowance, so there's never an overage bill. The founding price locks in before public launch."
         />
         <div className="mt-12 grid items-stretch gap-6 md:grid-cols-3">
           {PRICING_PLANS.map((plan, i) => (

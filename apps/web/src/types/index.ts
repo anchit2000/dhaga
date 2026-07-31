@@ -1,10 +1,19 @@
 // Domain split (File Length Rule): re-exported so `@/types` import paths hold.
 export type {
   AiBudgetConfig,
+  AiCapDefault,
+  AiCapDefaultSource,
   AiCreditGrant,
   AiPlanAllowances,
   AiPromotion,
 } from "./ai-budget";
+
+export type {
+  AiCreditActivityRow,
+  AiCreditAllowance,
+  AiCreditBreakdownRow,
+  AiCreditsOverview,
+} from "./ai-usage";
 
 export interface HowItWorksStep {
   step: string;
@@ -32,6 +41,8 @@ export interface PricingPlan {
   price: string;
   strikePrice?: string;
   per: string;
+  /** One plain sentence on who the plan is for, in people-per-month terms. */
+  suits?: string;
   highlight: boolean;
   badge?: string;
   features: string[];

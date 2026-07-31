@@ -7,10 +7,18 @@ import { generateBriefAction } from "@/lib/actions/brief";
 import type { BriefResult } from "@/lib/ai/brief";
 import { ThreadLoader } from "@/components/brand/ThreadLoader";
 import { BRIEF_MESSAGES } from "@/utils/constants/loader-messages";
+import { AiGateNotice } from "../AiGateNotice";
 import { SubmitButton } from "../SubmitButton";
 
 /** v1.2: one-tap pre-meeting dossier from the graph, with copy. */
-export function BriefSection({ contactId }: { contactId: string }) {
+export function BriefSection({
+  contactId,
+  aiGate,
+}: {
+  contactId: string;
+  /** Why AI is unavailable (no credits left), or null when it is usable. */
+  aiGate: string | null;
+}) {
   const [state, formAction, pending] = useActionState<BriefResult, FormData>(
     generateBriefAction,
     {},
@@ -23,12 +31,13 @@ export function BriefSection({ contactId }: { contactId: string }) {
         <h2 className="font-display text-lg">Pre-meeting brief</h2>
         <form action={formAction}>
           <input type="hidden" name="contactId" value={contactId} />
-          <SubmitButton className="h-9 px-4 text-sm">
+          <SubmitButton className="h-9 px-4 text-sm" disabled={aiGate !== null}>
             {state.brief ? "Refresh brief ✦" : "Brief me ✦"}
           </SubmitButton>
         </form>
       </div>
       <FormError message={state.error} />
+      {aiGate ? <AiGateNotice reason={aiGate} /> : null}
       {pending ? (
         <ThreadLoader messages={BRIEF_MESSAGES} />
       ) : state.brief ? (

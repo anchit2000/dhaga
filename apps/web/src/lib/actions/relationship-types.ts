@@ -1,11 +1,13 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { requireUserId } from "@/lib/auth/guard";
 import { withUserDb } from "@/lib/db/request-scope";
 import {
   createRelationshipType,
   deleteRelationshipType,
   listRelationshipTypes,
+  updateRelationshipType,
 } from "@/lib/repo/relationship-types";
 import { PreconditionError } from "@/lib/repo/errors";
 import { MutationError, mutation } from "@/lib/actions/mutation";
@@ -69,11 +71,35 @@ export async function createRelationshipTypeAction(input: {
   return { id: r.data, slug };
 }
 
+export async function updateRelationshipTypeAction(
+  id: string,
+  input: { forwardLabel: string; inverseLabel: string },
+): Promise<ActionResult> {
+  if (!id) return { error: "Missing type." };
+  const forwardLabel = input.forwardLabel?.trim() ?? "";
+  const inverseLabel = input.inverseLabel?.trim() ?? "";
+  if (!forwardLabel || !inverseLabel) {
+    return { error: "Both a forward and an inverse label are required." };
+  }
+  const r = await mutation("updateRelationshipType", () =>
+    updateRelationshipType(id, { forwardLabel, inverseLabel }),
+  );
+  if (!r.ok) return { error: r.error };
+  revalidatePath("/app/entities");
+  return { id };
+}
+
 export async function deleteRelationshipTypeAction(
   id: string,
 ): Promise<RelationshipTypeActionResult> {
   if (!id) return { error: "Missing type." };
-  const r = await mutation("deleteRelationshipType", () => deleteRelationshipType(id));
+  const r = await mutation("deleteRelationshipType", async () => {
+    const deleted = await deleteRelationshipType(id);
+    if (!deleted) {
+      throw new MutationError("This type still has relationships. Delete or retype them first.");
+    }
+  });
   if (!r.ok) return { error: r.error };
+  revalidatePath("/app/entities");
   return {};
 }

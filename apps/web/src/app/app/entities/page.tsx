@@ -2,10 +2,12 @@ import Link from "next/link";
 import { EmptyState } from "@/components/app/EmptyState";
 import { EntityCard } from "@/components/app/entities/EntityCard";
 import { NodeTypeManager } from "@/components/app/entities/NodeTypeManager";
+import { RelationshipTypeManager } from "@/components/app/relationships/RelationshipTypeManager";
 import { Button } from "@/components/ui/button";
 import { requireUserIdForPage } from "@/lib/auth/guard";
 import { getCachedNodeTypes } from "@/lib/cache/node-types";
 import { listEntities } from "@/lib/repo/entities";
+import { listRelationshipTypes, relationshipTypeUsageCounts } from "@/lib/repo/relationship-types";
 import { cn } from "@/lib/utils";
 
 export const metadata = { title: "Entities — Dhaga" };
@@ -17,7 +19,12 @@ export default async function EntitiesPage({
 }) {
   const userId = await requireUserIdForPage();
   const { type } = await searchParams;
-  const [entityRows, types] = await Promise.all([listEntities(), getCachedNodeTypes(userId)]);
+  const [entityRows, types, relationshipTypeRows, relationshipCounts] = await Promise.all([
+    listEntities(),
+    getCachedNodeTypes(userId),
+    listRelationshipTypes(),
+    relationshipTypeUsageCounts(),
+  ]);
   const counts = new Map<string, number>();
   for (const entity of entityRows) {
     counts.set(entity.typeId, (counts.get(entity.typeId) ?? 0) + 1);
@@ -28,6 +35,13 @@ export default async function EntitiesPage({
     slug: row.slug,
     color: row.color,
     count: counts.get(row.id) ?? 0,
+  }));
+  const relationshipTypesWithCounts = relationshipTypeRows.map((row) => ({
+    id: row.id,
+    slug: row.slug,
+    forwardLabel: row.forwardLabel,
+    inverseLabel: row.inverseLabel,
+    count: relationshipCounts.get(row.slug) ?? 0,
   }));
   const activeType = types.find((row) => row.slug === type) ?? null;
   const groups = types
@@ -44,6 +58,7 @@ export default async function EntitiesPage({
         <h1 className="font-display text-2xl tracking-tight">Entities</h1>
         <div className="flex items-center gap-2">
           <NodeTypeManager types={typesWithCounts} />
+          <RelationshipTypeManager types={relationshipTypesWithCounts} />
           <Button render={<Link href="/app/entities/new" />} size="sm">
             New entity
           </Button>

@@ -24,7 +24,7 @@ describe("buildPredicateOptions is kind-aware", () => {
 
   it("keeps person↔person defaults and custom precedence intact", () => {
     const options = buildPredicateOptions(
-      [{ slug: "works_at", forwardLabel: "grinds at" }],
+      [{ id: "t-works-at", slug: "works_at", forwardLabel: "grinds at", inverseLabel: "grinds with" }],
       "contact",
       "event",
     );
@@ -44,8 +44,8 @@ describe("buildPredicateOptions", () => {
     // without forking its slug; the picker must mirror that precedence or the
     // user would see two entries writing the same predicate.
     const options = buildPredicateOptions([
-      { slug: "parent_of", forwardLabel: "papa of" },
-      { slug: "trains_at", forwardLabel: "trains at" },
+      { id: "t-parent-of", slug: "parent_of", forwardLabel: "papa of", inverseLabel: "kid of" },
+      { id: "t-trains-at", slug: "trains_at", forwardLabel: "trains at", inverseLabel: "trained by" },
     ]);
     const parentEntries = options.filter((option) => option.slug === "parent_of");
     expect(parentEntries).toHaveLength(1);
@@ -68,7 +68,9 @@ describe("buildPredicateOptions", () => {
 });
 
 describe("filterPredicateOptions", () => {
-  const options = buildPredicateOptions([{ slug: "trains_at", forwardLabel: "trains at" }]);
+  const options = buildPredicateOptions([
+    { id: "t-trains-at", slug: "trains_at", forwardLabel: "trains at", inverseLabel: "trained by" },
+  ]);
 
   it("matches on the phrase and on the slug spelling", () => {
     // WHY: users type either "father of" or "father_of" — both must hit.

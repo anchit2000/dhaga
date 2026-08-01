@@ -6,6 +6,10 @@ export interface PredicateOption {
   /** Phrase reading src → dst ("father of"). */
   forward: string;
   custom: boolean;
+  /** Set only for custom entries — the relationship_types row id, needed to edit it. */
+  id?: string;
+  /** Phrase reading dst → src ("child of"); set only for custom entries. */
+  inverse?: string;
 }
 
 /** Built-in suggestions for edges whose non-person endpoint is this kind —
@@ -49,7 +53,7 @@ export function predicateKindFor(
  * its slug into two picker entries.
  */
 export function buildPredicateOptions(
-  customTypes: readonly { slug: string; forwardLabel: string }[],
+  customTypes: readonly { id: string; slug: string; forwardLabel: string; inverseLabel: string }[],
   sourceKind: RelationshipEndpointKind = "contact",
   targetKind: RelationshipEndpointKind | null = null,
 ): PredicateOption[] {
@@ -60,7 +64,13 @@ export function buildPredicateOptions(
     bySlug.set(slug, { slug, forward: humanizePredicate(slug), custom: false });
   }
   for (const type of customTypes) {
-    bySlug.set(type.slug, { slug: type.slug, forward: type.forwardLabel, custom: true });
+    bySlug.set(type.slug, {
+      slug: type.slug,
+      forward: type.forwardLabel,
+      custom: true,
+      id: type.id,
+      inverse: type.inverseLabel,
+    });
   }
   return [...bySlug.values()].sort((a, b) => a.forward.localeCompare(b.forward));
 }

@@ -14,7 +14,7 @@ export function NavLinks({ confirmationsCount }: { confirmationsCount: number })
   const { pendingHref } = useNavigationFeedback();
 
   return (
-    <nav className="flex min-w-0 items-center gap-1 overflow-x-auto">
+    <nav className="hidden min-w-0 items-center gap-1 overflow-x-auto sm:flex">
       {APP_NAV_LINKS.map((link) => {
         const active = isNavLinkActive(link.href, pathname);
         const pending = isNavLinkPending(link.href, pendingHref);

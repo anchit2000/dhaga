@@ -53,8 +53,8 @@ export function KeepInTouch({
   });
 
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-seam bg-panel p-4">
-      <div className="min-w-0 flex-1">
+    <div className="space-y-3 rounded-2xl border border-seam bg-panel p-4">
+      <div className="min-w-0">
         <p className="text-sm font-medium text-paper">Keep in touch</p>
         <p className="text-xs text-fog">
           {everyDays
@@ -64,29 +64,31 @@ export function KeepInTouch({
             : "No reminder set."}
         </p>
       </div>
-      <Select
-        value={days}
-        onChange={(event) => set(event.target.value)}
-        disabled={pending}
-        className="h-8 w-36 text-xs"
-        aria-label="Reach-out cadence"
-      >
-        <option value="">No reminder</option>
-        {CADENCE_OPTIONS.map((option) => (
-          <option key={option.days} value={option.days}>
-            {option.label}
-          </option>
-        ))}
-      </Select>
-      {everyDays ? (
-        <ActionForm
-          action={markReachedOutAction}
-          errorMessage="Couldn't update the reminder — try again."
+      <div className="flex items-center justify-between gap-2">
+        <Select
+          value={days}
+          onChange={(event) => set(event.target.value)}
+          disabled={pending}
+          className="h-8 w-36 text-xs"
+          aria-label="Reach-out cadence"
         >
-          <input type="hidden" name="contactId" value={contactId} />
-          <SmallSubmit label="I reached out ✓" />
-        </ActionForm>
-      ) : null}
+          <option value="">No reminder</option>
+          {CADENCE_OPTIONS.map((option) => (
+            <option key={option.days} value={option.days}>
+              {option.label}
+            </option>
+          ))}
+        </Select>
+        {everyDays ? (
+          <ActionForm
+            action={markReachedOutAction}
+            errorMessage="Couldn't update the reminder — try again."
+          >
+            <input type="hidden" name="contactId" value={contactId} />
+            <SmallSubmit label="I reached out ✓" />
+          </ActionForm>
+        ) : null}
+      </div>
     </div>
   );
 }

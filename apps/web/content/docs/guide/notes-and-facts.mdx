@@ -129,5 +129,11 @@ from.
 - **Delete the person** and the cascade runs all the way down: notes, facts,
   graph edges, and embeddings all go with them.
 
+The one exception is the receipt note left behind by an import, a card scan, a
+QR scan, or a WhatsApp capture: it can't be edited, deleted, or re-run through
+extraction. It is not something you wrote — it is the permanent record of how
+the contact got into Dhaga in the first place, so it doesn't count toward your
+notes either.
+
 Want to add outside context to a person? See
 [Enrich from the web](/docs/guide/enrich-from-web).

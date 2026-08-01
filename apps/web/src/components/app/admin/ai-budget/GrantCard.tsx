@@ -34,26 +34,19 @@ export function GrantCard({ userId }: { userId?: string }): React.JSX.Element {
       errorMessage="Couldn't grant credits."
       className="space-y-4 rounded-2xl border border-seam bg-panel p-5"
     >
-      {scoped ? <input type="hidden" name="userId" value={userId} /> : null}
+      <input type="hidden" name="userId" value={scoped ? userId : ""} />
       <div>
         <p className="text-sm font-medium text-paper">
-          {scoped ? "Grant credits to this user" : "Grant credits"}
+          {scoped ? "Grant credits to this user" : "Grant credits to everyone"}
         </p>
         <p className="mt-1 text-sm text-fog">
           Added on top of whatever cap applies. Recorded usage is never changed — a
-          grant repairs the ceiling, not the history.{" "}
-          {scoped ? null : "Leave the user id blank to grant to everyone."} Blank end
-          date means it never expires, so it repeats every month.
+          grant repairs the ceiling, not the history. Blank end date means it never
+          expires, so it repeats every month.
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {scoped ? null : (
-          <div className="space-y-1.5">
-            <Label htmlFor="grant-user">User id (blank = everyone)</Label>
-            <Input id="grant-user" name="userId" placeholder="everyone" className="h-11" />
-          </div>
-        )}
         <div className="space-y-1.5">
           <Label htmlFor="grant-credits">Credits</Label>
           <Input

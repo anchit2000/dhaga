@@ -2,7 +2,8 @@
 
 // Dhaga Cloud only — see packages/ee/LICENSE.
 import { revalidatePath } from "next/cache";
-import { endAiCreditGrantNow, grantAiCredits } from "@dhaga/ee/admin";
+import { endAiCreditGrantNow, getUser, grantAiCredits } from "@dhaga/ee/admin";
+import { notifyCreditsGranted } from "@/lib/admin/notify";
 import { withUserDb } from "@/lib/db/request-scope";
 import {
   setPlanAllowanceOverrides,
@@ -43,11 +44,12 @@ export async function setPlanCapEnforcementAction(formData: FormData): Promise<v
 }
 
 /**
- * Per-plan monthly allowances, Free included. Three modes per plan: "default"
- * writes no override at all so the constant in utils/constants/plans.ts applies
- * again (the constants stay the defaults), "nocap" stores null, "custom" stores
- * the number. A "custom" row with an unusable number is left unset rather than
- * silently coerced — the admin sees it snap back to the default.
+ * Per-plan monthly allowances, Free included. Per plan: the "No cap" checkbox
+ * wins when checked (stores null); otherwise a non-empty, valid `credits_*`
+ * number is stored; otherwise (blank, unchecked) nothing is written and the
+ * constant in utils/constants/plans.ts applies again (the constants stay the
+ * defaults). An unusable number is left unset rather than silently coerced —
+ * the admin sees it snap back to the default.
  *
  * Setting Free to anything also retires `DHAGA_AI_MONTHLY_CAP`: the free
  * allowance IS the instance default, and env only seeds it while unset (see
@@ -58,12 +60,10 @@ export async function setPlanAllowancesAction(formData: FormData): Promise<void>
   const adminId = await assertAdmin();
   const allowances: AiPlanAllowances = {};
   for (const plan of AI_ALLOWANCE_PLANS) {
-    const mode = String(formData.get(`mode_${plan}`) ?? "default");
-    if (mode === "nocap") {
+    if (formData.get(`nocap_${plan}`) === "on") {
       allowances[plan] = null;
       continue;
     }
-    if (mode !== "custom") continue;
     const credits = parseCount(formData.get(`credits_${plan}`));
     if (credits !== null) allowances[plan] = credits;
   }
@@ -108,15 +108,24 @@ export async function grantAiCreditsAction(formData: FormData): Promise<void> {
   if (credits === null || credits <= 0 || !reason) return;
 
   const userId = String(formData.get("userId") ?? "").trim();
+  const endsAt = parseDate(formData.get("endsAt"));
+  const trimmedReason = reason.slice(0, 200);
   await grantAiCredits({
     userId: userId || null,
     credits,
-    reason: reason.slice(0, 200),
+    reason: trimmedReason,
     grantedBy: adminId,
-    endsAt: parseDate(formData.get("endsAt")),
+    endsAt,
   });
   revalidatePath(ADMIN_AI_CREDITS_PATH);
-  if (userId) revalidatePath(`/app/admin/users/${userId}`);
+  if (userId) {
+    revalidatePath(`/app/admin/users/${userId}`);
+    const user = await getUser(userId);
+    if (user) await notifyCreditsGranted(user.email, credits, trimmedReason, endsAt);
+  }
+  // A blank userId is a broadcast grant (everyone on the instance) — emailing
+  // the whole user base is a separate feature, not this action's job, so it's
+  // deliberately skipped here rather than left as a TODO.
 }
 
 /** Stop a grant applying from now on. Not a delete — the ledger row survives. */

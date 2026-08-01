@@ -17,7 +17,7 @@ import { ensureEeSchema } from "./bootstrap";
  * subsequent tenant checkout on a reused connection — no `RESET ALL` needed
  * (see releaseScoped), and the same code is safe on both the session pooler
  * (5432) and the transaction pooler (6543). The returned `{ db, release }`
- * shape is unchanged for callers (admin/usage.ts, admin/subscription-admin.ts):
+ * shape is unchanged for callers (admin/usage.ts, admin/subscription-admin/):
  * they run their queries on `db` and `release()` in a `finally`. The
  * transaction spans that work — bounded to a query or two per admin op — and
  * `release()` commits it. (Those callers never open a nested

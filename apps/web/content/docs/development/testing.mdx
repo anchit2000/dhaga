@@ -322,14 +322,19 @@ first number an admin saves here retires it for good.
       it. Clear the credits field to end it.
 - [ ] **Grant credits** — the additive make-good. *"Added on top of whatever
       cap applies. Recorded usage is never changed — a grant repairs the
-      ceiling, not the history."* Blank user id = every user on the instance;
-      a reason is required; the expiry defaults to the first of next month
-      (blank = never expires, so it repeats every month). The same card is
-      pinned to one user on `/app/admin/users/[id]`.
-- [ ] **Grant ledger** — every grant ever made, newest first, with who/when/
-      how many/why and an **End now** button on active ones. "End now" sets
-      `ends_at`; it never deletes the row, and `ai_actions` is untouched by
-      any of it.
+      ceiling, not the history."* On this instance-wide page the card always
+      broadcasts to everyone (no free-text user id field — copy reads "Grant
+      credits to everyone"); a reason is required; the expiry defaults to the
+      first of next month (blank = never expires, so it repeats every month).
+      The same card, scoped to one person instead, is pinned to
+      `/app/admin/users/[id]` ("Grant credits to this user").
+- [ ] **Grant ledger** — moved off this page onto its own paginated screen at
+      `/app/admin/ai-credits/grants` (linked from a "Grant ledger" card here).
+      Every grant ever made, newest first, searchable by the recipient's
+      **name or email** (typing "everyone" also surfaces broadcast grants),
+      with who/when/how many/why and an **End now** button on active ones.
+      "End now" sets `ends_at`; it never deletes the row, and `ai_actions` is
+      untouched by any of it.
 - [ ] Automated: the precedence above is pinned by three vitest files —
       `apps/web/src/lib/__tests__/ai-action-metering/budget-precedence.test.ts`
       (enforcement on by default, every rung, plus "master switch off ⇒ fall

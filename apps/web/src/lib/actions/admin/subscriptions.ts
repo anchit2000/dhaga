@@ -2,7 +2,8 @@
 
 // Dhaga Cloud only — see packages/ee/LICENSE.
 import { revalidatePath } from "next/cache";
-import { setSubscriptionForUser, setAiCapOverrideFor } from "@dhaga/ee/admin";
+import { getSubscription, getUser, setSubscriptionForUser, setAiCapOverrideFor } from "@dhaga/ee/admin";
+import { notifyPlanChanged } from "@/lib/admin/notify";
 import { assertAdmin } from "./guard";
 
 type AdminPlan = "free" | "pro" | "lifetime";
@@ -25,9 +26,16 @@ export async function setSubscriptionAction(formData: FormData): Promise<void> {
     expiry = parsed;
   }
 
+  // Read the CURRENT plan before writing so we only email on an actual plan
+  // change, not a no-op save (e.g. only the expiry was edited).
+  const previousPlan = (await getSubscription(userId))?.plan ?? "free";
   await setSubscriptionForUser(userId, { plan, expiry });
   revalidatePath(`/app/admin/users/${userId}`);
   revalidatePath("/app/admin/subscriptions");
+  if (previousPlan !== plan) {
+    const user = await getUser(userId);
+    if (user) await notifyPlanChanged(user.email, plan);
+  }
 }
 
 export async function setAiCreditsAction(formData: FormData): Promise<void> {

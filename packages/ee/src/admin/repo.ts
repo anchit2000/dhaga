@@ -1,4 +1,4 @@
-import { and, count, desc, eq, ilike } from "drizzle-orm";
+import { and, count, desc, eq, getTableColumns, ilike, or } from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { getPool } from "../db/pool";
 import { openAdminConnection } from "../db/admin-db";
@@ -85,16 +85,18 @@ export async function listSubscriptions(): Promise<SubscriptionRow[]> {
   return (await db()).select().from(subscriptions).orderBy(desc(subscriptions.createdAt));
 }
 
-export async function listSubscriptionsPage({ page, pageSize, user, plan, status }: { page: number; pageSize: number; user?: string; plan?: string; status?: string }): Promise<{ rows: SubscriptionRow[]; total: number }> {
-  const conditions = [user ? ilike(subscriptions.userId, `%${user}%`) : undefined, plan ? eq(subscriptions.plan, plan) : undefined, status ? eq(subscriptions.status, status) : undefined].filter((value) => value !== undefined);
+export async function listSubscriptionsPage({ page, pageSize, user, plan, status }: { page: number; pageSize: number; user?: string; plan?: string; status?: string }): Promise<{ rows: (SubscriptionRow & { userName: string | null; userEmail: string | null })[]; total: number }> {
+  // `user` searches the joined eeUser's name/email, not the raw subscriptions.user_id
+  // — an admin thinks in "who", not in an opaque id.
+  const conditions = [user ? or(ilike(eeUser.name, `%${user}%`), ilike(eeUser.email, `%${user}%`)) : undefined, plan ? eq(subscriptions.plan, plan) : undefined, status ? eq(subscriptions.status, status) : undefined].filter((value) => value !== undefined);
   const where = conditions.length > 0 ? and(...conditions) : undefined;
   // ONE checkout for the page and its count (see listUsersPage). `subscriptions`
   // carries no RLS, so the bypass-RLS admin connection reads it identically.
   const { db: conn, release } = await openAdminConnection();
   try {
     const [rows, [total]] = await Promise.all([
-      conn.select().from(subscriptions).where(where).orderBy(desc(subscriptions.createdAt)).limit(pageSize).offset((page - 1) * pageSize),
-      conn.select({ value: count() }).from(subscriptions).where(where),
+      conn.select({ ...getTableColumns(subscriptions), userName: eeUser.name, userEmail: eeUser.email }).from(subscriptions).leftJoin(eeUser, eq(subscriptions.userId, eeUser.id)).where(where).orderBy(desc(subscriptions.createdAt)).limit(pageSize).offset((page - 1) * pageSize),
+      conn.select({ value: count() }).from(subscriptions).leftJoin(eeUser, eq(subscriptions.userId, eeUser.id)).where(where),
     ]);
     return { rows, total: total?.value ?? 0 };
   } finally {

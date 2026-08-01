@@ -5,7 +5,7 @@ import {
   reprocessNoteAction,
 } from "@/lib/actions/notes";
 import type { NoteRow } from "@/lib/db/schema";
-import { REPROCESSABLE_NOTE_KINDS } from "@/utils/constants/extraction-jobs";
+import { IMMUTABLE_NOTE_KINDS, REPROCESSABLE_NOTE_KINDS } from "@/utils/constants/extraction-jobs";
 import { formatDateTime } from "@/utils/format-date";
 import { DeleteButton } from "./DeleteButton";
 import { ReprocessButton } from "./ReprocessButton";
@@ -56,24 +56,26 @@ export function NoteList({ contactId, entityId, notes }: NoteListProps) {
                   <ReprocessButton />
                 </ActionForm>
               )}
-            <ActionForm
-              action={contactId ? deleteNoteAction : deleteEntityNoteAction}
-              errorMessage="Couldn't delete that note."
-            >
-              <input type="hidden" name="noteId" value={note.id} />
-              {contactId ? (
-                <input type="hidden" name="contactId" value={contactId} />
-              ) : (
-                <input type="hidden" name="entityId" value={entityId} />
-              )}
-              <DeleteButton
-                label={
-                  contactId
-                    ? "Delete note (removes its derived facts too)"
-                    : "Delete note"
-                }
-              />
-            </ActionForm>
+            {!(IMMUTABLE_NOTE_KINDS as readonly string[]).includes(note.kind) && (
+              <ActionForm
+                action={contactId ? deleteNoteAction : deleteEntityNoteAction}
+                errorMessage="Couldn't delete that note."
+              >
+                <input type="hidden" name="noteId" value={note.id} />
+                {contactId ? (
+                  <input type="hidden" name="contactId" value={contactId} />
+                ) : (
+                  <input type="hidden" name="entityId" value={entityId} />
+                )}
+                <DeleteButton
+                  label={
+                    contactId
+                      ? "Delete note (removes its derived facts too)"
+                      : "Delete note"
+                  }
+                />
+              </ActionForm>
+            )}
           </div>
         </li>
       ))}

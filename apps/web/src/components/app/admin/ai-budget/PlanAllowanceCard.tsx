@@ -1,8 +1,8 @@
 import { ActionForm } from "@/components/app/ActionForm";
 import { SubmitButton } from "@/components/app/SubmitButton";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
 import { setPlanAllowancesAction } from "@/lib/actions/admin/ai-budget";
 import {
   AI_ALLOWANCE_PLANS,
@@ -64,18 +64,10 @@ export function PlanAllowanceCard({
       {AI_ALLOWANCE_PLANS.map((plan) => (
         <div key={plan} className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto]">
           <div className="space-y-1.5">
-            <Label htmlFor={`mode_${plan}`}>
+            <Label htmlFor={`credits_${plan}`}>
               {AI_ALLOWANCE_PLAN_LABELS[plan]}{" "}
               <span className="text-fog">— default {defaultLabel(plan)}</span>
             </Label>
-            <Select id={`mode_${plan}`} name={`mode_${plan}`} defaultValue={modeOf(plan, allowances)}>
-              <option value="default">Use default ({defaultLabel(plan)})</option>
-              <option value="custom">Custom monthly credits</option>
-              <option value="nocap">No cap</option>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor={`credits_${plan}`}>Credits</Label>
             <Input
               id={`credits_${plan}`}
               name={`credits_${plan}`}
@@ -87,6 +79,10 @@ export function PlanAllowanceCard({
               placeholder={String(DEFAULT_AI_PLAN_ALLOWANCES[plan] ?? "")}
               className="h-11 sm:w-32"
             />
+          </div>
+          <div className="flex items-center gap-2 sm:self-end sm:pb-2.5">
+            <Checkbox id={`nocap_${plan}`} name={`nocap_${plan}`} defaultChecked={modeOf(plan, allowances) === "nocap"} aria-label={`${AI_ALLOWANCE_PLAN_LABELS[plan]} — no cap`} />
+            <Label htmlFor={`nocap_${plan}`}>No cap</Label>
           </div>
         </div>
       ))}

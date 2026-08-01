@@ -13,6 +13,12 @@ CREATE TABLE IF NOT EXISTS ai_actions (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- Backs the credits history page's keyset pagination (WHERE (created_at, id) <
+-- (cursor.at, cursor.id) ORDER BY created_at DESC, id DESC) — without it every
+-- page of an append-only, never-pruned table seq-scans, getting slower for the
+-- life of the account instead of staying flat.
+CREATE INDEX IF NOT EXISTS ai_actions_created_idx ON ai_actions (created_at DESC, id DESC);
+
 CREATE TABLE IF NOT EXISTS settings (
   key text PRIMARY KEY,
   value text NOT NULL,

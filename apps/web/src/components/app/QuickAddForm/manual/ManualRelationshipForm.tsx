@@ -20,7 +20,7 @@ import type { GraphTarget } from "@/lib/repo/graph-data";
  *  it straight through createRelationshipAction. Unlike AddRelationshipDialog
  *  the subject isn't fixed by a host page, so both endpoints are pickers. */
 export function ManualRelationshipForm(): ReactElement {
-  const { customTypes, addType } = useRelationshipTypes(true);
+  const { customTypes, addType, updateType } = useRelationshipTypes(true);
   const [subject, setSubject] = useState<GraphTarget | null>(null);
   const [object, setObject] = useState<GraphTarget | null>(null);
   const [predicate, setPredicate] = useState<PredicateOption | null>(null);
@@ -63,6 +63,7 @@ export function ManualRelationshipForm(): ReactElement {
           value={predicate}
           onSelect={setPredicate}
           onTypeCreated={addType}
+          onTypeUpdated={updateType}
         />
       </div>
       {predicate ? (

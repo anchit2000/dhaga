@@ -50,7 +50,7 @@ export function AddRelationshipDialog({
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const { customTypes, addType } = useRelationshipTypes(open);
+  const { customTypes, addType, updateType } = useRelationshipTypes(open);
   const [target, setTarget] = useState<GraphTarget | null>(null);
   const [predicate, setPredicate] = useState<PredicateOption | null>(null);
   const [flipped, setFlipped] = useState(false);
@@ -122,6 +122,7 @@ export function AddRelationshipDialog({
                 value={predicate}
                 onSelect={setPredicate}
                 onTypeCreated={addType}
+                onTypeUpdated={updateType}
               />
             </div>
             {predicate ? (

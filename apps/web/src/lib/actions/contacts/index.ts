@@ -14,4 +14,5 @@ export {
   bulkStarContactsAction,
   bulkTagContactsAction,
 } from "./bulk";
+export { addTagToContactAction, listTagSuggestionsAction } from "./tags";
 export type { ContactFormState } from "./form";

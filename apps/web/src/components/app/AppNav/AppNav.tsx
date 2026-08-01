@@ -6,6 +6,7 @@ import { ModeToggle } from "@/components/brand/ModeToggle";
 import { ThreadMark } from "@/components/brand/ThreadMark";
 import { SearchPalette } from "@/components/app/search/SearchPalette";
 import type { SearchWeights } from "@/utils/constants/search";
+import { MobileMenu } from "./MobileMenu";
 import { MoreMenu } from "./MoreMenu";
 import { NavLinks } from "./NavLinks";
 import { NavQuickAdd } from "./NavQuickAdd";
@@ -61,10 +62,18 @@ export function AppNav({
           </div>
 
           <div className="flex shrink-0 items-center gap-1">
-            <NavQuickAdd />
+            <MobileMenu confirmationsCount={confirmationsCount} />
+            <div className="hidden items-center gap-1 sm:flex">
+              <NavQuickAdd />
+            </div>
+            {/* Stays mounted + visible at every width (unchanged); the
+                sm:flex wrappers on either side hide only the desktop-only
+                pieces that moved into MobileMenu's sheet below sm:. */}
             <NotificationBell feed={notificationFeed} />
-            <ModeToggle />
-            <MoreMenu />
+            <div className="hidden items-center gap-1 sm:flex">
+              <ModeToggle />
+              <MoreMenu />
+            </div>
             <ProfileMenu isAdmin={isAdmin} />
           </div>
         </div>

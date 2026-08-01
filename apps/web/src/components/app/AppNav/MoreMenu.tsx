@@ -2,7 +2,7 @@
 
 import { Fragment } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { Compass, Ellipsis } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,21 +14,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { APP_MORE_LINKS } from "@/utils/constants/app";
-import { START_TOUR_EVENT, TOUR_QUERY_PARAM } from "@/utils/constants/onboarding";
 import { isNavLinkActive } from "./link-state";
+import { useStartTour } from "./useStartTour";
 
-/** Secondary nav destinations (People, Events, Quick add) — kept out of ProfileMenu, which is account-only. */
+/** Secondary nav destinations (People, Events, Quick add) — kept out of ProfileMenu, which is account-only.
+ *  Desktop-only: MobileMenu covers this content below sm:. */
 export function MoreMenu() {
   const pathname = usePathname();
-  const router = useRouter();
+  const startTour = useStartTour();
   const active = APP_MORE_LINKS.some((link) => isNavLinkActive(link.href, pathname));
-
-  // Home already has the tour mounted (fire the event); elsewhere, deep-link
-  // so Home mounts and picks up ?tour=1.
-  function startTour(): void {
-    if (pathname === "/app") window.dispatchEvent(new Event(START_TOUR_EVENT));
-    else router.push(`/app?${TOUR_QUERY_PARAM}=1`);
-  }
 
   return (
     <DropdownMenu>

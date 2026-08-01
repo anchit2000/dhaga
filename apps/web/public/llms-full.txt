@@ -1433,6 +1433,21 @@ people, so a shared gym or project becomes a visible thread between the people
 attached to it. Use the Layers panel there to show or hide entity types when the
 canvas gets busy.
 
+## Custom relationship types
+
+The **Add relationship** dialog (on any person, company, event, or entity page)
+comes with built-in relationship types — *father of*, *works at*, *studied
+at*, and so on — but you can also create your own, like *introduced to* or
+*potential collaboration with*, right there while adding one.
+
+Manage the ones you've created from **`/app/entities`** too, next to entity
+types — **Manage relationship types** lists each with how many relationships
+use it, and lets you rename it or delete it (deleting is blocked while any
+relationship still uses it, so you never lose data by accident).
+
+For a quick fix, you don't have to leave the Add relationship dialog: click
+the pencil next to any of your custom types in the picker to rename it inline.
+
 ---
 
 # Exploring the graph
@@ -1521,8 +1536,12 @@ several people in a row without leaving the page — type a name, pick, repeat.
 
 ![An event detail page showing its people roster and an Add people search box](/docs/guide/event-detail.png)
 
-You can also add a person to an event **from their own profile** — a handy
-shortcut when you're looking at someone and remember where you met them.
+You can also add a person to an event **from their own profile** — **Add to
+group** sits in the sticky sidebar next to Edit and View in graph, a handy
+shortcut when you're looking at someone and remember where you met them. Groups
+show as their own row on the profile, kept separate from that person's tags —
+which have their own **Add tag** control, letting you search tags you've used
+before or create a new one on the spot.
 
 ## Manage and share
 

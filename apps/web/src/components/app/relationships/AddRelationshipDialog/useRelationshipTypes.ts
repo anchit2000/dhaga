@@ -11,6 +11,7 @@ import {
 export function useRelationshipTypes(open: boolean): {
   customTypes: RelationshipTypeOption[];
   addType: (created: RelationshipTypeOption) => void;
+  updateType: (updated: RelationshipTypeOption) => void;
 } {
   const [customTypes, setCustomTypes] = useState<RelationshipTypeOption[] | null>(null);
 
@@ -33,5 +34,11 @@ export function useRelationshipTypes(open: boolean): {
     setCustomTypes((current) => [...(current ?? []), created]);
   }
 
-  return { customTypes: customTypes ?? [], addType };
+  function updateType(updated: RelationshipTypeOption): void {
+    setCustomTypes((current) =>
+      (current ?? []).map((type) => (type.id === updated.id ? updated : type)),
+    );
+  }
+
+  return { customTypes: customTypes ?? [], addType, updateType };
 }

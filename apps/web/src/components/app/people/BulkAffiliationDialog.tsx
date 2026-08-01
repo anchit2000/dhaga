@@ -42,7 +42,7 @@ export function BulkAffiliationDialog({
   onDone?: () => void;
 }) {
   const router = useRouter();
-  const { customTypes, addType } = useRelationshipTypes(open);
+  const { customTypes, addType, updateType } = useRelationshipTypes(open);
   const [mode, setMode] = useState<TargetMode>("current");
   const [companyQuery, setCompanyQuery] = useState("");
   const [companyId, setCompanyId] = useState<string | null>(null);
@@ -132,6 +132,7 @@ export function BulkAffiliationDialog({
               value={predicate}
               onSelect={setPredicate}
               onTypeCreated={addType}
+              onTypeUpdated={updateType}
             />
           </div>
         </div>

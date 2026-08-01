@@ -15,6 +15,7 @@ export const APP_NAV_LINKS = [
   { href: "/app/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/app/confirmations", label: "Confirmations", icon: Inbox },
   { href: "/app/graph", label: "Graph", icon: Waypoints },
+  { href: "/app/map", label: "Map", icon: MapPin },
 ] as const;
 
 /**
@@ -25,7 +26,6 @@ export const APP_NAV_LINKS = [
 export const APP_MORE_LINKS = [
   { href: "/app/people", label: "People", icon: Users },
   { href: "/app/companies", label: "Companies", icon: Building2 },
-  { href: "/app/map", label: "Map", icon: MapPin },
   { href: "/app/saved", label: "Saved", icon: Star },
   { href: "/app/events", label: "Events", icon: CalendarDays },
   { href: "/app/entities", label: "Entities", icon: Shapes },

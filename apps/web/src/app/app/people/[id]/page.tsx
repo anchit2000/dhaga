@@ -1,25 +1,21 @@
 import { Suspense } from "react";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Pencil, Waypoints } from "lucide-react";
 import { requireUserIdForPage } from "@/lib/auth/guard";
 import { aiGateReason } from "@/lib/ai/gate";
 import { getContact } from "@/lib/repo/contacts";
 import { isReachOutDue } from "@/lib/repo/reminders";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ListSkeleton } from "@/components/app/skeletons";
 import { BriefSection } from "@/components/app/contact/BriefSection";
 import { KeepInTouch } from "@/components/app/contact/KeepInTouch";
 import { WatchToggle } from "@/components/app/contact/WatchToggle";
-import { StarButton } from "@/components/app/contact/StarButton";
 import { OnDemandNetwork } from "@/components/app/contact/OnDemandNetwork";
 import { ContactInfoCard } from "@/components/app/contact/ContactInfoCard";
 import { DraftSection } from "@/components/app/contact/DraftSection";
 import { ForgetButton } from "@/components/app/contact/ForgetButton";
 import {
-  GroupChipsSection,
   MergeCandidatesSection,
+  PersonIdentityHeader,
 } from "./_sections/header-sections";
 import {
   FactsSection,
@@ -28,7 +24,11 @@ import {
   RelationshipsSection,
   TimelineSection,
 } from "./_sections/body-sections";
-import { CardPhotosSection, SignalsSection } from "./_sections/aside-sections";
+import {
+  CardPhotosSection,
+  ContactActionsSection,
+  SignalsSection,
+} from "./_sections/aside-sections";
 
 export const metadata = { title: "Person — Dhaga" };
 
@@ -51,53 +51,7 @@ export default async function PersonPage({
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-start gap-4">
-          <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-amber/15 font-display text-xl text-ember">
-            {contact.name.charAt(0).toUpperCase()}
-          </span>
-          <div className="min-w-0">
-            <h1 className="truncate font-display text-2xl tracking-tight">
-              {contact.name}
-              {contact.nickname ? (
-                <span className="ml-2 text-lg text-fog">“{contact.nickname}”</span>
-              ) : null}
-            </h1>
-            <p className="mt-0.5 text-sm text-fog">
-              {[contact.title, companyName].filter(Boolean).join(" · ") ||
-                "No title or company yet"}
-            </p>
-            <Suspense
-              fallback={
-                <div className="mt-2">
-                  <Skeleton className="h-11 w-40 rounded-md" />
-                </div>
-              }
-            >
-              <GroupChipsSection contactId={id} tags={contact.tags} />
-            </Suspense>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <StarButton contactId={id} starred={contact.starred} />
-          <Button
-            render={<Link href={`/app/people/${id}/edit`} />}
-            variant="outline"
-            size="sm"
-          >
-            <Pencil />
-            Edit
-          </Button>
-          <Button
-            render={<Link href={`/app/graph?focus=${id}`} />}
-            variant="outline"
-            size="sm"
-          >
-            <Waypoints />
-            View in graph
-          </Button>
-        </div>
-      </div>
+      <PersonIdentityHeader contactId={id} contact={contact} companyName={companyName} />
 
       {contact.source === "mentioned" ? (
         <Suspense fallback={<Skeleton className="h-16 w-full rounded-2xl" />}>
@@ -133,6 +87,9 @@ export default async function PersonPage({
         </div>
 
         <aside className="order-first space-y-4 lg:order-last lg:sticky lg:top-20">
+          <Suspense fallback={<Skeleton className="h-32 w-full rounded-2xl" />}>
+            <ContactActionsSection contactId={id} />
+          </Suspense>
           <ContactInfoCard detail={detail} />
           <Suspense fallback={<Skeleton className="h-28 w-40 rounded-xl" />}>
             <CardPhotosSection contactId={id} />

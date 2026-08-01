@@ -28,9 +28,12 @@ export const AI_ACTION_LABELS: Record<AiActionFeature, { one: string; many: stri
 export const UNKNOWN_AI_ACTION_LABEL = { one: "Other AI action", many: "Other AI actions" };
 
 /**
- * How many past actions the activity list shows. `ai_actions` is append-only and
- * grows for the life of the account, so this list is bounded by design — the
- * month's totals live in the breakdown above it, which is an aggregate and stays
- * one row per action *type* however long the account runs.
+ * Page size for the credits history list: how many rows the server-rendered
+ * first page holds, and how many `getAiCreditActivityPageAction` fetches per
+ * "Load more" click. `ai_actions` is append-only and grows for the life of the
+ * account, so the list itself is NOT bounded — it pages through the whole
+ * history via keyset cursors (see `listAiCreditActivityPage`). The month's
+ * totals live in the breakdown above it, which is an aggregate and stays one
+ * row per action *type* however long the account runs.
  */
 export const AI_ACTIVITY_LIMIT = 20;

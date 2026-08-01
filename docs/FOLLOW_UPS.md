@@ -149,8 +149,9 @@ gaps and the correctness/doc items below.
   against a live multi-tenant RLS DB.
 - **Pre-existing >150-line files nudged by the sweeps (directory-split still
   deferred — surgical scope; the splits would also collide with the hygiene
-  edits):** `lib/actions/notes.ts`, `contacts.ts`, `import.ts`,
-  `lib/hosted/gate.ts`, `components/app/home/TodaySuggestions.tsx`.
+  edits):** `contacts.ts`, `import.ts`, `lib/hosted/gate.ts`,
+  `components/app/home/TodaySuggestions.tsx`. (`lib/actions/notes.ts` was split
+  into `lib/actions/notes/` — done.)
 - **Optional (surfaced, not adopted):** cache the home `StatStrip` via
   `cachePerUserVersioned` (rejected — adds ~24h staleness to a decorative
   sparkline); a shared `OptimisticSwitch` to de-dupe the amber toggle markup.

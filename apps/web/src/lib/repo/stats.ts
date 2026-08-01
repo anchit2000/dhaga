@@ -1,5 +1,12 @@
 import { sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
+import { USER_AUTHORED_NOTE_KINDS } from "@/utils/constants/extraction-jobs";
+
+// Fixed small constant, safe to interpolate as literal SQL values.
+const USER_AUTHORED_NOTE_KIND_LIST = sql.join(
+  USER_AUTHORED_NOTE_KINDS.map((kind) => sql`${kind}`),
+  sql`, `,
+);
 
 /**
  * Every headline count for the signed-in user's graph, folded into ONE
@@ -41,7 +48,7 @@ export async function getGraphStats(): Promise<GraphStats> {
     SELECT
       (SELECT count(*) FROM contacts) AS contacts,
       (SELECT count(*) FROM companies) AS companies,
-      (SELECT count(*) FROM notes WHERE deleted_at IS NULL) AS notes,
+      (SELECT count(*) FROM notes WHERE deleted_at IS NULL AND kind IN (${USER_AUTHORED_NOTE_KIND_LIST})) AS notes,
       (SELECT count(*) FROM facts WHERE deleted_at IS NULL) AS facts,
       (SELECT count(*) FROM edges WHERE deleted_at IS NULL) AS edges,
       (SELECT count(*) FROM events) AS events,
@@ -93,7 +100,7 @@ export async function getGraphActivity(): Promise<GraphActivity> {
     FROM (
       SELECT 'contacts' AS metric, created_at FROM contacts WHERE created_at > now() - make_interval(weeks => ${ACTIVITY_WEEKS})
       UNION ALL SELECT 'companies', created_at FROM companies WHERE created_at > now() - make_interval(weeks => ${ACTIVITY_WEEKS})
-      UNION ALL SELECT 'notes', created_at FROM notes WHERE deleted_at IS NULL AND created_at > now() - make_interval(weeks => ${ACTIVITY_WEEKS})
+      UNION ALL SELECT 'notes', created_at FROM notes WHERE deleted_at IS NULL AND kind IN (${USER_AUTHORED_NOTE_KIND_LIST}) AND created_at > now() - make_interval(weeks => ${ACTIVITY_WEEKS})
       UNION ALL SELECT 'facts', created_at FROM facts WHERE deleted_at IS NULL AND created_at > now() - make_interval(weeks => ${ACTIVITY_WEEKS})
       UNION ALL SELECT 'edges', created_at FROM edges WHERE deleted_at IS NULL AND created_at > now() - make_interval(weeks => ${ACTIVITY_WEEKS})
       UNION ALL SELECT 'events', created_at FROM events WHERE created_at > now() - make_interval(weeks => ${ACTIVITY_WEEKS})

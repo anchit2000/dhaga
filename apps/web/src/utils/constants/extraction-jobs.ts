@@ -11,11 +11,30 @@ export const EXTRACTION_JOB_KINDS = ["note_extraction", "enrichment"] as const;
  * Note kinds a user may manually re-run through the note-extraction pipeline
  * (trusted "note" mode — the user's own words / captures). Excludes
  * "enrichment" (web findings must re-extract in unverified mode via an
- * enrichment job, not as trusted facts) and "signal" (system-generated, not a
- * user capture). Re-processing REPLACES the note's prior derivations rather
- * than stacking duplicates — the worker clears them first (clearNoteDerivations).
+ * enrichment job, not as trusted facts), "signal" (system-generated, not a
+ * user capture), and "capture_source" (a receipt/audit record of an import —
+ * see IMMUTABLE_NOTE_KINDS — reprocessing it doesn't make sense since it never
+ * carries derived facts to begin with). Re-processing REPLACES the note's
+ * prior derivations rather than stacking duplicates — the worker clears them
+ * first (clearNoteDerivations).
  */
-export const REPROCESSABLE_NOTE_KINDS = ["text", "voice", "photo", "capture_source"] as const;
+export const REPROCESSABLE_NOTE_KINDS = ["text", "voice", "photo"] as const;
+
+/**
+ * Note kinds that are immutable once written — no delete, no reprocess. Only
+ * "capture_source": the receipt a vCard/card-scan/QR/WhatsApp import leaves
+ * behind, not user content, so editing it away would erase the audit trail of
+ * how the contact was captured.
+ */
+export const IMMUTABLE_NOTE_KINDS = ["capture_source"] as const;
+
+/**
+ * Note kinds the user actually wrote/captured themselves — used for the
+ * dashboard's notes count/sparkline so it reflects real notes, not system
+ * receipts ("capture_source"), web research ("enrichment"), or automated
+ * signals ("signal").
+ */
+export const USER_AUTHORED_NOTE_KINDS = ["text", "voice", "photo"] as const;
 
 export const EXTRACTION_JOB_STATUSES = [
   "pending", // queued, worker not started

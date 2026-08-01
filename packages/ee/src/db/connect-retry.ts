@@ -93,7 +93,7 @@ export async function connectWithRetry(pool: Pool): Promise<PoolClient> {
  *
  * WHY on the pool object: the EE control-plane repos that read via
  * `drizzle(getPool())` (admin/repo.ts, access-requests/repo.ts, billing/repo.ts,
- * referrals/repo.ts, referrals/reward.ts, admin/subscription-admin.ts) are
+ * referrals/repo.ts, referrals/reward.ts, admin/subscription-admin/) are
  * pool-bound — drizzle drives the pool internally through pool.query() (and
  * pool.connect() for its `.transaction()`), with no explicit connect() to wrap.
  * So the resilience has to live on the pool itself for those reads to inherit it.

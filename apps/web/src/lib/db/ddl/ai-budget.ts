@@ -60,4 +60,6 @@ CREATE TABLE IF NOT EXISTS ai_credit_grants (
 
 -- Every read filters on (user_id IS NULL OR user_id = me) plus the active window.
 CREATE INDEX IF NOT EXISTS ai_credit_grants_user_id_idx ON ai_credit_grants (user_id);
+-- The admin ledger page reads newest-first.
+CREATE INDEX IF NOT EXISTS ai_credit_grants_created_idx ON ai_credit_grants (created_at DESC);
 `;

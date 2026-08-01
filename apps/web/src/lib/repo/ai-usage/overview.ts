@@ -4,16 +4,9 @@ import { effectiveMonthlyAiCap, hasUnlimitedAiCredits } from "@/lib/ai/metering"
 import { getDb } from "@/lib/db/request-scope";
 import { aiActions } from "@/lib/db/schema";
 import { activeGrantedCredits, getAiBudgetConfig } from "@/lib/repo/ai-budget";
-import {
-  AI_ACTION_LABELS,
-  AI_ACTIVITY_LIMIT,
-  UNKNOWN_AI_ACTION_LABEL,
-} from "@/utils/constants/ai-credits";
-import type {
-  AiCreditActivityRow,
-  AiCreditBreakdownRow,
-  AiCreditsOverview,
-} from "@/types";
+import { AI_ACTIVITY_LIMIT } from "@/utils/constants/ai-credits";
+import { labelFor, toActivityRow } from "./shared";
+import type { AiCreditActivityRow, AiCreditBreakdownRow, AiCreditsOverview } from "@/types";
 
 /**
  * The acting user's own AI-credit ledger — what /app/settings#credits renders.
@@ -39,10 +32,6 @@ function monthStartUtc(now: Date): Date {
 
 function nextMonthStartUtc(now: Date): Date {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
-}
-
-function labelFor(feature: string): { one: string; many: string } {
-  return AI_ACTION_LABELS[feature as keyof typeof AI_ACTION_LABELS] ?? UNKNOWN_AI_ACTION_LABEL;
 }
 
 /** Costliest first, then busiest — free actions naturally sink to the bottom
@@ -88,16 +77,7 @@ export async function getAiCreditsOverview(
     .orderBy(desc(aiActions.createdAt))
     .limit(AI_ACTIVITY_LIMIT);
 
-  const recent: AiCreditActivityRow[] = recentRows.map((row) => {
-    const price = creditsForAiAction(row.feature);
-    return {
-      id: row.id,
-      label: labelFor(row.feature).one,
-      credits: price,
-      free: price === 0,
-      at: row.createdAt,
-    };
-  });
+  const recent: AiCreditActivityRow[] = recentRows.map(toActivityRow);
 
   const [unlimited, cap, granted, config] = await Promise.all([
     hasUnlimitedAiCredits(userId),

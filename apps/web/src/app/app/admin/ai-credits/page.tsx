@@ -1,8 +1,7 @@
 // Dhaga Cloud only — see packages/ee/LICENSE.
-import { listAiCreditGrants } from "@dhaga/ee/admin";
+import Link from "next/link";
 import { EnforcementCard } from "@/components/app/admin/ai-budget/EnforcementCard";
 import { GrantCard } from "@/components/app/admin/ai-budget/GrantCard";
-import { GrantLedger } from "@/components/app/admin/ai-budget/GrantLedger";
 import { PlanAllowanceCard } from "@/components/app/admin/ai-budget/PlanAllowanceCard";
 import { PromotionCard } from "@/components/app/admin/ai-budget/PromotionCard";
 import { instanceDefaultCap } from "@/lib/ai/metering";
@@ -23,7 +22,6 @@ export const metadata = { title: "AI credits — Admin — Dhaga" };
 export default async function AdminAiCreditsPage() {
   await requireAdminForPage();
   const config = await getAiBudgetConfig();
-  const grants = await listAiCreditGrants();
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -49,7 +47,15 @@ export default async function AdminAiCreditsPage() {
       />
       <PromotionCard promotion={config.promotion} active={config.promotionCredits !== null} />
       <GrantCard />
-      <GrantLedger grants={grants} />
+      <div className="rounded-2xl border border-seam bg-panel p-5">
+        <p className="text-sm font-medium text-paper">Grant ledger</p>
+        <p className="mt-1 text-sm text-fog">
+          Every grant ever made, searchable by recipient.
+        </p>
+        <Link href="/app/admin/ai-credits/grants" className="mt-2 inline-block text-sm text-ember hover:underline">
+          View ledger →
+        </Link>
+      </div>
     </div>
   );
 }

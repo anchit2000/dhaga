@@ -215,11 +215,18 @@ apply to the whole instance:
   enforcement is on, and it ends at the **start** of its end date, evaluated on
   every read — so it expires by itself with no cron job and no admin cleanup.
 
-The same page holds the **grant** ledger: additive make-good credits for one
-user (or, with the user id left blank, everyone), with a required reason and an
-expiry that defaults to the end of the current month. A grant only moves the
-ceiling — `ai_actions`, the only record of what cloud AI actually cost, is never
-rewritten, and "End now" stops a grant counting without deleting its row.
+The grant form on this page is additive make-good credits for **everyone on
+the instance** — it always broadcasts, with no free-text user id field —
+with a required reason and an expiry that defaults to the end of the current
+month. Granting to one specific user instead happens from that user's own
+`/app/admin/users/[id]` page, where the same card is pinned to them. Either
+way, a grant only moves the ceiling — `ai_actions`, the only record of what
+cloud AI actually cost, is never rewritten, and "End now" stops a grant
+counting without deleting its row.
+
+Every grant ever made lives in its own searchable, paginated ledger at
+`/app/admin/ai-credits/grants` (linked from this page) — search matches the
+recipient's name or email, or the word "everyone" for broadcast grants.
 
 Precedence, highest first
 (`apps/web/src/lib/ai/metering/cap/index.ts`):

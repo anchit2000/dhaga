@@ -878,11 +878,12 @@ notes, quick add, follow-up drafts and questions to Ask Dhaga.
 
 ## Recent activity
 
-The last card is a plain list of your most recent AI actions — *"Card scan · 1
-credit · 2 hours ago"*. It is deliberately capped at the **20 most recent**
-actions: the month's accounting lives in the breakdown above, and this list is
-just there to jog your memory. It is not limited to this month, so opening the
-page on the 1st still shows you what you last did.
+The last card is a plain list of your AI actions — *"Card scan · 1 credit · 2
+hours ago"* — newest first. It starts by showing your most recent actions, and
+a **Load more** button at the bottom fetches further back, so you can page all
+the way through your entire usage history, not just what you did this week.
+It is not limited to the current month either, so opening the page on the 1st
+still shows you what you last did.
 
 **This page is yours alone**
 
@@ -1574,7 +1575,8 @@ Already have an address book somewhere? Import it instead of re-typing. Dhaga
 takes it three ways: a **file** you export (works everywhere, no setup), a
 **one-click connect** to Google or Outlook, and **on-device import** in the
 mobile app. Existing people are matched and skipped, and every imported field
-keeps a **receipt** so you can trace where it came from.
+keeps a **receipt** so you can trace where it came from — a permanent note on
+the contact, not something you can edit away.
 
 Open **`/app/import`** (it lands you on **Settings → Import**), or scroll to the
 **Import contacts** section on `/app/settings`.
@@ -2019,6 +2021,12 @@ from.
   with it — the receipt guarantees Dhaga knows exactly which facts to remove.
 - **Delete the person** and the cascade runs all the way down: notes, facts,
   graph edges, and embeddings all go with them.
+
+The one exception is the receipt note left behind by an import, a card scan, a
+QR scan, or a WhatsApp capture: it can't be edited, deleted, or re-run through
+extraction. It is not something you wrote — it is the permanent record of how
+the contact got into Dhaga in the first place, so it doesn't count toward your
+notes either.
 
 Want to add outside context to a person? See
 [Enrich from the web](/docs/guide/enrich-from-web).
@@ -3546,11 +3554,18 @@ apply to the whole instance:
   enforcement is on, and it ends at the **start** of its end date, evaluated on
   every read — so it expires by itself with no cron job and no admin cleanup.
 
-The same page holds the **grant** ledger: additive make-good credits for one
-user (or, with the user id left blank, everyone), with a required reason and an
-expiry that defaults to the end of the current month. A grant only moves the
-ceiling — `ai_actions`, the only record of what cloud AI actually cost, is never
-rewritten, and "End now" stops a grant counting without deleting its row.
+The grant form on this page is additive make-good credits for **everyone on
+the instance** — it always broadcasts, with no free-text user id field —
+with a required reason and an expiry that defaults to the end of the current
+month. Granting to one specific user instead happens from that user's own
+`/app/admin/users/[id]` page, where the same card is pinned to them. Either
+way, a grant only moves the ceiling — `ai_actions`, the only record of what
+cloud AI actually cost, is never rewritten, and "End now" stops a grant
+counting without deleting its row.
+
+Every grant ever made lives in its own searchable, paginated ledger at
+`/app/admin/ai-credits/grants` (linked from this page) — search matches the
+recipient's name or email, or the word "everyone" for broadcast grants.
 
 Precedence, highest first
 (`apps/web/src/lib/ai/metering/cap/index.ts`):

@@ -1,6 +1,7 @@
 import { ActivityCard } from "./ActivityCard";
 import { AllowanceCard } from "./AllowanceCard";
 import { BreakdownCard } from "./BreakdownCard";
+import { AI_ACTIVITY_LIMIT } from "@/utils/constants/ai-credits";
 import type { AiCreditsOverview } from "@/types";
 
 /**
@@ -10,6 +11,18 @@ import type { AiCreditsOverview } from "@/types";
  * `lib/repo/ai-usage`, from the acting user's own rows.
  */
 export function AiCreditsSetting({ overview }: { overview: AiCreditsOverview }) {
+  // ActivityCard is a client component (it pages through history via a server
+  // action), so its Date fields cross that boundary as ISO strings here, right
+  // at the edge — same convention as NotificationItem.createdAt.
+  const initialRows = overview.recent.map((row) => ({ ...row, at: row.at.toISOString() }));
+  const lastRow = overview.recent.at(-1);
+  // A first batch shorter than a full page means there is nothing after it —
+  // no need to round-trip to the server just to learn that.
+  const initialCursor =
+    lastRow && overview.recent.length >= AI_ACTIVITY_LIMIT
+      ? { at: lastRow.at.toISOString(), id: lastRow.id }
+      : null;
+
   return (
     <>
       <AllowanceCard allowance={overview.allowance} />
@@ -18,7 +31,7 @@ export function AiCreditsSetting({ overview }: { overview: AiCreditsOverview }) 
         totalCredits={overview.totalCredits}
         totalActions={overview.totalActions}
       />
-      <ActivityCard rows={overview.recent} />
+      <ActivityCard initialRows={initialRows} initialCursor={initialCursor} />
     </>
   );
 }

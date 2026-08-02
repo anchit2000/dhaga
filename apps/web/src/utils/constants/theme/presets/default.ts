@@ -10,6 +10,6 @@ import type { ThemePreset } from "./types";
 export const DEFAULT_PRESET: ThemePreset = {
   id: "default",
   label: "Dhaga",
-  description: "Warm near-black ground with the amber thread glow.",
+  description: "Calm blue-white and midnight surfaces with a warm action thread.",
   palettes: null,
 };

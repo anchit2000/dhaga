@@ -1,20 +1,21 @@
 # Dhaga
 
-> Dhaga is an open-source, privacy-first, AI-native personal CRM: capture contacts anywhere, turn every note into a private knowledge graph, and query it in natural language. Open-core: the whole CRM is AGPL and runs fully self-hosted, with a source-available cloud tier.
+> Dhaga is a private, open-source personal CRM for founders and relationship-driven professionals: capture meetings, notes, messages, introductions, voice memos, and cards, remember the context, search the network, and follow up at the right time. Open-core: the whole CRM is AGPL and runs fully self-hosted, with a source-available cloud tier.
 
-Dhaga (धागा — Hindi for "thread") is built for people whose work *is* their network: founders, investors, recruiters, real-estate and financial advisors, consultants, community builders. Scan a business card, paste an email, forward a WhatsApp or Telegram voice note, dictate into the browser, clip a page with the extension, or import an address book — Dhaga extracts the people, companies and facts, files them in a private knowledge graph, and answers questions like "who do I know at a fintech in Bangalore?" in plain language. Every AI-derived fact keeps a receipt back to the note it came from, so you can verify it or delete it.
+Dhaga (धागा — Hindi for "thread") is a private relationship memory for founders and other relationship-driven professionals: investors, recruiters, real-estate and financial advisors, consultants, and community builders. Capture a meeting or introduction, write or paste a note or message, forward a WhatsApp or Telegram voice note, scan a card, clip a page with the extension, or import an address book — Dhaga extracts the people, companies and facts, files them in a private knowledge graph, and answers questions like "who do I know at a fintech in Bangalore?" in plain language. Every AI-derived fact keeps a receipt back to the note it came from, so you can verify it or delete it.
 
-What separates it from Dex, Monica or a notes app: the whole CRM is AGPL-licensed and self-hostable, every external dependency (LLM, web search, embeddings, vector store, messaging) sits behind a swappable provider gateway so you can point it at a local model or your own API key, enrichment only ever runs when you ask for it, and full export always works. The free tier is a complete CRM at $0 forever with unlimited capture and notes; cloud AI is the paid feature, from $8/month billed yearly. Start free at https://www.dhaga.app/signup.
+What separates it from Dex, Monica or a notes app: the whole CRM is AGPL-licensed and self-hostable, every external dependency (LLM, web search, embeddings, vector store, messaging) sits behind a swappable provider gateway so you can point it at a local model or your own API key, enrichment only ever runs when you ask for it, and full export always works. The free tier is a complete CRM at $0 forever with unlimited capture and notes. Pro is $10 month-to-month or $8/month billed $96 yearly; the first 500 founding seats can request a $79 first year. Power is shown as a coming-soon plan at $30 monthly or $24/month billed $288 yearly and cannot yet be purchased. Dhaga Cloud is in early access; request access at https://www.dhaga.app/#request-access.
 
 Sections run in order of what a reader needs first, not by directory. `## Optional` carries its llms.txt meaning — those URLs are secondary and can be skipped when context is tight: SEO/how-to guides, the per-profession landing pages (each restates the same product for a different job), and internal engineering documents that change weekly. Everything outside `## Optional` is inlined in full at https://www.dhaga.app/llms-full.txt.
 
 ## Start here
 
-- [Dhaga — home](https://www.dhaga.app/): The fastest read on what Dhaga is: the problem, a 60-second explainer, a live knowledge-graph sandbox you can drag around, the comparison table, pricing and FAQ.
+- [Dhaga — home](https://www.dhaga.app/): A concise overview of who Dhaga is for and how it turns meetings, notes, messages, introductions, voice memos, and cards into remembered context and timely follow-ups.
+- [Features](https://www.dhaga.app/features): Capture from meetings, notes, voice, messages and cards; build a private knowledge graph; search it in plain language; find warm paths; and follow up with context.
 - [Documentation](https://www.dhaga.app/docs): Dhaga is an AI-native, privacy-first personal CRM. Self-host it, extend its providers, or read the product thinking behind it.
-- [Pricing](https://www.dhaga.app/#pricing): Free forever for the full manual CRM (unlimited capture, notes and export, self-host everything). Cloud AI is the paid tier: Pro $8/month billed yearly, or $79/year at the founding price. Annual billing only — no monthly meter.
-- [Sign up (free)](https://www.dhaga.app/signup): Create a free account — no credit card, and the free tier is a complete CRM rather than a trial.
-- [FAQ](https://www.dhaga.app/#faq): Straight answers on data privacy, what happens if Dhaga shuts down, how AI metering works, and mobile status (a native iOS/Android app is on the roadmap and not shipped — capture from a phone today goes through the web app or the WhatsApp/Telegram bot).
+- [Pricing](https://www.dhaga.app/pricing): Free forever for the full manual CRM. Pro is $10 monthly or $8/month billed $96 yearly (save $24); the first 500 founding seats can request a $79 first year. Power is coming soon at $30 monthly or $24/month billed $288 yearly (save $72).
+- [Open source](https://www.dhaga.app/open-source): Inspect, self-host and extend the AGPL-licensed core, keep relationship data under your control, and export it whenever you want.
+- [Request early access](https://www.dhaga.app/#request-access): Request early access to Dhaga Cloud. Approved invitations continue through account creation; self-hosting remains available from the source repository.
 - [I was looking for VCs. They were already in my phone.](https://www.dhaga.app/blog/general/why-i-built-dhaga): The night I realized my contacts app remembers nothing — and why I started building the thing that would.
 - [Roadmap](https://www.dhaga.app/docs/roadmap/roadmap): What's shipped, what's in progress, and what's next — a contributor-facing summary derived from the build checklist and the BRD.
 - [Privacy policy](https://www.dhaga.app/privacy): What Dhaga stores, what it never collects, and how contact data — which is the user's data about third parties — is deleted and exported.
@@ -23,7 +24,6 @@ Sections run in order of what a reader needs first, not by directory. `## Option
 
 ## How Dhaga compares
 
-- [Comparison table](https://www.dhaga.app/#compare): Dhaga against the alternatives at a glance — spreadsheets, LinkedIn, sales CRMs, and the other personal CRMs.
 - [Dhaga vs Dex: Private CRM vs Auto-Sync CRM](https://www.dhaga.app/blog/guides/dhaga-vs-dex): Dex vs Dhaga compared — automatic LinkedIn/email sync vs open-source privacy and a free tier that actually works. Which personal CRM fits?
 - [Dhaga vs Louisa AI: Personal vs Enterprise Graph](https://www.dhaga.app/blog/guides/dhaga-vs-louisa): Louisa AI vs Dhaga — enterprise, firm-owned relationship intelligence vs a private personal CRM you own. Different buyers, compared honestly.
 - [Dhaga vs Monica: Open-Source Personal CRM Compared](https://www.dhaga.app/blog/guides/dhaga-vs-monica): Monica vs Dhaga — two open-source, self-hostable personal CRMs compared on AI, capture, and features. Which should you self-host?
@@ -77,6 +77,11 @@ Sections run in order of what a reader needs first, not by directory. `## Option
 
 ## Optional
 
+- [Dhaga for sales professionals](https://www.dhaga.app/use-cases/sales): A private, portable relationship memory for sales professionals whose personal network outlasts a company role, without copying confidential employer CRM data.
+- [Dhaga for founders](https://www.dhaga.app/use-cases/founders): Keep investor, customer, candidate, advisor and introduction context together, searchable and ready for the next move.
+- [Dhaga for investors](https://www.dhaga.app/use-cases/investors): Connect founder notes, thesis signals, warm paths and follow-ups in a sourced relationship graph.
+- [Dhaga for recruiters](https://www.dhaga.app/use-cases/recruiters): Remember permissioned candidate context, motivations, timing and past conversations across hiring cycles.
+- [Dhaga for community builders](https://www.dhaga.app/use-cases/community-builders): Turn events, member interests and introductions into an enduring, searchable community memory.
 - [Log in](https://www.dhaga.app/login): Sign in to an existing Dhaga workspace.
 - [The Dhaga blog](https://www.dhaga.app/blog): Two kinds of writing: deep engineering dives on the hardest problems we solved, and practical guides on how Dhaga fits the way real professionals manage relationships — real estate, finance, sales, recruiting, and more.
 - [General](https://www.dhaga.app/blog/general): The story behind Dhaga and the ideas that shape it — why an AI-native personal CRM, what we believe about owning your own relationship data, and the thinking that doesn't fit neatly under engineering or a single profession.

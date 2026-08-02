@@ -3,15 +3,15 @@
  *  can't consume CSS vars, or the property missing entirely). Source of
  *  truth for the live values is `apps/web/src/app/globals.css`. */
 export const BRAND_COLOR_FALLBACKS = {
-  "--brand-ink": "#0d0b09",
-  "--brand-panel": "#16120e",
-  "--brand-seam": "#2b241b",
-  "--brand-paper": "#f3ede2",
-  "--brand-fog": "#a49a8a",
-  "--brand-amber": "#e2a44c",
+  "--brand-ink": "#0c161c",
+  "--brand-panel": "#12212a",
+  "--brand-seam": "#2b414d",
+  "--brand-paper": "#eff7f8",
+  "--brand-fog": "#a7bbc4",
+  "--brand-amber": "#f0b44a",
   /* Dark pins `--brand-ember: var(--brand-amber)` in globals.css, so the dark
      fallback for ember IS amber. Keep these two in step. */
-  "--brand-ember": "#e2a44c",
+  "--brand-ember": "#f0b44a",
 } as const;
 
 /** Brand CSS custom-property names that resolve through `BRAND_COLOR_FALLBACKS`. */
@@ -30,8 +30,8 @@ export type BrandColorVar = keyof typeof BRAND_COLOR_FALLBACKS;
  */
 export const BRAND_STOCK_SWATCHES = {
   light: {
-    ink: "#f2ebdc",
-    panel: "#fdfbf6",
+    ink: "#f4f8fa",
+    panel: "#ffffff",
     accent: BRAND_COLOR_FALLBACKS["--brand-amber"],
   },
   dark: {

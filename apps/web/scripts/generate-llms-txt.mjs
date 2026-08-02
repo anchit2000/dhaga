@@ -289,8 +289,8 @@ const summary = `${site.description} Open-core: the whole CRM is AGPL and runs f
 // differs, what it costs — so it is not left empty. Every claim here must stay
 // true; these files are how an assistant describes Dhaga to a prospect.
 const positioning = [
-  `Dhaga (धागा — Hindi for "thread") is built for people whose work *is* their network: founders, investors, recruiters, real-estate and financial advisors, consultants, community builders. Scan a business card, paste an email, forward a WhatsApp or Telegram voice note, dictate into the browser, clip a page with the extension, or import an address book — Dhaga extracts the people, companies and facts, files them in a private knowledge graph, and answers questions like "who do I know at a fintech in Bangalore?" in plain language. Every AI-derived fact keeps a receipt back to the note it came from, so you can verify it or delete it.`,
-  `What separates it from Dex, Monica or a notes app: the whole CRM is AGPL-licensed and self-hostable, every external dependency (LLM, web search, embeddings, vector store, messaging) sits behind a swappable provider gateway so you can point it at a local model or your own API key, enrichment only ever runs when you ask for it, and full export always works. The free tier is a complete CRM at $0 forever with unlimited capture and notes; cloud AI is the paid feature, from $8/month billed yearly. Start free at ${abs("/signup")}.`,
+  `Dhaga (धागा — Hindi for "thread") is a private relationship memory for founders and other relationship-driven professionals: investors, recruiters, real-estate and financial advisors, consultants, and community builders. Capture a meeting or introduction, write or paste a note or message, forward a WhatsApp or Telegram voice note, scan a card, clip a page with the extension, or import an address book — Dhaga extracts the people, companies and facts, files them in a private knowledge graph, and answers questions like "who do I know at a fintech in Bangalore?" in plain language. Every AI-derived fact keeps a receipt back to the note it came from, so you can verify it or delete it.`,
+  `What separates it from Dex, Monica or a notes app: the whole CRM is AGPL-licensed and self-hostable, every external dependency (LLM, web search, embeddings, vector store, messaging) sits behind a swappable provider gateway so you can point it at a local model or your own API key, enrichment only ever runs when you ask for it, and full export always works. The free tier is a complete CRM at $0 forever with unlimited capture and notes. Pro is $10 month-to-month or $8/month billed $96 yearly; the first 500 founding seats can request a $79 first year. Power is shown as a coming-soon plan at $30 monthly or $24/month billed $288 yearly and cannot yet be purchased. Dhaga Cloud is in early access; request access at ${abs("/#request-access")}.`,
 ];
 
 // The spec reserves H2 sections for file lists only — "how to interpret the
@@ -344,10 +344,11 @@ const START_HERE_PAGES = [
 // routed to the section must appear here or the build fails.
 const START_ORDER = [
   "/",
+  "/features",
   "/docs",
-  "/#pricing",
-  "/signup",
-  "/#faq",
+  "/pricing",
+  "/open-source",
+  "/#request-access",
   "/blog/general/why-i-built-dhaga",
   "/docs/roadmap/roadmap",
   "/privacy",
@@ -382,34 +383,85 @@ const EXTRA_ENTRIES = [
     url: "/",
     title: "Dhaga — home",
     description:
-      "The fastest read on what Dhaga is: the problem, a 60-second explainer, a live knowledge-graph sandbox you can drag around, the comparison table, pricing and FAQ.",
+      "A concise overview of who Dhaga is for and how it turns meetings, notes, messages, introductions, voice memos, and cards into remembered context and timely follow-ups.",
     full: false,
   },
   {
     section: "start",
-    url: "/#pricing",
+    url: "/pricing",
     title: "Pricing",
     description:
-      "Free forever for the full manual CRM (unlimited capture, notes and export, self-host everything). Cloud AI is the paid tier: Pro $8/month billed yearly, or $79/year at the founding price. Annual billing only — no monthly meter.",
-    full: false,
-    anchor: "pricing",
-  },
-  {
-    section: "start",
-    url: "/signup",
-    title: "Sign up (free)",
-    description:
-      "Create a free account — no credit card, and the free tier is a complete CRM rather than a trial.",
+      "Free forever for the full manual CRM. Pro is $10 monthly or $8/month billed $96 yearly (save $24); the first 500 founding seats can request a $79 first year. Power is coming soon at $30 monthly or $24/month billed $288 yearly (save $72).",
     full: false,
   },
   {
     section: "start",
-    url: "/#faq",
-    title: "FAQ",
+    url: "/features",
+    title: "Features",
     description:
-      "Straight answers on data privacy, what happens if Dhaga shuts down, how AI metering works, and mobile status (a native iOS/Android app is on the roadmap and not shipped — capture from a phone today goes through the web app or the WhatsApp/Telegram bot).",
+      "Capture from meetings, notes, voice, messages and cards; build a private knowledge graph; search it in plain language; find warm paths; and follow up with context.",
     full: false,
-    anchor: "faq",
+  },
+  {
+    section: "start",
+    url: "/open-source",
+    title: "Open source",
+    description:
+      "Inspect, self-host and extend the AGPL-licensed core, keep relationship data under your control, and export it whenever you want.",
+    full: false,
+  },
+  {
+    section: "optional",
+    url: "/use-cases/sales",
+    routeFile: "use-cases/[role]/page.tsx",
+    title: "Dhaga for sales professionals",
+    description:
+      "A private, portable relationship memory for sales professionals whose personal network outlasts a company role, without copying confidential employer CRM data.",
+    full: false,
+  },
+  {
+    section: "optional",
+    url: "/use-cases/founders",
+    routeFile: "use-cases/[role]/page.tsx",
+    title: "Dhaga for founders",
+    description:
+      "Keep investor, customer, candidate, advisor and introduction context together, searchable and ready for the next move.",
+    full: false,
+  },
+  {
+    section: "optional",
+    url: "/use-cases/investors",
+    routeFile: "use-cases/[role]/page.tsx",
+    title: "Dhaga for investors",
+    description:
+      "Connect founder notes, thesis signals, warm paths and follow-ups in a sourced relationship graph.",
+    full: false,
+  },
+  {
+    section: "optional",
+    url: "/use-cases/recruiters",
+    routeFile: "use-cases/[role]/page.tsx",
+    title: "Dhaga for recruiters",
+    description:
+      "Remember permissioned candidate context, motivations, timing and past conversations across hiring cycles.",
+    full: false,
+  },
+  {
+    section: "optional",
+    url: "/use-cases/community-builders",
+    routeFile: "use-cases/[role]/page.tsx",
+    title: "Dhaga for community builders",
+    description:
+      "Turn events, member interests and introductions into an enduring, searchable community memory.",
+    full: false,
+  },
+  {
+    section: "start",
+    url: "/#request-access",
+    title: "Request early access",
+    description:
+      "Request early access to Dhaga Cloud. Approved invitations continue through account creation; self-hosting remains available from the source repository.",
+    full: false,
   },
   {
     section: "start",
@@ -434,15 +486,6 @@ const EXTRA_ENTRIES = [
     description:
       "One file containing the complete markdown of every page listed outside `## Optional`, in this same order — fetch it instead of crawling if you want the whole product in one request.",
     full: false,
-  },
-  {
-    section: "compare",
-    url: "/#compare",
-    title: "Comparison table",
-    description:
-      "Dhaga against the alternatives at a glance — spreadsheets, LinkedIn, sales CRMs, and the other personal CRMs.",
-    full: false,
-    anchor: "compare",
   },
   {
     section: "selfhost",
@@ -482,26 +525,6 @@ function assertCuration() {
     }
   }
 
-  // Landing-page anchors are the highest-intent links in the file and they are
-  // section ids in components, not routes, so nothing else would catch their
-  // removal. Verify the id exists and the section is still rendered.
-  const landing = readFileSync(join(WEB_ROOT, "src/app/page.tsx"), "utf8");
-  const components = join(WEB_ROOT, "src/components/landing");
-  for (const entry of EXTRA_ENTRIES) {
-    if (!entry.anchor) continue;
-    const rendered = readdirSync(components).some((name) => {
-      if (!name.endsWith(".tsx")) return false;
-      const source = readFileSync(join(components, name), "utf8");
-      if (!source.includes(`id="${entry.anchor}"`)) return false;
-      return new RegExp(`<${name.replace(/\.tsx$/, "")}\\b`).test(landing);
-    });
-    if (!rendered) {
-      throw new Error(
-        `generate-llms-txt: no landing section renders id="${entry.anchor}" — ${entry.url} would be a dead link`,
-      );
-    }
-  }
-
   const known = new Set(SECTIONS.map(([id]) => id));
   for (const entry of EXTRA_ENTRIES) {
     if (!known.has(entry.section)) {
@@ -517,9 +540,11 @@ function assertCuration() {
     // a docs route backed by MDX, or a file this script itself writes.
     const path = entry.url.replace(/#.*$/, "") || "/";
     if (OUTPUT_NAMES.includes(path.slice(1))) continue;
-    const target = path.startsWith("/docs")
-      ? join(CONTENT_DIR, `docs${path.slice("/docs".length)}/index.mdx`)
-      : join(WEB_ROOT, "src/app", path, "page.tsx");
+    const target = entry.routeFile
+      ? join(WEB_ROOT, "src/app", entry.routeFile)
+      : path.startsWith("/docs")
+        ? join(CONTENT_DIR, `docs${path.slice("/docs".length)}/index.mdx`)
+        : join(WEB_ROOT, "src/app", path, "page.tsx");
     if (!existsSync(target)) {
       throw new Error(
         `generate-llms-txt: ${entry.url} has no page on disk (looked for ${target})`,

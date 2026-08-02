@@ -19,6 +19,14 @@ describe("buildUserThemeCss", () => {
     }
   });
 
+  it("keeps the original Dhaga palette available as Classic", () => {
+    const css = buildUserThemeCss({ preset: "classic", font: "default" }) ?? "";
+    expect(css).toContain("--brand-ink:#f7f5ef");
+    expect(css).toContain("--brand-panel:#fffdfa");
+    expect(css).toContain("--brand-ink:#101112");
+    expect(css).toContain("--brand-amber:#e2a44c");
+  });
+
   it("wins on specificity in both modes, including forced-dark subtrees", () => {
     const css = buildUserThemeCss({ preset: "rose", font: "default" }) ?? "";
     // (0,3,0) and (0,4,0) beat globals.css's :root / .dark at (0,1,0)

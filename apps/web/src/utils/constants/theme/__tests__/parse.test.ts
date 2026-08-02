@@ -61,6 +61,13 @@ describe("parseUiTheme", () => {
     const theme = { preset: "violet", font: "poppins" } as const;
     expect(parseUiTheme(serializeUiTheme(theme))).toEqual(theme);
   });
+
+  it("accepts the retained Dhaga Classic preset", () => {
+    expect(parseUiTheme('{"preset":"classic","font":"default"}')).toEqual({
+      preset: "classic",
+      font: "default",
+    });
+  });
 });
 
 describe("isDefaultUiTheme", () => {

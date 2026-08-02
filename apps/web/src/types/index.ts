@@ -38,25 +38,27 @@ export interface ComparisonRow {
 
 export interface PricingPlan {
   tier: string;
-  price: string;
-  strikePrice?: string;
-  per: string;
+  monthlyPrice: number;
+  yearlyMonthlyPrice: number;
+  yearlyTotal: number;
   /** One plain sentence on who the plan is for, in people-per-month terms. */
   suits?: string;
   highlight: boolean;
   badge?: string;
+  comingSoon?: boolean;
   features: string[];
   cta: string;
+  ctaHref: string;
 }
 
 /** One row of the /pricing plan-comparison table. Cells use the same
  *  "✓ …" / "✗ …" prefix convention as `ComparisonRow`; keys map to
- *  `PricingPlan.tier` (Free / Annual / Pro). */
+ *  `PricingPlan.tier` (Free / Pro / Power). */
 export interface PlanComparisonRow {
   feature: string;
   free: string;
-  annual: string;
   pro: string;
+  power: string;
 }
 
 export interface FaqItem {

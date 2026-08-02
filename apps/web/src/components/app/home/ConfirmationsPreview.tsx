@@ -19,7 +19,7 @@ export function ConfirmationsPreview({
   return (
     <HomeTile
       title="To confirm"
-      tone="amber"
+      tone="intelligence"
       viewAll={{
         href: "/app/confirmations",
         label: confirmations.length > preview.length ? `Review all ${confirmations.length}` : "Review",

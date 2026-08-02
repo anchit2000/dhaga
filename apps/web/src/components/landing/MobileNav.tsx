@@ -15,14 +15,10 @@ import { ThreadMark } from "@/components/brand/ThreadMark";
 import { NAV_LINKS, RESOURCE_ITEMS } from "@/utils/constants/landing";
 import type { ReactElement } from "react";
 
-interface MobileNavProps {
-  isSignedIn: boolean;
-}
-
 // Mobile-only nav: the desktop header nav is `hidden md:flex`, so below 768px
 // this hamburger + Sheet is the only way to reach the section anchors, the
 // Resources links, and sign in. Rendered `md:hidden` from Header.
-export function MobileNav({ isSignedIn }: MobileNavProps): ReactElement {
+export function MobileNav(): ReactElement {
   const [open, setOpen] = useState(false);
   const closeMenu = (): void => setOpen(false);
 
@@ -34,7 +30,7 @@ export function MobileNav({ isSignedIn }: MobileNavProps): ReactElement {
             variant="ghost"
             size="icon"
             aria-label="Open menu"
-            className="rounded-full text-fog hover:text-paper md:hidden"
+            className="size-11 rounded-full text-fog hover:text-paper md:hidden"
           />
         }
       >
@@ -86,27 +82,19 @@ export function MobileNav({ isSignedIn }: MobileNavProps): ReactElement {
         </div>
 
         <div className="mt-auto flex flex-col gap-2 border-t border-seam p-4">
-          {isSignedIn ? (
-            <Button render={<Link href="/app" onClick={closeMenu} />} className="w-full">
-              Dashboard
-            </Button>
-          ) : (
-            <>
-              <Button
-                variant="ghost"
-                render={<Link href="/login" onClick={closeMenu} />}
-                className="w-full"
-              >
-                Sign in
-              </Button>
-              <Button
-                render={<Link href="#request-access" onClick={closeMenu} />}
-                className="w-full"
-              >
-                Request access
-              </Button>
-            </>
-          )}
+          <Button
+            variant="ghost"
+            render={<Link href="/login" onClick={closeMenu} />}
+            className="w-full"
+          >
+            Sign in
+          </Button>
+          <Button
+            render={<Link href="#request-access" onClick={closeMenu} />}
+            className="w-full"
+          >
+            Request early access
+          </Button>
         </div>
       </SheetContent>
     </Sheet>

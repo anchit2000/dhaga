@@ -1,11 +1,15 @@
+import type { ComponentProps, ReactNode } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+
 import { cn } from "@/lib/utils";
-import type { ComponentProps, ReactNode } from "react";
+import { HOME_TILE_TONE_CLASSES } from "@/utils/constants/home";
+import type { HomeTileTone } from "@/utils/constants/home";
 
 /**
  * One cell of Home's grid — shared shell (border, padding, header row) so every
- * tile reads identically. `tone="amber"` marks needs-attention tiles.
+ * tile reads identically. Semantic tones add a restrained border cue while
+ * action remains amber.
  *
  * `viewAll` renders the footer link every tile ends on. It lives here rather
  * than in each tile because the cells are equal-height: the link has to sit on
@@ -24,16 +28,14 @@ export function HomeTile({
 }: Omit<ComponentProps<"section">, "title"> & {
   title: string;
   meta?: ReactNode;
-  tone?: "default" | "amber";
+  tone?: HomeTileTone;
   viewAll?: { href: string; label?: string };
 }) {
   return (
     <section
       className={cn(
         "flex min-w-0 flex-col gap-4 rounded-2xl border bg-panel p-4 sm:p-5",
-        tone === "amber"
-          ? "border-amber/25 bg-gradient-to-br from-amber/[0.06] via-transparent to-transparent"
-          : "border-seam",
+        HOME_TILE_TONE_CLASSES[tone],
         className,
       )}
       {...props}

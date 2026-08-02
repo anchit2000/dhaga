@@ -16,7 +16,7 @@ export function RecentEventsTile({
   className?: string;
 }): React.ReactElement {
   return (
-    <HomeTile title="Recent events" className={className} viewAll={{ href: "/app/events", label: "View all events" }}>
+    <HomeTile title="Recent events" tone="network" className={className} viewAll={{ href: "/app/events", label: "View all events" }}>
       <div className="space-y-1">
         <div className="pb-1"><CreateEventForm compact /></div>
         {events.length === 0 ? (

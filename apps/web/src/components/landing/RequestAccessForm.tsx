@@ -53,7 +53,7 @@ export function RequestAccessForm() {
         className="h-12 min-w-60 flex-1 border-seam bg-well text-base placeholder:text-fog"
       />
       <Button type="submit" size="lg" disabled={loading}>
-        {loading ? "Requesting…" : "Request access"}
+        {loading ? "Requesting…" : "Request early access"}
       </Button>
       {error ? (
         <p role="alert" className="w-full text-sm text-destructive">

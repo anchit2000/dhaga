@@ -1,10 +1,10 @@
 # Dhaga
 
-> Dhaga is an open-source, privacy-first, AI-native personal CRM: capture contacts anywhere, turn every note into a private knowledge graph, and query it in natural language. Open-core: the whole CRM is AGPL and runs fully self-hosted, with a source-available cloud tier.
+> Dhaga is a private, open-source personal CRM for founders and relationship-driven professionals: capture meetings, notes, messages, introductions, voice memos, and cards, remember the context, search the network, and follow up at the right time. Open-core: the whole CRM is AGPL and runs fully self-hosted, with a source-available cloud tier.
 
-Dhaga (धागा — Hindi for "thread") is built for people whose work *is* their network: founders, investors, recruiters, real-estate and financial advisors, consultants, community builders. Scan a business card, paste an email, forward a WhatsApp or Telegram voice note, dictate into the browser, clip a page with the extension, or import an address book — Dhaga extracts the people, companies and facts, files them in a private knowledge graph, and answers questions like "who do I know at a fintech in Bangalore?" in plain language. Every AI-derived fact keeps a receipt back to the note it came from, so you can verify it or delete it.
+Dhaga (धागा — Hindi for "thread") is a private relationship memory for founders and other relationship-driven professionals: investors, recruiters, real-estate and financial advisors, consultants, and community builders. Capture a meeting or introduction, write or paste a note or message, forward a WhatsApp or Telegram voice note, scan a card, clip a page with the extension, or import an address book — Dhaga extracts the people, companies and facts, files them in a private knowledge graph, and answers questions like "who do I know at a fintech in Bangalore?" in plain language. Every AI-derived fact keeps a receipt back to the note it came from, so you can verify it or delete it.
 
-What separates it from Dex, Monica or a notes app: the whole CRM is AGPL-licensed and self-hostable, every external dependency (LLM, web search, embeddings, vector store, messaging) sits behind a swappable provider gateway so you can point it at a local model or your own API key, enrichment only ever runs when you ask for it, and full export always works. The free tier is a complete CRM at $0 forever with unlimited capture and notes; cloud AI is the paid feature, from $8/month billed yearly. Start free at https://www.dhaga.app/signup.
+What separates it from Dex, Monica or a notes app: the whole CRM is AGPL-licensed and self-hostable, every external dependency (LLM, web search, embeddings, vector store, messaging) sits behind a swappable provider gateway so you can point it at a local model or your own API key, enrichment only ever runs when you ask for it, and full export always works. The free tier is a complete CRM at $0 forever with unlimited capture and notes. Pro is $10 month-to-month or $8/month billed $96 yearly; the first 500 founding seats can request a $79 first year. Power is shown as a coming-soon plan at $30 monthly or $24/month billed $288 yearly and cannot yet be purchased. Dhaga Cloud is in early access; request access at https://www.dhaga.app/#request-access.
 
 Complete markdown of the 43 pages that answer what Dhaga is, what it does, how it compares, and how to run it yourself — in the same order as the sections of https://www.dhaga.app/llms.txt: start here, then how dhaga compares, then using dhaga, then self-hosting, extending & contributing, then engineering deep dives.
 
@@ -2159,14 +2159,14 @@ changes how the Dhaga app looks: a **colour theme** and a **font**, both yours
 alone. It's also where the first-run walkthrough's settings leg opens — you can
 click a theme while the tour is still on screen.
 
-![The Appearance card in the Settings Account tab: a "Colour theme" grid of seven radio options — Dhaga, Monochrome, High contrast, Rose, Ocean, Forest, Violet — each showing three colour swatches, with Dhaga selected, a Font dropdown below it, and a Reset to default button](/docs/guide/settings-appearance.png)
+![The Appearance card in the Settings Account tab: a "Colour theme" grid of theme options with three colour swatches each, followed by a Font dropdown and Reset to default button](/docs/guide/settings-appearance.png)
 
 ### Pick a theme
 
-Seven themes ship: **Dhaga** (the default warm near-black and amber),
-**Monochrome**, **High contrast**, **Rose**, **Ocean**, **Forest** and
-**Violet**. Pick one and the app repaints immediately — there's no Save button
-on this card.
+Eight themes ship: **Dhaga** (the calm blue-white/midnight default), **Dhaga
+Classic** (the original warm paper/charcoal and amber identity), **Monochrome**,
+**High contrast**, **Rose**, **Ocean**, **Forest** and **Violet**. Pick one and
+the app repaints immediately — there's no Save button on this card.
 
 **A theme changes the colours, not light vs dark**
 

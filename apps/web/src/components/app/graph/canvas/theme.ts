@@ -45,11 +45,11 @@ type BrandTokens = Pick<
  *  cream-on-cream in light mode. Mirrors globals.css `:root` / `.dark`. */
 const FALLBACK: Record<GraphColorScheme, BrandTokens> = {
   dark: {
-    ink: "#0d0b09",
-    panel: "#16120e",
-    seam: "#2b241b",
-    paper: "#f3ede2",
-    fog: "#a49a8a",
+    ink: "#101112",
+    panel: "#17191a",
+    seam: "#303437",
+    paper: "#f4f0e8",
+    fog: "#aeb2b2",
     amber: "#e2a44c",
     /* dark `--brand-ember` is `var(--brand-amber)` — accent text on a near-black
        ground already clears 9:1, so it stays brand amber. */
@@ -57,11 +57,11 @@ const FALLBACK: Record<GraphColorScheme, BrandTokens> = {
     monoFont: "monospace",
   },
   light: {
-    ink: "#f2ebdc",
-    panel: "#fdfbf6",
-    seam: "#c8b79a",
-    paper: "#241d15",
-    fog: "#655a48",
+    ink: "#f7f5ef",
+    panel: "#fffdfa",
+    seam: "#d8d3c9",
+    paper: "#181a1b",
+    fog: "#5c6061",
     amber: "#e2a44c",
     ember: "#7a4413",
     monoFont: "monospace",

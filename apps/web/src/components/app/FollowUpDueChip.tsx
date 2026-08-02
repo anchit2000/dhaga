@@ -24,7 +24,7 @@ export function FollowUpDueChip({
     <span
       className={cn(
         "font-mono text-[10px] uppercase tracking-wider",
-        badge.urgent ? "text-ember" : "text-fog",
+        badge.urgent ? "text-human" : "text-fog",
         className,
       )}
     >

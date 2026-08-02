@@ -58,6 +58,7 @@ export function HomeActions({ openFollowUps, onSelectContact }: {
   return (
     <HomeTile
       title="Follow-ups"
+      tone="attention"
       meta={items.length > 0 ? <span className="font-mono text-[10px] uppercase tracking-widest text-fog">{items.length} open</span> : null}
     >
       {items.length === 0 ? (

@@ -104,13 +104,14 @@ export const metadata: Metadata = {
         ? `https://${process.env.VERCEL_URL}`
         : "http://localhost:3000"),
   ),
-  title: "Dhaga — the AI personal CRM that remembers everyone you meet",
+  title: "Dhaga — a private relationship memory for your network",
   description:
-    "Dhaga turns every card scan, badge, and voice note into a private knowledge graph you can search in plain language. Open source. Your data stays yours.",
+    "Capture meetings, notes, messages, introductions, voice memos, and cards. Dhaga keeps the context searchable and helps you follow up. Open source and private by design.",
   keywords: [
     "personal CRM",
+    "relationship management",
+    "contact notes",
     "business card scanner",
-    "networking app",
     "knowledge graph",
     "open source CRM",
   ],
@@ -118,9 +119,9 @@ export const metadata: Metadata = {
     canonical: SITE_URL,
   },
   openGraph: {
-    title: "Dhaga — the AI personal CRM that remembers everyone you meet",
+    title: "Dhaga — a private relationship memory for your network",
     description:
-      "Capture contacts anywhere. Ask your network questions. Get answers with receipts. Open source and private by design.",
+      "Remember the context behind every relationship, search your network, and follow up at the right time. Open source and private by design.",
     type: "website",
     siteName: "Dhaga",
     url: SITE_URL,
@@ -128,9 +129,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Dhaga — the AI personal CRM that remembers everyone you meet",
+    title: "Dhaga — a private relationship memory for your network",
     description:
-      "Capture contacts anywhere. Ask your network questions. Get answers with receipts. Open source and private by design.",
+      "Remember the context behind every relationship, search your network, and follow up at the right time. Open source and private by design.",
     images: ["/opengraph-image.png"],
   },
 };
@@ -141,8 +142,8 @@ export const viewport: Viewport = {
   // also matches manifest.ts). A single value would leave the chrome dark in
   // light mode.
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f2ebdc" },
-    { media: "(prefers-color-scheme: dark)", color: "#0d0b09" },
+    { media: "(prefers-color-scheme: light)", color: "#f4f8fa" },
+    { media: "(prefers-color-scheme: dark)", color: "#0c161c" },
   ],
 };
 

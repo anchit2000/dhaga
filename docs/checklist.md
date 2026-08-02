@@ -13,10 +13,10 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Git repo + GitHub (`anchit2000/dhaga`), AGPL-3.0 LICENSE, README
 - [x] CLAUDE.md project rules (stack, SOLID, security, file organization)
 - [x] Next.js app scaffold (`apps/web`) — App Router, TS strict, Tailwind v4
-- [x] Design tokens centralised (`globals.css` @theme: ink/panel/seam/line/paper/fog/amber/ember)
+- [x] Design tokens centralised (`globals.css` @theme: calm blue-white/midnight surfaces, trust blue, calm teal, magic violet, human coral, and amber action)
 - [x] Light-mode palette contrast-audited to WCAG AA (fog/ember/seam darkened,
       `--brand-line` added for control borders, ember focus rings; dark unchanged)
-- [x] Landing page (hero, scrollytelling feature story, pricing, FAQ, OSS section)
+- [x] Compact landing page for founders and relationship-driven professionals — broad capture story (meetings, notes, messages, introductions, voice, and cards), capture → remember → follow up proof, privacy/open-source trust, outcomes, pricing teaser, short FAQ/access, and full pricing on `/pricing`
 - [x] npm workspaces (`apps/*`, `packages/*`) so `packages/core` is shareable
 - [x] `apps/web/.env.example` documenting every env var
 - [x] CI (typecheck + lint + tests + build on push)
@@ -44,7 +44,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] App layout: nav (People / Events / Search / Quick-add), mobile-first at 375px — primary pills collapse to icon-only below `sm` (label kept in the a11y tree via `sr-only`) and the brand wordmark yields to the mark, so the pill row fits at 375px with no hidden horizontal-scroll overflow; labels return unchanged at `sm`+ (2026-07-28)
 - [x] Empty states + error states; submit buttons have loading spinners
 - [x] Loading skeletons on data-heavy screens (route `loading.tsx` files)
-- [x] Dark warm theme reused from landing tokens
+- [x] Soothing midnight theme reused from landing tokens, with semantic colour cues shared by the real dashboard and its landing preview
 - [x] Home dashboard: due reach-outs + open follow-ups across the graph
 - [x] Per-section Suspense streaming on home/profile/settings (each data region streams independently behind its own boundary)
 - [x] Home stat strip: people/companies/notes/facts/relationships/events/follow-ups/entities counts via one aggregate RLS-scoped query (`lib/repo/stats.ts`), own Suspense region
@@ -264,8 +264,10 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 
 ## 18. Monetization & launch
 
+- [x] Landing detail preserved on focused routes (2026-08-02) — the conversion-focused home page links to `/features` for every original step, capture story, Ask demo, comparison, FAQ and the opt-in interactive network demo, and to `/open-source` for the AGPL/self-hosting explanation. Five indexable `/use-cases/*` pages speak directly to sales, founders, investors, recruiters and community builders. Routes are included in navigation, sitemap and generated `llms.txt` discovery without restoring the home page's eager graph payload.
+
 - [ ] Access-request API (`/api/access-requests`, `packages/ee`) wired to real storage; landing form posts to it — replaces the old public waitlist, gated behind `DHAGA_HOSTED_MODE`; code confirmed backed by a real Drizzle/Postgres table (2026-07-07 audit), no stub — only remaining bar is a human clicking through the flow in a browser
-- [ ] Free tier caps live; Pro (lifetime $79 first-500 / $8 mo) checkout — Stripe Checkout + webhook built (§19); real Stripe Product/Price setup + a live test-mode purchase still needed
+- [ ] Free tier caps live; public pricing now shows Pro at $10 monthly or $8/mo billed $96 yearly (save $24), plus the separate $79 first-year founding offer. Power is clearly coming soon at $30 monthly or $24/mo billed $288 yearly (save $72) and is excluded from purchasable structured data. Stripe Checkout + webhook exist for the earlier annual configuration (§19); new live Price setup, Power entitlements, and a test-mode purchase are still needed before these can sell.
 - [x] Self-host docs — [SELF_HOSTING.md](SELF_HOSTING.md) (no `packages/ee` needed)
 - [x] `docker compose up` — multi-stage `Dockerfile` (node:22-slim, standalone output via `DHAGA_STANDALONE=1`, non-root, 494MB) + `compose.yml` (pgvector/pgvector:pg16 db with healthcheck) verified end-to-end 2026-07-16: Postgres-backed and zero-config PGlite boots both serve with clean first-boot DDL self-heal (the earlier single-stage image was never actually runnable — missing workspace manifest)
 - [ ] Public roadmap + good-first-issues — `docs/ROADMAP.md` written 2026-07-07, now linked from `README.md`'s Status section (2026-07-12); good-first-issue candidates drafted but intentionally not posted as real GitHub issues yet (that's a public/outward action for the owner to approve)
@@ -359,3 +361,5 @@ web and mobile per the parity rule.
   duplicate + per-referrer cap. `packages/ee/src/referrals` (control-plane
   tables, no RLS); web `/app/referral` + `/api/referral`; mobile advocate
   screen. Redemption is web-signup only.
+
+- [x] Dhaga Classic preserves the original warm paper/charcoal light and dark palettes as an eighth Appearance preset; the refreshed blue-white/midnight Dhaga palette remains the zero-overhead default.

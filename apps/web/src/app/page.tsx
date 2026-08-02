@@ -1,39 +1,14 @@
-import { AskDemo } from "@/components/landing/AskDemo";
-import { Comparison } from "@/components/landing/Comparison";
-import { DeferredDecor } from "@/components/landing/DeferredDecor";
-import { Faq } from "@/components/landing/Faq";
-import { FinalCta, Footer } from "@/components/landing/Closing";
-import { Header } from "@/components/landing/Header";
-import { Hero } from "@/components/landing/Hero";
-import { FeatureStory } from "@/components/landing/FeatureStory";
-import { HowItWorks, StatsBand } from "@/components/landing/Sections";
-import { NetworkSandbox } from "@/components/landing/NetworkSandbox";
-import { OpenSource } from "@/components/landing/OpenSource";
-import { Pricing } from "@/components/landing/Pricing";
-import { StickyCta } from "@/components/landing/StickyCta";
-import { getCurrentUser } from "@/lib/auth/guard";
+import type { Metadata } from "next";
 
-export default async function Home() {
-  const user = await getCurrentUser();
-  const isSignedIn = !!user;
+import { FocusedHome } from "@/components/landing/FocusedHome";
 
-  return (
-    <main className="relative">
-      <DeferredDecor />
-      <Header isSignedIn={isSignedIn} />
-      <Hero />
-      <StatsBand />
-      <HowItWorks />
-      <NetworkSandbox />
-      <FeatureStory />
-      <AskDemo />
-      <Comparison />
-      <OpenSource />
-      <Pricing />
-      <Faq />
-      <FinalCta />
-      <Footer />
-      <StickyCta isSignedIn={isSignedIn} />
-    </main>
-  );
+export const metadata: Metadata = {
+  title: "Dhaga — the personal CRM you own",
+  description:
+    "A private, portable personal CRM for sales professionals, founders, investors, recruiters, and community builders. Remember relationship context, search your network, and follow up at the right time.",
+  alternates: { canonical: "/" },
+};
+
+export default function Home(): React.ReactElement {
+  return <FocusedHome />;
 }

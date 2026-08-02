@@ -1,6 +1,8 @@
+import type { ReactElement } from "react";
+
 import { getGraphActivity, getGraphStats } from "@/lib/repo/stats";
 import { Sparkline } from "@/components/app/home/Sparkline";
-import type { ReactElement } from "react";
+import { HOME_STAT_TONE_CLASSES } from "@/utils/constants/home";
 
 /**
  * Home's "graph at a glance" metric strip: a mobile-first row of number+label
@@ -40,7 +42,10 @@ export async function StatStrip(): Promise<ReactElement | null> {
           <span className="font-display text-3xl tabular-nums text-paper">{tile.value.toLocaleString()}</span>
           <span className="font-mono text-[10px] uppercase tracking-widest text-fog">{tile.label}</span>
           {tile.sub ? <span className="text-[11px] text-fog">{tile.sub}</span> : null}
-          <Sparkline data={tile.series} className="mt-2 h-6 w-full text-ember/70" />
+          <Sparkline
+            data={tile.series}
+            className={`mt-2 h-6 w-full ${HOME_STAT_TONE_CLASSES[tile.label] ?? "text-trust"}`}
+          />
         </div>
       ))}
     </section>

@@ -25,12 +25,12 @@ export const WRAPPED_DEFAULT_FORMAT: WrappedCardFormat = "landscape";
 
 /** Brand palette for the OG card (mirrors globals.css .dark --brand-*). */
 export const WRAPPED_CARD_COLORS = {
-  ink: "#0d0b09",
-  panel2: "#1d1812",
-  seam: "#2b241b",
-  paper: "#f3ede2",
-  fog: "#a49a8a",
-  amber: "#e2a44c",
+  ink: "#0c161c",
+  panel2: "#1a2b35",
+  seam: "#2b414d",
+  paper: "#eff7f8",
+  fog: "#a7bbc4",
+  amber: "#f0b44a",
 } as const;
 
 /** How many category bars the card's mini-distribution shows. */

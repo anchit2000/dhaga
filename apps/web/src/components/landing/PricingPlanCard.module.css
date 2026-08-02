@@ -1,0 +1,58 @@
+.card {
+  --pricing-trust: #0f766e;
+  --pricing-trust-wash: rgb(15 118 110 / 9%);
+  --pricing-power: #654bb3;
+  --pricing-power-wash: rgb(101 75 179 / 8%);
+  border-color: color-mix(in srgb, var(--pricing-trust) 22%, var(--brand-seam));
+  background: linear-gradient(180deg, var(--pricing-trust-wash), var(--brand-panel) 34%);
+}
+
+:global(.dark) .card {
+  --pricing-trust: #5eead4;
+  --pricing-trust-wash: rgb(94 234 212 / 7%);
+  --pricing-power: #c4b5fd;
+  --pricing-power-wash: rgb(196 181 253 / 7%);
+}
+
+.card:hover {
+  border-color: color-mix(in srgb, var(--pricing-trust) 48%, var(--brand-seam));
+  box-shadow: 0 22px 58px -34px color-mix(in srgb, var(--pricing-trust) 38%, transparent);
+}
+
+.proCard {
+  border-color: color-mix(in srgb, var(--pricing-trust) 60%, var(--brand-seam));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--pricing-trust) 26%, transparent);
+}
+
+.powerCard {
+  border-color: color-mix(in srgb, var(--pricing-power) 34%, var(--brand-seam));
+  background: linear-gradient(180deg, var(--pricing-power-wash), var(--brand-panel) 34%);
+}
+
+.powerCard:hover {
+  border-color: color-mix(in srgb, var(--pricing-power) 55%, var(--brand-seam));
+  box-shadow: 0 22px 58px -34px color-mix(in srgb, var(--pricing-power) 38%, transparent);
+}
+
+.trustText {
+  color: var(--pricing-trust);
+}
+
+.powerText {
+  color: var(--pricing-power);
+}
+
+.trustBadge {
+  color: var(--pricing-trust);
+  background: color-mix(in srgb, var(--pricing-trust) 12%, transparent);
+}
+
+.powerBadge {
+  color: var(--pricing-power);
+  background: color-mix(in srgb, var(--pricing-power) 12%, transparent);
+}
+
+.powerButton {
+  color: var(--pricing-power);
+  border-color: color-mix(in srgb, var(--pricing-power) 38%, transparent);
+}

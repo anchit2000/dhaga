@@ -60,7 +60,7 @@ export function ResourcesMenu(): ReactElement {
         aria-haspopup="true"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
-        className="flex items-center gap-1 rounded-full px-4 py-1.5 text-sm text-fog transition-colors hover:text-paper aria-expanded:text-paper"
+        className="flex min-h-11 items-center gap-1 rounded-full px-4 text-sm text-fog transition-colors hover:text-paper aria-expanded:text-paper"
       >
         Resources
         <ChevronDown

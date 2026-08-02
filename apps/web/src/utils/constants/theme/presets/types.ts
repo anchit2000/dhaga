@@ -2,6 +2,7 @@ import type { ThemePalette } from "../palette";
 
 export type ThemePresetId =
   | "default"
+  | "classic"
   | "mono"
   | "contrast"
   | "rose"

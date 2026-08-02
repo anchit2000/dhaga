@@ -16,9 +16,10 @@ export const SITE_NAME = "Dhaga";
 export const GITHUB_REPO_URL = "https://github.com/anchit2000/dhaga";
 
 export const SITE_DESCRIPTION =
-  "Dhaga is an open-source, privacy-first, AI-native personal CRM: capture " +
-  "contacts anywhere, turn every note into a private knowledge graph, and " +
-  "query it in natural language.";
+  "Dhaga is a private, open-source personal CRM for founders and " +
+  "relationship-driven professionals: capture meetings, notes, messages, " +
+  "introductions, voice memos, and cards, remember the context, search the " +
+  "network, and follow up at the right time.";
 
 // Public, indexable marketing routes. Blog and docs pages are enumerated from
 // their content sources in sitemap.ts, so they're intentionally absent here.
@@ -30,7 +31,14 @@ export const MARKETING_SITEMAP_ROUTES: ReadonlyArray<{
   priority: number;
 }> = [
   { path: "/", changeFrequency: "weekly", priority: 1 },
+  { path: "/features", changeFrequency: "monthly", priority: 0.9 },
   { path: "/pricing", changeFrequency: "monthly", priority: 0.9 },
+  { path: "/open-source", changeFrequency: "monthly", priority: 0.8 },
+  { path: "/use-cases/sales", changeFrequency: "monthly", priority: 0.8 },
+  { path: "/use-cases/founders", changeFrequency: "monthly", priority: 0.8 },
+  { path: "/use-cases/investors", changeFrequency: "monthly", priority: 0.8 },
+  { path: "/use-cases/recruiters", changeFrequency: "monthly", priority: 0.8 },
+  { path: "/use-cases/community-builders", changeFrequency: "monthly", priority: 0.8 },
   { path: "/signup", changeFrequency: "monthly", priority: 0.8 },
   { path: "/login", changeFrequency: "monthly", priority: 0.5 },
   { path: "/privacy", changeFrequency: "yearly", priority: 0.3 },

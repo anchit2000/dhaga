@@ -1,4 +1,8 @@
-import { PRICING_FAQ_ITEMS, PRICING_PLANS } from "@/utils/constants/landing";
+import {
+  FOUNDING_PRO_OFFER,
+  PRICING_FAQ_ITEMS,
+  PRICING_PLANS,
+} from "@/utils/constants/landing";
 import {
   SITE_DESCRIPTION,
   SITE_NAME,
@@ -13,10 +17,42 @@ import type { ReactElement } from "react";
 // renders, so the markup can never claim a price the page doesn't show.
 const PRICING_URL = `${SITE_URL}/pricing`;
 
-/** "$79" → "79". Every PRICING_PLANS price is a USD sticker string. */
-function numericPrice(price: string): string {
-  return price.replace(/[^\d.]/g, "");
-}
+const PRO = PRICING_PLANS.find((plan) => plan.tier === "Pro");
+if (!PRO) throw new Error("Pro pricing must be configured");
+
+export const PRICING_OFFERS = [
+  {
+    "@type": "Offer",
+    name: "Free",
+    price: 0,
+    priceCurrency: "USD",
+    url: `${SITE_URL}/signup`,
+  },
+  {
+    "@type": "Offer",
+    name: "Pro monthly",
+    price: PRO.monthlyPrice,
+    priceCurrency: "USD",
+    description: "Billed monthly",
+    url: `${PRICING_URL}#request-access`,
+  },
+  {
+    "@type": "Offer",
+    name: "Pro yearly",
+    price: PRO.yearlyTotal,
+    priceCurrency: "USD",
+    description: `$${PRO.yearlyMonthlyPrice}/month, billed yearly`,
+    url: `${PRICING_URL}#request-access`,
+  },
+  {
+    "@type": "Offer",
+    name: "Founding Pro — first year",
+    price: FOUNDING_PRO_OFFER.price,
+    priceCurrency: "USD",
+    availability: "https://schema.org/LimitedAvailability",
+    url: `${PRICING_URL}#request-access`,
+  },
+] as const;
 
 const softwareApplicationLd: Record<string, unknown> = {
   "@context": "https://schema.org",
@@ -26,14 +62,7 @@ const softwareApplicationLd: Record<string, unknown> = {
   applicationCategory: "BusinessApplication",
   operatingSystem: "Web",
   url: SITE_URL,
-  offers: PRICING_PLANS.map((plan) => ({
-    "@type": "Offer",
-    name: plan.tier,
-    price: numericPrice(plan.price),
-    priceCurrency: "USD",
-    description: plan.per,
-    url: PRICING_URL,
-  })),
+  offers: PRICING_OFFERS,
 };
 
 const faqPageLd: Record<string, unknown> = {

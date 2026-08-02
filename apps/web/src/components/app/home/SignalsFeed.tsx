@@ -20,6 +20,7 @@ export function SignalsFeed({
   return (
     <HomeTile
       title="Signals"
+      tone="intelligence"
       viewAll={{ href: "/app/people", label: overflow > 0 ? `+${overflow} more signals` : "View all people" }}
       meta={
         <span className="font-mono text-[10px] uppercase tracking-widest text-fog">

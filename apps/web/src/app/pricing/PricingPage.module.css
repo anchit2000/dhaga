@@ -1,0 +1,25 @@
+.page {
+  --pricing-trust: #0f766e;
+  --pricing-trust-wash: rgb(15 118 110 / 8%);
+  background:
+    radial-gradient(circle at 72% 6%, var(--pricing-trust-wash), transparent 28rem),
+    var(--brand-ink);
+}
+
+:global(.dark) .page {
+  --pricing-trust: #5eead4;
+  --pricing-trust-wash: rgb(94 234 212 / 6%);
+}
+
+.eyebrow {
+  color: var(--pricing-trust);
+}
+
+.creditPanel {
+  border-color: color-mix(in srgb, var(--pricing-trust) 26%, var(--brand-seam));
+  background: color-mix(in srgb, var(--pricing-trust) 4%, var(--brand-panel));
+}
+
+.creditPrice {
+  color: var(--pricing-trust);
+}

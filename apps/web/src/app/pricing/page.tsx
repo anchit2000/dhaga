@@ -1,21 +1,20 @@
 import { FinalCta, Footer } from "@/components/landing/Closing";
 import { Header } from "@/components/landing/Header";
-import { PricingPlanCard } from "@/components/landing/PricingPlanCard";
-import { getCurrentUser } from "@/lib/auth/guard";
-import { CREDIT_EXAMPLES, PRICING_PLANS } from "@/utils/constants/landing";
+import { CREDIT_EXAMPLES } from "@/utils/constants/landing";
 import { SITE_URL } from "@/utils/constants/site";
 import { PlanComparison } from "./PlanComparison";
+import { PricingCards } from "./PricingCards";
 import { PricingFaq } from "./PricingFaq";
 import { PricingStructuredData } from "./structured-data";
+import styles from "./PricingPage.module.css";
 import type { Metadata } from "next";
 import type { ReactElement } from "react";
 
 const TITLE = "Pricing — Dhaga";
 const DESCRIPTION =
-  "Dhaga pricing: unlimited contacts, notes, and export free forever, plus 10 AI " +
-  "credits a month; Pro at $8/mo billed yearly for 300 AI credits a month — " +
-  "about 100 new people scanned, noted, and asked about; and a $79 founding " +
-  "annual plan for the first 500 seats. Open source and self-hostable.";
+  "Dhaga pricing: Free forever; Pro at $10 monthly or $8/mo billed yearly; " +
+  "and Power at $30 monthly or $24/mo billed yearly, coming soon. Save 20% " +
+  "with yearly billing, or request a $79 founding Pro seat.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -37,32 +36,26 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function PricingPage(): Promise<ReactElement> {
-  const user = await getCurrentUser();
-
+export default function PricingPage(): ReactElement {
   return (
-    <main className="relative">
+    <main className={`relative ${styles.page}`}>
       <PricingStructuredData />
-      <Header isSignedIn={!!user} />
+      <Header />
       <section className="mx-auto max-w-6xl px-6 pb-4 pt-32 sm:pt-40">
-        <p className="font-mono text-xs uppercase tracking-[0.22em] text-ember">
+        <p className={`font-mono text-xs uppercase tracking-[0.22em] ${styles.eyebrow}`}>
           Pricing
         </p>
         <h1 className="mt-4 max-w-3xl text-balance font-display text-4xl font-medium tracking-tight sm:text-5xl">
-          Dhaga pricing — one decision a year, not twelve.
+          Simple monthly pricing. A better deal yearly.
         </h1>
         <p className="mt-5 max-w-2xl text-fog">
           Contacts, notes, facts, follow-ups, keyword search and export are
           unlimited and free, forever — and you can self-host the whole thing.
-          The AI part runs on monthly credits: 10 free, 300 on Pro. One card
-          scan is one credit.
+          The AI part runs on monthly credits: 10 free, 300 on Pro, and 1,000
+          on the coming-soon Power plan. One card scan is one credit.
         </p>
-        <div className="mt-12 grid items-stretch gap-6 md:grid-cols-3">
-          {PRICING_PLANS.map((plan, i) => (
-            <PricingPlanCard key={plan.tier} plan={plan} delay={i * 120} />
-          ))}
-        </div>
-        <div className="mt-10 rounded-lg border border-seam bg-panel/50 p-6 sm:p-8">
+        <PricingCards />
+        <div className={`mt-10 rounded-lg border p-6 sm:p-8 ${styles.creditPanel}`}>
           <p className="font-mono text-xs uppercase tracking-[0.18em] text-fog">
             What a credit buys
           </p>
@@ -72,7 +65,7 @@ export default async function PricingPage(): Promise<ReactElement> {
                 key={example.price}
                 className="flex items-baseline gap-3 text-sm text-fog"
               >
-                <span className="w-[5.5rem] shrink-0 font-mono text-xs text-ember">
+                <span className={`w-[5.5rem] shrink-0 font-mono text-xs ${styles.creditPrice}`}>
                   {example.price}
                 </span>
                 <span>{example.action}</span>

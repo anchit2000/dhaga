@@ -59,11 +59,11 @@ export function SignalCard({
   onContactClick?: (contactId: string) => void;
 }) {
   return (
-    <li className="rounded-xl border border-amber/25 bg-amber/[0.05] p-3">
+    <li className="rounded-xl border border-magic/25 bg-magic/[0.05] p-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full border border-amber/40 px-2 py-0.5 text-[11px] text-ember">
+            <span className="rounded-full border border-magic/40 px-2 py-0.5 text-[11px] text-magic">
               {signal.kind === "job_change" ? "Job change" : "News"}
             </span>
             {showContact ? (
@@ -96,7 +96,7 @@ export function SignalCard({
               href={signal.sourceUrl}
               target="_blank"
               rel="noreferrer"
-              className="mt-1 inline-block text-xs text-ember underline-offset-2 hover:underline"
+              className="mt-1 inline-block text-xs text-magic underline-offset-2 hover:underline"
             >
               Source
             </a>
@@ -112,7 +112,7 @@ export function SignalCard({
             <input type="hidden" name="contactName" value={signal.contactName} />
             <PillSubmit
               label="Add as note"
-              className="rounded-full border border-amber/40 px-2.5 py-1 text-[11px] text-ember transition-colors hover:bg-amber/10"
+              className="rounded-full border border-magic/40 px-2.5 py-1 text-[11px] text-magic transition-colors hover:bg-magic/10"
             />
           </ActionForm>
           <ActionForm

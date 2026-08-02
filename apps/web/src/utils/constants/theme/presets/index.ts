@@ -1,3 +1,4 @@
+import { CLASSIC_PRESET } from "./classic";
 import { CONTRAST_PRESET } from "./contrast";
 import { DEFAULT_PRESET } from "./default";
 import { FOREST_PRESET } from "./forest";
@@ -9,9 +10,10 @@ import type { ThemePreset, ThemePresetId } from "./types";
 
 export type { ThemePreset, ThemePresetId };
 
-/** Picker order. Dhaga first, then the two neutrals, then the hues. */
+/** Picker order. Current Dhaga, original Dhaga, then neutrals and hues. */
 export const THEME_PRESETS: ThemePreset[] = [
   DEFAULT_PRESET,
+  CLASSIC_PRESET,
   MONO_PRESET,
   CONTRAST_PRESET,
   ROSE_PRESET,

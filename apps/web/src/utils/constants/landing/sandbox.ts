@@ -17,6 +17,7 @@ export const SANDBOX_WATERMARK = "made with Dhaga";
 /** Baked, anonymized assets (scripts/export-public-graph.mjs). */
 export const SANDBOX_CORE_ASSET = "/network-sandbox/graph-core.json";
 export const SANDBOX_FULL_ASSET = "/network-sandbox/graph-full.json";
+export const FEATURE_GRAPH_ASSET = "/network-sandbox/feature-graph.json";
 
 /** Human node-count labels for the teaser + explode affordances. */
 export const SANDBOX_CORE_NODE_LABEL = "~4,500 nodes";

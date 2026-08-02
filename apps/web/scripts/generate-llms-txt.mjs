@@ -345,6 +345,7 @@ const START_HERE_PAGES = [
 const START_ORDER = [
   "/",
   "/features",
+  "/product-tour",
   "/docs",
   "/pricing",
   "/open-source",
@@ -399,7 +400,15 @@ const EXTRA_ENTRIES = [
     url: "/features",
     title: "Features",
     description:
-      "Capture from meetings, notes, voice, messages and cards; build a private knowledge graph; search it in plain language; find warm paths; and follow up with context.",
+      "A compact visual explorer: switch one application-faithful preview across capture, voice, grouping, graph, search, follow-up, intelligence, and warm paths.",
+    full: false,
+  },
+  {
+    section: "start",
+    url: "/product-tour",
+    title: "Product tour",
+    description:
+      "An optional deep dive into Dhaga's workflow, cited Ask answers, interactive network sandbox, product comparison, and feature FAQ.",
     full: false,
   },
   {

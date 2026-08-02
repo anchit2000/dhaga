@@ -11,7 +11,8 @@ Sections run in order of what a reader needs first, not by directory. `## Option
 ## Start here
 
 - [Dhaga — home](https://www.dhaga.app/): A concise overview of who Dhaga is for and how it turns meetings, notes, messages, introductions, voice memos, and cards into remembered context and timely follow-ups.
-- [Features](https://www.dhaga.app/features): Capture from meetings, notes, voice, messages and cards; build a private knowledge graph; search it in plain language; find warm paths; and follow up with context.
+- [Features](https://www.dhaga.app/features): A compact visual explorer: switch one application-faithful preview across capture, voice, grouping, graph, search, follow-up, intelligence, and warm paths.
+- [Product tour](https://www.dhaga.app/product-tour): An optional deep dive into Dhaga's workflow, cited Ask answers, interactive network sandbox, product comparison, and feature FAQ.
 - [Documentation](https://www.dhaga.app/docs): Dhaga is an AI-native, privacy-first personal CRM. Self-host it, extend its providers, or read the product thinking behind it.
 - [Pricing](https://www.dhaga.app/pricing): Free forever for the full manual CRM. Pro is $10 monthly or $8/month billed $96 yearly (save $24); the first 500 founding seats can request a $79 first year. Power is coming soon at $30 monthly or $24/month billed $288 yearly (save $72).
 - [Open source](https://www.dhaga.app/open-source): Inspect, self-host and extend the AGPL-licensed core, keep relationship data under your control, and export it whenever you want.

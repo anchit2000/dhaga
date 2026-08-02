@@ -42,6 +42,7 @@ export function Footer() {
               Product
             </p>
             <FooterLink href="/features" label="Features" />
+            <FooterLink href="/product-tour" label="Product tour" />
             <FooterLink href="/#use-cases" label="Use cases" />
             <FooterLink href="/pricing" label="Pricing" />
             <FooterLink href="/#faq" label="FAQ" />

@@ -267,7 +267,7 @@ html {
   }
 }
 
-/* product-mock animations (used by the hero phone mock) */
+/* Product-preview animations used by the interactive feature stage. */
 @keyframes dhaga-scan {
   0%,
   100% {
@@ -296,19 +296,6 @@ html {
   }
   50% {
     transform: scaleY(1);
-  }
-}
-
-/* CaptureOrbit: icons orbit continuously while staying upright */
-@keyframes dhaga-orbit-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes dhaga-orbit-counter {
-  to {
-    transform: rotate(-360deg);
   }
 }
 

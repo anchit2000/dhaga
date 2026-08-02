@@ -1,135 +1,72 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
-import {
-  ReactFlow,
-  useNodesState,
-  type Edge,
-  type Node,
-} from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
-import {
-  GRAPH_EDGES,
-  GRAPH_NODES,
-  type GraphScene,
-} from "@/utils/constants/landing/graph";
-import { AnnotationNode, PersonNode, type PersonData } from "./PersonNode";
+import { Layers3, LoaderCircle, Route } from "lucide-react";
+import { GraphStage as SigmaGraphStage } from "@/components/landing/NetworkSandbox/LandingGraph/GraphStage";
+import { FEATURE_GRAPH_WARM_PATH, type GraphScene } from "@/utils/constants/landing/graph";
+import { useFeatureGraph } from "./useFeatureGraph";
 
-const SCALE = 11;
-const nodeTypes = { person: PersonNode, annotation: AnnotationNode };
-
-function personData(id: string, scene: GraphScene): PersonData {
-  const person = GRAPH_NODES.find((node) => node.id === id);
-  if (!person) throw new Error(`Unknown graph node: ${id}`);
-  return {
-    person,
-    lit: scene.litNodes.includes(id),
-    dimmed: scene.dimOthers && !scene.litNodes.includes(id),
-    hidden: Boolean(person.isNew && !scene.showNew),
-    badge: scene.badgeOn === id,
-    draft: scene.draftOn === id,
-    facts: scene.factsOn === id,
-  };
-}
-
-function buildNodes(scene: GraphScene): Node[] {
-  const annotations: Node[] = [
-    {
-      id: "cluster",
-      type: "annotation",
-      position: { x: 78 * SCALE, y: 19 * SCALE },
-      data: { kind: "cluster", visible: Boolean(scene.cluster) },
-      draggable: false,
-      selectable: false,
-      zIndex: -1,
-      style: { width: 1, height: 1 },
-    },
-    {
-      id: "warm-label",
-      type: "annotation",
-      position: { x: 24 * SCALE, y: 20 * SCALE },
-      data: { kind: "warmLabel", visible: Boolean(scene.warmLabel) },
-      draggable: false,
-      selectable: false,
-      style: { width: 1, height: 1 },
-    },
-  ];
-  const people: Node[] = GRAPH_NODES.map((node) => ({
-    id: node.id,
-    type: "person",
-    position: { x: node.x * SCALE, y: node.y * SCALE },
-    data: personData(node.id, scene),
-    draggable: true,
-    selectable: false,
-    style: { width: 1, height: 1 },
-  }));
-  return [...annotations, ...people];
-}
-
-export function GraphStage({ scene }: { scene: GraphScene }) {
-  const [nodes, setNodes, onNodesChange] = useNodesState(buildNodes(scene));
-
-  // Restyle on scene change; keep positions the user dragged.
-  useEffect(() => {
-    setNodes((current) =>
-      current.map((node) => {
-        if (node.type === "person") {
-          return { ...node, data: personData(node.id, scene) };
-        }
-        const visible =
-          node.id === "cluster" ? Boolean(scene.cluster) : Boolean(scene.warmLabel);
-        return { ...node, data: { ...node.data, visible } };
-      }),
-    );
-  }, [scene, setNodes]);
-
-  const edges: Edge[] = useMemo(
-    () =>
-      GRAPH_EDGES.map((edge) => {
-        const key = `${edge.from}-${edge.to}`;
-        const lit = scene.litEdges.includes(key);
-        const touchesNew =
-          GRAPH_NODES.find((n) => n.id === edge.from)?.isNew ||
-          GRAPH_NODES.find((n) => n.id === edge.to)?.isNew;
-        return {
-          id: key,
-          source: edge.from,
-          target: edge.to,
-          type: "straight",
-          animated: lit,
-          style: {
-            stroke: lit
-              ? "var(--brand-amber)"
-              : "color-mix(in srgb, var(--brand-fog) 40%, transparent)",
-            strokeWidth: lit ? 2 : 1,
-            opacity: touchesNew && !scene.showNew ? 0 : lit ? 1 : scene.dimOthers ? 0.35 : 0.8,
-            filter: lit
-              ? "drop-shadow(0 0 5px color-mix(in srgb, var(--brand-amber) 90%, transparent))"
-              : "none",
-            transition: "all 0.7s",
-          },
-        };
-      }),
-    [scene],
+function WarmPathCard(): React.ReactElement {
+  return (
+    <div className="pointer-events-none absolute left-3 top-3 z-30 max-w-[17rem] rounded-xl border border-seam bg-panel/95 p-3 shadow-lg backdrop-blur">
+      <p className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-fog">
+        <Route className="size-3 text-ember" aria-hidden /> Warm path to
+      </p>
+      <div className="mt-2 flex items-center gap-1.5">
+        <span className="rounded-md border border-line bg-well px-2 py-1 text-[10px] text-paper">
+          {FEATURE_GRAPH_WARM_PATH.target}
+        </span>
+        <span className="rounded-full bg-amber px-2 py-1 text-[9px] font-semibold text-on-accent">
+          Find path
+        </span>
+      </div>
+      <p className="mt-2 text-[10px] font-medium text-paper">
+        {FEATURE_GRAPH_WARM_PATH.labels.join(" → ")}
+      </p>
+      <p className="mt-1 text-right text-[9px] text-ember">Show on graph →</p>
+    </div>
   );
+}
+
+function LayersChip(): React.ReactElement {
+  return (
+    <div className="pointer-events-none absolute left-3 top-3 z-30 flex items-center gap-1.5 rounded-full border border-seam bg-panel/95 px-2.5 py-1.5 text-[10px] text-paper shadow-lg backdrop-blur">
+      <Layers3 className="size-3" aria-hidden /> Layers
+    </div>
+  );
+}
+
+export function GraphStage({ scene }: { scene: GraphScene }): React.ReactElement {
+  const { dataset, error } = useFeatureGraph();
+  const isWarmPath = scene.id === "warmpath";
+
+  if (!dataset) {
+    return (
+      <div className="flex h-full items-center justify-center bg-ink text-sm text-ink-muted">
+        {error ? (
+          <span>Graph preview unavailable</span>
+        ) : (
+          <span className="flex items-center gap-2">
+            <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
+            Loading your network…
+          </span>
+        )}
+      </div>
+    );
+  }
 
   return (
-    <ReactFlow
-      nodes={nodes}
-      edges={edges}
-      onNodesChange={onNodesChange}
-      nodeTypes={nodeTypes}
-      fitView
-      fitViewOptions={{ padding: 0.15 }}
-      panOnDrag={false}
-      zoomOnScroll={false}
-      zoomOnPinch={false}
-      zoomOnDoubleClick={false}
-      preventScrolling={false}
-      nodesConnectable={false}
-      edgesFocusable={false}
-      proOptions={{ hideAttribution: true }}
-      className="!bg-transparent"
-    />
+    <div className="relative h-full min-h-0 overflow-hidden bg-ink">
+      <SigmaGraphStage
+        payload={dataset.payload}
+        indexes={dataset.indexes}
+        positions={dataset.positions}
+        explodable={false}
+        exploding={false}
+        onExplode={() => {}}
+        highlightedPath={isWarmPath ? FEATURE_GRAPH_WARM_PATH.ids : null}
+        autoCircleCount={0}
+      />
+      {isWarmPath ? <WarmPathCard /> : <LayersChip />}
+    </div>
   );
 }

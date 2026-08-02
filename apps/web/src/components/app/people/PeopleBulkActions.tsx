@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, Link2, Star, StarOff, Tag, Trash2 } from "lucide-react";
+import { Building2, Link2, Star, StarOff, Tag, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { toastError } from "@/components/app/feedback";
 import { Button } from "@/components/ui/button";
@@ -13,14 +13,15 @@ import { BulkAffiliationDialog } from "./BulkAffiliationDialog";
 import { BulkDeleteDialog } from "./BulkDeleteDialog";
 import { BulkTagDialog } from "./BulkTagDialog";
 import { ContactMergeDialog } from "./ContactMergeDialog";
+import { GroupByDialog } from "./GroupByDialog";
 import type { AnimatedIconHandle } from "@/components/ui/animated-icons";
 
-type OpenDialog = "merge" | "company" | "affiliation" | "tag" | "delete" | null;
+type OpenDialog = "merge" | "company" | "affiliation" | "tag" | "group" | "delete" | null;
 
 /**
  * The action triggers slotted into the People {@link BulkActionBar}: merge,
- * add-to-company, tag, star/unstar, and delete. Each dialog clears the parent
- * selection on success via `onClear`.
+ * add-to-company, tag, group-by, star/unstar, and delete. Each dialog clears
+ * the parent selection on success via `onClear`.
  */
 export function PeopleBulkActions({ ids, onClear }: { ids: string[]; onClear: () => void }) {
   const router = useRouter();
@@ -69,6 +70,9 @@ export function PeopleBulkActions({ ids, onClear }: { ids: string[]; onClear: ()
       <Button variant="outline" size="sm" onClick={() => setDialog("tag")}>
         <Tag /> Tag
       </Button>
+      <Button variant="outline" size="sm" onClick={() => setDialog("group")}>
+        <Users /> Group by
+      </Button>
       <Button
         variant="outline"
         size="sm"
@@ -113,6 +117,12 @@ export function PeopleBulkActions({ ids, onClear }: { ids: string[]; onClear: ()
         contactIds={ids}
         open={dialog === "tag"}
         onOpenChange={(open) => setDialog(open ? "tag" : null)}
+        onDone={onClear}
+      />
+      <GroupByDialog
+        contactIds={ids}
+        open={dialog === "group"}
+        onOpenChange={(open) => setDialog(open ? "group" : null)}
         onDone={onClear}
       />
       <BulkDeleteDialog

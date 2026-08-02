@@ -10,7 +10,7 @@ import type { ReactElement } from "react";
 export function Header(): ReactElement {
   return (
     <header className="fixed inset-x-0 top-0 z-40 bg-gradient-to-b from-ink via-ink/80 to-transparent">
-      <div className="mx-auto flex max-w-[1440px] items-center justify-between px-6 py-4">
+      <div className="mx-auto flex max-w-[1440px] items-center justify-between px-4 py-4 sm:px-6">
         <Link href="/" className="flex min-h-11 items-center gap-2 font-display text-xl">
           <ThreadMark />
           <span>
@@ -37,8 +37,9 @@ export function Header(): ReactElement {
           >
             Sign in
           </Link>
-          <Button render={<Link href="#request-access" />} size="sm" className="min-h-11">
-            Request early access
+          <Button render={<Link href="/#request-access" />} size="sm" className="min-h-11">
+            <span className="sm:hidden">Join beta</span>
+            <span className="hidden sm:inline">Request early access</span>
           </Button>
           <MobileNav />
         </div>

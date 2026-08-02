@@ -14,9 +14,6 @@ export const BRAND_COLOR_FALLBACKS = {
   "--brand-ember": "#f0b44a",
 } as const;
 
-/** Brand CSS custom-property names that resolve through `BRAND_COLOR_FALLBACKS`. */
-export type BrandColorVar = keyof typeof BRAND_COLOR_FALLBACKS;
-
 /**
  * Ground / panel / accent for Dhaga's own palette in BOTH modes — the three
  * swatches the appearance picker shows for the `default` preset.

@@ -1,7 +1,7 @@
 import type { PricingPlan } from "@/types";
 
 /**
- * The plan cards on / and /pricing. Every credit claim below is arithmetic over
+ * The plan cards on /pricing. Every credit claim below is arithmetic over
  * two sources — the monthly allowance (`PLAN_AI_CREDITS_PER_MONTH` and
  * `FREE_TIER_AI_CREDITS_PER_MONTH`) and the per-action price
  * (`AI_ACTION_CREDITS`, mirrored in ./credits.ts):

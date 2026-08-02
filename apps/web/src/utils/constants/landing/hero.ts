@@ -7,45 +7,6 @@ export const ASK_QUERIES = [
 
 export const GITHUB_URL = "https://github.com/anchit2000/dhaga";
 
-/**
- * Rotating hero sub-lines shown under the static headline. Each is split so the
- * middle run renders in amber (`<em class="text-ember">`), matching the
- * headline's accent. Under `prefers-reduced-motion` the first entry stays put,
- * so lead with the strongest line.
- */
-export const HERO_SUBLINES = [
-  {
-    pre: "Be ",
-    accent: "hackishly good",
-    post: " at networking.",
-  },
-  {
-    pre: "Join the top 1% who remember ",
-    accent: "everything about everyone",
-    post: ".",
-  },
-] as const;
-
-export const HERO = {
-  eyebrow: "AI personal CRM · Open source · Private",
-  sub: "Every handshake, badge, and “we should talk” becomes a memory you can search. Dhaga remembers who they are, where you met, and what you promised — every fact with a receipt back to your own notes.",
-  tagline: "Every thread, remembered.",
-  taglineNote: "Dhaga (धागा), Hindi for “thread.”",
-  primaryCta: "Request access",
-  secondaryCta: "Read the code",
-} as const;
-
-/**
- * The above-the-fold "how it works" strip, one entry per step. Order and icons
- * mirror {@link HOW_IT_WORKS} (capture → graph → ask) via `STEP_ICONS`, so the
- * hero flow and the full section read as the same three moves.
- */
-export const HERO_FLOW = [
-  { label: "Capture", caption: "card, badge, or voice" },
-  { label: "Connect", caption: "the graph builds itself" },
-  { label: "Ask", caption: "in plain language" },
-] as const;
-
 export const STATS = [
   { num: "47", cap: "people you met at your last conference" },
   { num: "5", cap: "you actually followed up with" },

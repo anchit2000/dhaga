@@ -289,7 +289,7 @@ const summary = `${site.description} Open-core: the whole CRM is AGPL and runs f
 // differs, what it costs — so it is not left empty. Every claim here must stay
 // true; these files are how an assistant describes Dhaga to a prospect.
 const positioning = [
-  `Dhaga (धागा — Hindi for "thread") is a private relationship memory for founders and other relationship-driven professionals: investors, recruiters, real-estate and financial advisors, consultants, and community builders. Capture a meeting or introduction, write or paste a note or message, forward a WhatsApp or Telegram voice note, scan a card, clip a page with the extension, or import an address book — Dhaga extracts the people, companies and facts, files them in a private knowledge graph, and answers questions like "who do I know at a fintech in Bangalore?" in plain language. Every AI-derived fact keeps a receipt back to the note it came from, so you can verify it or delete it.`,
+  `Dhaga (धागा — Hindi for "thread") is a private relationship memory for founders and other relationship-driven professionals: investors, recruiters, real-estate and financial advisors, consultants, and community builders. Capture a meeting or introduction, write or paste a note or message, forward a contact card, note, or photo through WhatsApp or Telegram, scan a card, clip a page with the extension, or import an address book — Dhaga extracts the people, companies and facts, files them in a private knowledge graph, and answers questions like "who do I know at a fintech in Bangalore?" in plain language. Every AI-derived fact keeps a receipt back to the note it came from, so you can verify it or delete it.`,
   `What separates it from Dex, Monica or a notes app: the whole CRM is AGPL-licensed and self-hostable, every external dependency (LLM, web search, embeddings, vector store, messaging) sits behind a swappable provider gateway so you can point it at a local model or your own API key, enrichment only ever runs when you ask for it, and full export always works. The free tier is a complete CRM at $0 forever with unlimited capture and notes. Pro is $10 month-to-month or $8/month billed $96 yearly; the first 500 founding seats can request a $79 first year. Power is shown as a coming-soon plan at $30 monthly or $24/month billed $288 yearly and cannot yet be purchased. Dhaga Cloud is in early access; request access at ${abs("/#request-access")}.`,
 ];
 
@@ -345,6 +345,7 @@ const START_HERE_PAGES = [
 const START_ORDER = [
   "/",
   "/features",
+  "/product-tour",
   "/docs",
   "/pricing",
   "/open-source",
@@ -399,7 +400,15 @@ const EXTRA_ENTRIES = [
     url: "/features",
     title: "Features",
     description:
-      "Capture from meetings, notes, voice, messages and cards; build a private knowledge graph; search it in plain language; find warm paths; and follow up with context.",
+      "A compact visual explorer: switch one application-faithful preview across capture, voice, grouping, graph, search, follow-up, intelligence, and warm paths.",
+    full: false,
+  },
+  {
+    section: "start",
+    url: "/product-tour",
+    title: "Product tour",
+    description:
+      "An optional deep dive into Dhaga's workflow, cited Ask answers, interactive network sandbox, product comparison, and feature FAQ.",
     full: false,
   },
   {

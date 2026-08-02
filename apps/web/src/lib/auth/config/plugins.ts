@@ -1,7 +1,8 @@
 import { nextCookies } from "better-auth/next-js";
-// oneTap has no dedicated subpath export in better-auth 1.6 — root import is
-// the only option for it.
-import { oneTap } from "better-auth/plugins";
+// Neither oneTap nor mcp has a dedicated subpath export in better-auth 1.6
+// (`better-auth/plugins/mcp` resolves only to the *client* half) — root import
+// is the only option for them.
+import { mcp, oneTap } from "better-auth/plugins";
 import { emailOTP } from "better-auth/plugins/email-otp";
 import { haveIBeenPwned } from "better-auth/plugins/haveibeenpwned";
 import { magicLink } from "better-auth/plugins/magic-link";
@@ -43,6 +44,12 @@ export function buildPlugins() {
         if (!ok) throw new Error(error ?? "SMS delivery failed.");
       },
     }),
+    // Makes this instance the OAuth 2.1 authorization server that external MCP
+    // clients (Claude, ChatGPT, Cursor) send the user to. Always on: it needs no
+    // external credentials, and self-hosters get the same /api/mcp endpoint the
+    // cloud does. `loginPage` is where an unauthenticated authorize request
+    // lands — better-auth returns the user to the consent screen afterwards.
+    mcp({ loginPage: "/login" }),
     ...(googleSignInConfigured() ? [oneTap()] : []),
     // Docs: nextCookies must be the last plugin in the array.
     nextCookies(),

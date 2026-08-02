@@ -215,6 +215,50 @@ Not react-map-gl (heavier, Mapbox-shaped) and not Leaflet (no vector tiles, no
 GPU clustering): mapcn is the shadcn-native option, and vendoring means we own
 the source the same way we own every other `components/ui` primitive.
 
+### 16. mcp-handler + @modelcontextprotocol/server (MCP server) — adopted 2026-08-02
+
+**Powers:** `/api/mcp` — the Model Context Protocol endpoint an external AI
+client (claude.ai, Claude Desktop/Code, ChatGPT, Cursor) connects to in order to
+read and additively write the user's own graph.
+
+**Why not hand-roll it.** MCP looks like JSON-RPC over HTTP and isn't just that:
+the client negotiates protocol version, discovers the tool list with their JSON
+schemas and descriptions, and may hold a session across requests. Writing that
+by hand would mean owning transport, session handling and capability
+negotiation — and re-owning them every time the spec moves — for zero product
+value. `mcp-handler` (Vercel's adapter, the `create-mcp-route` package) turns a
+tool-registration function into Next.js route handlers;
+`@modelcontextprotocol/server` is the official SDK whose `McpServer` those tools
+register on. Between them the app writes only `server.registerTool(name, {…},
+handler)` and an auth verifier.
+
+**What it replaced/avoided.** Nothing was replaced — there was no MCP surface
+before. What it *avoided* is a second bespoke API dialect: `/api/mcp` reuses the
+existing repo layer (`lib/repo/*`), the existing `withUserDb` request scope, and
+the existing better-auth credentials, so the MCP tools are a thin registration
+file (`lib/mcp/`) rather than a parallel stack. `withMcpAuth` also supplies the
+RFC 9728 `WWW-Authenticate` challenge and the `protectedResourceHandler` for
+`/.well-known/oauth-protected-resource`, which would otherwise be hand-written
+spec plumbing.
+
+**Gotchas worth recording:**
+
+1. **Major versions are coupled.** `mcp-handler` v2 requires MCP SDK **v2** —
+   the package named `@modelcontextprotocol/server`, which takes **Zod 4**
+   schemas. `mcp-handler` 1.x pairs with the *older* `@modelcontextprotocol/sdk`
+   1.x. Mixing them (v2 handler + `sdk` 1.x, or v1 handler + `server` v2) type-
+   errors at the `McpServer` boundary rather than failing informatively.
+2. **better-auth's server-side `mcp` plugin is only exported from the
+   `better-auth/plugins` root.** `better-auth/plugins/mcp` resolves to the
+   *client* half, so importing the subpath on the server is a **TS2307**. That
+   is the same shape as `oneTap`, and it's why `lib/auth/config/plugins.ts`
+   imports both from the root with a comment saying so — a future "tidy up the
+   imports" pass would otherwise reintroduce it.
+3. **The OAuth issuer comes from `BETTER_AUTH_URL`.** The `mcp` plugin derives
+   its authorization-server metadata from it, and our
+   `/.well-known/oauth-authorization-server` document must name the same issuer,
+   or spec-compliant clients reject tokens we issued ourselves.
+
 ---
 
 ## Adopt when the milestone needs it
@@ -394,4 +438,5 @@ don't hand-roll month grids, keyboard nav, and date math.
 - [FullCalendar React](https://fullcalendar.io/docs/react) · [FullCalendar CSS variables](https://fullcalendar.io/docs/css-customization)
 - [shadcn Command / cmdk](https://ui.shadcn.com/docs/components/radix/command)
 - [pqoqubbw/icons](https://github.com/pqoqubbw/icons) · [lucide-animated registry](https://lucide-animated.com) · [motion `useReducedMotion`](https://motion.dev/docs/react-reduced-motion)
+- [Model Context Protocol spec](https://modelcontextprotocol.io/specification) · [mcp-handler](https://www.npmjs.com/package/mcp-handler) · [better-auth MCP plugin](https://www.better-auth.com/docs/plugins/mcp)
 - [rate-limiter-flexible](https://github.com/animir/node-rate-limiter-flexible) · [@upstash/ratelimit](https://github.com/upstash/ratelimit-js) · [@vercel/firewall rate limiting](https://vercel.com/docs/vercel-firewall/vercel-waf/rate-limiting) · [TanStack Pacer (client-side)](https://tanstack.com/pacer/latest/docs/guides/rate-limiting)

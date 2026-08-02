@@ -12,9 +12,9 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.109.1",
+    "@anthropic-ai/sdk": "^0.115.0",
     "double-metaphone": "^2.0.1",
-    "openai": "^6.46.0",
+    "openai": "^7.2.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

@@ -21,7 +21,7 @@ export function ModeToggle() {
           <Button
             variant="ghost"
             size="icon"
-            className="relative rounded-full text-fog hover:text-paper"
+            className="relative size-11 rounded-full text-fog hover:text-paper"
           />
         }
       >

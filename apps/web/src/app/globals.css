@@ -58,12 +58,11 @@
 /* ───────────────────────── Dhaga brand ───────────────────────── */
 
 @theme inline {
-  /* warm near-black ground with amber thread glow (see BRD + landing identity) —
+  /* warm paper / neutral charcoal with an amber thread (see landing identity) —
      indirected through --brand-* so every surface (marketing, /app/**, /docs,
      /blog) flips light/dark from the one .dark class on <html>. No surface
-     forces a theme; `defaultTheme="dark"` means dark is what every new visitor
-     gets, and light is reached only by choosing Light (or System on a light
-     OS) from the toggle. Light still has to be right everywhere. */
+     forces a theme; the shared toggle controls marketing, product, docs, and
+     blog surfaces. Both palettes must remain equally intentional. */
   --color-ink: var(--brand-ink);
   --color-panel: var(--brand-panel);
   --color-panel-2: var(--brand-panel-2);
@@ -86,43 +85,39 @@
   --font-ui: ui-sans-serif, system-ui, -apple-system, sans-serif;
 }
 
-/* Light mode — opt-in via the toggle (dark is the default for new visitors),
-   but it applies to every surface once chosen: marketing, auth, /app/**, /docs
-   and /blog alike. Values below are contrast-checked against the WCAG AA
-   targets noted on each line (4.5:1 body text, 3:1 control boundaries).
+/* Light mode — warm paper without the old brown cast. It applies to every
+   surface once chosen: marketing, auth, /app/**, /docs and /blog alike. Values
+   below are contrast-checked against the WCAG AA targets noted on each line
+   (4.5:1 body text, 3:1 control boundaries).
 
-   Amber is a FILL, never light-mode text: #e2a44c on --brand-ink is 1.83:1.
+   Amber is a FILL, never light-mode text: #e2a44c on --brand-ink is 2.00:1.
    Use --brand-ember for accent text/icons on light; keep amber for
    backgrounds, borders and the button gradient where --brand-on-accent
    supplies the 8.3:1 foreground. */
 :root {
-  --brand-ink: #f2ebdc;
-  --brand-panel: #fdfbf6;
-  --brand-panel-2: #ece1cb;
-  --brand-seam: #c8b79a; /* decorative separators — 1.65:1, deliberately restrained */
-  --brand-line: #8d7c63; /* control/input boundaries — 3.41:1 on ink, 3.91:1 on panel */
-  --brand-paper: #241d15; /* 14.0:1 on ink */
-  --brand-fog: #655a48; /* secondary text — 5.69:1 on ink, 5.21:1 on muted */
+  --brand-ink: #f7f5ef;
+  --brand-panel: #fffdfa;
+  --brand-panel-2: #eceae4;
+  --brand-seam: #d8d3c9; /* decorative separators — deliberately restrained */
+  --brand-line: #8a8378; /* control/input boundaries — 3.44:1 on ink, 3.69:1 on panel */
+  --brand-paper: #181a1b; /* 16.02:1 on ink */
+  --brand-fog: #5c6061; /* secondary text — 5.84:1 on ink, 5.29:1 on muted */
   --brand-amber: #e2a44c;
   /* The two stops of the primary-button ramp. Amber-identical across themes,
      but they belong here rather than inline in four components — this is the
      most prominent colour in the product and it needs one home. */
   --brand-amber-lift: #f0bc6e;
   --brand-amber-sink: #d18f36;
-  --brand-ember: #7a4413; /* accent text — 6.64:1 on ink, 5.92:1 on amber/20 */
-  --brand-well: #e8dcc0;
-  --brand-on-accent: #1c150d;
-  --brand-wash: #1c150d;
-  /* cast shadows: warm and soft on a cream ground. A 0.65-black shadow tuned
-     for near-black reads as grey mud here, so light gets its own value. */
-  --shadow-cast: rgba(74, 58, 36, 0.22);
-  --shadow-cast-soft: rgba(74, 58, 36, 0.16);
+  --brand-ember: #7a4413; /* accent text — 7.23:1 on ink */
+  --brand-well: #e7e4dc;
+  --brand-on-accent: #171717;
+  --brand-wash: #171717;
+  /* neutral cast shadows keep the paper palette crisp instead of sepia. */
+  --shadow-cast: rgba(24, 26, 27, 0.2);
+  --shadow-cast-soft: rgba(24, 26, 27, 0.13);
 
-  /* red-700, not red-600: on the cream panel, red-600 is only 4.61:1 as plain
-     text and drops to 3.86:1 under the 10% destructive focus tint (WCAG AA
-     needs 4.5:1). No tint opacity fixes that — red-600 leaves ~1.5% of alpha
-     headroom — so the token carries the fix. red-700 = 6.21:1 rest, 5.16:1
-     tinted. Dark stays red-400 (6.44:1 / 4.83:1, already AA). */
+  /* The darker destructive token preserves AA contrast on paper and its focus
+     tint. Dark mode uses the lighter counterpart for the same reason. */
   --destructive: oklch(0.505 0.213 27.518);
   /* controls need a real boundary; the decorative seam is only 1.65:1 */
   --input: var(--brand-line);
@@ -141,9 +136,9 @@
   --color-fd-card-foreground: var(--brand-paper);
   --color-fd-border: var(--brand-seam);
   /* fd-primary is TEXT in fumadocs (prose links, active sidebar/TOC item), so on
-     light it must be ember: amber would ship 1.83:1 links across /docs + /blog.
-     Its foreground pairs with the filled variants, hence panel (7.6:1) rather
-     than on-accent (2.3:1 on ember). */
+     light it must be ember: amber would ship 2.00:1 links across /docs + /blog.
+     Its foreground pairs with the filled variants, hence panel rather than
+     on-accent. */
   --color-fd-primary: var(--brand-ember);
   --color-fd-primary-foreground: var(--brand-panel);
   --color-fd-secondary: var(--brand-panel-2);
@@ -157,35 +152,30 @@
   --font-geist-mono: var(--font-plex-mono), Consolas, monospace;
 }
 
-/* Dark mode (unchanged values) — the marketing site's default, and /app/**'s
-   default until a user opts into light. */
+/* Dark mode — true charcoal rather than warm brown. The amber thread remains
+   the single accent, while app controls keep a 3:1 boundary on the ground. */
 .dark {
-  --brand-ink: #0d0b09;
-  --brand-panel: #16120e;
-  --brand-panel-2: #1d1812;
-  --brand-seam: #2b241b;
-  /* dark already reads fine at this weight, so control borders stay on seam —
-     the light/dark split exists because a low-contrast border disappears on a
-     light ground far more readily than on a near-black one */
-  --brand-line: var(--brand-seam);
-  --brand-paper: #f3ede2;
-  --brand-fog: #a49a8a;
+  --brand-ink: #101112;
+  --brand-panel: #17191a;
+  --brand-panel-2: #202325;
+  --brand-seam: #303437;
+  --brand-line: #5b6165; /* control/input boundaries — 3.01:1 on ink */
+  --brand-paper: #f4f0e8;
+  --brand-fog: #aeb2b2;
   --brand-amber: #e2a44c;
-  /* On a near-black ground amber already clears 9:1 as text, so accent text in
+  /* On a near-black ground amber already clears AA as text, so accent text in
      dark IS amber. Defining ember in terms of amber here is what lets every
      call site say `text-ember` once and get the right colour in both themes —
      light substitutes the darker #7a4413, dark stays brand amber. */
   --brand-ember: var(--brand-amber);
-  --brand-well: #0a0806;
-  --brand-on-accent: #0d0b09;
-  --brand-wash: #f3ede2;
+  --brand-well: #0b0c0d;
+  --brand-on-accent: #171717;
+  --brand-wash: #f4f0e8;
   --shadow-cast: rgba(0, 0, 0, 0.65);
   --shadow-cast-soft: rgba(0, 0, 0, 0.5);
   --destructive: oklch(0.704 0.191 22.216);
-  /* :root points --input at the stronger --brand-line for light; dark keeps the
-     seam weight. (--ring needs no pin: it tracks --brand-ember, which is amber
-     here.) */
-  --input: var(--brand-seam);
+  /* Controls use the stronger line token in both themes. */
+  --input: var(--brand-line);
 
   /* Fumadocs tokens for dark — same brand mapping, resolved against the .dark
      --brand-* values above; placed after the imported neutral .dark defaults
@@ -234,8 +224,8 @@
   --accent: var(--brand-panel-2);
   --accent-foreground: var(--brand-paper);
   --border: var(--brand-seam);
-  /* amber focus rings are invisible on a cream ground (1.4:1); ember is 6.6:1
-     on light and resolves back to amber on dark. */
+  /* Amber focus rings are too faint on paper; ember is 7.23:1 on light and
+     resolves back to amber on dark. */
   --ring: var(--brand-ember);
   /* The cast glow under the primary button (see components/ui/button.tsx),
      which used to hardcode the amber literal. Derived from --brand-amber so a
@@ -311,10 +301,10 @@ html {
 @keyframes dhaga-glow-pulse {
   0%,
   100% {
-    box-shadow: 0 0 28px -10px rgba(226, 164, 76, 0.4);
+    box-shadow: 0 0 28px -10px color-mix(in srgb, var(--brand-amber) 40%, transparent);
   }
   50% {
-    box-shadow: 0 0 46px -8px rgba(226, 164, 76, 0.65);
+    box-shadow: 0 0 46px -8px color-mix(in srgb, var(--brand-amber) 65%, transparent);
   }
 }
 
@@ -343,7 +333,7 @@ html {
   top: 50%;
   right: 0;
   left: 0;
-  border-top: 1px dashed rgba(226, 164, 76, 0.45);
+  border-top: 1px dashed color-mix(in srgb, var(--brand-amber) 45%, transparent);
   content: "";
 }
 
@@ -354,8 +344,8 @@ html {
   width: 1.35rem;
   height: 0.16rem;
   border-radius: 999px;
-  background: #e2a44c;
-  box-shadow: 0 0 0.6rem rgba(226, 164, 76, 0.7);
+  background: var(--brand-amber);
+  box-shadow: 0 0 0.6rem color-mix(in srgb, var(--brand-amber) 70%, transparent);
   animation: dhaga-stitch-travel 1.15s ease-in-out infinite;
 }
 

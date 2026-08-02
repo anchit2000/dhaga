@@ -16,7 +16,7 @@ Legend: **(M#)** = BRD MVP feature · **(v1.x)** = BRD roadmap phase
 - [x] Design tokens centralised (`globals.css` @theme: ink/panel/seam/line/paper/fog/amber/ember)
 - [x] Light-mode palette contrast-audited to WCAG AA (fog/ember/seam darkened,
       `--brand-line` added for control borders, ember focus rings; dark unchanged)
-- [x] Landing page (hero, scrollytelling feature story, pricing, FAQ, OSS section)
+- [x] Compact landing page for founders and relationship-driven professionals — broad capture story (meetings, notes, messages, introductions, voice, and cards), capture → remember → follow up proof, privacy/open-source trust, outcomes, pricing teaser, short FAQ/access, and full pricing on `/pricing`
 - [x] npm workspaces (`apps/*`, `packages/*`) so `packages/core` is shareable
 - [x] `apps/web/.env.example` documenting every env var
 - [x] CI (typecheck + lint + tests + build on push)

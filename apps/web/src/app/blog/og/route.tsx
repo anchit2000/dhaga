@@ -11,12 +11,12 @@ import { BLOG_CATEGORIES } from "@/utils/constants/blog-categories";
 
 const SIZE = { width: 1200, height: 630 };
 
-const INK = "#0d0b09";
-const PANEL = "#16120e";
-const PAPER = "#f4efe6";
-const FOG = "#8a7c66";
+const INK = "#101112";
+const PANEL = "#17191a";
+const PAPER = "#f4f0e8";
+const FOG = "#aeb2b2";
 const AMBER = "#e2a44c";
-const SEAM = "#2b241b";
+const SEAM = "#303437";
 
 export function GET(request: Request): ImageResponse {
   const { searchParams } = new URL(request.url);

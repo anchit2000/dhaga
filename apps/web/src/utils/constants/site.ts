@@ -16,9 +16,10 @@ export const SITE_NAME = "Dhaga";
 export const GITHUB_REPO_URL = "https://github.com/anchit2000/dhaga";
 
 export const SITE_DESCRIPTION =
-  "Dhaga is an open-source, privacy-first, AI-native personal CRM: capture " +
-  "contacts anywhere, turn every note into a private knowledge graph, and " +
-  "query it in natural language.";
+  "Dhaga is a private, open-source personal CRM for founders and " +
+  "relationship-driven professionals: capture meetings, notes, messages, " +
+  "introductions, voice memos, and cards, remember the context, search the " +
+  "network, and follow up at the right time.";
 
 // Public, indexable marketing routes. Blog and docs pages are enumerated from
 // their content sources in sitemap.ts, so they're intentionally absent here.

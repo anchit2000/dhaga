@@ -289,8 +289,8 @@ const summary = `${site.description} Open-core: the whole CRM is AGPL and runs f
 // differs, what it costs — so it is not left empty. Every claim here must stay
 // true; these files are how an assistant describes Dhaga to a prospect.
 const positioning = [
-  `Dhaga (धागा — Hindi for "thread") is built for people whose work *is* their network: founders, investors, recruiters, real-estate and financial advisors, consultants, community builders. Scan a business card, paste an email, forward a WhatsApp or Telegram voice note, dictate into the browser, clip a page with the extension, or import an address book — Dhaga extracts the people, companies and facts, files them in a private knowledge graph, and answers questions like "who do I know at a fintech in Bangalore?" in plain language. Every AI-derived fact keeps a receipt back to the note it came from, so you can verify it or delete it.`,
-  `What separates it from Dex, Monica or a notes app: the whole CRM is AGPL-licensed and self-hostable, every external dependency (LLM, web search, embeddings, vector store, messaging) sits behind a swappable provider gateway so you can point it at a local model or your own API key, enrichment only ever runs when you ask for it, and full export always works. The free tier is a complete CRM at $0 forever with unlimited capture and notes; cloud AI is the paid feature, from $8/month billed yearly. Start free at ${abs("/signup")}.`,
+  `Dhaga (धागा — Hindi for "thread") is a private relationship memory for founders and other relationship-driven professionals: investors, recruiters, real-estate and financial advisors, consultants, and community builders. Capture a meeting or introduction, write or paste a note or message, forward a WhatsApp or Telegram voice note, scan a card, clip a page with the extension, or import an address book — Dhaga extracts the people, companies and facts, files them in a private knowledge graph, and answers questions like "who do I know at a fintech in Bangalore?" in plain language. Every AI-derived fact keeps a receipt back to the note it came from, so you can verify it or delete it.`,
+  `What separates it from Dex, Monica or a notes app: the whole CRM is AGPL-licensed and self-hostable, every external dependency (LLM, web search, embeddings, vector store, messaging) sits behind a swappable provider gateway so you can point it at a local model or your own API key, enrichment only ever runs when you ask for it, and full export always works. The free tier is a complete CRM at $0 forever with unlimited capture and notes; cloud AI is the paid feature, from $8/month billed yearly. Dhaga Cloud is in early access; request access at ${abs("/#request-access")}.`,
 ];
 
 // The spec reserves H2 sections for file lists only — "how to interpret the
@@ -345,9 +345,8 @@ const START_HERE_PAGES = [
 const START_ORDER = [
   "/",
   "/docs",
-  "/#pricing",
-  "/signup",
-  "/#faq",
+  "/pricing",
+  "/#request-access",
   "/blog/general/why-i-built-dhaga",
   "/docs/roadmap/roadmap",
   "/privacy",
@@ -382,34 +381,24 @@ const EXTRA_ENTRIES = [
     url: "/",
     title: "Dhaga — home",
     description:
-      "The fastest read on what Dhaga is: the problem, a 60-second explainer, a live knowledge-graph sandbox you can drag around, the comparison table, pricing and FAQ.",
+      "A concise overview of who Dhaga is for and how it turns meetings, notes, messages, introductions, voice memos, and cards into remembered context and timely follow-ups.",
     full: false,
   },
   {
     section: "start",
-    url: "/#pricing",
+    url: "/pricing",
     title: "Pricing",
     description:
       "Free forever for the full manual CRM (unlimited capture, notes and export, self-host everything). Cloud AI is the paid tier: Pro $8/month billed yearly, or $79/year at the founding price. Annual billing only — no monthly meter.",
     full: false,
-    anchor: "pricing",
   },
   {
     section: "start",
-    url: "/signup",
-    title: "Sign up (free)",
+    url: "/#request-access",
+    title: "Request early access",
     description:
-      "Create a free account — no credit card, and the free tier is a complete CRM rather than a trial.",
+      "Request early access to Dhaga Cloud. Approved invitations continue through account creation; self-hosting remains available from the source repository.",
     full: false,
-  },
-  {
-    section: "start",
-    url: "/#faq",
-    title: "FAQ",
-    description:
-      "Straight answers on data privacy, what happens if Dhaga shuts down, how AI metering works, and mobile status (a native iOS/Android app is on the roadmap and not shipped — capture from a phone today goes through the web app or the WhatsApp/Telegram bot).",
-    full: false,
-    anchor: "faq",
   },
   {
     section: "start",
@@ -434,15 +423,6 @@ const EXTRA_ENTRIES = [
     description:
       "One file containing the complete markdown of every page listed outside `## Optional`, in this same order — fetch it instead of crawling if you want the whole product in one request.",
     full: false,
-  },
-  {
-    section: "compare",
-    url: "/#compare",
-    title: "Comparison table",
-    description:
-      "Dhaga against the alternatives at a glance — spreadsheets, LinkedIn, sales CRMs, and the other personal CRMs.",
-    full: false,
-    anchor: "compare",
   },
   {
     section: "selfhost",
@@ -478,26 +458,6 @@ function assertCuration() {
     if (!urls.has(url)) {
       throw new Error(
         `generate-llms-txt: curated URL ${url} has no content file — fix the list in scripts/generate-llms-txt.mjs`,
-      );
-    }
-  }
-
-  // Landing-page anchors are the highest-intent links in the file and they are
-  // section ids in components, not routes, so nothing else would catch their
-  // removal. Verify the id exists and the section is still rendered.
-  const landing = readFileSync(join(WEB_ROOT, "src/app/page.tsx"), "utf8");
-  const components = join(WEB_ROOT, "src/components/landing");
-  for (const entry of EXTRA_ENTRIES) {
-    if (!entry.anchor) continue;
-    const rendered = readdirSync(components).some((name) => {
-      if (!name.endsWith(".tsx")) return false;
-      const source = readFileSync(join(components, name), "utf8");
-      if (!source.includes(`id="${entry.anchor}"`)) return false;
-      return new RegExp(`<${name.replace(/\.tsx$/, "")}\\b`).test(landing);
-    });
-    if (!rendered) {
-      throw new Error(
-        `generate-llms-txt: no landing section renders id="${entry.anchor}" — ${entry.url} would be a dead link`,
       );
     }
   }

@@ -1,7 +1,6 @@
 import { FinalCta, Footer } from "@/components/landing/Closing";
 import { Header } from "@/components/landing/Header";
 import { PricingPlanCard } from "@/components/landing/PricingPlanCard";
-import { getCurrentUser } from "@/lib/auth/guard";
 import { CREDIT_EXAMPLES, PRICING_PLANS } from "@/utils/constants/landing";
 import { SITE_URL } from "@/utils/constants/site";
 import { PlanComparison } from "./PlanComparison";
@@ -37,13 +36,11 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function PricingPage(): Promise<ReactElement> {
-  const user = await getCurrentUser();
-
+export default function PricingPage(): ReactElement {
   return (
     <main className="relative">
       <PricingStructuredData />
-      <Header isSignedIn={!!user} />
+      <Header />
       <section className="mx-auto max-w-6xl px-6 pb-4 pt-32 sm:pt-40">
         <p className="font-mono text-xs uppercase tracking-[0.22em] text-ember">
           Pricing

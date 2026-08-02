@@ -11,10 +11,9 @@ import { BookOpen, Compass, Newspaper } from "lucide-react";
  */
 export const NAV_LINKS = [
   { href: "/#product", label: "Product" },
-  { href: "/#compare", label: "Compare" },
+  { href: "/#outcomes", label: "Why Dhaga" },
   { href: "/#opensource", label: "Open source" },
-  { href: "/#pricing", label: "Pricing" },
-  { href: "/#faq", label: "FAQ" },
+  { href: "/pricing", label: "Pricing" },
 ] as const;
 
 /**

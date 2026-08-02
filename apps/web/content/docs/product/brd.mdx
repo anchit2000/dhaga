@@ -145,7 +145,7 @@ The MVP must prove one loop end-to-end:
 | **v1.1 — Capture everywhere** | New surfaces + enrichment | **Web app quick-add** (paste email/article/LinkedIn URL → extract → link to contact); **browser extension** (one-click add from LinkedIn/articles, "save this article to Sarah"); **LinkedIn Connections CSV import** (user's own LinkedIn data export — ToS-safe bulk import, see §6.7); **vCard (.vcf) / device-contacts import** (user's own exported .vcf from iPhone/iCloud, Android, or Google Contacts — one file, parsed in-browser, nothing scraped, see §6.7); **one-click Google / Outlook-Hotmail contacts connectors** (OAuth, user connects their own account — no Apple/iCloud API exists, see §6.7); **mobile on-device contacts import** (expo-contacts, permission-gated); **badge scanning** (table stakes per competitor analysis); user-triggered public-web enrichment; email-forwarding ingestion |
 | **v1.2 — Proactive intelligence** | Alerts & digests | Keep-in-touch cadence reminders (recurring, dismissed only on "reached out"), job-change detection (LinkedIn-export re-import diff + watchlist hits, see §6.7), **opt-in news watchlist** (starred contacts, nightly Batch web search, per-tier cap), relationship-decay alerts ("no contact in 8 months"), post-event digest email, **birthday/anniversary reminders** (derived from the dates saved on a contact — in-app and opt-in email), pre-meeting briefs via calendar integration |
 | **v1.3 — Graph power** | Deep graph | Warm-path finding ("who can intro me to Airbus?"), second-degree suggestions, sector/tag ontology, timeline view of the relationship, watch/widgets |
-| **v1.4 — Ecosystem** | Integrations | Salesforce/HubSpot/Notion sync, Zapier/webhooks, LinkedIn QR formats, WhatsApp share-to-capture, **email/calendar interaction sync** (Gmail/Outlook OAuth, opt-in — the one ToS-clean ambient-capture channel, see §6.7) |
+| **v1.4 — Ecosystem** | Integrations | Salesforce/HubSpot/Notion sync, Zapier/webhooks, LinkedIn QR formats, WhatsApp share-to-capture, **email/calendar interaction sync** (Gmail/Outlook OAuth, opt-in — the one ToS-clean ambient-capture channel, see §6.7), **personal MCP server** (built 2026-08-02 — any MCP client reads and additively writes the user's own graph at `/api/mcp`, see §6.8) |
 | **v2.0 — Teams** | Shared graph | Org workspace, contact-level sharing controls, "who knows whom" across the team, SSO; this is the primary revenue engine |
 
 ### 5.3 MVP vs Full Product — at a glance
@@ -165,7 +165,6 @@ A July 2026 competitive review surfaced feature gaps. The genuinely-additive one
 
 | Candidate | Notes |
 |---|---|
-| **Personal MCP server** — expose the user's own graph (read-only) to external AI clients (Claude Desktop/Code, Cursor) so any assistant can query their private network | Backlog. Self-host-friendly; read-only, user-scoped, nothing leaves the user's instance beyond the connected client |
 | **Duplicate-contact detection & merge (entity resolution)** across import sources | **Built 2026-07-27 (web).** `/app/people/duplicates` clusters likely duplicates (shared email / phone / similar name), each with a per-field **Merge** that folds all multi-value data onto a chosen survivor in one atomic transaction; the same batch shipped **companies management** + company merge/dedup (`/app/companies`, `/app/companies/duplicates`). No schema change. Distinct from the team-graph cross-user dedup in §5.3 — this is per-user resolution across LinkedIn/vCard/Google/manual sources. See checklist §4/§20. Mobile parity pending |
 | **AI-suggested connections** — surface likely graph edges from shared company/school/city/event | Backlog. Own-graph inference only; suggested, never auto-linked (mirrors the confirm-inbox pattern) |
 | **Relationship analytics dashboard** — most-connected, longest-known, city clusters, network growth | Backlog. Read-only stats over the user's own graph; no external data |
@@ -175,6 +174,10 @@ A July 2026 competitive review surfaced feature gaps. The genuinely-additive one
 | **Mail-merge / bulk personalized outreach + public API + Zapier app** | Backlog. Extends the existing outbound webhooks (checklist §16) and the Zapier/webhooks line already in §5.2 v1.4; bulk outreach is the new delta |
 | **Two-way native phone address-book sync** | Backlog. Extends the current one-way expo-contacts import (§6.7) to write curated contacts back to the phone |
 | **Voice dictation self-correction** — spoken self-edits ("schedule at 3, no make it 4") folded into the transcript, both a semantic LLM pass and a deterministic number/time pass | Backlog — **deferred pending a dedicated GPU host** for the correction model. The real-time in-browser STT (Moonshine, WebGPU) is proven and is the intended `whisper-base` replacement — it ports independently and now. But the in-browser correction LLM is **CPU-bound (~48 s/edit) on consumer GPUs** where WebGPU falls back to CPU — too slow to be the "then and there" correction the product needs. Ships when a dedicated 24 GB-class GPU can host the correction model server-side (aligns with the §7.2 Phase-2 server tier). The STT-side layers (phonetic teaching, deterministic cleanup) are **not** part of this deferral — they ship with the STT |
+
+**Promoted out of this table:**
+
+- *Personal MCP server* was listed here as backlog ("read-only, user-scoped"). It **shipped on 2026-08-02**, and wider than that: read *and* additive write. It is now a product feature with its own mechanics section — see §5.2 v1.4 and **§6.8**.
 
 **Already covered — not re-added:**
 
@@ -275,6 +278,23 @@ Hard lines: **no scraping, no session piggybacking, no bulk lookup of people who
 no SMS/call-log ingestion** (blocked by iOS entirely and by Play Store policy anyway). This is the
 privacy moat stated as engineering policy — the marketing claim is "one click, one file, nothing
 scraped behind your back," not "automatic."
+
+### 6.8 Personal MCP server (v1.4 ecosystem — built 2026-08-02)
+
+Any client that speaks the **Model Context Protocol** — claude.ai, Claude Desktop/Code, ChatGPT,
+Cursor — connects to `/api/mcp` and works the user's own graph on their behalf. Built on
+`mcp-handler` v2 + `@modelcontextprotocol/server` v2, serving the 2026-07-28 MCP spec with a
+stateless fallback for 2025-era clients.
+
+- **Two credentials, one endpoint.** Dhaga is its own **OAuth 2.1 authorization server** (better-auth's `mcp` plugin, RFC 8414 + RFC 9728 discovery documents), so a hosted client adds it as a one-click connector behind a normal login and consent screen; local and self-hosted clients instead send the **`x-api-key` personal access token** that already exists for the mobile app. No per-client integration is shipped — the tool list, schemas and descriptions are discovered at connect time.
+- **Ten tools — six read, four additive write.** Read: hybrid keyword+semantic search returning the snippets that matched, contact listing, one contact in full (facts carrying their `source_note_id` receipt), open follow-ups, warm paths, upcoming important dates. Write: add a note, create a contact, open a follow-up, close one.
+- **No destructive tool exists, deliberately.** No delete, merge, bulk action, export or admin surface. A confused or prompt-injected client must not be able to trigger the deletion cascade (contact → notes → facts → edges → embeddings) that §7.5 makes complete on purpose.
+- **Reads cost zero AI credits**, because there is deliberately no "ask" tool: the connected client is already a model, so it gets raw retrieval with receipts and reasons itself. Only a note charges — it queues the same background extraction a note typed in the app does (1 credit, §8.3), and an account out of credits still keeps the note.
+- **Pure AGPL core.** Nothing here imports `packages/ee`, so a self-hosted instance serves the identical endpoint (§8.1, `docs/SELF_HOSTING.md`).
+
+Open: the 2026-07-28 spec deprecates Dynamic Client Registration in favour of **Client ID Metadata
+Documents (CIMD)**. better-auth 1.6 implements DCR — live, and what today's clients use — but does
+not advertise CIMD yet, so that lands when better-auth ships it.
 
 ---
 

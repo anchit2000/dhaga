@@ -360,3 +360,5 @@ web and mobile per the parity rule.
   duplicate + per-referrer cap. `packages/ee/src/referrals` (control-plane
   tables, no RLS); web `/app/referral` + `/api/referral`; mobile advocate
   screen. Redemption is web-signup only.
+
+- [x] Dhaga Classic preserves the original warm paper/charcoal light and dark palettes as an eighth Appearance preset; the refreshed blue-white/midnight Dhaga palette remains the zero-overhead default.

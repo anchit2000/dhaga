@@ -2159,14 +2159,14 @@ changes how the Dhaga app looks: a **colour theme** and a **font**, both yours
 alone. It's also where the first-run walkthrough's settings leg opens — you can
 click a theme while the tour is still on screen.
 
-![The Appearance card in the Settings Account tab: a "Colour theme" grid of seven radio options — Dhaga, Monochrome, High contrast, Rose, Ocean, Forest, Violet — each showing three colour swatches, with Dhaga selected, a Font dropdown below it, and a Reset to default button](/docs/guide/settings-appearance.png)
+![The Appearance card in the Settings Account tab: a "Colour theme" grid of theme options with three colour swatches each, followed by a Font dropdown and Reset to default button](/docs/guide/settings-appearance.png)
 
 ### Pick a theme
 
-Seven themes ship: **Dhaga** (the default warm near-black and amber),
-**Monochrome**, **High contrast**, **Rose**, **Ocean**, **Forest** and
-**Violet**. Pick one and the app repaints immediately — there's no Save button
-on this card.
+Eight themes ship: **Dhaga** (the calm blue-white/midnight default), **Dhaga
+Classic** (the original warm paper/charcoal and amber identity), **Monochrome**,
+**High contrast**, **Rose**, **Ocean**, **Forest** and **Violet**. Pick one and
+the app repaints immediately — there's no Save button on this card.
 
 **A theme changes the colours, not light vs dark**
 

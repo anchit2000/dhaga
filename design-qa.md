@@ -18,6 +18,7 @@ Date: 2026-08-02
 - `/pricing` shows monthly and yearly states, including Pro savings of $24/year and Power savings of $72/year; Power remains marked coming soon.
 - Production build, TypeScript, targeted ESLint, pricing/theme tests, and `git diff --check` pass.
 - Semantic accent text meets WCAG AA against the light canvas (minimum measured contrast: 4.80:1).
+- Appearance keeps the original warm paper/charcoal system as the selectable “Dhaga Classic” preset in both modes; its dark control boundary is minimally lifted to pass 3:1.
 - Responsive Tailwind breakpoints and overflow constraints were inspected; the current in-app browser's viewport override did not change its fixed 1280 px canvas, so no fresh device-width screenshot could be captured in that browser session.
 
 ## Result

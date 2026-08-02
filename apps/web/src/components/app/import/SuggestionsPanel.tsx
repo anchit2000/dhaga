@@ -8,12 +8,14 @@ import { Button } from "@/components/ui/button";
 import { toastError } from "@/components/app/feedback";
 import {
   confirmClusterCompanyAction,
+  confirmClusterLocationAction,
   confirmClusterTagAction,
   dismissClusterAction,
 } from "@/lib/actions/import";
 import type { NameCluster } from "@/lib/suggestions/name-clusters";
 
-type PendingAction = { key: string; kind: "tag" | "company" | "dismiss" } | null;
+type ClusterActionKind = "tag" | "company" | "location" | "dismiss";
+type PendingAction = { key: string; kind: ClusterActionKind } | null;
 
 export function SuggestionsPanel({ clusters }: { clusters: NameCluster[] }) {
   const router = useRouter();
@@ -23,15 +25,12 @@ export function SuggestionsPanel({ clusters }: { clusters: NameCluster[] }) {
     return (
       <p className="text-sm text-fog">
         No name patterns to suggest right now — they appear when several saved
-        names share a word (a surname, or a company written into the name).
+        names share a word (a surname, a company, or a place written into the name).
       </p>
     );
   }
 
-  async function run(
-    cluster: NameCluster,
-    kind: "tag" | "company" | "dismiss",
-  ): Promise<void> {
+  async function run(cluster: NameCluster, kind: ClusterActionKind): Promise<void> {
     setPending({ key: cluster.key, kind });
     const input = { label: cluster.key, contactIds: cluster.contactIds };
     const result =
@@ -39,7 +38,9 @@ export function SuggestionsPanel({ clusters }: { clusters: NameCluster[] }) {
         ? await confirmClusterTagAction(input)
         : kind === "company"
           ? await confirmClusterCompanyAction({ ...input, label: cluster.display })
-          : await dismissClusterAction({ key: cluster.key });
+          : kind === "location"
+            ? await confirmClusterLocationAction({ ...input, label: cluster.display })
+            : await dismissClusterAction({ key: cluster.key });
     setPending(null);
     if (result.error) {
       toastError(result.error, () => void run(cluster, kind));
@@ -47,10 +48,11 @@ export function SuggestionsPanel({ clusters }: { clusters: NameCluster[] }) {
     }
     if (kind === "tag") toast.success(`Tagged ${cluster.contactIds.length} people “${cluster.key}”`);
     if (kind === "company") toast.success(`Linked to company — contacts without one`);
+    if (kind === "location") toast.success(`Set location — contacts without one`);
     router.refresh();
   }
 
-  function spinnerOr(cluster: NameCluster, kind: "tag" | "company" | "dismiss", label: string) {
+  function spinnerOr(cluster: NameCluster, kind: ClusterActionKind, label: string) {
     const active = pending?.key === cluster.key && pending.kind === kind;
     return active ? <Loader2 className="size-3 animate-spin" /> : label;
   }
@@ -84,6 +86,14 @@ export function SuggestionsPanel({ clusters }: { clusters: NameCluster[] }) {
               onClick={() => void run(cluster, "company")}
             >
               {spinnerOr(cluster, "company", "It's a company")}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={pending?.key === cluster.key}
+              onClick={() => void run(cluster, "location")}
+            >
+              {spinnerOr(cluster, "location", "It's a location")}
             </Button>
             <Button
               variant="ghost"

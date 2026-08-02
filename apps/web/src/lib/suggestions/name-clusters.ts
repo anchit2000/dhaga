@@ -26,12 +26,17 @@ export interface NameCluster {
   names: string[];
 }
 
+/** A whole email or URL pasted into a name field must be excluded before it
+ *  gets split apart below — once split on '@'/'.'/'/' its fragments ("com",
+ *  "example") look like ordinary tokens and would falsely cluster. */
+function isEmailOrUrlLike(word: string): boolean {
+  return word.includes("@") || /^https?:/i.test(word);
+}
+
 function normalizeToken(raw: string): string | null {
-  const stripped = raw.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "");
-  const token = normalizeForMatch(stripped);
+  const token = normalizeForMatch(raw);
   if (token.length < 3) return null;
   if (/^\d+$/.test(token)) return null;
-  if (raw.includes("@") || /^https?:/i.test(raw)) return null;
   return token;
 }
 
@@ -46,20 +51,29 @@ export function computeNameClusters(
   >();
 
   for (const contact of contacts) {
-    // First tokens are given names — clustering them ("all Amits") is noise.
-    const tokens = contact.name.trim().split(/\s+/).slice(1);
+    // The first space-separated word is the given name — clustering on it
+    // ("all Amits") is noise, so it's excluded whole, symbols and all.
+    const words = contact.name.trim().split(/\s+/).slice(1);
     const seen = new Set<string>();
-    for (const raw of tokens) {
-      const key = normalizeToken(raw);
-      if (!key || seen.has(key)) continue;
-      seen.add(key);
-      // Already annotated with this token — nothing left to suggest.
-      if (contact.tags.includes(key)) continue;
-      if (contact.companyName?.toLowerCase() === key) continue;
-      const group = groups.get(key) ?? { casings: new Map(), members: new Map() };
-      group.casings.set(raw, (group.casings.get(raw) ?? 0) + 1);
-      group.members.set(contact.id, contact.name);
-      groups.set(key, group);
+    for (const word of words) {
+      if (isEmailOrUrlLike(word)) continue;
+      // A common part can be joined by punctuation, not just a space
+      // ("Anchit-Joget", "Anchit_Joget") — split on any run of non-letter/
+      // non-digit characters so "Joget" still clusters with "Raveesh Joget".
+      // Splitting (not substring search) keeps "Anchit" from ever matching
+      // inside "Sanchit" — only a whole token can be a common part.
+      for (const raw of word.split(/[^\p{L}\p{N}]+/u).filter(Boolean)) {
+        const key = normalizeToken(raw);
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        // Already annotated with this token — nothing left to suggest.
+        if (contact.tags.includes(key)) continue;
+        if (contact.companyName?.toLowerCase() === key) continue;
+        const group = groups.get(key) ?? { casings: new Map(), members: new Map() };
+        group.casings.set(raw, (group.casings.get(raw) ?? 0) + 1);
+        group.members.set(contact.id, contact.name);
+        groups.set(key, group);
+      }
     }
   }
 

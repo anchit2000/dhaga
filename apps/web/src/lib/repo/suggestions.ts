@@ -81,3 +81,20 @@ export async function linkClusterToCompany(
     .returning({ id: contacts.id });
   return linked.length;
 }
+
+/**
+ * User confirmed the cluster as a place — set members' location. Only
+ * contacts with no location yet are touched, same as linkClusterToCompany.
+ */
+export async function linkClusterToLocation(
+  location: string,
+  contactIds: string[],
+): Promise<number> {
+  const db = await getDb();
+  const linked = await db
+    .update(contacts)
+    .set({ location })
+    .where(and(inArray(contacts.id, contactIds), isNull(contacts.location)))
+    .returning({ id: contacts.id });
+  return linked.length;
+}

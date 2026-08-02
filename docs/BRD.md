@@ -447,6 +447,12 @@ notes, the priciest credit):
 | Pro | $8/mo | 300 | $1.73 | ~$1.35 | **72–76%** |
 | Power | $24/mo | 1,000 | $5.77 | ~$4.50 | **71–77%** |
 
+(The table uses annual-plan monthly equivalents for unit economics. Public
+pricing shows Pro at $10 month-to-month or $8/month billed $96 yearly, and the
+planned Power tier at $30 month-to-month or $24/month billed $288 yearly. Power
+remains sized but not sold; the first 500 Pro seats can request a $79 first
+year, shown separately from standard billing.)
+
 (Margins are after Stripe's 2.9% + $0.30; hosting is not included.) A 100-credit
 Pro tier would clear ~94% margin but ration the product to a sixth of the heavy
 user profile above — 300 is the number that keeps >70% margin *and* covers a

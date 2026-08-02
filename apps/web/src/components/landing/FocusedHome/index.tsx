@@ -8,6 +8,7 @@ import { Hero } from "./Hero";
 import { Journey } from "./Journey";
 import { Outcomes } from "./Outcomes";
 import { Trust } from "./Trust";
+import { UseCases } from "./UseCases";
 
 export function FocusedHome(): ReactElement {
   return (
@@ -15,6 +16,7 @@ export function FocusedHome(): ReactElement {
       <Header />
       <Hero />
       <Journey />
+      <UseCases />
       <Trust />
       <Outcomes />
       <Faq />

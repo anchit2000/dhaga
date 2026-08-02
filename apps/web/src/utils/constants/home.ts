@@ -1,5 +1,26 @@
 /** Home-dashboard constants (the /app landing surface). */
 
+export const HOME_TILE_TONE_CLASSES = {
+  default: "border-seam",
+  amber: "border-amber/25",
+  attention: "border-human/30",
+  intelligence: "border-magic/30",
+  network: "border-trust/30",
+} as const;
+
+export type HomeTileTone = keyof typeof HOME_TILE_TONE_CLASSES;
+
+export const HOME_STAT_TONE_CLASSES: Record<string, string> = {
+  People: "text-trust",
+  Companies: "text-calm",
+  Notes: "text-magic",
+  Facts: "text-magic",
+  Relationships: "text-calm",
+  Events: "text-trust",
+  "Open follow-ups": "text-human",
+  Entities: "text-trust",
+};
+
 /**
  * The three-step "how it works" strip shown on the first-run empty state,
  * mirroring the product loop: capture people → build a private graph → pull a

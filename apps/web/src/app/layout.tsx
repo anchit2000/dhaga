@@ -142,8 +142,8 @@ export const viewport: Viewport = {
   // also matches manifest.ts). A single value would leave the chrome dark in
   // light mode.
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f7f5ef" },
-    { media: "(prefers-color-scheme: dark)", color: "#101112" },
+    { media: "(prefers-color-scheme: light)", color: "#f4f8fa" },
+    { media: "(prefers-color-scheme: dark)", color: "#0c161c" },
   ],
 };
 

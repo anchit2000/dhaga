@@ -290,7 +290,7 @@ const summary = `${site.description} Open-core: the whole CRM is AGPL and runs f
 // true; these files are how an assistant describes Dhaga to a prospect.
 const positioning = [
   `Dhaga (धागा — Hindi for "thread") is a private relationship memory for founders and other relationship-driven professionals: investors, recruiters, real-estate and financial advisors, consultants, and community builders. Capture a meeting or introduction, write or paste a note or message, forward a WhatsApp or Telegram voice note, scan a card, clip a page with the extension, or import an address book — Dhaga extracts the people, companies and facts, files them in a private knowledge graph, and answers questions like "who do I know at a fintech in Bangalore?" in plain language. Every AI-derived fact keeps a receipt back to the note it came from, so you can verify it or delete it.`,
-  `What separates it from Dex, Monica or a notes app: the whole CRM is AGPL-licensed and self-hostable, every external dependency (LLM, web search, embeddings, vector store, messaging) sits behind a swappable provider gateway so you can point it at a local model or your own API key, enrichment only ever runs when you ask for it, and full export always works. The free tier is a complete CRM at $0 forever with unlimited capture and notes; cloud AI is the paid feature, from $8/month billed yearly. Dhaga Cloud is in early access; request access at ${abs("/#request-access")}.`,
+  `What separates it from Dex, Monica or a notes app: the whole CRM is AGPL-licensed and self-hostable, every external dependency (LLM, web search, embeddings, vector store, messaging) sits behind a swappable provider gateway so you can point it at a local model or your own API key, enrichment only ever runs when you ask for it, and full export always works. The free tier is a complete CRM at $0 forever with unlimited capture and notes. Pro is $10 month-to-month or $8/month billed $96 yearly; the first 500 founding seats can request a $79 first year. Power is shown as a coming-soon plan at $30 monthly or $24/month billed $288 yearly and cannot yet be purchased. Dhaga Cloud is in early access; request access at ${abs("/#request-access")}.`,
 ];
 
 // The spec reserves H2 sections for file lists only — "how to interpret the
@@ -344,8 +344,10 @@ const START_HERE_PAGES = [
 // routed to the section must appear here or the build fails.
 const START_ORDER = [
   "/",
+  "/features",
   "/docs",
   "/pricing",
+  "/open-source",
   "/#request-access",
   "/blog/general/why-i-built-dhaga",
   "/docs/roadmap/roadmap",
@@ -389,7 +391,68 @@ const EXTRA_ENTRIES = [
     url: "/pricing",
     title: "Pricing",
     description:
-      "Free forever for the full manual CRM (unlimited capture, notes and export, self-host everything). Cloud AI is the paid tier: Pro $8/month billed yearly, or $79/year at the founding price. Annual billing only — no monthly meter.",
+      "Free forever for the full manual CRM. Pro is $10 monthly or $8/month billed $96 yearly (save $24); the first 500 founding seats can request a $79 first year. Power is coming soon at $30 monthly or $24/month billed $288 yearly (save $72).",
+    full: false,
+  },
+  {
+    section: "start",
+    url: "/features",
+    title: "Features",
+    description:
+      "Capture from meetings, notes, voice, messages and cards; build a private knowledge graph; search it in plain language; find warm paths; and follow up with context.",
+    full: false,
+  },
+  {
+    section: "start",
+    url: "/open-source",
+    title: "Open source",
+    description:
+      "Inspect, self-host and extend the AGPL-licensed core, keep relationship data under your control, and export it whenever you want.",
+    full: false,
+  },
+  {
+    section: "optional",
+    url: "/use-cases/sales",
+    routeFile: "use-cases/[role]/page.tsx",
+    title: "Dhaga for sales professionals",
+    description:
+      "A private, portable relationship memory for sales professionals whose personal network outlasts a company role, without copying confidential employer CRM data.",
+    full: false,
+  },
+  {
+    section: "optional",
+    url: "/use-cases/founders",
+    routeFile: "use-cases/[role]/page.tsx",
+    title: "Dhaga for founders",
+    description:
+      "Keep investor, customer, candidate, advisor and introduction context together, searchable and ready for the next move.",
+    full: false,
+  },
+  {
+    section: "optional",
+    url: "/use-cases/investors",
+    routeFile: "use-cases/[role]/page.tsx",
+    title: "Dhaga for investors",
+    description:
+      "Connect founder notes, thesis signals, warm paths and follow-ups in a sourced relationship graph.",
+    full: false,
+  },
+  {
+    section: "optional",
+    url: "/use-cases/recruiters",
+    routeFile: "use-cases/[role]/page.tsx",
+    title: "Dhaga for recruiters",
+    description:
+      "Remember permissioned candidate context, motivations, timing and past conversations across hiring cycles.",
+    full: false,
+  },
+  {
+    section: "optional",
+    url: "/use-cases/community-builders",
+    routeFile: "use-cases/[role]/page.tsx",
+    title: "Dhaga for community builders",
+    description:
+      "Turn events, member interests and introductions into an enduring, searchable community memory.",
     full: false,
   },
   {
@@ -477,9 +540,11 @@ function assertCuration() {
     // a docs route backed by MDX, or a file this script itself writes.
     const path = entry.url.replace(/#.*$/, "") || "/";
     if (OUTPUT_NAMES.includes(path.slice(1))) continue;
-    const target = path.startsWith("/docs")
-      ? join(CONTENT_DIR, `docs${path.slice("/docs".length)}/index.mdx`)
-      : join(WEB_ROOT, "src/app", path, "page.tsx");
+    const target = entry.routeFile
+      ? join(WEB_ROOT, "src/app", entry.routeFile)
+      : path.startsWith("/docs")
+        ? join(CONTENT_DIR, `docs${path.slice("/docs".length)}/index.mdx`)
+        : join(WEB_ROOT, "src/app", path, "page.tsx");
     if (!existsSync(target)) {
       throw new Error(
         `generate-llms-txt: ${entry.url} has no page on disk (looked for ${target})`,

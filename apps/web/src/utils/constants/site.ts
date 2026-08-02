@@ -31,7 +31,14 @@ export const MARKETING_SITEMAP_ROUTES: ReadonlyArray<{
   priority: number;
 }> = [
   { path: "/", changeFrequency: "weekly", priority: 1 },
+  { path: "/features", changeFrequency: "monthly", priority: 0.9 },
   { path: "/pricing", changeFrequency: "monthly", priority: 0.9 },
+  { path: "/open-source", changeFrequency: "monthly", priority: 0.8 },
+  { path: "/use-cases/sales", changeFrequency: "monthly", priority: 0.8 },
+  { path: "/use-cases/founders", changeFrequency: "monthly", priority: 0.8 },
+  { path: "/use-cases/investors", changeFrequency: "monthly", priority: 0.8 },
+  { path: "/use-cases/recruiters", changeFrequency: "monthly", priority: 0.8 },
+  { path: "/use-cases/community-builders", changeFrequency: "monthly", priority: 0.8 },
   { path: "/signup", changeFrequency: "monthly", priority: 0.8 },
   { path: "/login", changeFrequency: "monthly", priority: 0.5 },
   { path: "/privacy", changeFrequency: "yearly", priority: 0.3 },

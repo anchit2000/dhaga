@@ -1,4 +1,14 @@
+import { CalendarDays, Inbox, MapPin, Waypoints } from "lucide-react";
+
 import type { FeedItem, ProfileFact } from "@/types";
+
+export const MOCK_PREVIEW_NAV = [
+  { label: "Home", icon: null, active: true },
+  { label: "Calendar", icon: CalendarDays, active: false },
+  { label: "Confirmations", icon: Inbox, active: false },
+  { label: "Graph", icon: Waypoints, active: false },
+  { label: "Map", icon: MapPin, active: false },
+] as const;
 
 export const MOCK_CIRCLES = [
   { dot: "#e2a44c", name: "Web Summit 2026" },
@@ -54,9 +64,11 @@ export const MOCK_TIMELINE = [
 /** Home's hero "Today" tile. `bucket` is the real BUCKET_LABEL (Check-in /
  *  Due / Network) rendered as an ember mono tag, then "· reason". */
 export const MOCK_HOME_TODAY = [
-  { personId: "sarah", name: "Sarah Chen", bucket: "Due", reason: "met at Web Summit — promised an intro" },
-  { personId: "priya", name: "Priya Nair", bucket: "Check-in", reason: "back from Singapore today" },
-  { personId: "rohan", name: "Rohan Mehta", bucket: "Network", reason: "3 new facts from your voice note" },
+  { personId: "sarah", name: "Sarah Chen", bucket: "Due", reason: "Quarterly · due to reconnect" },
+  { personId: "priya", name: "Priya Nair", bucket: "Check-in", reason: "Daily check-in" },
+  { personId: "rohan", name: "Rohan Mehta", bucket: "Network", reason: "12 connections in your network" },
+  { personId: "alice", name: "Alice Krejčová", bucket: "Due", reason: "Monthly · due to reconnect" },
+  { personId: "kavya", name: "Kavya Singh", bucket: "Network", reason: "8 connections in your network" },
 ] as const;
 
 export const MOCK_HOME_FOLLOWUPS = [
@@ -87,9 +99,30 @@ export const MOCK_HOME_INBOX = {
 } as const;
 
 export const MOCK_HOME_PEOPLE = [
-  { name: "Nisha Shah", detail: "Meridian Capital" },
-  { name: "Rohan Mehta", detail: "Freight ops · Mumbai" },
-  { name: "Kavya Singh", detail: "BD · Portside" },
+  { name: "Nisha Shah", detail: "Meridian Capital", reason: "recently added" },
+  { name: "Rohan Mehta", detail: "Freight ops · Mumbai", reason: "recently interacted" },
+  { name: "Kavya Singh", detail: "BD · Portside", reason: "recently added" },
+] as const;
+
+export const MOCK_HOME_CONFIRMATIONS = [
+  { contact: "Sarah Chen", claim: "Exploring a new fintech venture", kind: "role" },
+  { contact: "Priya Nair", claim: "Based in Singapore", kind: "location" },
+] as const;
+
+export const MOCK_HOME_EVENTS = [
+  { name: "Founder dinner", date: "15 Jul 2026", people: 12 },
+  { name: "Mumbai SaaS meetup", date: "2 Jul 2026", people: 28 },
+] as const;
+
+export const MOCK_HOME_STATS = [
+  { label: "People", value: "248", activity: [30, 55, 42, 70, 82, 65, 92, 100] },
+  { label: "Companies", value: "73", activity: [45, 38, 60, 52, 72, 68, 86, 78] },
+  { label: "Notes", value: "416", activity: [28, 64, 48, 76, 52, 84, 70, 96] },
+  { label: "Facts", value: "911", activity: [35, 42, 68, 60, 88, 72, 94, 82] },
+  { label: "Relationships", value: "384", activity: [48, 58, 52, 74, 68, 82, 78, 98] },
+  { label: "Events", value: "12", activity: [22, 44, 35, 62, 54, 76, 64, 86] },
+  { label: "Open follow-ups", value: "7", activity: [66, 54, 72, 48, 62, 38, 52, 30] },
+  { label: "Entities", value: "18", activity: [30, 40, 52, 48, 65, 72, 68, 84] },
 ] as const;
 
 /** Daily-briefing status line — mirrors app/page.tsx `statusParts`. Counts

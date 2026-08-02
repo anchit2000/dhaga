@@ -9,80 +9,80 @@ export const PLAN_COMPARISON_ROWS: PlanComparisonRow[] = [
   {
     feature: "Contacts, notes, facts & follow-ups",
     free: "✓ Unlimited",
-    annual: "✓ Unlimited",
     pro: "✓ Unlimited",
+    power: "✓ Unlimited",
   },
   {
     feature: "Full CRM, manual capture",
     free: "✓",
-    annual: "✓",
     pro: "✓",
+    power: "✓",
   },
   {
     feature: "On-device voice transcription",
     free: "✓ Audio never leaves your browser",
-    annual: "✓",
     pro: "✓",
+    power: "✓",
   },
   {
     feature: "Keyword search & event grouping",
     free: "✓ Never touches cloud AI",
-    annual: "✓",
     pro: "✓",
+    power: "✓",
   },
   {
     feature: "Cloud AI — card reads, note extraction, NL search, drafts",
     free: "✓ 10 credits a month",
-    annual: "✓ 300 credits a month",
     pro: "✓ 300 credits a month",
+    power: "✓ 1,000 credits a month",
   },
   {
     feature: "When the month's credits run out",
     free: "✓ App keeps working; AI resumes on the 1st",
-    annual: "✓ Same — never an overage bill",
     pro: "✓ Same — never an overage bill",
+    power: "✓ Same — never an overage bill",
   },
   {
     feature: "Pre-meeting briefs",
     free: "✗",
-    annual: "✓",
     pro: "✓",
+    power: "✓",
   },
   {
     feature: "Enrichment & job-change alerts",
     free: "✗",
-    annual: "✓ Watch up to 25 contacts",
     pro: "✓ Watch up to 25 contacts",
+    power: "✓ Watch up to 25 contacts",
   },
   {
     feature: "Encrypted multi-device sync",
     free: "✗",
-    annual: "✓",
     pro: "✓",
+    power: "✓",
   },
   {
     feature: "Full export — CSV, vCard, JSON",
     free: "✓",
-    annual: "✓",
     pro: "✓",
+    power: "✓",
   },
   {
     feature: "Self-host the whole stack (AGPL)",
     free: "✓",
-    annual: "✓",
     pro: "✓",
+    power: "✓",
   },
   {
     feature: "Bring your own API key or a local model (self-hosted)",
     free: "✓",
-    annual: "✓",
     pro: "✓",
+    power: "✓",
   },
   {
     feature: "Founding-member badge in the repo",
     free: "✗",
-    annual: "✓ First 500 seats",
     pro: "✗",
+    power: "✗",
   },
 ];
 
@@ -94,6 +94,6 @@ export const PLAN_COMPARISON_CELL_KEYS: Record<
   keyof Omit<PlanComparisonRow, "feature">
 > = {
   Free: "free",
-  Annual: "annual",
   Pro: "pro",
+  Power: "power",
 };

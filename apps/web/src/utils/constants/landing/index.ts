@@ -17,6 +17,10 @@ export {
   MOCK_HOME_QUIET,
   MOCK_HOME_INBOX,
   MOCK_HOME_STATUS,
+  MOCK_HOME_CONFIRMATIONS,
+  MOCK_HOME_EVENTS,
+  MOCK_HOME_STATS,
+  MOCK_PREVIEW_NAV,
   MOCK_PROFILE_FACTS,
   MOCK_TIMELINE,
 } from "./appmock";
@@ -30,10 +34,13 @@ export {
 export {
   CREDIT_EXAMPLES,
   FAQ_ITEMS,
+  FOUNDING_PRO_OFFER,
   PLAN_COMPARISON_CELL_KEYS,
   PLAN_COMPARISON_ROWS,
   PRICING_FAQ_ITEMS,
   PRICING_PLANS,
+  priceForCadence,
+  type BillingCadence,
 } from "./pricing";
 export { NAV_LINKS, RESOURCE_ITEMS } from "./nav";
 export {

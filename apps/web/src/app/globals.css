@@ -58,8 +58,8 @@
 /* ───────────────────────── Dhaga brand ───────────────────────── */
 
 @theme inline {
-  /* warm paper / neutral charcoal with an amber thread (see landing identity) —
-     indirected through --brand-* so every surface (marketing, /app/**, /docs,
+  /* calm paper / deep-blue charcoal with a warm action thread — indirected
+     through --brand-* so every surface (marketing, /app/**, /docs,
      /blog) flips light/dark from the one .dark class on <html>. No surface
      forces a theme; the shared toggle controls marketing, product, docs, and
      blog surfaces. Both palettes must remain equally intentional. */
@@ -74,6 +74,10 @@
   --color-amber-lift: var(--brand-amber-lift);
   --color-amber-sink: var(--brand-amber-sink);
   --color-ember: var(--brand-ember);
+  --color-trust: var(--brand-trust);
+  --color-calm: var(--brand-calm);
+  --color-magic: var(--brand-magic);
+  --color-human: var(--brand-human);
   --color-well: var(--brand-well);
   --color-on-accent: var(--brand-on-accent);
   --color-wash: var(--brand-wash);
@@ -85,7 +89,7 @@
   --font-ui: ui-sans-serif, system-ui, -apple-system, sans-serif;
 }
 
-/* Light mode — warm paper without the old brown cast. It applies to every
+/* Light mode — a quiet blue-white canvas instead of the old brown cast. It applies to every
    surface once chosen: marketing, auth, /app/**, /docs and /blog alike. Values
    below are contrast-checked against the WCAG AA targets noted on each line
    (4.5:1 body text, 3:1 control boundaries).
@@ -95,21 +99,25 @@
    backgrounds, borders and the button gradient where --brand-on-accent
    supplies the 8.3:1 foreground. */
 :root {
-  --brand-ink: #f7f5ef;
-  --brand-panel: #fffdfa;
-  --brand-panel-2: #eceae4;
-  --brand-seam: #d8d3c9; /* decorative separators — deliberately restrained */
-  --brand-line: #8a8378; /* control/input boundaries — 3.44:1 on ink, 3.69:1 on panel */
-  --brand-paper: #181a1b; /* 16.02:1 on ink */
-  --brand-fog: #5c6061; /* secondary text — 5.84:1 on ink, 5.29:1 on muted */
-  --brand-amber: #e2a44c;
+  --brand-ink: #f4f8fa;
+  --brand-panel: #ffffff;
+  --brand-panel-2: #eaf1f5;
+  --brand-seam: #cfdae1;
+  --brand-line: #718794;
+  --brand-paper: #17242c;
+  --brand-fog: #526976;
+  --brand-amber: #f0b44a;
   /* The two stops of the primary-button ramp. Amber-identical across themes,
      but they belong here rather than inline in four components — this is the
      most prominent colour in the product and it needs one home. */
-  --brand-amber-lift: #f0bc6e;
-  --brand-amber-sink: #d18f36;
-  --brand-ember: #7a4413; /* accent text — 7.23:1 on ink */
-  --brand-well: #e7e4dc;
+  --brand-amber-lift: #f7c96f;
+  --brand-amber-sink: #da9631;
+  --brand-ember: #88500a;
+  --brand-trust: #286f91;
+  --brand-calm: #287a6c;
+  --brand-magic: #6e56a0;
+  --brand-human: #a64f58;
+  --brand-well: #e3edf2;
   --brand-on-accent: #171717;
   --brand-wash: #171717;
   /* neutral cast shadows keep the paper palette crisp instead of sepia. */
@@ -148,27 +156,34 @@
   --color-fd-ring: var(--brand-ember);
 
   --radius: 0.5rem;
-  --font-sans: var(--font-geist-pixel), ui-sans-serif, system-ui, sans-serif;
+  /* Body copy stays effortless to scan; the pixel face is reserved for the
+     distinctive display moments that benefit from it. */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
   --font-geist-mono: var(--font-plex-mono), Consolas, monospace;
 }
 
-/* Dark mode — true charcoal rather than warm brown. The amber thread remains
-   the single accent, while app controls keep a 3:1 boundary on the ground. */
+/* Dark mode — a composed midnight blue. Amber marks action while cool semantic
+   accents make dense product information easier to scan. */
 .dark {
-  --brand-ink: #101112;
-  --brand-panel: #17191a;
-  --brand-panel-2: #202325;
-  --brand-seam: #303437;
-  --brand-line: #5b6165; /* control/input boundaries — 3.01:1 on ink */
-  --brand-paper: #f4f0e8;
-  --brand-fog: #aeb2b2;
-  --brand-amber: #e2a44c;
+  --brand-ink: #0c161c;
+  --brand-panel: #12212a;
+  --brand-panel-2: #1a2b35;
+  --brand-seam: #2b414d;
+  --brand-line: #607b88;
+  --brand-paper: #eff7f8;
+  --brand-fog: #a7bbc4;
+  --brand-amber: #f0b44a;
   /* On a near-black ground amber already clears AA as text, so accent text in
      dark IS amber. Defining ember in terms of amber here is what lets every
      call site say `text-ember` once and get the right colour in both themes —
      light substitutes the darker #7a4413, dark stays brand amber. */
   --brand-ember: var(--brand-amber);
-  --brand-well: #0b0c0d;
+  --brand-trust: #70bce0;
+  --brand-calm: #6fd0bc;
+  --brand-magic: #b6a5f2;
+  --brand-human: #f3949e;
+  --brand-well: #081015;
   --brand-on-accent: #171717;
   --brand-wash: #f4f0e8;
   --shadow-cast: rgba(0, 0, 0, 0.65);

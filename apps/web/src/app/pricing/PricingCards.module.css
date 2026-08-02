@@ -1,0 +1,28 @@
+.pricing {
+  --pricing-trust: #0f766e;
+  --pricing-trust-wash: rgb(15 118 110 / 8%);
+}
+
+:global(.dark) .pricing {
+  --pricing-trust: #5eead4;
+  --pricing-trust-wash: rgb(94 234 212 / 7%);
+}
+
+.toggle {
+  border-color: color-mix(in srgb, var(--pricing-trust) 30%, var(--brand-seam));
+  background: color-mix(in srgb, var(--pricing-trust) 5%, var(--brand-panel));
+}
+
+.activeToggle {
+  color: var(--brand-ink);
+  background: var(--pricing-trust);
+}
+
+.activeToggle:hover {
+  background: color-mix(in srgb, var(--pricing-trust) 88%, var(--brand-panel));
+}
+
+.founding {
+  border-color: color-mix(in srgb, var(--pricing-trust) 34%, var(--brand-seam));
+  background: linear-gradient(90deg, var(--pricing-trust-wash), var(--brand-panel));
+}

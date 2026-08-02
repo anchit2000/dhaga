@@ -1,0 +1,33 @@
+.comparison {
+  --pricing-trust: #0f766e;
+  --pricing-trust-wash: rgb(15 118 110 / 7%);
+  --pricing-power: #654bb3;
+  --pricing-power-wash: rgb(101 75 179 / 7%);
+}
+
+:global(.dark) .comparison {
+  --pricing-trust: #5eead4;
+  --pricing-trust-wash: rgb(94 234 212 / 6%);
+  --pricing-power: #c4b5fd;
+  --pricing-power-wash: rgb(196 181 253 / 6%);
+}
+
+.table {
+  border-color: color-mix(in srgb, var(--pricing-trust) 22%, var(--brand-seam));
+}
+
+.proColumn {
+  background: var(--pricing-trust-wash);
+}
+
+.powerColumn {
+  background: var(--pricing-power-wash);
+}
+
+.trustText {
+  color: var(--pricing-trust);
+}
+
+.powerText {
+  color: var(--pricing-power);
+}

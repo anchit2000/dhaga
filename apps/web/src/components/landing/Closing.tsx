@@ -8,14 +8,13 @@ export function FinalCta() {
       <div className="mx-auto max-w-6xl px-6 py-24">
         <SectionHeading
           eyebrow="Early access"
-          heading="Remember everyone worth remembering."
+          heading="Own the relationship context that moves with you."
           headingClassName="max-w-2xl"
           intro={
             <>
-              The next conference is coming — arrive with a memory. Request
-              access to the beta: the first 500 approved signups lock the $79
-              founding annual price — after that it&apos;s $99/yr, and
-              that&apos;s a promise we keep in public.
+              Request access to Dhaga Cloud. The first 500 approved Pro seats
+              can request a $79 first year; standard annual Pro is $96. Power
+              stays on the waitlist until its billing and entitlements are live.
             </>
           }
         />
@@ -42,9 +41,8 @@ export function Footer() {
             <p className="font-mono text-[10px] uppercase tracking-widest text-fog">
               Product
             </p>
-            {/* Root-relative anchors: the footer also renders on /pricing, where
-                a bare `#product` would resolve against that page and go nowhere. */}
-            <FooterLink href="/#product" label="Product" />
+            <FooterLink href="/features" label="Features" />
+            <FooterLink href="/#use-cases" label="Use cases" />
             <FooterLink href="/pricing" label="Pricing" />
             <FooterLink href="/#faq" label="FAQ" />
             <FooterLink href="/blog" label="Blog" />
@@ -54,6 +52,7 @@ export function Footer() {
             <p className="font-mono text-[10px] uppercase tracking-widest text-fog">
               Open source
             </p>
+            <FooterLink href="/open-source" label="Overview" />
             <FooterLink href={GITHUB_URL} label="GitHub" external />
             <FooterLink href={`${GITHUB_URL}/blob/main/LICENSE`} label="AGPL-3.0" external />
             <FooterLink href={`${GITHUB_URL}/blob/main/docs/BRD.md`} label="Roadmap" external />

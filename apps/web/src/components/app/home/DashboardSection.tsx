@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { getFreeBusy, hasCalendarConnection } from "@/lib/repo/calendar";
 import { listPendingConfirmations } from "@/lib/repo/confirmations";
 import { listContacts, listContactsPage } from "@/lib/repo/contacts";
-import { buildDailySuggestions } from "@/lib/repo/daily-suggestions";
+import { buildDailySuggestions, CADENCE_BUCKETS } from "@/lib/repo/daily-suggestions";
 import { listEvents } from "@/lib/repo/events";
 import { listAllOpenFollowUps, listDueReachOuts } from "@/lib/repo/reminders";
 import { listNewSignals } from "@/lib/repo/signals";
@@ -60,7 +60,16 @@ export async function DashboardSection(): Promise<ReactElement> {
   const now = new Date();
   const weekAhead = new Date(now.getTime() + WEEK_MS);
   const busy = calendarConnected ? await getFreeBusy({ from: now, to: weekAhead }) : [];
-  const { suggestions } = await buildDailySuggestions({ date: now, prefs, busy, due: dueReachOuts });
+  // due/followUps/signals are already in hand above — injecting them is what
+  // stops the engine re-running those three queries on every render.
+  const { suggestions } = await buildDailySuggestions({
+    date: now,
+    prefs,
+    busy,
+    due: dueReachOuts,
+    followUps: openFollowUps,
+    signals: newSignals,
+  });
   const slots = calendarConnected
     ? findOpenSlots({
         range: { from: now, to: weekAhead },
@@ -73,7 +82,9 @@ export async function DashboardSection(): Promise<ReactElement> {
       })
     : [];
   const meetingCountToday = dayLoad({ day: now, busy, utcOffsetMinutes: prefs.utcOffsetMinutes }).meetingCount;
-  const shownDue = suggestions.filter((item) => item.bucket !== "graph").length;
+  // Count the buckets that MEAN "due", not "everything but graph": that negation
+  // counted signal/quiet/date rows as due and under-reported the footer.
+  const shownDue = suggestions.filter((item) => CADENCE_BUCKETS.has(item.bucket)).length;
 
   // Daily-briefing headline: Home greets you with your day, built from data
   // already on this page — never a bare "Home" label.

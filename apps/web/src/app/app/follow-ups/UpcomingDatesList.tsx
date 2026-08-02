@@ -5,7 +5,7 @@ import {
   upcomingDateBadge,
   upcomingDateWindowLabel,
   upcomingDateYearsPhrase,
-} from "./upcoming-date-copy";
+} from "@/utils/upcoming-date";
 
 /**
  * Birthdays and anniversaries falling inside the user's lead window, soonest

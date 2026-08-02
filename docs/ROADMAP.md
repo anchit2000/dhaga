@@ -81,7 +81,8 @@ embeddings — both true today, not aspirational.
 | Outbound webhooks | **Shipped** |
 | Telegram capture + Q&A bot | **Shipped** |
 | Salesforce / HubSpot / Notion sync | Planned |
-| WhatsApp capture, LinkedIn QR formats | Planned |
+| WhatsApp capture | **Shipped** |
+| LinkedIn QR formats | Planned |
 | Gmail/Outlook interaction sync (opt-in) | Planned |
 
 ## v2.0 — Teams

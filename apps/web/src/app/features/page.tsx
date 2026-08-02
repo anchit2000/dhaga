@@ -10,7 +10,7 @@ import { SITE_URL } from "@/utils/constants/site";
 
 const TITLE = "Features — Dhaga";
 const DESCRIPTION =
-  "Explore how Dhaga captures meetings, notes, voice, messages and cards, " +
+  "Explore how Dhaga captures meetings, notes, voice, messages and cards from the web, WhatsApp and Telegram, " +
   "builds a private knowledge graph, finds warm paths and helps you follow up.";
 
 export const metadata: Metadata = {

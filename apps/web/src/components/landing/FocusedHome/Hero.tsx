@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactElement } from "react";
 
-import { ArrowRight, Blocks, Globe2, MessageCircle, Send } from "lucide-react";
+import { ArrowRight, Blocks, Globe2, MessageCircle, Send, Smartphone } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ProductWindow } from "./ProductWindow";
@@ -46,7 +46,18 @@ export function Hero(): ReactElement {
                 href="/docs/guide/messaging-capture"
               />
               <CaptureChannel icon={<Globe2 />} label="Web app" accent="text-ember" />
-              <CaptureChannel icon={<Blocks />} label="MCP" accent="text-magic" soon />
+              <CaptureChannel
+                icon={<Blocks />}
+                label="MCP"
+                accent="text-magic"
+                href="/docs/guide/mcp"
+              />
+              <CaptureChannel
+                icon={<Smartphone />}
+                label="Mobile app"
+                accent="text-calm"
+                status="Coming soon"
+              />
             </ul>
           </div>
         </div>
@@ -61,13 +72,13 @@ function CaptureChannel({
   label,
   accent,
   href,
-  soon = false,
+  status,
 }: {
   icon: ReactElement;
   label: string;
   accent: string;
   href?: string;
-  soon?: boolean;
+  status?: string;
 }): ReactElement {
   const content = (
     <>
@@ -75,9 +86,9 @@ function CaptureChannel({
         {icon}
       </span>
       <span>{label}</span>
-      {soon ? (
+      {status ? (
         <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-fog">
-          Coming soon
+          {status}
         </span>
       ) : null}
     </>

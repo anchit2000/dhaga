@@ -125,8 +125,8 @@ export async function DashboardSection(): Promise<ReactElement> {
           <HomeTile
             title="Suggested groups"
             viewAll={{
-              href: "/app/people",
-              label: suggestedClusters.length > HOME_PREVIEW_LIMIT ? `+${suggestedClusters.length - HOME_PREVIEW_LIMIT} more groups` : "View all people",
+              href: "/app/groups",
+              label: suggestedClusters.length > HOME_PREVIEW_LIMIT ? `+${suggestedClusters.length - HOME_PREVIEW_LIMIT} more groups` : "View all groups",
             }}
           >
             <SuggestionsPanel clusters={suggestedClusters.slice(0, HOME_PREVIEW_LIMIT)} />

@@ -13,6 +13,8 @@ export {
   bulkSetAffiliationAction,
   bulkStarContactsAction,
   bulkTagContactsAction,
+  setContactsCompanyAction,
+  setContactsLocationAction,
 } from "./bulk";
 export { addTagToContactAction, listTagSuggestionsAction } from "./tags";
 export type { ContactFormState } from "./form";

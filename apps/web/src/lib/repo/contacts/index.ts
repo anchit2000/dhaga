@@ -40,3 +40,4 @@ export {
   setContactsAffiliation,
   setContactsStarred,
 } from "./bulk";
+export { setContactsCompany, setContactsLocation } from "./create-group";

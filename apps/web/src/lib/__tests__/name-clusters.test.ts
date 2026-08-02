@@ -71,4 +71,37 @@ describe("name clustering suggestions", () => {
     ]);
     expect(clusters).toHaveLength(0);
   });
+
+  it("splits a common part joined by punctuation, not just a space", () => {
+    // "Kumar_Joget" has no space between the two words, but "Joget" is
+    // still a valid common part shared with "Raveesh Joget".
+    const clusters = computeNameClusters([
+      person("1", "Anchit Kumar_Joget"),
+      person("2", "Raveesh Joget"),
+    ]);
+    expect(clusters).toHaveLength(1);
+    expect(clusters[0].key).toBe("joget");
+    expect(clusters[0].contactIds).toHaveLength(2);
+  });
+
+  it("never matches a token as a substring of a longer one", () => {
+    // "Anchit" must not cluster with "Sanchit" just because the letters
+    // overlap — clustering is on whole delimiter-bounded tokens only.
+    const clusters = computeNameClusters([
+      person("1", "Ravi Anchit"),
+      person("2", "Ravi Sanchit"),
+    ]);
+    expect(clusters).toHaveLength(0);
+  });
+
+  it("still excludes an emailish or URLish first word, even after punctuation splitting", () => {
+    const clusters = computeNameClusters([
+      person("1", "john@example.com Kumar"),
+      person("2", "https://example.com Kumar"),
+    ]);
+    // Second words ("Kumar") still cluster; the emailish/URLish given-name
+    // slot is dropped whole, same as any other given name.
+    expect(clusters).toHaveLength(1);
+    expect(clusters[0].key).toBe("kumar");
+  });
 });

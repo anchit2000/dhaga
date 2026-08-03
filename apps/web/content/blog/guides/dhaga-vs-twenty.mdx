@@ -1,0 +1,228 @@
+---
+title: "Dhaga vs Twenty: Personal Relationship Graph or Team CRM?"
+description: "Twenty and Dhaga are both open-source CRMs, but they solve different jobs. Compare capture, pipelines, AI, privacy, teams, and what full feature parity would really take."
+date: "2026-08-03"
+author: "Anchit Shrivastava"
+tags: ["dhaga", "twenty", "open-source-crm", "personal-crm", "comparison"]
+---
+
+<Callout title="The short version">
+[Twenty](https://twenty.com/) is a programmable, team-owned business CRM: custom objects, sales pipelines, saved views, workflows, mailbox and calendar sync, permissions, dashboards, and developer APIs. Dhaga is a personal relationship-intelligence system: capture someone when you meet, preserve the context, turn notes into a private graph, and help you remember who to call or ask for an introduction. Dhaga should not rebuild all of Twenty. It should stay independent, integrate deeply with CRMs like Twenty, and become the context-and-memory layer they do not provide.
+</Callout>
+
+Twenty and Dhaga can look similar in a screenshot. Both have people, companies,
+notes, tasks, search, open-source code, and a self-hosting story. That is where a
+feature checklist becomes misleading.
+
+The two products start with different questions.
+
+Twenty asks: **How should this company model and run its customer process?**
+
+Dhaga asks: **Who is this person to me, what happened when we met, and what thread
+should I pull next?**
+
+One is becoming an open, programmable alternative to Salesforce. The other is a
+private memory for a professional network. They overlap, but they are not the same
+category wearing different colours.
+
+This comparison is current as of August 2026 and is written by the person building
+Dhaga. I will give Twenty full credit where it is plainly ahead, because the right
+strategy depends on seeing the size of that lead clearly.
+
+## The core difference: system of record vs system of relationship memory
+
+**Twenty is a company system of record.** A workspace owns shared records. Teams
+define objects and fields, assign owners, move opportunities through stages, sync
+email and meetings, automate processes, report on performance, and restrict who can
+see or edit what. Its own positioning is explicit: it gives technical teams the
+building blocks for a custom CRM that evolves with the business.
+
+**Dhaga is an individual system of relationship memory.** The graph belongs to the
+person whose relationships created it. Dhaga captures cards, photos, voice, pasted
+text, browser pages, WhatsApp and Telegram messages. Notes become facts,
+relationships and follow-ups. Every derived fact keeps a receipt back to its source.
+The graph can answer questions such as “Who did I meet at Web Summit who mentioned an
+AI budget?” or find the shortest warm path to somebody you want to meet.
+
+That ownership difference is not a minor permission setting. If an employee leaves a
+company, the company should retain its opportunity pipeline. But should it retain the
+employee's private notes about a friendship, a family detail, or who would personally
+take their call? Dhaga's answer is not “yes by default.”
+
+## Feature by feature
+
+<FeatureMatrix
+  caption="Dhaga and Twenty overlap at contacts and notes, then diverge sharply. Roadmap and beta labels are shown rather than counted as shipped parity."
+  highlightColumn={1}
+  columns={["", "Dhaga", "Twenty"]}
+  rows={[
+    { feature: "Card, photo, voice and message capture", values: [true, false] },
+    { feature: "Receipted AI facts and private knowledge graph", values: [true, false] },
+    { feature: "Warm-introduction pathfinding", values: [true, false] },
+    { feature: "Custom objects, fields and relationships", values: ["Purpose-built", true] },
+    { feature: "Opportunities and Kanban sales pipelines", values: [false, true] },
+    { feature: "Visual workflow builder", values: [false, true] },
+    { feature: "Mailbox and calendar history on records", values: ["Roadmap", true] },
+    { feature: "Workspace roles and field-level permissions", values: ["Roadmap", true] },
+    { feature: "Configurable dashboards", values: ["Network signals", "Beta"] },
+    { feature: "REST, GraphQL, SDK and deployable apps", values: ["API, webhooks, MCP", true] },
+    { feature: "Open-source and self-hostable", values: [true, true] },
+  ]}
+/>
+
+### Where Twenty is far ahead
+
+Twenty is not merely a contacts table with an opportunity board. Its hard-won
+advantage is that its major features are **generic platform primitives**.
+
+- **A metadata-driven data model.** Users can create custom objects, add more than
+  20 field types, and relate objects to each other. Those fields then work across
+  forms, tables, filters, imports, permissions, APIs, workflows and dashboards.
+- **General-purpose views and pipelines.** Table, Kanban and calendar views support
+  saved filters, grouping, sorting, configurable columns and layouts across standard
+  and custom objects.
+- **A durable workflow engine.** Record, schedule, manual and webhook triggers can
+  run record operations, filters, iterators, delays, HTTP requests, JavaScript and
+  email actions. The expensive part is not drawing boxes; it is retries, execution
+  history, versioning, permissions, queues and failure recovery.
+- **Mailbox and calendar ingestion.** Google and Microsoft communication history is
+  connected to people, companies and opportunities. Twenty can also auto-create
+  contacts from interactions.
+- **Workspace administration.** Roles govern objects, fields, records, settings and
+  actions. API keys and agents can inherit restricted roles; SSO and audit logs sit
+  on the same authorization foundation.
+- **A developer platform.** Twenty exposes dynamic REST and GraphQL APIs and now
+  lets developers ship objects, views, sandboxed server logic, embedded UI and AI
+  capabilities as TypeScript apps.
+
+Twenty's [key-features guide](https://docs.twenty.com/getting-started/key-features)
+is the cleanest overview. Its
+[workflow documentation](https://docs.twenty.com/user-guide/workflows/overview)
+and [apps documentation](https://docs.twenty.com/getting-started/core-concepts/apps)
+show why “we can add workflows later” badly understates the engineering involved.
+
+Two qualifications matter. Twenty's dashboards are documented as beta, with limits
+such as no external sharing or dashboard-wide filters. Its AI agents and chat have
+also been described across the docs as alpha, coming soon, or still evolving. They
+are strategically important, but a fair comparison should not treat every roadmap
+headline as mature production capability.
+
+### Where Dhaga is meaningfully different
+
+Dhaga has advantages that do not fall out of adding another custom object to a sales
+CRM.
+
+- **Capture at the handshake.** A card, badge, photo, voice note, pasted signature,
+  browser page or message becomes a contact with the encounter context still attached.
+- **Fact-level provenance.** A model-derived fact is never just an unexplained string
+  on a profile. It points back to the note that produced it. Delete the note and its
+  derived facts, edges and embeddings go with it.
+- **A relationship graph, not just record relations.** Dhaga can focus a person's
+  neighbourhood, score relationship strength, surface fading relationships, suggest
+  nearby connections, and find a warm path through people you already know.
+- **Event memory.** “We met at Web Summit” is part of the relationship, not an
+  incidental calendar row.
+- **Personal ownership.** Self-hosting, full export, bring-your-own AI and explicit
+  rather than silent enrichment are central product constraints.
+- **Useful intelligence without rebuilding a workflow.** Keep-in-touch reminders,
+  note-derived follow-ups, pre-meeting briefs and post-event digests are opinionated
+  features rather than templates every user has to assemble.
+
+Twenty could theoretically model parts of this. A team could create Events and
+Relationships objects, add fields, and write workflows. But the experience would
+still begin with CRM configuration. Dhaga begins with “I just met someone—remember
+this.”
+
+## What would it take for Dhaga to support everything Twenty does?
+
+Much more than adding opportunities, Kanban and a few charts.
+
+Full parity would require Dhaga to make metadata the centre of its database, UI,
+authorization and API. The current purpose-built graph would have to coexist with a
+generic record engine. Every later feature would then need to operate on arbitrary
+objects and fields.
+
+The work breaks into at least eight platform programmes:
+
+1. Dynamic objects, fields, relationships, validation and schema migrations.
+2. Generic record pages plus table, Kanban and calendar view engines.
+3. Opportunities, ownership, assignment and pipeline behaviour.
+4. A durable workflow runtime, visual builder, queues, retries and observability.
+5. Full mailbox/calendar backfills, incremental sync, threading and provider recovery.
+6. Shared workspaces, invitations, granular RBAC, audit logs and enterprise SSO.
+7. Generic reporting, aggregations, dashboards and historical metrics.
+8. Dynamic APIs, generated documentation, SDK, app runtime, CLI and sandboxing.
+
+There is also the unglamorous permanent layer: security response, rate limits,
+internationalisation, upgrades, background workers, backups, storage, support and
+provider changes.
+
+A checkbox-level clone might consume roughly **80–140 engineer-months** and still be
+less trustworthy than Twenty. Credible production parity is more plausibly
+**250–400 engineer-months**: around 12–18 experienced engineers for two to three
+years, followed by a permanent platform and operations team. These are directional
+estimates, not a delivery quote, but the order of magnitude is the important part.
+
+Twenty's public repository has more than 14,000 commits and over 50,000 GitHub stars.
+Stars are not product quality, but the history is evidence that this is an ecosystem,
+not a feature sprint. The target would continue moving while Dhaga chased it.
+
+## The better strategy: independent, but complementary
+
+Dhaga should not become “a Twenty plugin” that cannot stand alone. It should remain a
+complete personal product and integrate with Twenty as one of several team systems of
+record.
+
+The clean division is:
+
+| Dhaga owns | Twenty owns |
+|---|---|
+| Raw meeting context and private notes | Company-visible customer records |
+| Cards, voice, events and message capture | Opportunities, owners and stages |
+| Receipted facts and relationship history | Team tasks and operating process |
+| Warm paths and personal relationship strength | Workspace permissions and reporting |
+| The decision about what becomes shared | The shared record after handoff |
+
+The first integration should be deliberately selective:
+
+- Dhaga person → Twenty Person
+- Company → Company
+- Follow-up → Task
+- Shareable note or brief → Note
+- Qualified business context → optional Opportunity
+- Dhaga receipt → source link or external reference
+- Stable cross-system IDs for deduplication and later synchronization
+
+“Send to Twenty” should not silently publish the whole personal graph. The user chooses
+which contacts and facts become company-owned CRM data. A focused one-way integration
+could be built in weeks; robust two-way synchronization with conflicts, deletion rules,
+field mapping and administration is a multi-month product in its own right.
+
+After that, the valuable team feature for Dhaga is not another opportunity board. It
+is a consent-aware answer to: **Who in our organization can genuinely introduce us to
+this person?** That means selective relationship sharing, private-by-default facts,
+contact-level controls and clear ownership boundaries. It is narrower than Twenty's
+platform, but much more differentiated.
+
+## Which should you choose today?
+
+| If you… | Choose |
+|---|---|
+| Need a customizable CRM for a sales or operations team | **Twenty** |
+| Need opportunities, Kanban, workflows and granular workspace roles | **Twenty** |
+| Want email and meeting history automatically attached to CRM records | **Twenty** |
+| Need to remember people you meet and the context behind the contact | **Dhaga** |
+| Care about warm introductions and the shape of your personal network | **Dhaga** |
+| Want cited AI memory, explicit enrichment and personal ownership | **Dhaga** |
+| Need both personal context and a team operating system | **Use Dhaga with Twenty** |
+
+## The takeaway
+
+Twenty is ahead at being a CRM platform, and Dhaga should not spend years pretending
+otherwise. The opportunity is not to reproduce every Twenty primitive with fewer
+people. It is to own the layer conventional CRMs systematically miss: the moment a
+relationship begins, the context that makes it human, and the memory that makes it
+useful years later.
+
+Twenty can be where a company runs the deal. [Dhaga](/) can be where the relationship
+is remembered—and where the user decides what to share.

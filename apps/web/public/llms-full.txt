@@ -8,7 +8,7 @@ What separates it from Dex, Monica or a notes app: the whole CRM is AGPL-license
 
 Complete markdown of the 44 pages that answer what Dhaga is, what it does, how it compares, and how to run it yourself — in the same order as the sections of https://www.dhaga.app/llms.txt: start here, then how dhaga compares, then using dhaga, then self-hosting, extending & contributing, then engineering deep dives.
 
-Deliberately excluded to keep this file inside a single model context: the ~153 generated TypeDoc API pages, and the 28 pages listed under `## Optional` in https://www.dhaga.app/llms.txt (the internal build checklist, BRD and manual test plan, plus the per-profession and general networking guides). Fetch any of those individually from the index. Source: https://github.com/anchit2000/dhaga
+Deliberately excluded to keep this file inside a single model context: the ~153 generated TypeDoc API pages, and the 29 pages listed under `## Optional` in https://www.dhaga.app/llms.txt (the internal build checklist, BRD and manual test plan, plus the per-profession and general networking guides). Fetch any of those individually from the index. Source: https://github.com/anchit2000/dhaga
 
 ---
 
@@ -788,6 +788,11 @@ rhythm exactly as **Reached out** does. Each row has a one-tap **Reached out**
 button so the list stays honest, and on a day already full of meetings the
 list gets shorter — never empty.
 
+When more people are due than the day's list shows, the tile ends on **+N more
+due**. That opens the **Due for a check-in** block on
+[`/app/follow-ups`](/docs/guide/calendar), which lists everyone whose rhythm has
+run out — the same people, counted the same way, most overdue first.
+
 Once your graph isn't empty, a **graph at a glance** strip
 renders beneath the briefing — quick counts of People, Companies, Notes, Facts,
 Relationships, Events, Open follow-ups, and Entities. When AI extraction needs a
@@ -947,6 +952,7 @@ two round-trips behind the scenes is still one scan:
 | Ask Dhaga (a question) | 2 |
 | Pre-meeting brief | 2 |
 | Deep research (enrich from the web) | 20 |
+| Goal match, requested now | 3 |
 | Watchlist scan (nightly) | Free |
 | Contact check (nightly) | Free |
 | Goal match (nightly) | Free |
@@ -972,6 +978,14 @@ limits them is a ceiling on how many contacts a single night's sweep may look
 at, not your allowance. A whole imported address book is worked through over a
 few nights that way, and every one of those actions still shows up in the
 breakdown marked *Free* rather than being hidden.
+
+**Asking for a goal match *now* is the exception, and it costs 3 credits.**
+Setting or rewording a goal is always free and never runs the model — the
+nightly pass picks it up and the people who fit are there the next day. If you
+don't want to wait, **Request now** on the goal line runs the match while you
+watch, and Dhaga tells you what it costs before it spends anything. It shows up
+in the breakdown as *Goal match (requested)*, separately from the free nightly
+ones, so you can always see which of the two you paid for.
 
 **Credits aren't the only gate**
 
@@ -1006,8 +1020,9 @@ credits** link back to this page. Nothing fails silently, and nothing is charged
 for an action you didn't get.
 
 Greyed out until the counter resets: **Extract contact** on the paste tab,
-**Scan card**, **Ask Dhaga**, **Brief me**, **Draft follow-up**, and **Enrich
-from public web**.
+**Scan card**, **Ask Dhaga**, **Brief me**, **Draft follow-up**, **Enrich
+from public web**, and confirming a goal match with **Request now** (the goal
+itself still saves, and tonight's free pass still runs).
 
 Everything that doesn't spend credits keeps working exactly as before — manual
 capture and editing, adding a fact or a follow-up by hand, search by name, the
@@ -1147,9 +1162,11 @@ You don't have to keep the calendar open to stay on top of things:
   The **count on the bell** is deliberately narrow — things to act on *now*: what's
   overdue or due today, anything unread, and a date only once it's actually
   arrived. A birthday next week is in the list without nagging you.
-- **`/app/follow-ups`** gains an **Upcoming dates** block below your open
-  follow-ups, showing who's next and how far off. It's simply absent when nothing
-  is coming.
+- **`/app/follow-ups`** gains a **Due for a check-in** block below your open
+  follow-ups — everyone whose keep-in-touch rhythm has run out, most overdue
+  first, and where Home's **+N more due** sends you — then an **Upcoming dates**
+  block showing who's next and how far off. Each is simply absent when there's
+  nothing in it.
 - Turn on the **daily reminder email** to get a morning nudge whenever follow-ups
   are waiting — it now reaches you while there's still time to act, covering
   anything due in the next few days rather than only what's already late.
@@ -3708,7 +3725,8 @@ With it unset:
   (`TenantGate`, `SignupGate`, `BillingGate`, `AdminGate`) short-circuits to
   its permissive default *before* it ever tries to load `@dhaga/ee` — so it
   doesn't matter whether the package is physically present.
-- The two EE-only routes (`/api/access-requests`, `/api/stripe/webhook`)
+- The EE-only routes (`/api/access-requests`, `/api/stripe/webhook`,
+  `/api/razorpay/order`, `/api/razorpay/verify`)
   additionally check the flag themselves and return `404` if it's off, so an
   unrelated visitor can't accidentally trigger EE's schema setup against your
   database even if `packages/ee` happens to be installed and `DATABASE_URL`
@@ -3730,6 +3748,7 @@ packages/ee/
 apps/web/src/app/app/admin/
 apps/web/src/app/api/access-requests/
 apps/web/src/app/api/stripe/
+apps/web/src/app/api/razorpay/
 apps/web/src/lib/actions/admin/
 apps/web/src/components/app/admin/
 apps/web/src/components/app/table/AdminTables.tsx
@@ -3854,8 +3873,10 @@ table below).
 
 ### Instance-wide AI credit controls (`/app/admin/ai-credits`, hosted/EE)
 
-Beside that per-user override, `/app/admin/ai-credits` carries three levers that
-apply to the whole instance:
+Beside that per-user override, `/app/admin/ai-credits` (titled "AI cost &
+credits") carries five levers that apply to the whole instance — three that size
+the **credit** allowance, and two that size the independent **dollar** ceiling
+behind it:
 
 - **Plan-cap enforcement** — a master switch that is **on by default**
   (`AI_PLAN_CAP_ENFORCEMENT_DEFAULT = true`). In the shipped state every user is
@@ -3879,6 +3900,37 @@ apply to the whole instance:
   ("everyone gets 1,000 credits this month"). It works whether or not
   enforcement is on, and it ends at the **start** of its end date, evaluated on
   every read — so it expires by itself with no cron job and no admin cleanup.
+- **Dollar-ceiling enforcement** — a second master switch, also **on by
+  default** (`AI_DOLLAR_CAP_ENFORCEMENT_DEFAULT = true`), for a per-user monthly
+  ceiling denominated in real inference **dollars** rather than credits. It
+  exists because credits stopped bounding spend: three metered features cost 0
+  credits on purpose (the nightly signal, person-classification and goal-match
+  sweeps — billing them would be ~26× their real cost), so an uncredited sweep
+  moves no counter but still costs money. The gate is enforced inside the same
+  metering path as the credit cap, so it covers **every** action including those
+  three, and it is checked **after** credits — the credit message is the one a
+  user can act on (upgrade); this one is the operator's backstop.
+- **Multiplier and floor** — the two numbers that turn a plan into a ceiling:
+  the plan's monthly **revenue × multiplier** (default `2.0`, so Pro's $8/month
+  of revenue becomes **$16/month**), or, for any plan with no recurring revenue,
+  a flat **floor** in USD (default `$0.50`). The floor is not a rounding
+  detail — Free earns $0, and 0 × 2.0 = $0 would refuse every AI action a free
+  user takes, including the ten their credit allowance is meant to buy. The card
+  shows the resulting per-plan ceiling table live as you change either number.
+  A per-user `ai_monthly_dollar_cap_override` beats both (`0` is a valid
+  override, unlike its credit sibling).
+
+**On a core-only self-host the dollar gate is inert.** Its bottom rung is
+deliberately *no ceiling* rather than a number: with billing not running no plan
+is ever in play, so `effectiveMonthlyDollarCap()` resolves to `null` and never
+refuses an action. That is the opposite of the credit ladder, whose bottom rung
+(the instance default) is a real number — and it is intentional, because a
+self-hoster pays their own provider bill and inventing a dollar ceiling they
+never asked for would break their instance. **There is no new environment
+variable**: the multiplier, floor and switch live in `ai_budget_settings` and
+there is no `DHAGA_AI_MONTHLY_DOLLAR_CAP`. `DHAGA_AI_MONTHLY_CAP` is still
+credits, and still the only AI-budget env var. Resolver:
+[`apps/web/src/lib/ai/metering/dollar-cap.ts`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/lib/ai/metering/dollar-cap.ts).
 
 The grant form on this page is additive make-good credits for **everyone on
 the instance** — it always broadcasts, with no free-text user id field —
@@ -3933,11 +3985,15 @@ either — `ai_credit_grants` gets its bespoke
 anywhere, being operator config rather than user data. With both tables empty and
 no billing running, every user resolves at rung 4 and one number governs the
 whole instance: whatever `DHAGA_AI_MONTHLY_CAP` seeds, else the shipped 10
-credits a month. **Nothing here is required from `packages/ee` to self-host**,
+credits a month — and the dollar ceiling resolves to *none*, as described above.
+**Nothing here is required from `packages/ee` to self-host**,
 and the Level 2 removal list above needs no additions — the new admin page and its
 server actions and components live under `apps/web/src/app/app/admin/`,
 `apps/web/src/lib/actions/admin/` and `apps/web/src/components/app/admin/`,
-which are already on it.
+which are already on it. The dollar gate added files in those same three
+directories (plus `packages/ee`, which Level 2 removes whole); its own resolver,
+cost helper and constants are core, and the `ai_actions.batch` column it reads is
+created by the core DDL like any other.
 
 ## Running with `docker compose up`
 
@@ -4422,6 +4478,15 @@ account once it's live.
   `STRIPE_PRICE_LIFETIME` — from the Stripe Dashboard (test-mode keys while
   developing). Omit `STRIPE_SECRET_KEY` to run hosted mode without billing
   (e.g. a free beta) — the billing UI simply doesn't render without it.
+- `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_PRICE_PRO_INR`,
+  `RAZORPAY_PRICE_LIFETIME_INR` — optional INR checkout, independent of
+  Stripe. Prices are in **paise** (₹1 = 100 paise) and set per-instance
+  because no INR price exists anywhere in the repo. Setting both keys adds a
+  "Pay in INR" button to `/app/settings`; either processor on its own is
+  enough for the billing UI to render. Two limits worth knowing before you
+  enable it: Razorpay's Orders API is one-time only, so a Pro bought this way
+  is a **prepaid year that does not auto-renew**, and those customers have no
+  billing portal (there is nothing to cancel).
 - Register the webhook in Stripe pointing at
   `https://your-domain/api/stripe/webhook`, subscribed to at least
   `checkout.session.completed`, `customer.subscription.updated`,

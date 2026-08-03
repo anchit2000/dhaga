@@ -47,8 +47,16 @@ export type AccessRequestStatus = "pending" | "approved" | "rejected";
 export const subscriptions = pgTable("subscriptions", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().unique(),
-  stripeCustomerId: text("stripe_customer_id").notNull(),
+  // Nullable since the Razorpay path: a row is now identified by whichever
+  // processor's ids it carries. Stripe rows always set stripeCustomerId;
+  // Razorpay rows always set razorpayPaymentId and leave the Stripe ids null.
+  stripeCustomerId: text("stripe_customer_id"),
   stripeSubscriptionId: text("stripe_subscription_id"), // null for Lifetime (one-time payment)
+  razorpayOrderId: text("razorpay_order_id"),
+  // The captured payment. Razorpay's Orders API is one-time only, so there is
+  // no renewing-subscription id to store — a prepaid Pro term is expressed
+  // entirely by currentPeriodEnd.
+  razorpayPaymentId: text("razorpay_payment_id"),
   plan: text("plan").notNull(), // 'lifetime' | 'pro'
   status: text("status").notNull(), // 'active' | 'past_due' | 'canceled' | 'incomplete'
   currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),

@@ -447,6 +447,53 @@ to at least `checkout.session.completed`, `customer.subscription.updated`,
 
 ---
 
+## 6a. Razorpay test-mode checkout (needs §3 + Razorpay test-mode keys)
+
+INR checkout, independent of Stripe: an instance can run either processor or
+both. Env vars (`packages/ee/.env.example`): `RAZORPAY_KEY_ID`,
+`RAZORPAY_KEY_SECRET`, and prices **in paise** —
+`RAZORPAY_PRICE_PRO_INR`, `RAZORPAY_PRICE_LIFETIME_INR`. There is no INR price
+anywhere in the repo (every constant is USD), so these are per-instance and the
+values in `.env.local` are ₹1/₹2 placeholders for test mode, **not** a price.
+
+Both `/api/razorpay/*` routes 404 unless `DHAGA_HOSTED_MODE=true` **and** both
+keys are set — so `next dev` on the default `.env.local` (PGlite) will not
+serve them; use a dev server carrying `.env.vercel`'s `DATABASE_URL`.
+
+- [ ] **Billing UI absent when neither processor is configured** —
+      `getPlanSummary` (`packages/ee/src/billing/index.ts`) returns `null`
+      only when both `STRIPE_SECRET_KEY` and the Razorpay pair are missing.
+      With Razorpay alone, billing renders with no Stripe buttons.
+- [ ] With the keys set: `/app/settings` shows **Pay in INR** buttons →
+      Razorpay modal opens. Test card `4111 1111 1111 1111`, any future
+      expiry/CVV; or UPI id `success@razorpay`.
+- [ ] Success → `/api/razorpay/verify` → subscription row written with
+      `razorpay_payment_id` set and the Stripe columns null → plan badge flips
+      without a manual reload (`router.refresh()`).
+- [ ] **Dismissing the modal** is a cancel: no toast, button re-enables.
+- [ ] **`payment.failed`** surfaces Razorpay's description as an error toast.
+- [ ] **Tampering is rejected**: POST `/api/razorpay/verify` with a made-up
+      signature → `400`, no row written. Amount, plan and owning user are all
+      re-read from Razorpay's copy of the order, so a cheap order cannot be
+      redeemed for an expensive plan.
+- [ ] **Unverified (needs a live run):** nobody has run a real Razorpay
+      test-mode purchase against this code yet.
+
+**Known gaps, deliberate — do not read these as bugs found in testing:**
+
+- **No webhook.** `/api/razorpay/verify` is the only path that grants a plan,
+  and the buyer's browser must call it. A customer who pays and closes the tab
+  is charged and not upgraded. Stripe doesn't have this hole because its
+  webhook is server-to-server. Closing it needs a `payment.captured` webhook.
+- **Pro does not auto-renew.** Razorpay's Orders API is one-time only, so Pro
+  is sold as a prepaid year: `currentPeriodEnd` is set 365 days out and
+  `isUnlimitedAiSub` lapses it correctly, but nothing re-charges. Recurring
+  INR billing needs the Razorpay Subscriptions API.
+- **No billing portal.** `createPortalUrl` throws a specific error for a
+  Razorpay-paid plan; the "Manage billing" button is hidden for them.
+
+---
+
 ## 7. Core product walkthrough (works today regardless of deploy path)
 
 ### 7a. People (manual CRUD)

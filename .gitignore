@@ -30,3 +30,5 @@ apps/extension/*.zip
 Thumbs.db
 
 rough/
+.vercel
+.env*

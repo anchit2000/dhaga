@@ -43,8 +43,11 @@ export async function getUserEmail(userId: string): Promise<string | null> {
 
 interface UpsertInput {
   userId: string;
-  stripeCustomerId: string;
+  /** Null on the Razorpay path — that processor has no Stripe customer. */
+  stripeCustomerId: string | null;
   stripeSubscriptionId: string | null;
+  razorpayOrderId?: string | null;
+  razorpayPaymentId?: string | null;
   plan: SubscriptionPlan;
   status: SubscriptionStatus;
   currentPeriodEnd?: Date | null;
@@ -67,6 +70,8 @@ export async function upsertSubscription(input: UpsertInput): Promise<void> {
   const values = {
     stripeCustomerId: input.stripeCustomerId,
     stripeSubscriptionId: input.stripeSubscriptionId,
+    razorpayOrderId: input.razorpayOrderId ?? null,
+    razorpayPaymentId: input.razorpayPaymentId ?? null,
     plan: input.plan,
     status: input.status,
     currentPeriodEnd: input.currentPeriodEnd ?? null,

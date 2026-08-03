@@ -15,6 +15,8 @@ function subRow(overrides: Partial<SubscriptionRow>): SubscriptionRow {
     userId: "user_1",
     stripeCustomerId: "admin-granted:user_1",
     stripeSubscriptionId: null,
+    razorpayOrderId: null,
+    razorpayPaymentId: null,
     plan: "pro",
     status: "active",
     currentPeriodEnd: null,

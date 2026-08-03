@@ -40,7 +40,8 @@ With it unset:
   (`TenantGate`, `SignupGate`, `BillingGate`, `AdminGate`) short-circuits to
   its permissive default *before* it ever tries to load `@dhaga/ee` — so it
   doesn't matter whether the package is physically present.
-- The two EE-only routes (`/api/access-requests`, `/api/stripe/webhook`)
+- The EE-only routes (`/api/access-requests`, `/api/stripe/webhook`,
+  `/api/razorpay/order`, `/api/razorpay/verify`)
   additionally check the flag themselves and return `404` if it's off, so an
   unrelated visitor can't accidentally trigger EE's schema setup against your
   database even if `packages/ee` happens to be installed and `DATABASE_URL`
@@ -62,6 +63,7 @@ packages/ee/
 apps/web/src/app/app/admin/
 apps/web/src/app/api/access-requests/
 apps/web/src/app/api/stripe/
+apps/web/src/app/api/razorpay/
 apps/web/src/lib/actions/admin/
 apps/web/src/components/app/admin/
 apps/web/src/components/app/table/AdminTables.tsx

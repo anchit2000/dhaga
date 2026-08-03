@@ -64,6 +64,15 @@ account once it's live.
   `STRIPE_PRICE_LIFETIME` — from the Stripe Dashboard (test-mode keys while
   developing). Omit `STRIPE_SECRET_KEY` to run hosted mode without billing
   (e.g. a free beta) — the billing UI simply doesn't render without it.
+- `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_PRICE_PRO_INR`,
+  `RAZORPAY_PRICE_LIFETIME_INR` — optional INR checkout, independent of
+  Stripe. Prices are in **paise** (₹1 = 100 paise) and set per-instance
+  because no INR price exists anywhere in the repo. Setting both keys adds a
+  "Pay in INR" button to `/app/settings`; either processor on its own is
+  enough for the billing UI to render. Two limits worth knowing before you
+  enable it: Razorpay's Orders API is one-time only, so a Pro bought this way
+  is a **prepaid year that does not auto-renew**, and those customers have no
+  billing portal (there is nothing to cancel).
 - Register the webhook in Stripe pointing at
   `https://your-domain/api/stripe/webhook`, subscribed to at least
   `checkout.session.completed`, `customer.subscription.updated`,

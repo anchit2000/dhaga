@@ -65,6 +65,11 @@ export interface PlanSummary {
   plan: "free" | "pro" | "lifetime";
   status: string | null;
   hasStripeCustomer: boolean;
+  /** Which processors this instance actually has keys for. An instance may
+   *  sell through either or both, so the settings UI renders a checkout
+   *  control only for the ones that would work. */
+  stripeEnabled: boolean;
+  razorpayEnabled: boolean;
 }
 
 export interface BillingGate {

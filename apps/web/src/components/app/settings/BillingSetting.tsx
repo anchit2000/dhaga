@@ -5,6 +5,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ActionForm } from "@/components/app/ActionForm";
+import { RazorpayCheckoutButton } from "@/components/app/settings/RazorpayCheckoutButton";
 import type { PlanSummary } from "@/lib/hosted/gate";
 
 const PLAN_LABEL: Record<PlanSummary["plan"], string> = {
@@ -67,7 +68,7 @@ export function BillingSetting({
             ) : null}
           </p>
         </div>
-        {summary.hasStripeCustomer ? (
+        {summary.hasStripeCustomer && summary.stripeEnabled ? (
           <ActionForm
             action={createBillingPortalSessionAction}
             errorMessage="Couldn't open billing — please try again."
@@ -81,24 +82,36 @@ export function BillingSetting({
       {aiUsage ? <AiCreditsRow {...aiUsage} /> : null}
       {summary.plan === "free" ? (
         <div className="flex flex-wrap gap-2 border-t border-seam pt-4">
-          <ActionForm
-            action={createCheckoutSessionAction}
-            errorMessage="Couldn't start checkout — please try again."
-          >
-            <input type="hidden" name="plan" value="pro" />
-            <Button type="submit" size="sm">
-              Go Pro
-            </Button>
-          </ActionForm>
-          <ActionForm
-            action={createCheckoutSessionAction}
-            errorMessage="Couldn't start checkout — please try again."
-          >
-            <input type="hidden" name="plan" value="lifetime" />
-            <Button type="submit" variant="outline" size="sm">
-              Buy Lifetime
-            </Button>
-          </ActionForm>
+          {summary.stripeEnabled ? (
+            <>
+              <ActionForm
+                action={createCheckoutSessionAction}
+                errorMessage="Couldn't start checkout — please try again."
+              >
+                <input type="hidden" name="plan" value="pro" />
+                <Button type="submit" size="sm">
+                  Go Pro
+                </Button>
+              </ActionForm>
+              <ActionForm
+                action={createCheckoutSessionAction}
+                errorMessage="Couldn't start checkout — please try again."
+              >
+                <input type="hidden" name="plan" value="lifetime" />
+                <Button type="submit" variant="outline" size="sm">
+                  Buy Lifetime
+                </Button>
+              </ActionForm>
+            </>
+          ) : null}
+          {/* INR alternative. Razorpay's Orders API is one-time only, so a Pro
+              bought here is a prepaid year that does NOT auto-renew. */}
+          {summary.razorpayEnabled ? (
+            <>
+              <RazorpayCheckoutButton plan="pro" />
+              <RazorpayCheckoutButton plan="lifetime" />
+            </>
+          ) : null}
         </div>
       ) : null}
     </div>

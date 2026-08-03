@@ -56,6 +56,14 @@ CREATE TABLE IF NOT EXISTS subscriptions (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+-- Razorpay (INR) checkout alongside Stripe. Additive and idempotent so an
+-- instance created before Razorpay existed self-heals on the next DDL replay:
+-- the columns are added, and stripe_customer_id stops being mandatory because a
+-- Razorpay row has no Stripe customer to name.
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS razorpay_order_id text;
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS razorpay_payment_id text;
+ALTER TABLE subscriptions ALTER COLUMN stripe_customer_id DROP NOT NULL;
+CREATE INDEX IF NOT EXISTS subscriptions_razorpay_payment_id_idx ON subscriptions (razorpay_payment_id);
 CREATE INDEX IF NOT EXISTS subscriptions_stripe_customer_id_idx ON subscriptions (stripe_customer_id);
 CREATE INDEX IF NOT EXISTS subscriptions_stripe_subscription_id_idx ON subscriptions (stripe_subscription_id);
 CREATE INDEX IF NOT EXISTS subscriptions_status_plan_created_idx ON subscriptions (status, plan, created_at DESC);

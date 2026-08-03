@@ -41,12 +41,13 @@ export default async function PersonPage({
   const { id } = await params;
   const detail = await getContact(id);
   if (!detail) notFound();
-  const { contact, companyName } = detail;
+  const { contact, companyName, lastTouch } = detail;
   // Resolved ONCE for the whole page and handed to each AI control — the three
   // AI sections here must not each open their own metering read (aiGateReason is
   // React-cached, but the explicit prop keeps the single-read contract visible).
   const aiGate = await aiGateReason(userId);
-  const lastTouch = contact.lastReachedOutAt ?? contact.createdAt;
+  // Shared last-touch definition (notes + event scans count), so this badge
+  // agrees with Home's due feed rather than nagging about someone Home dropped.
   const isDue = isReachOutDue(contact.reachOutEveryDays, lastTouch);
 
   return (

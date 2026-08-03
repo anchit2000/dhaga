@@ -6,6 +6,8 @@ import { parseUiTheme, serializeUiTheme, type UiTheme } from "@/utils/constants/
 
 export const STORE_CARD_PHOTOS_KEY = "store_card_photos";
 export const SIGNAL_DETECTION_BATCH_KEY = "signal_detection_pending_batch";
+export const PERSON_CLASSIFICATION_BATCH_KEY = "person_classification_pending_batch";
+export const GOAL_MATCH_BATCH_KEY = "goal_match_pending_batch";
 export const SEARCH_WEIGHTS_KEY = "search_weights";
 export const ONBOARDING_TOUR_KEY = "onboarding_tour_seen";
 export const UI_THEME_KEY = "ui_theme";
@@ -90,6 +92,27 @@ export async function getPendingSignalBatchId(): Promise<string | null> {
 
 export async function setPendingSignalBatchId(batchId: string | null): Promise<void> {
   await setSetting(SIGNAL_DETECTION_BATCH_KEY, batchId ?? "");
+}
+
+/**
+ * The same cross-invocation pointer for the other nightly Batch passes, keyed
+ * generically so a new pass costs one constant rather than a copy of the two
+ * accessors above (the signal pair keeps its named form — it has callers).
+ *
+ * Every job MUST use its OWN key. One shared pointer would serialize the passes:
+ * whichever ran first parks its batch id there and every other pass then sees "a
+ * batch is still in flight" and skips — a multi-night person-classification
+ * backfill would stall goal resolution behind it indefinitely.
+ *
+ * The value is opaque here: a caller needing more than the batch id to resume
+ * (match-goal carries the goal it judged against) encodes and parses that itself.
+ */
+export async function getPendingBatchId(key: string): Promise<string | null> {
+  return (await getSetting(key)) || null;
+}
+
+export async function setPendingBatchId(key: string, value: string | null): Promise<void> {
+  await setSetting(key, value ?? "");
 }
 
 /** User-tuned hybridSearch scoring weights (Search tab's "Tune ranking" panel). */

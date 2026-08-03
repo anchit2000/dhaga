@@ -3,7 +3,7 @@ import {
   upcomingDateBadge,
   upcomingDateWindowLabel,
   upcomingDateYearsPhrase,
-} from "../upcoming-date-copy";
+} from "../upcoming-date";
 
 /**
  * These pin the wording the user acts on. A birthday chip that says "tomorrow"

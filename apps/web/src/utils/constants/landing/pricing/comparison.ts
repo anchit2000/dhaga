@@ -43,6 +43,12 @@ export const PLAN_COMPARISON_ROWS: PlanComparisonRow[] = [
     power: "✓ Same — never an overage bill",
   },
   {
+    feature: "Goals & address-book noise filtering",
+    free: "✓ 0 credits — runs on the nightly sweep",
+    pro: "✓ 0 credits",
+    power: "✓ 0 credits",
+  },
+  {
     feature: "Pre-meeting briefs",
     free: "✗",
     pro: "✓",

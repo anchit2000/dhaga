@@ -30,6 +30,8 @@ export const AI_ACTION_FEATURES = [
   "brief",
   "enrichment",
   "signal_detection",
+  "person_classification",
+  "goal_matching",
 ] as const;
 
 export type AiActionFeature = (typeof AI_ACTION_FEATURES)[number];
@@ -72,6 +74,20 @@ export const AI_ACTION_CREDITS: Record<AiActionFeature, number> = {
    *  full watchlist quietly eat ~125 credits a month for ~$0.10 of Batch-API
    *  inference — a cap on a cap, charged to the wrong budget. */
   signal_detection: 0,
+  /** One contact judged person-vs-service in the nightly Batch pass. Free of
+   *  credits for the same reason as the watchlist scan: the user never asked
+   *  for this particular judgement, and a per-night contact cap is already its
+   *  throttle. ESTIMATED, not measured (the table above is 39 real calls; this
+   *  is not): a 5,000-contact graph is classified once for roughly $2.4 of
+   *  Batch inference — ~400 credits at the ~$0.006/credit blended ceiling,
+   *  which is exactly why billing it would be wrong. Re-check once measured. */
+  person_classification: 0,
+  /** One contact judged against one user objective in the nightly Batch pass.
+   *  Zero for the same reason and on the same ESTIMATED ~$2.4-per-5,000-contact
+   *  sweep as person_classification — a separate feature from it, not one
+   *  merged "curation" line, because the credits breakdown is per-feature and
+   *  an operator debugging cost needs to know which pass burned it. */
+  goal_matching: 0,
 };
 
 /**

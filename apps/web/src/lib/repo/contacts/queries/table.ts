@@ -8,7 +8,7 @@ import type { ContactListItem } from "./types";
 /** Deliberately still newest-CAPTURED first, unlike `listContacts`: the People
  *  table and the Saved tabs are browsable collections, and a stable created-at
  *  order is what makes their pagination reproducible between page loads. */
-export async function listContactsPage({ page, pageSize, name, title, company, tag, starred, watched }: {
+export async function listContactsPage({ page, pageSize, name, title, company, tag, starred, watched, kind }: {
   page: number;
   pageSize: number;
   name?: string;
@@ -19,6 +19,13 @@ export async function listContactsPage({ page, pageSize, name, title, company, t
   // watched (signal) contacts. Both reuse this one paginated query.
   starred?: boolean;
   watched?: boolean;
+  // OPT-IN, and the only person_kind clause this browsable listing may carry:
+  // it NARROWS to the rows suppressed from suggestions so the People header's
+  // "N hidden from suggestions" link can show them. Omitted (the default) the
+  // listing is unchanged and still lists services alongside everyone else —
+  // People is a surface the user navigated to, so nothing is filtered out of
+  // it (see lib/repo/contacts/surfaceable.ts).
+  kind?: "service";
 }): Promise<{ rows: ContactListItem[]; total: number }> {
   const db = await getDb();
   const conditions = [
@@ -29,6 +36,7 @@ export async function listContactsPage({ page, pageSize, name, title, company, t
     tag ? sql`${contacts.tags} @> ${JSON.stringify([tag])}::jsonb` : undefined,
     starred ? eq(contacts.starred, true) : undefined,
     watched ? eq(contacts.watchedForSignals, true) : undefined,
+    kind ? eq(contacts.personKind, kind) : undefined,
   ].filter((condition) => condition !== undefined);
   const where = conditions.length > 0 ? and(...conditions) : undefined;
   const baseSelect = db.select({ id: contacts.id, name: contacts.name, title: contacts.title, companyName: companies.name, tags: contacts.tags, starred: contacts.starred, createdAt: contacts.createdAt }).from(contacts).leftJoin(companies, eq(contacts.companyId, companies.id)).where(where);
@@ -37,6 +45,22 @@ export async function listContactsPage({ page, pageSize, name, title, company, t
     db.select({ value: count() }).from(contacts).leftJoin(companies, eq(contacts.companyId, companies.id)).where(where),
   ]);
   return { rows, total: totalRow?.value ?? 0 };
+}
+
+/**
+ * How many contacts are currently kept off proactive surfaces — the People
+ * header's "N hidden from suggestions" count. Suppression is only defensible if
+ * the user can see it happening and undo it, so this number exists to be shown.
+ * Counts exactly what `listContactsPage({ kind: "service" })` lists, so the
+ * link it labels never lands on an empty page.
+ */
+export async function countServiceContacts(): Promise<number> {
+  const db = await getDb();
+  const [row] = await db
+    .select({ value: count() })
+    .from(contacts)
+    .where(and(ne(contacts.source, "mentioned"), eq(contacts.personKind, "service")));
+  return row?.value ?? 0;
 }
 
 export async function listContactFilterOptions(): Promise<{ titles: string[]; companies: string[]; tags: string[] }> {

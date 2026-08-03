@@ -22,9 +22,9 @@ const TENANT_MODE_PROBE_ID = "__tenant-mode-probe__";
  * from the core (non-RLS) auth `user` table over the plain global connection,
  * so it can enumerate every tenant without an RLS bypass on the tenant tables.
  *
- * This mirrors the tenant enumeration inside lib/jobs/detect-signals (which
- * keeps its own id-only copy); folding that job onto this helper is a deferred
- * cleanup (docs/FOLLOW_UPS.md).
+ * Jobs that need ids only (no email to send) go through lib/jobs/tenant-sweep's
+ * `hostedTenantIds()`, which wraps this — detect-signals included. One private
+ * copy is still outstanding in lib/jobs/messaging-flush (docs/FOLLOW_UPS.md).
  */
 export async function hostedTenants(): Promise<{ id: string; email: string }[] | null> {
   const probe = await (await getTenantGate()).scopedDb(TENANT_MODE_PROBE_ID);

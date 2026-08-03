@@ -68,6 +68,14 @@ export {
   type SignalDetection,
   type SignalKind,
 } from "./schemas/signal";
+// Nightly curation passes: person-vs-service labelling and objective matching.
+export {
+  PERSON_KINDS,
+  personClassificationSchema,
+  type PersonClassification,
+  type PersonKind,
+} from "./schemas/person-kind";
+export { goalMatchSchema, type GoalMatch } from "./schemas/goal-match";
 export {
   contactMergeResolutionSchema,
   companyMergeResolutionSchema,

@@ -1,15 +1,15 @@
-import Link from "next/link";
 import { dayLoad, findOpenSlots } from "@dhaga/core";
 import { ConfirmationsPreview } from "@/components/app/home/ConfirmationsPreview";
+import { DashboardHeader } from "@/components/app/home/DashboardHeader";
 import { HomeDashboard } from "@/components/app/home/HomeDashboard";
 import { HomeTile } from "@/components/app/home/HomeTile";
 import { SuggestionsPanel } from "@/components/app/import/SuggestionsPanel";
-import { Button } from "@/components/ui/button";
 import { getFreeBusy, hasCalendarConnection } from "@/lib/repo/calendar";
 import { listPendingConfirmations } from "@/lib/repo/confirmations";
 import { listContacts, listContactsPage } from "@/lib/repo/contacts";
-import { buildDailySuggestions } from "@/lib/repo/daily-suggestions";
+import { buildDailySuggestions, CADENCE_BUCKETS } from "@/lib/repo/daily-suggestions";
 import { listEvents } from "@/lib/repo/events";
+import { getActiveGoalProgress } from "@/lib/repo/goals";
 import { listAllOpenFollowUps, listDueReachOuts } from "@/lib/repo/reminders";
 import { listNewSignals } from "@/lib/repo/signals";
 import { listQuietContacts } from "@/lib/repo/strength";
@@ -17,7 +17,6 @@ import { getSuggestedClusters } from "@/lib/repo/suggestions";
 import { getSchedulePrefs } from "@/lib/repo/suggestion-settings";
 import { HOME_PREVIEW_LIMIT } from "@/utils/constants/app";
 import { DEFAULT_MEETING_DURATION_MINUTES } from "@/utils/constants/suggestions";
-import { formatDayline } from "@/utils/format-date";
 import type { ReactElement } from "react";
 
 const WEEK_MS = 7 * 86_400_000;
@@ -43,8 +42,11 @@ export async function DashboardSection(): Promise<ReactElement> {
     prefs,
     pendingConfirmations,
     starredFavourites,
+    goalProgress,
   ] = await Promise.all([
-    listContacts(undefined, undefined, HOME_PREVIEW_LIMIT),
+    // Recent people is a tile Dhaga volunteers, so it draws from the
+    // surfaceable set only (last arg) — no mention stubs, no service rows.
+    listContacts(undefined, undefined, HOME_PREVIEW_LIMIT, true),
     listEvents(HOME_PREVIEW_LIMIT),
     listDueReachOuts(),
     listAllOpenFollowUps(),
@@ -55,12 +57,25 @@ export async function DashboardSection(): Promise<ReactElement> {
     getSchedulePrefs(),
     listPendingConfirmations(),
     listContactsPage({ page: 1, pageSize: HOME_PREVIEW_LIMIT, starred: true }),
+    // Joins the existing fan-out rather than adding a 12th sequential await —
+    // consistency with the block above; the pool hazard it inherits is
+    // pre-existing and tracked separately.
+    getActiveGoalProgress(),
   ]);
 
   const now = new Date();
   const weekAhead = new Date(now.getTime() + WEEK_MS);
   const busy = calendarConnected ? await getFreeBusy({ from: now, to: weekAhead }) : [];
-  const { suggestions } = await buildDailySuggestions({ date: now, prefs, busy, due: dueReachOuts });
+  // due/followUps/signals are already in hand above — injecting them is what
+  // stops the engine re-running those three queries on every render.
+  const { suggestions } = await buildDailySuggestions({
+    date: now,
+    prefs,
+    busy,
+    due: dueReachOuts,
+    followUps: openFollowUps,
+    signals: newSignals,
+  });
   const slots = calendarConnected
     ? findOpenSlots({
         range: { from: now, to: weekAhead },
@@ -73,38 +88,20 @@ export async function DashboardSection(): Promise<ReactElement> {
       })
     : [];
   const meetingCountToday = dayLoad({ day: now, busy, utcOffsetMinutes: prefs.utcOffsetMinutes }).meetingCount;
-  const shownDue = suggestions.filter((item) => item.bucket !== "graph").length;
-
-  // Daily-briefing headline: Home greets you with your day, built from data
-  // already on this page — never a bare "Home" label.
-  const headline =
-    people.length === 0
-      ? "Thread your first contact"
-      : suggestions.length > 0
-        ? `${suggestions.length} ${suggestions.length === 1 ? "thread" : "threads"} to pull today`
-        : openFollowUps.length > 0
-          ? `${openFollowUps.length} open follow-up${openFollowUps.length === 1 ? "" : "s"} to close`
-          : "All caught up";
-  const statusParts = [
-    suggestions.length > 0 ? `${suggestions.length} due` : null,
-    openFollowUps.length > 0 ? `${openFollowUps.length} follow-up${openFollowUps.length === 1 ? "" : "s"}` : null,
-    newSignals.length > 0 ? `${newSignals.length} signal${newSignals.length === 1 ? "" : "s"}` : null,
-    quietContacts.length > 0 ? `${quietContacts.length} going quiet` : null,
-  ].filter((part): part is string => part !== null);
+  // Count the buckets that MEAN "due", not "everything but graph": that negation
+  // counted signal/quiet/date rows as due and under-reported the footer.
+  const shownDue = suggestions.filter((item) => CADENCE_BUCKETS.has(item.bucket)).length;
 
   return (
     <>
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="font-mono text-[10px] uppercase tracking-widest text-ember">{formatDayline(now)}</p>
-          <h1 className="mt-1 font-display text-2xl tracking-tight">{headline}</h1>
-          {statusParts.length > 0 ? <p className="mt-1.5 font-mono text-[11px] uppercase tracking-wider text-fog">{statusParts.join(" · ")}</p> : null}
-        </div>
-        <div className="flex items-center gap-2">
-          <Button render={<Link href="/docs" />} variant="ghost" size="sm">Docs</Button>
-          <Button render={<Link href="/app/people/new" />} variant="outline" size="sm">Add manually</Button>
-        </div>
-      </div>
+      <DashboardHeader
+        now={now}
+        peopleCount={people.length}
+        suggestionCount={suggestions.length}
+        openFollowUpCount={openFollowUps.length}
+        signalCount={newSignals.length}
+        quietCount={quietContacts.length}
+      />
 
       <HomeDashboard
         people={people}
@@ -115,6 +112,7 @@ export async function DashboardSection(): Promise<ReactElement> {
         overloaded={meetingCountToday >= prefs.overloadThreshold}
         meetingCountToday={meetingCountToday}
         moreDue={Math.max(0, dueReachOuts.length - shownDue)}
+        goalProgress={goalProgress}
         openFollowUps={openFollowUps}
         quietContacts={quietContacts}
         newSignals={newSignals}

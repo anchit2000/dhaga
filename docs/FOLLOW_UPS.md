@@ -211,14 +211,19 @@ gaps and the correctness/doc items below.
   Covered by `lib/jobs/{morning-reminder,daily-digest,confirmations-digest}.test.ts`
   (32 cases), which model RLS by returning rows **only** inside a tenant scope and
   counting unscoped reads — so the old implementation fails them.
-- **`hostedTenants()` vs the signals sweep's private copy.** Every per-user email
-  job — `linkedin-export-reminders`, `follow-up-reminders`,
-  `important-date-reminders`, and now `morning-reminder` / `daily-digest` /
-  `confirmations-digest` — fans out via the shared `lib/hosted/tenants.ts` helper
-  (id + account email). But `runSignalDetection` still carries its own id-only
-  tenant enumeration; fold it onto `hostedTenants()` so there is one
-  tenant-enumeration path (the shared helper returns email too, which the signals
-  sweep can ignore).
+- **`hostedTenants()` vs the private copies — signals sweep RESOLVED, one copy
+  left.** Every per-user email job — `linkedin-export-reminders`,
+  `follow-up-reminders`, `important-date-reminders`, `morning-reminder` /
+  `daily-digest` / `confirmations-digest` — fans out via the shared
+  `lib/hosted/tenants.ts` helper (id + account email). `runSignalDetection` now
+  does too: `lib/jobs/tenant-sweep.ts` wraps that helper as `hostedTenantIds()`
+  (ids only, for jobs with no email to send) plus `forEachTenant(ids, label,
+  sweep)` — the sequential `withUserDb` loop with per-tenant `try`/`catch` +
+  `logActionError` — and the signals job consumes it, so its private probe +
+  enumeration is gone. **`lib/jobs/messaging-flush` still carries its own id-only
+  copy** (its self-host branch resolves the batch owner from the routing table
+  rather than sweeping globally); fold it onto `tenant-sweep` next so there is
+  exactly one tenant-enumeration path.
 - **Residual: `getFreeBusy` is held inside its tenant scope.** `runDailyDigest`'s
   free/busy read is the one scoped unit that talks to a calendar provider from
   inside the connection, because it interleaves the provider call with token-refresh

@@ -1,6 +1,14 @@
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
-import { companies, contacts, positions, type ContactRow } from "@/lib/db/schema";
+import {
+  companies,
+  contacts,
+  eventContacts,
+  notes,
+  positions,
+  type ContactRow,
+} from "@/lib/db/schema";
+import { lastTouchSql } from "@/lib/repo/last-touch";
 import { normalizeContactMethods } from "@dhaga/core";
 import type { ContactProfile } from "@dhaga/core";
 
@@ -23,6 +31,10 @@ export interface ContactDetail {
   contact: ContactRow;
   companyName: string | null;
   positions: PositionView[];
+  /** Shared "last touch" (see `@/lib/repo/last-touch`) so the detail page's
+   *  keep-in-touch badge agrees with Home's due feed instead of re-deriving a
+   *  narrower definition. */
+  lastTouch: Date;
 }
 
 /**
@@ -34,10 +46,18 @@ export interface ContactDetail {
 export async function getContact(id: string): Promise<ContactDetail | null> {
   const db = await getDb();
   const [row] = await db
-    .select({ contact: contacts, companyName: companies.name })
+    .select({ contact: contacts, companyName: companies.name, lastTouch: lastTouchSql })
     .from(contacts)
     .leftJoin(companies, eq(contacts.companyId, companies.id))
+    // lastTouchSql is an aggregate over these two touch tables (soft-deleted
+    // notes excluded), so both joins and the GROUP BY are part of its contract.
+    .leftJoin(
+      notes,
+      and(eq(notes.contactId, contacts.id), isNull(notes.deletedAt)),
+    )
+    .leftJoin(eventContacts, eq(eventContacts.contactId, contacts.id))
     .where(eq(contacts.id, id))
+    .groupBy(contacts.id, companies.id)
     .limit(1);
   if (!row) return null;
   const positionRows = await db
@@ -65,6 +85,7 @@ export async function getContact(id: string): Promise<ContactDetail | null> {
     },
     companyName: row.companyName,
     positions: positionRows,
+    lastTouch: new Date(row.lastTouch),
   };
 }
 

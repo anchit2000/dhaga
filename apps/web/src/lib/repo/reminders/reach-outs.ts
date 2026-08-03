@@ -1,6 +1,8 @@
-import { and, eq, isNotNull, sql } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
-import { companies, contacts } from "@/lib/db/schema";
+import { companies, contacts, eventContacts, notes } from "@/lib/db/schema";
+import { surfaceableContact } from "@/lib/repo/contacts/surfaceable";
+import { lastTouchSql } from "@/lib/repo/last-touch";
 
 /** Idea #2: "when should I remind you to reach out" — cadence per contact. */
 
@@ -13,8 +15,19 @@ export interface DueReachOut {
   everyDays: number;
 }
 
-const lastTouch = sql<Date>`COALESCE(${contacts.lastReachedOutAt}, ${contacts.createdAt})`;
-
+/**
+ * Cadence feed: contacts whose keep-in-touch interval has elapsed since their
+ * last touch. "Last touch" is `lastTouchSql` — writing a note or scanning
+ * someone at an event resets the clock exactly as an explicit "I reached out"
+ * does, so Home stops nagging about people you just spoke to.
+ *
+ * Unbounded on purpose: `getPendingReminderSummary` and Home's "+N more due"
+ * counter both need the full set. A naive LIMIT under this ORDER BY would be
+ * WRONG — oldest-touch-first is not most-overdue-first: it keeps a yearly
+ * contact 400 days late (overdue ratio 0.09) and drops a weekly contact 8 days
+ * late (ratio 1.14). If this ever needs bounding, change the ORDER BY to
+ * overdue ratio desc first.
+ */
 export async function listDueReachOuts(): Promise<DueReachOut[]> {
   const db = await getDb();
   const rows = await db
@@ -23,18 +36,36 @@ export async function listDueReachOuts(): Promise<DueReachOut[]> {
       name: contacts.name,
       title: contacts.title,
       companyName: companies.name,
-      lastTouch,
+      lastTouch: lastTouchSql,
       everyDays: contacts.reachOutEveryDays,
     })
     .from(contacts)
     .leftJoin(companies, eq(contacts.companyId, companies.id))
+    // lastTouchSql is an aggregate: it needs both touch tables joined in, with
+    // soft-deleted notes excluded (a tombstoned note is not a touch).
+    .leftJoin(
+      notes,
+      and(eq(notes.contactId, contacts.id), isNull(notes.deletedAt)),
+    )
+    .leftJoin(eventContacts, eq(eventContacts.contactId, contacts.id))
     .where(
       and(
+        // Stays in WHERE, never HAVING: it filters BEFORE the notes/event
+        // fan-out, so only the small minority of contacts that actually carry a
+        // cadence get expanded. In HAVING it would fan out the whole table.
         isNotNull(contacts.reachOutEveryDays),
-        sql`${lastTouch} + make_interval(days => ${contacts.reachOutEveryDays}) < now()`,
+        // Only rows Dhaga may NOMINATE (lib/repo/contacts/surfaceable.ts):
+        // note-mention stubs ("Prashant's son") are not people you can message,
+        // and a service row must not nag from Home's due feed. Both stay
+        // findable in People — this filters the feed, not the graph.
+        surfaceableContact,
       ),
     )
-    .orderBy(sql`${lastTouch} asc`);
+    .groupBy(contacts.id, companies.id)
+    .having(
+      sql`${lastTouchSql} + make_interval(days => ${contacts.reachOutEveryDays}) < now()`,
+    )
+    .orderBy(sql`${lastTouchSql} asc`);
   return rows.map((row) => ({
     ...row,
     lastTouch: new Date(row.lastTouch),

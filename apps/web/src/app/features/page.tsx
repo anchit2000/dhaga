@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { ReactElement } from "react";
 
 import { Footer } from "@/components/landing/Closing";
+import { DailyLoop } from "@/components/landing/DailyLoop";
 import { FeatureHighlights } from "@/components/landing/FeatureHighlights";
 import { Access } from "@/components/landing/FocusedHome/Access";
 import { Header } from "@/components/landing/Header";
@@ -11,7 +12,8 @@ import { SITE_URL } from "@/utils/constants/site";
 const TITLE = "Features — Dhaga";
 const DESCRIPTION =
   "Explore how Dhaga captures meetings, notes, voice, messages and cards from the web, WhatsApp and Telegram, " +
-  "builds a private knowledge graph, finds warm paths and helps you follow up.";
+  "builds a private knowledge graph, finds warm paths and helps you follow up. " +
+  "Home opens on a daily briefing aimed by the goal you set.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -50,6 +52,7 @@ export default function FeaturesPage(): ReactElement {
         </p>
       </section>
       <FeatureHighlights />
+      <DailyLoop />
       <section className="mx-auto grid max-w-6xl gap-3 px-6 py-10 sm:grid-cols-2">
         <Link
           href="/product-tour"

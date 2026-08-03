@@ -14,6 +14,7 @@ import type { ReactElement, ReactNode } from "react";
 import type { ContactListItem, RecentContactListItem } from "@/lib/repo/contacts";
 import type { DailySuggestion } from "@/lib/repo/daily-suggestions";
 import type { EventListItem } from "@/lib/repo/events";
+import type { GoalProgress } from "@/lib/repo/goals";
 import type { listAllOpenFollowUps } from "@/lib/repo/reminders";
 import type { SignalItem } from "@/lib/repo/signals";
 import type { QuietContact } from "@/lib/repo/strength";
@@ -43,6 +44,7 @@ export function HomeDashboard({
   overloaded,
   meetingCountToday,
   moreDue,
+  goalProgress,
   openFollowUps,
   quietContacts,
   newSignals,
@@ -59,6 +61,7 @@ export function HomeDashboard({
   overloaded: boolean;
   meetingCountToday: number;
   moreDue: number;
+  goalProgress: GoalProgress | null;
   openFollowUps: Awaited<ReturnType<typeof listAllOpenFollowUps>>;
   quietContacts: QuietContact[];
   newSignals: SignalItem[];
@@ -87,6 +90,7 @@ export function HomeDashboard({
           overloaded={overloaded}
           meetingCountToday={meetingCountToday}
           moreDue={moreDue}
+          goalProgress={goalProgress}
           onSelectContact={setSelectedContactId}
         />
       ),

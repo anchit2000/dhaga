@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { AccessRequestRow } from "@dhaga/ee/access-requests";
+import type { FeedbackAdminRow } from "@dhaga/ee/admin";
 import { DataTable, type DataTableColumn } from "@/components/app/table/DataTable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,21 @@ const GRANT_COLUMNS: DataTableColumn<GrantRow>[] = [
   { id: "active", label: "Active", filter: false, value: (row) => row.active ? "active" : "ended", render: (row) => row.active ? <Badge>active</Badge> : <Badge variant="secondary">ended</Badge> },
   { id: "actions", label: "Actions", filter: false, value: () => "", className: "text-right", render: (row) => row.active ? <ActionForm action={endAiCreditGrantAction} errorMessage="Couldn't end the grant."><input type="hidden" name="grantId" value={row.id} />{row.userId ? <input type="hidden" name="userId" value={row.userId} /> : null}<Button type="submit" variant="outline" size="sm">End now</Button></ActionForm> : null },
 ];
+
+// Every column is `filter: false`: the table is server-paged and unfiltered by
+// design — a filter box over other people's prose is a search interface across
+// user-authored text, which is more surface than reading a page at a time needs.
+const FEEDBACK_COLUMNS: DataTableColumn<FeedbackAdminRow>[] = [
+  { id: "received", label: "Received", filter: false, value: (row) => formatDate(row.createdAt) },
+  { id: "from", label: "From", filter: false, value: (row) => row.userName ?? row.userEmail ?? row.userId ?? "", render: (row) => row.userId ? <Link href={`/app/admin/users/${row.userId}`} className="hover:text-ember">{row.userName || <span className="text-fog">{row.userEmail ?? row.userId}</span>}</Link> : <span className="text-fog">unknown</span> },
+  { id: "page", label: "Page", filter: false, value: (row) => row.route, className: "font-mono text-xs" },
+  { id: "message", label: "Feedback", filter: false, value: (row) => row.message, className: "max-w-md whitespace-pre-wrap" },
+  { id: "client", label: "Client", filter: false, value: (row) => [row.viewport, row.locale, row.timezone, row.appVersion].filter(Boolean).join(" · "), className: "text-xs text-fog", render: (row) => <span title={row.userAgent ?? undefined}>{[row.viewport, row.locale, row.timezone, row.appVersion].filter(Boolean).join(" · ") || "—"}</span> },
+];
+
+export function FeedbackTable({ rows, total, page, pageSize }: { rows: FeedbackAdminRow[]; total: number; page: number; pageSize: number }) {
+  return <DataTable key={`${page}:${pageSize}`} rows={rows} columns={FEEDBACK_COLUMNS} rowKey={(row) => row.id} emptyMessage="No feedback yet." initialFilters={{}} server={{ total, page, pageSize }} />;
+}
 
 export function UsersTable({ users, total, page, pageSize, filters }: { users: UserRow[]; total: number; page: number; pageSize: number; filters: Record<string, string> }) {
   return <DataTable key={`${page}:${pageSize}:${JSON.stringify(filters)}`} rows={users} columns={USER_COLUMNS} rowKey={(row) => row.id} initialFilters={filters} server={{ total, page, pageSize }} />;

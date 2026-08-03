@@ -15,8 +15,10 @@ export {
 } from "./write";
 export {
   listGoalCohortSlice,
+  loadActiveGoalCohort,
   loadCohort,
   orderGoalCohort,
+  type ActiveGoalCohort,
   type CohortRow,
   type GoalCohortMember,
   type GoalCohortSlice,

@@ -175,6 +175,11 @@ const SPECS: readonly TableSpec[] = [
     insert: sql`INSERT INTO voice_vocab (id, term, term_lc) VALUES (${rid("voice_vocab")}, 'rls-test', 'rls-test')`,
     where: sql`id = ${rid("voice_vocab")}`,
   },
+  {
+    table: "feedback",
+    insert: sql`INSERT INTO feedback (id, message, route) VALUES (${rid("feedback")}, 'rls-test', '/app')`,
+    where: sql`id = ${rid("feedback")}`,
+  },
 ] as const;
 
 interface CountRow {

@@ -224,15 +224,22 @@ gaps and the correctness/doc items below.
   copy** (its self-host branch resolves the batch owner from the routing table
   rather than sweeping globally); fold it onto `tenant-sweep` next so there is
   exactly one tenant-enumeration path.
-- **Residual: `getFreeBusy` is held inside its tenant scope.** `runDailyDigest`'s
-  free/busy read is the one scoped unit that talks to a calendar provider from
-  inside the connection, because it interleaves the provider call with token-refresh
-  and `needs_reconnect` writes on the tenant's own rows and cannot be split. It is
-  one connection at a time in a sequential loop (never a fan-out) and is skipped
-  entirely for tenants with no calendar connected, but it does breach the
-  "never hold a connection across slow I/O" rule and should be restructured
-  (fetch the connection rows, release, call the provider, reacquire to write) when
-  that repo module is next touched.
+- **Residual: `getFreeBusy` is held inside its tenant scope — SPLIT (2026-08-03),
+  one caller left to convert.** `getFreeBusy` no longer interleaves its DB work
+  with the provider call: it now runs in three phases (read the connection rows →
+  call the providers holding nothing → flush the `needs_reconnect` /
+  refreshed-token writes), and takes an optional `runScoped` so each DB phase gets
+  its own short scope — the same DB → network → DB shape the calendar write-out
+  already used. `lib/repo/calendar/free-busy-snapshot.ts` passes `withUserDb` per
+  phase, so nothing is held across the provider on Home's refresh path;
+  `src/lib/__tests__/calendar-free-busy-scope/` fails if that regresses.
+  **Still open:** `runDailyDigest` calls it as `runScoped(() => getFreeBusy(range))`,
+  i.e. the *caller* wraps all three phases in one scope, so the digest sweep still
+  holds a connection across the provider call. It is one connection at a time in a
+  sequential loop (never a fan-out) and is skipped for tenants with no calendar;
+  converting it is a two-line change — pass its `runScoped` as `getFreeBusy`'s
+  second argument instead of wrapping the call — deliberately left to the next
+  change that touches that job.
 - **Doc/comment updates the above change owed — DONE (2026-07-30 consolidated doc
   pass).** All four are closed: `lib/jobs/follow-up-reminders.ts`'s header no
   longer calls the other three jobs single-owner; `app/api/jobs/daily/route.ts`'s

@@ -15,7 +15,7 @@ const DAILY_DIGEST_KEY = "daily_digest_enabled";
 const CONFIRMATIONS_DIGEST_KEY = "confirmations_digest_enabled";
 const MORNING_REMINDER_KEY = "morning_reminder_enabled";
 const IMPORTANT_DATE_REMINDERS_KEY = "important_date_reminders_enabled";
-const IMPORTANT_DATE_LEAD_DAYS_KEY = "important_date_lead_days";
+export const IMPORTANT_DATE_LEAD_DAYS_KEY = "important_date_lead_days";
 const JOB_EMAIL_KEY = "job_email_notifications_enabled";
 const JOB_EMAIL_LAST_SENT_KEY = "job_email_last_sent_at";
 
@@ -71,11 +71,16 @@ function clampLeadDays(value: number): number {
   );
 }
 
-/** How many days ahead an important date counts as upcoming (default 7). */
-export async function getImportantDateLeadDays(): Promise<number> {
-  const raw = await getSetting(IMPORTANT_DATE_LEAD_DAYS_KEY);
+/** Pure: stored string → lead days. Exported so a batched read (./bundle.ts)
+ *  parses the same value it would have fetched on its own round-trip. */
+export function parseImportantDateLeadDays(raw: string | null | undefined): number {
   const parsed = raw ? Number.parseInt(raw, 10) : Number.NaN;
   return Number.isFinite(parsed) ? clampLeadDays(parsed) : IMPORTANT_DATE_LEAD_DAYS_DEFAULT;
+}
+
+/** How many days ahead an important date counts as upcoming (default 7). */
+export async function getImportantDateLeadDays(): Promise<number> {
+  return parseImportantDateLeadDays(await getSetting(IMPORTANT_DATE_LEAD_DAYS_KEY));
 }
 
 export async function setImportantDateLeadDays(days: number): Promise<void> {

@@ -3,7 +3,7 @@ import {
   MIN_SUGGESTIONS_ON_BUSY_DAY,
   SUGGESTION_SOURCE_LIMIT_FACTOR,
 } from "@/utils/constants/suggestions";
-import { listGoalCohortSlice } from "@/lib/repo/goals";
+import { listGoalCohortSlice, type ActiveGoalCohort } from "@/lib/repo/goals";
 import { listGraphFallbackCandidates } from "@/lib/repo/graph-fallback";
 import { listAllOpenFollowUps, listDueReachOuts, listUpcomingImportantDates } from "@/lib/repo/reminders";
 import { listNewSignals } from "@/lib/repo/signals";
@@ -72,6 +72,12 @@ export async function buildDailySuggestions(
     due?: DueReachOut[];
     followUps?: OpenFollowUpItem[];
     signals?: SignalItem[];
+    /** Same idea for the scalars and the goal cohort: Home reads all of these
+     *  for other tiles (one batched settings query, one cohort load), so passing
+     *  them here costs it nothing and saves this engine four round-trips on the
+     *  ONE connection the render has pinned. */
+    leadDays?: number;
+    goalCohort?: ActiveGoalCohort | null;
   } = {},
 ): Promise<DailySuggestionResult> {
   const now = options.date ?? new Date();
@@ -83,13 +89,15 @@ export async function buildDailySuggestions(
   const due = options.due ?? (await listDueReachOuts());
   const followUps = options.followUps ?? (await listAllOpenFollowUps());
   const signals = options.signals ?? (await listNewSignals());
-  const leadDays = await getImportantDateLeadDays();
-  const importantDates = await listUpcomingImportantDates(leadDays, now);
+  const leadDays = options.leadDays ?? (await getImportantDateLeadDays());
+  // prefs.timezone is already in hand — passing it stops the important-dates
+  // read spending a second round-trip on the same settings row.
+  const importantDates = await listUpcomingImportantDates(leadDays, now, prefs.timezone);
   // dayIndex is needed here, not just at scoring time: the goal slice rotates on
   // it, so today's cohort members are picked from the same day key the rotation
   // modifier uses.
   const dayIndex = Math.floor(todayMs / DAY_MS);
-  const goal = await listGoalCohortSlice(dayIndex);
+  const goal = await listGoalCohortSlice(dayIndex, options.goalCohort);
 
   const limit = count * SUGGESTION_SOURCE_LIMIT_FACTOR;
   const evidence = gatherCandidates({

@@ -28,10 +28,23 @@ read routing safe: an entry can only ever hold one tenant's data.
 
 **Shipped (`lib/cache/`, PR #32):** a per-user, mutation-invalidated cache over
 `unstable_cache`. `cachePerUser(key, userId, read)` keys the entry *and* its
-invalidation tag by `userId` and runs `read` inside `withUserDb(userId)`, so a
-cache entry can only ever hold that user's data — a missed invalidation is at
-worst same-user staleness, never a cross-tenant leak. There is **no TTL**;
-entries live until a write busts the tag via `revalidateTag(tag, { expire: 0 })`.
+invalidation tag by `userId` and runs `read` in a tenant scope for that same
+`userId`, so a cache entry can only ever hold that user's data — a missed
+invalidation is at worst same-user staleness, never a cross-tenant leak. There is
+**no TTL**; entries live until a write busts the tag via
+`revalidateTag(tag, { expire: 0 })`.
+
+**A cache miss costs no extra connection (2026-08-03).** The read used to be
+`unstable_cache(() => withUserDb(userId, read))`, which on a *cold* cache checked
+out a **second** tenant connection while the request already held one: a single
+`/app` render needed 2 of the pool's 3 slots, and three concurrent cold requests
+could wait out the full acquire timeout. `cached()` now resolves the connection
+before entering the cache callback (`requestScopedDbForUser` in
+`lib/db/request-scope.ts`) and runs the miss on the one the request already holds,
+falling back to its own checkout only when there isn't one — a job, a script, or a
+scope belonging to a different tenant. Reuse is gated on the tenant matching, so
+the isolation above is unchanged: `src/lib/__tests__/per-user-cache-connection.test.ts`
+pins both halves (one checkout when it is the same user, a second when it is not).
 
 Two invalidation strategies, one helper module:
 
@@ -110,6 +123,19 @@ cap makes it worse. Read → compute → write, no await-on-network mid-transact
   (the file documents this and the connection-cap reasoning).
 - Extraction/enrichment/embeddings run **off** the request path (lever 4), so
   the LLM/search latency never sits on a DB connection.
+- **Calendar free/busy is never fetched during a render (2026-08-03).** An RSC
+  render pins one tenant connection for the whole request and releases it in
+  `after()` — so an outbound Google/Microsoft call made anywhere inside that
+  render parks one of the three slots for the provider's full latency, and no
+  arrangement of awaits or Suspense boundaries *inside* the request can shorten
+  it (a boundary streams paint; it does not end the request). Home therefore
+  reads a stored snapshot (`lib/repo/calendar/free-busy-snapshot.ts`) and
+  re-fetches in `after()`, and `getFreeBusy` itself is split DB → network → DB
+  (`runScoped` per phase) so the refresh holds nothing across the provider call.
+  With no usable snapshot Home renders the calendar tiles as *unknown* — no
+  proposed slots, no meeting load — never as an empty calendar, which would
+  offer time the user does not have. Guarded by
+  `src/lib/__tests__/calendar-free-busy-scope/`.
 - Tenant connections are **reused** (not held/destroyed) and RLS scoping is
   **transaction-scoped**: each scoped unit of work runs inside one
   `BEGIN…COMMIT` whose first statement sets `app.current_user_id` transaction-
@@ -141,6 +167,26 @@ cap makes it worse. Read → compute → write, no await-on-network mid-transact
   leaving zero headroom against the tenant pool's `max:3`. `isAdmin` now reuses
   the request-scoped connection instead of opening its own, so a cold app-config
   cache no longer draws a third concurrent tenant connection — **done**.)
+
+- **Fewer round-trips on a render, not more concurrency.** The read-path
+  corollary for RSC pages, where the fan-out trap above does *not* apply: a page
+  render resolves `getDb()` **once** (React `cache()`, `lib/db/request-scope.ts`)
+  and node-postgres runs one query at a time on a client, so a
+  twelve-way `Promise.all` in a Server Component buys **zero** parallelism — every
+  read is a serial round-trip that lengthens how long that request holds one of
+  the three tenant-pool slots. `/app` Home was measured at **25 round-trips** for
+  a user with an active goal, of which six were pure duplication: five identical
+  single-key `select value from settings where key = $1` lookups (three of them
+  for the *same* `schedule_prefs` row) and a second full goal-cohort join, because
+  the burn-down strip and the suggestion engine each loaded it. Collapsed to
+  **19** — one batched `getSettings()` read (`repo/settings/kv.ts`,
+  `repo/suggestion-settings/bundle.ts`) and one `loadActiveGoalCohort()` injected
+  into both consumers (`repo/goals/cohort.ts`) — with the existing
+  `due`/`followUps`/`signals` injection slots extended to `count`/`leadDays`/
+  `goalCohort`. A guard test
+  (`lib/__tests__/home-connection-pressure.test.ts`) instruments the driver and
+  fails if Home exceeds `HOME_DB_ROUND_TRIP_BUDGET`, fetches any settings key
+  twice, or loads the cohort more than once.
 
 - **Every DB-mutating server action runs in ONE scoped connection.** The
   write-path twin of the read fan-out above. Unlike RSC render (which

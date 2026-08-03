@@ -106,9 +106,10 @@ function bySoonest(a: UpcomingImportantDate, b: UpcomingImportantDate): number {
 export async function listUpcomingImportantDates(
   leadDays: number,
   now: Date = new Date(),
+  timeZone?: string, // the caller's prefs.timezone; see userToday in ./local-today
 ): Promise<UpcomingImportantDate[]> {
   // Sequential, never Promise.all — see ./local-today on the 3-connection pool.
-  const today = await userToday(now);
+  const today = await userToday(now, timeZone);
   const rows = await selectContactsWithDates();
   const items: UpcomingImportantDate[] = [];
   for (const row of rows) {

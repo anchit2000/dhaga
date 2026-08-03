@@ -105,6 +105,30 @@ takes over. Self-hosting the core for a genuinely shared, trusted household
 where everyone is fine seeing everyone's data is not supported by relaxing this
 guard — the guard is what keeps "single-user" honest.
 
+## In-app feedback (core; the admin viewer is EE)
+
+The feedback button in the app nav is **AGPL core** — the form, the
+`POST /api/feedback` route and the `feedback` table all work with
+`packages/ee` removed. On submit the row is written first and the owner
+notification is sent afterwards, best-effort: with `RESEND_API_KEY` /
+`RESEND_FROM_EMAIL` / `DHAGA_OWNER_EMAIL` unset (the self-host default) nothing
+is emailed and the report is still stored, and a Resend failure is logged
+without failing the request.
+
+What a report carries is a fixed allow-list, one named column each
+([`apps/web/src/lib/db/ddl/core/feedback.ts`](../apps/web/src/lib/db/ddl/core/feedback.ts)):
+the message, the **route pattern** (`/app/people/[id]`, never a real contact id,
+and never a query string), viewport, user agent, locale, timezone, build id and
+the submitting user. No contact data, note text or search terms — and the user
+is shown that list under the textarea before sending.
+
+The only EE part is the reader: `/app/admin/feedback` pages the table through
+the bypass-RLS admin connection, because reading across users is exactly what
+`packages/ee` exists for. On a core-only instance the table simply accumulates
+and you read it with SQL. The Level 2 removal list above needs no additions —
+the page lives under `apps/web/src/app/app/admin/` and its table is an export of
+the already-listed `AdminTables.tsx`.
+
 ## Disabling just billing (keep admin + early access)
 
 If you're running the hosted product but not ready to charge (a free beta,

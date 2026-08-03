@@ -1,4 +1,14 @@
 /**
+ * Non-secret, JS-readable "there is a session" hint. It carries no identity and
+ * no token — just `1` — and is written/cleared by src/proxy.ts from the real
+ * (httpOnly) better-auth session cookie. It exists so the statically prerendered
+ * marketing header can show Dashboard instead of Sign in without the page having
+ * to read the session on the server, which would make it dynamically rendered.
+ * Never treat it as authorization: every route still checks the real session.
+ */
+export const SESSION_HINT_COOKIE = "dhaga_signed_in";
+
+/**
  * Social sign-in providers Dhaga can offer. A provider shows up on the
  * login/signup screens only when its `<ID>_CLIENT_ID` + `<ID>_CLIENT_SECRET`
  * env vars are set on the server — see lib/auth/config/social.ts. Adding a

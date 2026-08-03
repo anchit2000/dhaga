@@ -58,6 +58,12 @@ export const TENANT_TABLES = [
   // new job") — the single most sensitive free-text field outside notes.
   "goals",
   "goal_members",
+  // In-app feedback the user typed. Per-tenant because `message` is user-authored
+  // free text — the user is writing to the maintainer, not publishing, and one
+  // tenant must never read another's report. The RLS `user_id` this adds is also
+  // the only way to reply, and it is what the admin screen joins on (admin reads
+  // go through openAdminConnection's explicit bypass, never a missing policy).
+  "feedback",
 ] as const;
 
 /**

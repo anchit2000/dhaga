@@ -1,6 +1,4 @@
-import { eq, sql } from "drizzle-orm";
-import { getDb } from "@/lib/db/request-scope";
-import { settings } from "@/lib/db/schema";
+import { getSetting, setSetting } from "./kv";
 import { parseSearchWeights, type SearchWeights } from "@/utils/constants/search";
 import { parseUiTheme, serializeUiTheme, type UiTheme } from "@/utils/constants/theme";
 
@@ -14,59 +12,8 @@ export const UI_THEME_KEY = "ui_theme";
 /** Per-user monthly cloud-AI action allowance ("credits") an admin can grant. */
 export const AI_MONTHLY_CAP_OVERRIDE_KEY = "ai_monthly_cap_override";
 
-export async function getSetting(key: string): Promise<string | null> {
-  const db = await getDb();
-  const [row] = await db
-    .select({ value: settings.value })
-    .from(settings)
-    .where(eq(settings.key, key))
-    .limit(1);
-  return row?.value ?? null;
-}
-
-export async function setSetting(key: string, value: string): Promise<void> {
-  const db = await getDb();
-  // Raw SQL, not Drizzle's onConflictDoUpdate({ target: settings.key }):
-  // this table's actual primary key differs by mode — plain (key) when
-  // self-hosted, composite (user_id, key) under EE's per-tenant RLS (see
-  // packages/ee/src/db/rls-ddl.ts) — but Postgres always names a table's
-  // primary key constraint "<table>_pkey" regardless of its columns, so
-  // conflict-by-constraint-name resolves correctly in both without this
-  // function ever needing to know which mode is active.
-  await db.execute(sql`
-    insert into settings (key, value, updated_at)
-    values (${key}, ${value}, now())
-    on conflict on constraint settings_pkey
-    do update set value = excluded.value, updated_at = excluded.updated_at
-  `);
-}
-
-/**
- * Atomically append `value` to a JSON-array setting, deduping — in ONE
- * lock-free upsert. Two concurrent appends can't lose an update the way a
- * read-modify-write (getSetting → push → setSetting) can, and the single
- * statement also covers the first append when no row exists yet (the SELECT ...
- * FOR UPDATE approach can't lock a row that isn't there). On insert the value
- * becomes a one-element array; on conflict we union the existing array with the
- * incoming one and keep only DISTINCT elements. Conflict-by-constraint-name for
- * the same self-host/EE reason setSetting documents above.
- */
-export async function appendToSettingArray(key: string, value: string): Promise<void> {
-  const db = await getDb();
-  await db.execute(sql`
-    insert into settings (key, value, updated_at)
-    values (${key}, to_jsonb(array[${value}]::text[])::text, now())
-    on conflict on constraint settings_pkey
-    do update set
-      value = (
-        select jsonb_agg(distinct e)::text
-        from jsonb_array_elements_text(
-          coalesce(settings.value, '[]')::jsonb || excluded.value::jsonb
-        ) as e
-      ),
-      updated_at = now()
-  `);
-}
+// Import paths stay stable via this barrel: @/lib/repo/settings.
+export { appendToSettingArray, getSetting, getSettings, setSetting } from "./kv";
 
 /** Whether scanned card photos are kept as visual receipts (default: yes). */
 export async function shouldStoreCardPhotos(): Promise<boolean> {

@@ -10,6 +10,7 @@ import { hashId } from "@/lib/repo/daily-suggestions/score";
 import { lastTouchSql } from "@/lib/repo/last-touch";
 import { GOAL_DAILY_SLICE, GOAL_RANK_BAND } from "@/utils/constants/goals";
 import { getActiveGoal } from "./write";
+import type { GoalRow } from "@/lib/db/schema";
 
 /**
  * The goal read side: the cohort, and today's slice of it for the suggestion
@@ -99,12 +100,38 @@ export function orderGoalCohort(rows: GoalCohortMember[], dayIndex: number): Goa
   );
 }
 
-/** Up to GOAL_DAILY_SLICE people for today. Null when no goal is active — the
- *  suggestion engine then scores exactly as it did before goals existed. */
-export async function listGoalCohortSlice(dayIndex: number): Promise<GoalCohortSlice | null> {
+/**
+ * The active goal and its cohort, read ONCE.
+ *
+ * Home needs both derivations of this same data on one render — the burn-down
+ * strip (../goals/progress.ts) and today's slice (below) — and reading them
+ * separately meant `getActiveGoal` + the four-table `loadCohort` join ran TWICE
+ * per page load, back to back on the ONE request-pinned tenant connection
+ * (lib/db/request-scope.ts). Both derivations are pure given this bundle, so the
+ * caller loads it once and hands it to each.
+ */
+export interface ActiveGoalCohort {
+  goal: GoalRow;
+  rows: CohortRow[];
+}
+
+export async function loadActiveGoalCohort(): Promise<ActiveGoalCohort | null> {
+  // Sequential, never Promise.all — 3-connection tenant pool.
   const goal = await getActiveGoal();
   if (!goal) return null;
-  const rows = await loadCohort(goal.id);
+  return { goal, rows: await loadCohort(goal.id) };
+}
+
+/** Up to GOAL_DAILY_SLICE people for today. Null when no goal is active — the
+ *  suggestion engine then scores exactly as it did before goals existed.
+ *  `loaded` is an injection slot for a caller that already read the cohort. */
+export async function listGoalCohortSlice(
+  dayIndex: number,
+  loaded?: ActiveGoalCohort | null,
+): Promise<GoalCohortSlice | null> {
+  const cohort = loaded === undefined ? await loadActiveGoalCohort() : loaded;
+  if (!cohort) return null;
+  const { goal, rows } = cohort;
   const pending = rows.filter((row) => !row.done);
   return {
     goalId: goal.id,

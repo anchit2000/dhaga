@@ -32,6 +32,12 @@ export const RATE_LIMITS = {
    *  like, so this is a tenant-pool guard (max 3 connections) as much as an
    *  abuse guard — roomy enough for the several calls one research turn makes. */
   mcp: { points: 60, durationSec: 60 },
+  /** In-app feedback (/api/feedback). Every point is a hand-typed report plus an
+   *  owner email, so the natural rate is a couple per session — this only stops
+   *  a stuck submit button (or a script) from flooding that inbox. Its own
+   *  bucket rather than sharing `capture`: a feedback flood must never eat the
+   *  budget the extension and mobile share sheet depend on. */
+  feedback: { points: 5, durationSec: 300 },
 } as const;
 
 export type RateLimitBucket = keyof typeof RATE_LIMITS;

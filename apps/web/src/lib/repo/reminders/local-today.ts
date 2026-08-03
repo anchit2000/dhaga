@@ -33,7 +33,14 @@ export function localDay(now: Date, timeZone: string): CalendarDay {
   return zonedParts(now, timeZone);
 }
 
-/** Convenience for the common case: today, in the scoped user's zone. */
-export async function userToday(now: Date = new Date()): Promise<CalendarDay> {
-  return localDay(now, await userTimeZone());
+/**
+ * Convenience for the common case: today, in the scoped user's zone.
+ *
+ * `timeZone` is an injection slot, not a new source of truth: a caller that has
+ * already read the user's prefs passes `prefs.timezone` so this does not spend a
+ * SECOND settings round-trip re-reading the same row on the same pinned
+ * connection. Omitted, it reads the zone exactly as before.
+ */
+export async function userToday(now: Date = new Date(), timeZone?: string): Promise<CalendarDay> {
+  return localDay(now, timeZone ?? (await userTimeZone()));
 }

@@ -6,6 +6,7 @@ import { ModeToggle } from "@/components/brand/ModeToggle";
 import { ThreadMark } from "@/components/brand/ThreadMark";
 import { SearchPalette } from "@/components/app/search/SearchPalette";
 import type { SearchWeights } from "@/utils/constants/search";
+import { FeedbackButton } from "./FeedbackButton";
 import { MobileMenu } from "./MobileMenu";
 import { MoreMenu } from "./MoreMenu";
 import { NavLinks } from "./NavLinks";
@@ -70,6 +71,10 @@ export function AppNav({
                 sm:flex wrappers on either side hide only the desktop-only
                 pieces that moved into MobileMenu's sheet below sm:. */}
             <NotificationBell feed={notificationFeed} />
+            {/* Beside the bell for the same reason it is: the header is the only
+                chrome on every /app route, so feedback is always one tap away
+                without adding a floating layer over the capture dock. */}
+            <FeedbackButton />
             <div className="hidden items-center gap-1 sm:flex">
               <ModeToggle />
               <MoreMenu />

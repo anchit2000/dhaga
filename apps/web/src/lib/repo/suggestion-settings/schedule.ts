@@ -15,8 +15,8 @@ import { coerceTimeZone } from "@/lib/time/zone";
  * rather than new columns: these are a handful of scalars, nothing relational.
  */
 
-const SUGGESTION_COUNT_KEY = "daily_suggestion_count";
-const SCHEDULE_PREFS_KEY = "schedule_prefs";
+export const SUGGESTION_COUNT_KEY = "daily_suggestion_count";
+export const SCHEDULE_PREFS_KEY = "schedule_prefs";
 
 export interface SchedulePrefs {
   startHour: number;
@@ -45,19 +45,24 @@ function clampCount(value: number): number {
   return Math.min(MAX_DAILY_SUGGESTION_COUNT, Math.max(MIN_DAILY_SUGGESTION_COUNT, Math.round(value)));
 }
 
-/** How many people to suggest per day (default 5; clamped to a sane range). */
-export async function getDailySuggestionCount(): Promise<number> {
-  const raw = await getSetting(SUGGESTION_COUNT_KEY);
+/** Pure: stored string → count. Exported so a batched read (./bundle.ts) can
+ *  parse the same value it would have fetched one round-trip at a time. */
+export function parseDailySuggestionCount(raw: string | null | undefined): number {
   const parsed = raw ? Number.parseInt(raw, 10) : Number.NaN;
   return Number.isFinite(parsed) ? clampCount(parsed) : DEFAULT_DAILY_SUGGESTION_COUNT;
+}
+
+/** How many people to suggest per day (default 5; clamped to a sane range). */
+export async function getDailySuggestionCount(): Promise<number> {
+  return parseDailySuggestionCount(await getSetting(SUGGESTION_COUNT_KEY));
 }
 
 export async function setDailySuggestionCount(count: number): Promise<void> {
   await setSetting(SUGGESTION_COUNT_KEY, String(clampCount(count)));
 }
 
-export async function getSchedulePrefs(): Promise<SchedulePrefs> {
-  const raw = await getSetting(SCHEDULE_PREFS_KEY);
+/** Pure: stored JSON → prefs. Same reason as parseDailySuggestionCount above. */
+export function parseSchedulePrefs(raw: string | null | undefined): SchedulePrefs {
   if (!raw) return DEFAULT_SCHEDULE_PREFS;
   try {
     const parsed = JSON.parse(raw) as Partial<SchedulePrefs>;
@@ -73,6 +78,10 @@ export async function getSchedulePrefs(): Promise<SchedulePrefs> {
   } catch {
     return DEFAULT_SCHEDULE_PREFS;
   }
+}
+
+export async function getSchedulePrefs(): Promise<SchedulePrefs> {
+  return parseSchedulePrefs(await getSetting(SCHEDULE_PREFS_KEY));
 }
 
 export async function setSchedulePrefs(prefs: SchedulePrefs): Promise<void> {

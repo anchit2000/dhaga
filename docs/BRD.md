@@ -457,6 +457,7 @@ multiple rounded up (`packages/core/src/metering/credits.ts`):
 | Deep research | 20 | Web search billed on top of tokens |
 | Watchlist change scan | 0 | Throttled by the watch limit, not by credits — billing it would eat ~125 credits/month for ~$0.10 of Batch inference |
 | Nightly curation sweep — person/service classification, goal match | 0 | Throttled by a per-night contact cap, not by credits. **ESTIMATED, not measured** (the table above is 39 real calls; neither of these has been run against the live API): a 5,000-contact graph is classified once for roughly **$2.4** of Batch inference — ~400 credits at the ~$0.006/credit blended ceiling, which is exactly why billing it would be wrong. Re-check once measured |
+| Goal match requested on demand (`goal_match_now`) | 3 | The user pressing "Request now" instead of waiting for the free nightly pass — asked for, so priced. **ESTIMATED, not measured**: at `GOAL_SYNC_RESOLVE_CAP` = 20 candidates × ~720 in / 45 out tokens on Haiku 4.5 with no Batch discount, one request is at most 20 × $0.000945 ≈ **$0.019** → ~3.15 credits at ~$0.006/credit, rounded **down** because 20 is a ceiling recall rarely reaches. Saving a goal is free and calls no model |
 
 **Plan sizing.** At a blended ceiling of ~$0.006 of inference per credit, and
 taking the worst month a user could physically spend an allowance on (all
@@ -539,9 +540,10 @@ reason correction 1 above gives: every system prompt is below the minimum
 cacheable prefix, so there is no discount to apply. Batch-ness is **recorded**,
 not inferred from the feature — `ai_actions` gained a
 `batch boolean NOT NULL DEFAULT false` column (`lib/db/ddl/core/meta.ts`,
-self-healing `ADD COLUMN IF NOT EXISTS`) because `goal_matching` runs *both* a
-nightly Batch pass and a synchronous goal-resolve path, and inferring it from
-the feature would halve a real bill. History rows predating the column read
+self-healing `ADD COLUMN IF NOT EXISTS`) because goal matching runs *both* a
+nightly Batch pass (`goal_matching`) and a synchronous on-demand one
+(`goal_match_now`) over the same prompts, and inferring it from the feature
+would halve a real bill. History rows predating the column read
 `false`, which over-states an old batch action by 2× — the safe direction — and
 ages out within a month.
 

@@ -20,19 +20,13 @@ export const RATE_LIMITS = {
    *  this guards THEIR quota as much as ours — roomy enough for normal browsing
    *  of /app/calendar, tight enough that a reload loop can't burn the grant. */
   calendar_external: { points: 30, durationSec: 60 },
-  /**
-   * Resolving a goal's cohort inline, on save (lib/ai/goal-resolve). A DAY-long
-   * window, unlike every other bucket here, because this is a cost fuse rather
-   * than a burst guard: `goal_matching` is priced at 0 credits, so the monthly
-   * AI cap does not bound it and nothing else stops an edit-save loop from
-   * spending ~$0.019 a time.
-   *
-   * 3 a day: MAX_ACTIVE_GOALS is 1, so the user has exactly one objective —
-   * stating it and rewording it twice more in a day is already generous, and a
-   * 4th edit is not lost, only deferred to the nightly top-up. Worst case is
-   * 3 × $0.019 ≈ $0.06 a user a day.
-   */
-  goal_resolve: { points: 3, durationSec: 86_400 },
+  /* No `goal_resolve` bucket. Resolving a goal's cohort on demand
+   * (lib/ai/goal-resolve) once had a 3-a-day fuse purely because it was priced
+   * at 0 credits and nothing bounded it. It is now its own priced feature
+   * (`goal_match_now`), so the monthly credit allowance is the fuse, the `ai`
+   * burst guard above still stops rapid-fire clicking, and the dollar ceiling
+   * backstops unlimited-credit plans. A second day-long refusal on top of a
+   * price the user knowingly paid would only take away credits they own. */
   /** External AI clients over MCP (/api/mcp). An agent loop issues tool calls
    *  far faster than a person clicks and will happily retry a tool it didn't
    *  like, so this is a tenant-pool guard (max 3 connections) as much as an

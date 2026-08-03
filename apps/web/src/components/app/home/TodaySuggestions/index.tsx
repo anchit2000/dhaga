@@ -9,6 +9,7 @@ import { ThreadMark } from "@/components/brand/ThreadMark";
 import { Button } from "@/components/ui/button";
 import { markReachedOutAction } from "@/lib/actions/reminders";
 import { useOptimisticList } from "@/lib/hooks/useOptimisticList";
+import { dueReachOutFooter } from "@/utils/due-reach-outs";
 import type { ReactElement } from "react";
 import type { DailySuggestion } from "@/lib/repo/daily-suggestions";
 import type { GoalProgress } from "@/lib/repo/goals";
@@ -48,7 +49,7 @@ export function TodaySuggestions({
   return (
     <HomeTile
       title="Today"
-      viewAll={{ href: "/app/people", label: moreDue > 0 ? `+${moreDue} more due this week` : "View all people" }}
+      viewAll={dueReachOutFooter(moreDue)}
       tone="amber"
       data-tour="updates"
       className={className}
@@ -65,6 +66,15 @@ export function TodaySuggestions({
           <p className="text-sm text-paper">You have {meetingCountToday} meetings today.</p>
           <p className="mt-0.5 text-xs text-fog">A lighter day might be better — these can wait for tomorrow.</p>
         </div>
+      ) : null}
+
+      {/* Sits with the other contextual banners rather than under the list: the
+          tile body scrolls once it is capped, and a setup nudge pinned below a
+          fold is a nudge nobody sees. */}
+      {!calendarConnected ? (
+        <Link href="/app/settings" className="inline-flex min-h-11 items-center text-xs text-ember hover:underline">
+          Connect a calendar to get meeting-time suggestions →
+        </Link>
       ) : null}
 
       {items.length === 0 ? (
@@ -103,16 +113,6 @@ export function TodaySuggestions({
           ))}
         </div>
       )}
-
-      {!calendarConnected ? (
-        <div className="mt-auto space-y-1.5 pt-1">
-          {!calendarConnected ? (
-            <Link href="/app/settings" className="block text-xs text-ember hover:underline">
-              Connect a calendar to get meeting-time suggestions →
-            </Link>
-          ) : null}
-        </div>
-      ) : null}
     </HomeTile>
   );
 }

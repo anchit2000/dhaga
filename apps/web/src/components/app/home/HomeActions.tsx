@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -60,6 +59,9 @@ export function HomeActions({ openFollowUps, onSelectContact }: {
       title="Follow-ups"
       tone="attention"
       meta={items.length > 0 ? <span className="font-mono text-[10px] uppercase tracking-widest text-fog">{items.length} open</span> : null}
+      // Handed to HomeTile rather than rendered in the body: the body scrolls
+      // once the cell is capped, and this link is the tile's click target.
+      viewAll={items.length > 0 ? { href: "/app/follow-ups", label: overflow > 0 ? `+${overflow} more` : "View all" } : undefined}
     >
       {items.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center py-6 text-center">
@@ -68,30 +70,22 @@ export function HomeActions({ openFollowUps, onSelectContact }: {
           <p className="mt-1 text-xs text-fog">Reminders and note-derived follow-ups will collect here.</p>
         </div>
       ) : (
-        <>
-          <div className="divide-y divide-seam">
-            {shown.map((item) => (
-              <div key={item.id} className="flex items-start gap-2.5 py-2.5 first:pt-0 last:pb-0">
-                <Button type="button" onClick={() => handleRemove(item, completeFollowUpAction)} variant="ghost" size="icon-sm" aria-label="Mark done" className="shrink-0"><Check /></Button>
-                {/* Action wraps in full — the rail tile is too narrow to truncate against. */}
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm leading-snug text-paper">{item.action}</p>
-                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2">
-                    <Button render={<div />} variant="ghost" onClick={() => onSelectContact(item.contactId)} className="h-auto rounded-md p-0 text-xs font-normal normal-case text-ember hover:bg-transparent hover:underline">{item.contactName}</Button>
-                    <FollowUpDueChip item={item} />
-                  </div>
+        <div className="divide-y divide-seam">
+          {shown.map((item) => (
+            <div key={item.id} className="flex items-start gap-2.5 py-2.5 first:pt-0 last:pb-0">
+              <Button type="button" onClick={() => handleRemove(item, completeFollowUpAction)} variant="ghost" size="icon-sm" aria-label="Mark done" className="shrink-0"><Check /></Button>
+              {/* Action wraps in full — the rail tile is too narrow to truncate against. */}
+              <div className="min-w-0 flex-1">
+                <p className="text-sm leading-snug text-paper">{item.action}</p>
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-2">
+                  <Button render={<div />} variant="ghost" onClick={() => onSelectContact(item.contactId)} className="h-auto rounded-md p-0 text-xs font-normal normal-case text-ember hover:bg-transparent hover:underline">{item.contactName}</Button>
+                  <FollowUpDueChip item={item} />
                 </div>
-                <Button type="button" onClick={() => handleRemove(item, dismissFollowUpAction)} variant="ghost" size="icon-sm" aria-label="Dismiss follow-up" className="shrink-0 text-fog hover:text-paper"><X /></Button>
               </div>
-            ))}
-          </div>
-          <Link
-            href="/app/follow-ups"
-            className="mt-auto inline-flex min-h-11 items-center pt-1 text-xs text-ember hover:underline"
-          >
-            {overflow > 0 ? `+${overflow} more` : "View all"} →
-          </Link>
-        </>
+              <Button type="button" onClick={() => handleRemove(item, dismissFollowUpAction)} variant="ghost" size="icon-sm" aria-label="Dismiss follow-up" className="shrink-0 text-fog hover:text-paper"><X /></Button>
+            </div>
+          ))}
+        </div>
       )}
     </HomeTile>
   );

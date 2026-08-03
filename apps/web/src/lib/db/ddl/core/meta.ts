@@ -12,9 +12,9 @@ CREATE TABLE IF NOT EXISTS ai_actions (
   output_tokens integer NOT NULL,
   -- Did this call go through the Message Batches API? Batch is half price both
   -- directions, so the dollar gate (lib/ai/metering/dollar-cap.ts) cannot price
-  -- a row without it. RECORDED rather than inferred from the feature: goal_matching
-  -- runs both a nightly batch pass AND a synchronous goal-resolve path, so a
-  -- feature-based inference would halve a real bill — the dangerous direction.
+  -- a row without it. RECORDED rather than inferred from the feature: goal matching
+  -- runs both a nightly Batch pass (goal_matching) AND a synchronous on-demand one
+  -- (goal_match_now), so a feature-based inference would halve a real bill.
   batch boolean NOT NULL DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now()
 );

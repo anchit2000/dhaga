@@ -10,6 +10,34 @@ export const HOME_TILE_TONE_CLASSES = {
 
 export type HomeTileTone = keyof typeof HOME_TILE_TONE_CLASSES;
 
+/**
+ * The ceiling on one bento cell. Under a grid with an indefinite height every
+ * `1fr` row resolves to the LARGEST base size in the whole grid, so without a
+ * cap one nine-row tile pads every two-row tile on Home out to match it —
+ * hundreds of pixels of dead space. Clamping the cell clamps that base size (a
+ * grid item's content-based contribution is clamped by its max-height), so the
+ * one overflowing tile scrolls inside HomeTile instead of stretching every
+ * other tile to its height.
+ *
+ * 28rem is chosen against the tiles, not by feel: a full five-row preview tile
+ * lands just under it, so the common case still shows everything and only the
+ * genuine outliers scroll.
+ *
+ * `sm:` only, exactly like `auto-rows-fr`: in the single column nothing sits
+ * beside a tile, heights are already natural, and a scroll region nested in the
+ * page scroll is the wrong thing to hand a thumb.
+ */
+export const HOME_TILE_CAP_CLASS = "sm:max-h-[28rem]";
+
+/** The heading id the cadence-due block on /app/follow-ups renders. */
+export const DUE_CHECK_INS_ANCHOR = "due";
+
+/**
+ * Where Home's "+N more due" footer goes. Derived from the anchor above so the
+ * link and the block it targets can never drift apart.
+ */
+export const DUE_CHECK_INS_HREF = `/app/follow-ups#${DUE_CHECK_INS_ANCHOR}`;
+
 export const HOME_STAT_TONE_CLASSES: Record<string, string> = {
   People: "text-trust",
   Companies: "text-calm",

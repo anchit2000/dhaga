@@ -1,5 +1,6 @@
 "use client";
 
+import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ReactElement, ReactNode } from "react";
@@ -46,6 +47,24 @@ export function EditGoalButton({ onEdit }: { onEdit: () => void }): ReactElement
       onClick={onEdit}
     >
       Reword the goal
+    </Button>
+  );
+}
+
+/** Buys the match the nightly pass would do for free. It opens the confirmation
+ *  rather than spending anything, so the price is always seen before the spend.
+ *  Same `min-h-11` touch target as EditGoalButton; `outline` rather than the
+ *  amber-filled default because the goal strip already sits on an amber wash and
+ *  a second fill on top of it is noise. */
+export function RequestNowButton({ onRequest }: { onRequest: () => void }): ReactElement {
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="mt-2 min-h-11 gap-1.5 font-normal normal-case"
+      onClick={onRequest}
+    >
+      <Sparkles /> Request now
     </Button>
   );
 }

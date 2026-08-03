@@ -1,6 +1,5 @@
 import { hasLLM } from "@dhaga/core";
 import { withUserDb } from "@/lib/db/request-scope";
-import { RateLimitError, enforceRateLimit } from "@/lib/ratelimit";
 import {
   loadGoalSubjectContext,
   recallGoalCandidates,
@@ -13,14 +12,13 @@ import { AiBudgetError, assertAiBudget, recordAiAction, withAiAction } from "../
 import { judgeCandidate, type GoalJudgement } from "./judge";
 
 /**
- * Resolve a goal's cohort NOW, on the save that created or reworded it.
+ * Resolve a goal's cohort NOW, because the user pressed "Request now".
  *
- * Why synchronous: matching used to happen only in the nightly cron, so stating
- * a goal did nothing for up to 24 hours — and nothing at all on a deployment
- * with no cron. The strip sat on "Finding people" and users read it as a hang.
- * Batch is 50% cheaper but takes minutes to hours, which IS the bug, so this
- * path uses plain `extract` (Haiku) and the Batch pass stays for the nightly
- * top-up.
+ * Matching is nightly by default: saving a goal is a free, instant DB write and
+ * the Batch pass fills the cohort overnight. This path is the paid shortcut for
+ * someone who does not want to wait — so it uses plain `extract` (Haiku) rather
+ * than the 50%-cheaper Batch API, whose minutes-to-hours turnaround is exactly
+ * what the user is paying to skip.
  *
  * THE POOL HAZARD is the thing to preserve when editing this file. The tenant
  * pool caps at 3 connections and a connection held across an LLM call took out
@@ -29,31 +27,29 @@ import { judgeCandidate, type GoalJudgement } from "./judge";
  * and the model calls sit BETWEEN them, never inside one. ./judge.ts cannot
  * open a connection at all, which is what keeps that true by construction.
  *
- * Cost: metered as `goal_matching` (priced 0 credits, like the nightly pass —
- * the user is not billed for stating a goal), so the monthly credit cap does
- * NOT bound it. The `goal_resolve` rate-limit bucket is therefore the real
- * fuse: 3 resolves per user per day, see utils/constants/ratelimit.ts.
+ * Cost: metered as `goal_match_now` — its OWN feature, priced in real credits
+ * (packages/core/src/metering/credits.ts), unlike the free nightly
+ * `goal_matching` pass. CREDITS ARE THE FUSE: `assertAiBudget` refuses once the
+ * month's allowance is spent, and the dollar ceiling backstops unlimited-credit
+ * plans. There is deliberately no longer a per-day rate-limit bucket — that
+ * existed only because this path used to be free, and refusing a user who is
+ * paying for the run would be a second, worse fuse on top of the price.
  */
 
-export type GoalResolveSkip =
-  | "no_llm"
-  | "rate_limited"
-  | "no_budget"
-  | "no_candidates"
-  | "failed";
+export type GoalResolveSkip = "no_llm" | "no_budget" | "no_candidates" | "failed";
 
 export interface GoalResolveOutcome {
   matched: number;
   skipped: GoalResolveSkip | null;
 }
 
-/** One resolve = one metered action, however many contacts it judges. */
+/** One request = one metered action, however many contacts it judges. */
 export function resolveGoalNow(
   userId: string,
   goalId: string,
   objective: string,
 ): Promise<GoalResolveOutcome> {
-  return withAiAction("goal_matching", () => runGoalResolve(userId, goalId, objective));
+  return withAiAction("goal_match_now", () => runGoalResolve(userId, goalId, objective));
 }
 
 async function runGoalResolve(
@@ -62,14 +58,6 @@ async function runGoalResolve(
   objective: string,
 ): Promise<GoalResolveOutcome> {
   if (!hasLLM()) return { matched: 0, skipped: "no_llm" };
-  // The cheapest fuse first, and before any connection is taken: the in-memory
-  // limiter needs no DB (same ordering assertAiBudget uses for its burst guard).
-  try {
-    await enforceRateLimit(userId, "goal_resolve");
-  } catch (error) {
-    if (error instanceof RateLimitError) return { matched: 0, skipped: "rate_limited" };
-    throw error;
-  }
 
   try {
     // Scope 1: budget check, retrieval and context — released before the model.
@@ -117,7 +105,7 @@ async function runGoalResolve(
     const matched = await withUserDb(userId, async () => {
       for (const item of completed) {
         try {
-          await recordAiAction("goal_matching", item.model, item.usage);
+          await recordAiAction("goal_match_now", item.model, item.usage);
         } catch {
           // One call failing to meter must never drop the cohort it produced.
         }

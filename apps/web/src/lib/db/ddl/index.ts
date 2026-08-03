@@ -2,6 +2,7 @@ import { CORE_DDL } from "./core";
 import { KG_DDL } from "./kg";
 import { CONFIRMATIONS_DDL } from "./confirmations";
 import { AUTH_DDL } from "./auth";
+import { OIDC_DDL } from "./oidc";
 import { SEARCH_DDL } from "./search";
 import { VECTOR_DDL } from "./vector";
 import { CALENDAR_DDL } from "./calendar";
@@ -13,4 +14,5 @@ import { CONTACT_CONNECTIONS_DDL } from "./contact-connections";
 const usesPgVector = !process.env.DHAGA_VECTOR_STORE || process.env.DHAGA_VECTOR_STORE === "pgvector";
 
 // SYNC_DDL trails CORE_DDL because contact_links carries an FK to contacts(id).
-export const DDL = `${CORE_DDL}\n${KG_DDL}\n${CONFIRMATIONS_DDL}\n${AUTH_DDL}\n${SEARCH_DDL}\n${CALENDAR_DDL}\n${GEOCODE_DDL}\n${SYNC_DDL}\n${CONTACT_CONNECTIONS_DDL}\n${AI_BUDGET_DDL}\n${usesPgVector ? VECTOR_DDL : ""}`;
+// OIDC_DDL trails AUTH_DDL because all three oauth_* tables FK to "user"(id).
+export const DDL = `${CORE_DDL}\n${KG_DDL}\n${CONFIRMATIONS_DDL}\n${AUTH_DDL}\n${OIDC_DDL}\n${SEARCH_DDL}\n${CALENDAR_DDL}\n${GEOCODE_DDL}\n${SYNC_DDL}\n${CONTACT_CONNECTIONS_DDL}\n${AI_BUDGET_DDL}\n${usesPgVector ? VECTOR_DDL : ""}`;

@@ -8,7 +8,7 @@ import { Shell } from "./Shell";
 export function AppWindow() {
   return (
     <div className="relative mx-auto max-w-5xl">
-      <Shell showSidebar={false}>
+      <Shell>
         <DashboardPreview />
       </Shell>
     </div>

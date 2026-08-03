@@ -1,20 +1,16 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import type { ReactElement } from "react";
 
-import { AskDemo } from "@/components/landing/AskDemo";
 import { Footer } from "@/components/landing/Closing";
-import { Comparison } from "@/components/landing/Comparison";
-import { Faq } from "@/components/landing/Faq";
 import { FeatureHighlights } from "@/components/landing/FeatureHighlights";
 import { Access } from "@/components/landing/FocusedHome/Access";
 import { Header } from "@/components/landing/Header";
-import { NetworkSandbox } from "@/components/landing/NetworkSandbox";
-import { HowItWorks, StatsBand } from "@/components/landing/Sections";
 import { SITE_URL } from "@/utils/constants/site";
 
 const TITLE = "Features — Dhaga";
 const DESCRIPTION =
-  "Explore how Dhaga captures meetings, notes, voice, messages and cards, " +
+  "Explore how Dhaga captures meetings, notes, voice, messages and cards from the web, WhatsApp and Telegram, " +
   "builds a private knowledge graph, finds warm paths and helps you follow up.";
 
 export const metadata: Metadata = {
@@ -41,7 +37,7 @@ export default function FeaturesPage(): ReactElement {
   return (
     <main className="relative overflow-hidden bg-ink text-paper">
       <Header />
-      <section className="mx-auto max-w-6xl px-6 pb-8 pt-32 sm:pt-40">
+      <section className="mx-auto max-w-6xl px-6 pb-10 pt-28 sm:pt-32">
         <p className="font-mono text-xs uppercase tracking-[0.22em] text-ember">
           Features
         </p>
@@ -53,13 +49,33 @@ export default function FeaturesPage(): ReactElement {
           searchable memory—without making you maintain another spreadsheet.
         </p>
       </section>
-      <StatsBand />
-      <HowItWorks />
       <FeatureHighlights />
-      <AskDemo />
-      <NetworkSandbox />
-      <Comparison />
-      <Faq />
+      <section className="mx-auto grid max-w-6xl gap-3 px-6 py-10 sm:grid-cols-2">
+        <Link
+          href="/product-tour"
+          className="rounded-2xl border border-seam bg-panel p-5 transition-colors hover:border-trust/60 hover:bg-panel-2"
+        >
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-trust">
+            Want the details?
+          </span>
+          <span className="mt-2 block font-display text-xl">Take the full product tour →</span>
+          <span className="mt-2 block text-sm leading-6 text-fog">
+            See the three-step workflow, cited answers, live graph sandbox, and comparison.
+          </span>
+        </Link>
+        <Link
+          href="/pricing"
+          className="rounded-2xl border border-seam bg-panel p-5 transition-colors hover:border-magic/60 hover:bg-panel-2"
+        >
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-magic">
+            Ready to choose?
+          </span>
+          <span className="mt-2 block font-display text-xl">See plans and monthly pricing →</span>
+          <span className="mt-2 block text-sm leading-6 text-fog">
+            Compare Free, Pro, and Power—including what annual billing saves.
+          </span>
+        </Link>
+      </section>
       <Access />
       <Footer />
     </main>

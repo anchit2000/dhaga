@@ -79,3 +79,11 @@ export {
   type AuthUserRow,
 } from "./auth";
 export { apiKey, type ApiKeyRow } from "./api-key";
+export {
+  oauthApplication,
+  oauthAccessToken,
+  oauthConsent,
+  type OAuthApplicationRow,
+  type OAuthAccessTokenRow,
+  type OAuthConsentRow,
+} from "./oidc";

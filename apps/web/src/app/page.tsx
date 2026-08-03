@@ -5,7 +5,7 @@ import { FocusedHome } from "@/components/landing/FocusedHome";
 export const metadata: Metadata = {
   title: "Dhaga — the personal CRM you own",
   description:
-    "A private, portable personal CRM for sales professionals, founders, investors, recruiters, and community builders. Remember relationship context, search your network, and follow up at the right time.",
+    "A private, portable personal CRM for sales professionals, founders, investors, recruiters, and community builders. Capture cards, notes, and photos from the web, WhatsApp, or Telegram; search your network and follow up at the right time.",
   alternates: { canonical: "/" },
 };
 

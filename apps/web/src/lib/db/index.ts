@@ -41,6 +41,7 @@ import {
   authVerification,
 } from "./schema/auth";
 import { apiKey } from "./schema/api-key";
+import { oauthApplication, oauthAccessToken, oauthConsent } from "./schema/oidc";
 
 const schema = {
   companies,
@@ -77,6 +78,11 @@ const schema = {
   apikey: apiKey,
   passkey: authPasskey,
   twoFactor: authTwoFactor,
+  // Keys are better-auth's model names, not our table names — the mcp plugin
+  // resolves its OAuth tables through the drizzle adapter by these exact keys.
+  oauthApplication,
+  oauthAccessToken,
+  oauthConsent,
 };
 
 /** Driver-agnostic handle: hosted Postgres and embedded PGlite both satisfy it. */

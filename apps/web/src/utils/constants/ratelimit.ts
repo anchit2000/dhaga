@@ -20,6 +20,11 @@ export const RATE_LIMITS = {
    *  this guards THEIR quota as much as ours — roomy enough for normal browsing
    *  of /app/calendar, tight enough that a reload loop can't burn the grant. */
   calendar_external: { points: 30, durationSec: 60 },
+  /** External AI clients over MCP (/api/mcp). An agent loop issues tool calls
+   *  far faster than a person clicks and will happily retry a tool it didn't
+   *  like, so this is a tenant-pool guard (max 3 connections) as much as an
+   *  abuse guard — roomy enough for the several calls one research turn makes. */
+  mcp: { points: 60, durationSec: 60 },
 } as const;
 
 export type RateLimitBucket = keyof typeof RATE_LIMITS;

@@ -32,6 +32,7 @@ export const MARKETING_SITEMAP_ROUTES: ReadonlyArray<{
 }> = [
   { path: "/", changeFrequency: "weekly", priority: 1 },
   { path: "/features", changeFrequency: "monthly", priority: 0.9 },
+  { path: "/product-tour", changeFrequency: "monthly", priority: 0.8 },
   { path: "/pricing", changeFrequency: "monthly", priority: 0.9 },
   { path: "/open-source", changeFrequency: "monthly", priority: 0.8 },
   { path: "/use-cases/sales", changeFrequency: "monthly", priority: 0.8 },

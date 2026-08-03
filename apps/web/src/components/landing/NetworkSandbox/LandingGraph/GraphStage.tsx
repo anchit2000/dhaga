@@ -34,6 +34,8 @@ export function GraphStage({
   explodable,
   exploding,
   onExplode,
+  highlightedPath = null,
+  autoCircleCount = AUTO_CIRCLE_COUNT,
 }: {
   payload: FullGraphPayload;
   indexes: GraphIndexes;
@@ -41,6 +43,8 @@ export function GraphStage({
   explodable: boolean;
   exploding: boolean;
   onExplode: () => void;
+  highlightedPath?: readonly string[] | null;
+  autoCircleCount?: number;
 }): React.ReactElement {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const renderStateRef = useRef(emptyRenderState());
@@ -60,8 +64,8 @@ export function GraphStage({
 
   const { toggleCircle } = view;
   const circleSeeds = useMemo(
-    () => buildCircleOptions(payload.nodes, indexes).slice(0, AUTO_CIRCLE_COUNT).map((c) => c.id),
-    [payload.nodes, indexes],
+    () => buildCircleOptions(payload.nodes, indexes).slice(0, autoCircleCount).map((c) => c.id),
+    [autoCircleCount, payload.nodes, indexes],
   );
   const seededRef = useRef(false);
   useEffect(() => {
@@ -69,6 +73,11 @@ export function GraphStage({
     seededRef.current = true;
     for (const id of circleSeeds) toggleCircle(id);
   }, [circleSeeds, toggleCircle]);
+
+  const { setHighlightedPath } = view;
+  useEffect(() => {
+    setHighlightedPath(highlightedPath);
+  }, [highlightedPath, setHighlightedPath]);
 
   const isolated = view.isolateRootId !== null;
 

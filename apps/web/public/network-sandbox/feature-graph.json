@@ -1,0 +1,41 @@
+{
+  "nodes": [
+    { "id": "you", "kind": "contact", "label": "You", "sublabel": "Your private network", "x": 0, "y": 0 },
+    { "id": "priya", "kind": "contact", "label": "Priya Nair", "sublabel": "Head of Ops · Freightline", "x": -105, "y": 48 },
+    { "id": "mei", "kind": "contact", "label": "Mei Tanaka", "sublabel": "Partnerships · Aerolane", "x": -205, "y": 104 },
+    { "id": "sarah", "kind": "contact", "label": "Sarah Chen", "sublabel": "Founder · Portside", "x": 92, "y": 82 },
+    { "id": "rohan", "kind": "contact", "label": "Rohan Mehta", "sublabel": "Product · Freightline", "x": -76, "y": -96 },
+    { "id": "alice", "kind": "contact", "label": "Alice Krejčová", "sublabel": "Investor", "x": 132, "y": -70 },
+    { "id": "kavya", "kind": "contact", "label": "Kavya Singh", "sublabel": "Community lead", "x": 205, "y": 38 },
+    { "id": "freightline", "kind": "company", "label": "Freightline", "sublabel": "Logistics", "x": -175, "y": -34 },
+    { "id": "aerolane", "kind": "company", "label": "Aerolane", "sublabel": "Aviation software", "x": -278, "y": 24 },
+    { "id": "portside", "kind": "company", "label": "Portside", "sublabel": "Freight intelligence", "x": 214, "y": 108 },
+    { "id": "founder-dinner", "kind": "event", "label": "Founder Dinner", "sublabel": "Bengaluru · July 2026", "x": 68, "y": 166 },
+    { "id": "mumbai-saas", "kind": "event", "label": "Mumbai SaaS Meetup", "sublabel": "Mumbai · June 2026", "x": 246, "y": -62 }
+  ],
+  "edges": [
+    { "id": "e-you-priya", "source": "you", "target": "priya", "predicate": "knows", "kind": "explicit" },
+    { "id": "e-priya-mei", "source": "priya", "target": "mei", "predicate": "worked_with", "kind": "explicit" },
+    { "id": "e-mei-aerolane", "source": "mei", "target": "aerolane", "predicate": "works_at", "kind": "works_at" },
+    { "id": "e-you-sarah", "source": "you", "target": "sarah", "predicate": "knows", "kind": "explicit" },
+    { "id": "e-you-rohan", "source": "you", "target": "rohan", "predicate": "knows", "kind": "explicit" },
+    { "id": "e-you-alice", "source": "you", "target": "alice", "predicate": "knows", "kind": "explicit" },
+    { "id": "e-priya-freightline", "source": "priya", "target": "freightline", "predicate": "works_at", "kind": "works_at" },
+    { "id": "e-rohan-freightline", "source": "rohan", "target": "freightline", "predicate": "works_at", "kind": "works_at" },
+    { "id": "e-sarah-portside", "source": "sarah", "target": "portside", "predicate": "works_at", "kind": "works_at" },
+    { "id": "e-sarah-founder", "source": "sarah", "target": "founder-dinner", "predicate": "attended", "kind": "attended" },
+    { "id": "e-priya-founder", "source": "priya", "target": "founder-dinner", "predicate": "attended", "kind": "attended" },
+    { "id": "e-kavya-founder", "source": "kavya", "target": "founder-dinner", "predicate": "attended", "kind": "attended" },
+    { "id": "e-you-founder", "source": "you", "target": "founder-dinner", "predicate": "attended", "kind": "attended" },
+    { "id": "e-alice-mumbai", "source": "alice", "target": "mumbai-saas", "predicate": "attended", "kind": "attended" },
+    { "id": "e-kavya-mumbai", "source": "kavya", "target": "mumbai-saas", "predicate": "attended", "kind": "attended" },
+    { "id": "e-you-mumbai", "source": "you", "target": "mumbai-saas", "predicate": "attended", "kind": "attended" },
+    { "id": "e-alice-kavya", "source": "alice", "target": "kavya", "predicate": "introduced_to", "kind": "explicit" }
+  ],
+  "nodeTypes": [],
+  "relationshipTypes": [
+    { "id": "rel-knows", "slug": "knows", "forwardLabel": "knows", "inverseLabel": "knows" },
+    { "id": "rel-worked-with", "slug": "worked_with", "forwardLabel": "worked with", "inverseLabel": "worked with" },
+    { "id": "rel-introduced", "slug": "introduced_to", "forwardLabel": "introduced to", "inverseLabel": "introduced by" }
+  ]
+}

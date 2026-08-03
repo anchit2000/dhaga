@@ -66,19 +66,6 @@ export interface FaqItem {
   answer: string;
 }
 
-export interface FeedItem {
-  /** Person shown beside the row; omit for event rows (calendar chip). */
-  personId?: string;
-  text: string;
-  bold: string[];
-  time: string;
-}
-
-export interface ProfileFact {
-  text: string;
-  source: string;
-}
-
 /** Background extraction job, as the person page server-renders it (the
  *  extraction stream then updates the active label live — see useExtractionStream). */
 export type ExtractionJobKind =

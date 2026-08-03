@@ -1,90 +1,53 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Shell } from "../AppWindow/Shell";
-import { PhoneShell } from "../devices/PhoneShell";
-import { ScanScreen } from "../devices/ScanScreen";
-import { AlertsScreen, IdleScreen, VoiceScreen } from "../devices/screens";
-import { SearchPane } from "./panes";
-import { DraftPane } from "./panes";
-import { GRAPH_SCENES } from "@/utils/constants/landing/graph";
-import { PHONE_VISUALS, type StoryVisual } from "@/utils/constants/landing/story";
+import type { ReactElement } from "react";
 
-// React Flow (@xyflow/react) + its stylesheet are heavy and only needed once a
-// graph scene actually renders, so they load as a separate chunk instead of
-// shipping in the landing page's initial bundle. ssr:false is safe here — this
-// is a Client Component, and the parent reserves the box height (no CLS).
+import { AppPreviewNav } from "../AppWindow/DashboardPreview/nav";
+import {
+  AlertsPane,
+  CapturePane,
+  CirclesPane,
+  DraftPane,
+  SearchPane,
+  VoicePane,
+} from "./previews";
+import { GRAPH_SCENES } from "@/utils/constants/landing/graph";
+import type { StoryVisual } from "@/utils/constants/landing/story";
+
+// The production Sigma renderer and its fixture stay out of the initial chunk.
+// The frame height is reserved, so switching to Graph or Warm paths adds no CLS.
 const GraphStage = dynamic(
   () => import("./GraphStage").then((mod) => mod.GraphStage),
   { ssr: false },
 );
 
-function graphScene(id: string) {
-  const scene = GRAPH_SCENES.find((s) => s.id === id);
+function graphScene(id: "graph" | "warmpath") {
+  const scene = GRAPH_SCENES.find((candidate) => candidate.id === id);
   if (!scene) throw new Error(`Missing graph scene: ${id}`);
   return scene;
 }
 
-/**
- * The sticky stage: desktop window + overlapping phone.
- * The active visual decides which device comes forward; the other recedes.
- */
-export function DeviceStage({ visual }: { visual: StoryVisual }) {
-  const phoneActive = PHONE_VISUALS.includes(visual);
-
+/** A fixture-driven crop of the shipping web app, never a conceptual device UI. */
+export function DeviceStage({ visual }: { visual: StoryVisual }): ReactElement {
   return (
-    <div className="relative">
-      {/* desktop window */}
-      <div
-        className="relative transition-all duration-700"
-        style={{
-          zIndex: phoneActive ? 0 : 10,
-          opacity: phoneActive ? 0.6 : 1,
-          filter: phoneActive ? "saturate(0.5) brightness(0.75)" : "none",
-          transform: phoneActive ? "scale(0.97) translateX(12px)" : "scale(1)",
-        }}
-      >
-        <Shell className="ml-auto w-full max-w-xl">
-          <DesktopPane visual={visual} />
-        </Shell>
-      </div>
-
-      {/* phone: in front when a capture scene plays, tucked behind otherwise */}
-      <div
-        className="absolute -bottom-8 w-44 transition-all duration-700 sm:w-48"
-        style={{
-          zIndex: phoneActive ? 10 : 0,
-          left: phoneActive ? "-0.5rem" : "-3.5rem",
-          opacity: phoneActive ? 1 : 0.9,
-          filter: phoneActive ? "none" : "saturate(0.5) brightness(0.6)",
-          transform: phoneActive
-            ? "scale(1.04) rotate(-2deg)"
-            : "scale(0.9) rotate(-7deg) translateY(10px)",
-        }}
-      >
-        <PhoneShell>
-          <PhoneScreen visual={visual} />
-        </PhoneShell>
+    <div className="overflow-hidden rounded-2xl border border-seam bg-ink shadow-[0_30px_80px_-45px_var(--shadow-cast)]">
+      <AppPreviewNav />
+      <div className="h-[360px] min-w-0 overflow-hidden sm:h-[400px]">
+        <PreviewPane visual={visual} />
       </div>
     </div>
   );
 }
 
-function DesktopPane({ visual }: { visual: StoryVisual }) {
+function PreviewPane({ visual }: { visual: StoryVisual }): ReactElement {
+  if (visual === "scan") return <CapturePane />;
+  if (visual === "circles") return <CirclesPane />;
+  if (visual === "voice") return <VoicePane />;
   if (visual === "search") return <SearchPane />;
   if (visual === "draft") return <DraftPane />;
-  const sceneId =
-    visual === "circles" ? "circles" : visual === "warmpath" ? "warmpath" : "graph";
+  if (visual === "alerts") return <AlertsPane />;
   return (
-    <div className="h-[340px] min-w-0 flex-1">
-      <GraphStage scene={graphScene(sceneId)} />
-    </div>
+    <GraphStage scene={graphScene(visual === "warmpath" ? "warmpath" : "graph")} />
   );
-}
-
-function PhoneScreen({ visual }: { visual: StoryVisual }) {
-  if (visual === "scan") return <ScanScreen />;
-  if (visual === "voice") return <VoiceScreen />;
-  if (visual === "alerts") return <AlertsScreen />;
-  return <IdleScreen />;
 }

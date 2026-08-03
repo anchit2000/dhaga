@@ -2,11 +2,11 @@
 
 > Dhaga is a private, open-source personal CRM for founders and relationship-driven professionals: capture meetings, notes, messages, introductions, voice memos, and cards, remember the context, search the network, and follow up at the right time. Open-core: the whole CRM is AGPL and runs fully self-hosted, with a source-available cloud tier.
 
-Dhaga (धागा — Hindi for "thread") is a private relationship memory for founders and other relationship-driven professionals: investors, recruiters, real-estate and financial advisors, consultants, and community builders. Capture a meeting or introduction, write or paste a note or message, forward a WhatsApp or Telegram voice note, scan a card, clip a page with the extension, or import an address book — Dhaga extracts the people, companies and facts, files them in a private knowledge graph, and answers questions like "who do I know at a fintech in Bangalore?" in plain language. Every AI-derived fact keeps a receipt back to the note it came from, so you can verify it or delete it.
+Dhaga (धागा — Hindi for "thread") is a private relationship memory for founders and other relationship-driven professionals: investors, recruiters, real-estate and financial advisors, consultants, and community builders. Capture a meeting or introduction, write or paste a note or message, forward a contact card, note, or photo through WhatsApp or Telegram, scan a card, clip a page with the extension, or import an address book — Dhaga extracts the people, companies and facts, files them in a private knowledge graph, and answers questions like "who do I know at a fintech in Bangalore?" in plain language. Every AI-derived fact keeps a receipt back to the note it came from, so you can verify it or delete it.
 
 What separates it from Dex, Monica or a notes app: the whole CRM is AGPL-licensed and self-hostable, every external dependency (LLM, web search, embeddings, vector store, messaging) sits behind a swappable provider gateway so you can point it at a local model or your own API key, enrichment only ever runs when you ask for it, and full export always works. The free tier is a complete CRM at $0 forever with unlimited capture and notes. Pro is $10 month-to-month or $8/month billed $96 yearly; the first 500 founding seats can request a $79 first year. Power is shown as a coming-soon plan at $30 monthly or $24/month billed $288 yearly and cannot yet be purchased. Dhaga Cloud is in early access; request access at https://www.dhaga.app/#request-access.
 
-Complete markdown of the 43 pages that answer what Dhaga is, what it does, how it compares, and how to run it yourself — in the same order as the sections of https://www.dhaga.app/llms.txt: start here, then how dhaga compares, then using dhaga, then self-hosting, extending & contributing, then engineering deep dives.
+Complete markdown of the 44 pages that answer what Dhaga is, what it does, how it compares, and how to run it yourself — in the same order as the sections of https://www.dhaga.app/llms.txt: start here, then how dhaga compares, then using dhaga, then self-hosting, extending & contributing, then engineering deep dives.
 
 Deliberately excluded to keep this file inside a single model context: the ~153 generated TypeDoc API pages, and the 28 pages listed under `## Optional` in https://www.dhaga.app/llms.txt (the internal build checklist, BRD and manual test plan, plus the per-profession and general networking guides). Fetch any of those individually from the index. Source: https://github.com/anchit2000/dhaga
 
@@ -186,7 +186,8 @@ embeddings — both true today, not aspirational.
 | Outbound webhooks | **Shipped** |
 | Telegram capture + Q&A bot | **Shipped** |
 | Salesforce / HubSpot / Notion sync | Planned |
-| WhatsApp capture, LinkedIn QR formats | Planned |
+| WhatsApp capture | **Shipped** |
+| LinkedIn QR formats | Planned |
 | Gmail/Outlook interaction sync (opt-in) | Planned |
 
 ## v2.0 — Teams
@@ -253,7 +254,7 @@ Being fair here matters, because Dex is the incumbent and it earned the position
 - **Automatic job-change detection + reach-out notifications.** Dhaga has no live equivalent shipping today.
 - **Mature, polished native mobile + desktop.** Dex has real iOS and Android apps (with business-card scan and AI voice notes on mobile) and a desktop app. Dhaga's mobile surface today is an installable PWA — the native apps are still in progress.
 - **AI pre-meeting briefs from your calendar.** Dex Copilot / Ask Dex does natural-language recall and CRUD ("who did I meet at the Google event in product?"), plus calendar-aware meeting prep and daily digests.
-- **A shipped MCP server + agent skill, today.** You can point Claude or ChatGPT at Dex and have it operate the CRM. Dhaga does not ship an MCP server.
+- **A shipped MCP server + agent skill, today.** You can point Claude or ChatGPT at Dex and have it operate the CRM. Dhaga now ships an MCP server too — `/api/mcp`, ten tools, and the read half costs no AI credits — so what's left of the gap here is Dex's packaged agent skill and its longer mileage, not the connection itself. (Dhaga's write tools are additive only: no delete, no merge, no bulk actions.)
 - **Power-user plumbing.** Mail merge, Zapier, and a public API on the Professional plan.
 - **Brand, reliability, and a big user base.** ~30,000+ users and years of polish. A newer open-source project can't hand you that on day one.
 
@@ -763,14 +764,16 @@ short "how to" for one part of the product.
 today**, alongside the follow-ups you set and the people you touched most
 recently. Dhaga weighs everyone in your graph against everything it knows is
 actually happening — a keep-in-touch rhythm that has come due, a follow-up
-dated for today, a birthday landing, a job change you asked to watch for, how
-long the silence has run, how connected someone is — and shows you the few at
-the top. Every row says why it's there:
+dated for today, a birthday landing, a job change you asked to watch for, the
+goal you're working on, how long the silence has run, how connected someone is
+— and shows you the few at the top. Every row says why it's there:
 
 - **Check-in** — someone you keep in touch with daily.
 - **Due** — your keep-in-touch rhythm for this person has run out.
 - **Follow-up** — something you promised to do is due today, or is late.
 - **Occasion** — a birthday or anniversary, today or just ahead.
+- **Goal** — they're part of the shortlist for the goal you set, and you
+  haven't reached them yet.
 - **Signal** — a job change or news story from your watchlist.
 - **Quiet** — no reason beyond the silence; you simply haven't spoken in a
   long while.
@@ -796,6 +799,71 @@ moment you meet them.
 
 ![Dhaga Home showing a "To confirm" tile of pending AI confirmations, the daily briefing list of people to reach out to, a follow-ups panel, recent people, and the bottom capture dock](/docs/guide/home.png)
 
+## Working toward a goal
+
+**Set a goal** sits at the top of the Today tile. Say what you're actually
+trying to do in one plain sentence — *"reach out to VCs"*, *"reconnect with
+people from the Delhi trip"* — and Dhaga turns it into a finite shortlist of
+people **from your own graph** rather than leaving it as an intention. Overnight
+it searches your notes, titles and companies for who might fit, weighs each
+candidate against the sentence you wrote, and from then on feeds a few of them
+into the briefing each morning as **Goal** rows. The reason line hands your
+objective back to you with how many people are left.
+
+The goal itself then sits above the list as a strip: your sentence, a bar
+showing *N of M done*, and a menu to **Edit**, **Mark done**, or **Archive** it.
+There is no separate goals page — a goal has one list to feed and one number
+worth reading, and both are here.
+
+**One goal at a time.** Setting a new one closes the old one, because a goal is
+what Home is currently about and two of them would turn the briefing into a list
+of lists. **The shortlist is finite**, so it ends: you work through it a few
+people a day and then it is done, rather than a feed that refills forever.
+
+**It burns down on any real contact, not just the button.** Someone drops off
+the shortlist the moment your last contact with them moves past the day they
+were shortlisted — so writing a note about them, or scanning them at an event,
+closes them out exactly as **Reached out** does. The bar and the list can never
+disagree, because both are counted the same way.
+
+Phrase the goal the way your notes are phrased. Dhaga finds candidates by
+matching the words in your objective against what's actually written in your
+graph, so *"designers in Bangalore"* or *"people to see on my Delhi trip"*
+recall well, while something abstract like *"people who could open doors"*
+recalls poorly — nothing in your graph is worded that way.
+
+## People Dhaga doesn't suggest
+
+An imported address book is never only people: it arrives carrying "Ola
+Support", "Vegetable Vendor", "AC Repair". Dhaga reads over the contacts you've
+never done anything with and marks the ones that look like a business, a shop
+or a support line rather than someone you could message, and stops offering
+them on the surfaces where it volunteers a name — the daily briefing, the
+going-quiet list, recommendations, the graph filler.
+
+**Nothing is hidden or deleted.** A contact marked that way is still in
+**People**, still in search, still in duplicate detection and merging, still in
+your Wrapped card, and still in every export. The only thing that changes is
+that Dhaga stops putting it in front of you unasked. A row you went looking for
+is always there.
+
+**You can see the whole list, and overrule it.** The People page carries an *"N
+hidden from suggestions"* link that opens exactly those rows; each contact's own
+page shows whether the call was **Dhaga's guess** or **you marked this**, and
+one tap flips it. The People table's bulk bar can mark many at once. Your
+ruling is a lock — once you've said a row is a person, the nightly pass never
+judges it again.
+
+**Anyone you've already acted on is never judged in the first place.** If
+you've starred them, put them on your watchlist, set a keep-in-touch rhythm,
+recorded reaching out to them, or written a single note about them, Dhaga
+treats that as settled and leaves the contact out of the sweep entirely. The
+only rows it looks at are the ones nobody has ever touched.
+
+When Dhaga can't tell from the record — a bare first name and nothing else —
+it says so and leaves the contact alone rather than guessing. Only a confident
+"not a person" ever suppresses anything.
+
 ## The sections
 
 - [Capturing people](/docs/guide/capturing-people): Quick-add by paste, card scan, voice, camera, or file — plus the review step and manual add.
@@ -810,6 +878,7 @@ moment you meet them.
 - [Groups & events](/docs/guide/groups-and-events): Group the people you met somewhere into an event, add them in a row, and email a digest.
 - [Exploring the graph](/docs/guide/exploring-the-graph): Your whole network on one canvas — warm-path intros, node panels, layers, and controls.
 - [Search & Ask Dhaga](/docs/guide/search-and-ask): The ⌘K palette: filter by name, fact, or note, or ask a natural-language question with receipts.
+- [Connect an AI assistant (MCP)](/docs/guide/mcp): Point Claude, ChatGPT, or Cursor at your graph over MCP — six read tools with receipts, four additive write tools, and no credits for the reading.
 - [Custom entities](/docs/guide/entities): Non-person nodes — gyms, schools, projects — that connect the people in your graph.
 - [Companies](/docs/guide/companies): View, create, rename, delete, and merge the companies in your graph — with duplicate detection — from their own page.
 - [Share & invite](/docs/guide/share-and-invite): Post a contact-free Wrapped card of your networking, and invite friends for a free month of Pro on both sides.
@@ -879,6 +948,8 @@ two round-trips behind the scenes is still one scan:
 | Pre-meeting brief | 2 |
 | Deep research (enrich from the web) | 20 |
 | Watchlist scan (nightly) | Free |
+| Contact check (nightly) | Free |
+| Goal match (nightly) | Free |
 
 A **photo note** costs 2 — reading the image and extracting from the resulting
 text happen as two separate actions.
@@ -891,6 +962,16 @@ dominated by something other than Dhaga's own tokens.
 than being hidden, so a month of nightly scanning is visible and accounted for
 without costing you anything. You never asked for any individual scan — how
 many people you can watch is what limits them instead.
+
+**Contact checks and goal matches are free for the same reason.** A *contact
+check* is the nightly read of one contact to work out whether it is a person
+you could message or a shop your address book dragged in; a *goal match* weighs
+one contact against the goal you wrote in your own words. You never asked for
+either judgement about any particular person, so neither is billed — what
+limits them is a ceiling on how many contacts a single night's sweep may look
+at, not your allowance. A whole imported address book is worked through over a
+few nights that way, and every one of those actions still shows up in the
+breakdown marked *Free* rather than being hidden.
 
 **Credits aren't the only gate**
 
@@ -1684,9 +1765,222 @@ On-device import ships as code but needs a native app build to appear (it can't
 arrive via an over-the-air JS update or plain Expo Go), and is pending on-device
 testing.
 
+## What happens to the non-people you bring in
+
+An address book is never only people — "Ola Support", "Vegetable Vendor", "AC
+Repair" come in with everyone else. Dhaga looks over the imported rows you never
+do anything with and marks the ones that read as a business or a service, so
+they stop turning up in the Home briefing and the other places Dhaga volunteers
+a name.
+
+**Nothing is deleted or hidden.** Those rows stay in **People**, in search, in
+duplicate detection, in your Wrapped card and in every export — the only change
+is that Dhaga stops suggesting them. The People page shows an *"N hidden from
+suggestions"* link that opens exactly those rows, each contact says whether the
+call was Dhaga's guess or yours, and one tap overrules it for good. Anyone
+you've starred, noted, or reached out to is never judged at all. See
+[your daily briefing](/docs/guide) for the full behaviour.
+
 Once people are in, add [notes and facts](/docs/guide/notes-and-facts),
 [enrich them from the web](/docs/guide/enrich-from-web), or group them into
 [events](/docs/guide/groups-and-events).
+
+---
+
+# Connect an AI assistant (MCP)
+
+Source: https://www.dhaga.app/docs/guide/mcp
+
+Dhaga speaks the Model Context Protocol, so Claude, ChatGPT, Cursor or any other MCP client can read your network and write back to it — ten tools, no AI credits for the reading half.
+
+Ask Dhaga answers questions *inside* Dhaga. **MCP** is the other direction:
+point an assistant you already use at your graph and let it ask on its own,
+in the middle of whatever else you were doing.
+
+- *"Who did I meet at the conference last month?"*
+- *"Save the recruiter who referred me, and remind me to follow up Friday."*
+- *"Which employers haven't got back to me?"*
+
+The endpoint is **`/api/mcp`** on your instance. Any client that speaks the
+[Model Context Protocol](https://modelcontextprotocol.io) can connect to it —
+Dhaga doesn't ship a per-client integration, because the client discovers the
+tools, their inputs and their descriptions at connect time.
+
+## Connecting a client
+
+There are two ways in, and both reach the same tools. Which one you use depends
+on the client, not on what you're allowed to do.
+
+### As a connector (log in, no keys)
+
+Dhaga is its own **OAuth 2.1 authorization server**, so a client like claude.ai
+or ChatGPT can add it the way it adds any other connector: you paste the URL,
+Dhaga shows you a normal login and a consent screen, and the client gets a token
+of its own. Nothing is copied around by hand, and you can only ever grant access
+to your own account.
+
+Add a custom connector in the client and give it one thing — the endpoint,
+`https://your-dhaga-host/api/mcp`.
+
+Everything else is negotiated. The client fetches Dhaga's discovery documents
+(`/.well-known/oauth-protected-resource` and
+`/.well-known/oauth-authorization-server`), registers itself, and sends you to
+log in.
+
+### With a personal access token
+
+For local clients — Claude Code, Cursor, anything running on your own machine —
+the simpler path is the **API key you already have**. It's the same personal
+access token the mobile app uses, created under **Settings › Account › API
+keys** (see [Settings](/docs/guide/settings)).
+
+Claude Code, in one line:
+
+```bash
+claude mcp add --transport http dhaga https://your-dhaga-host/api/mcp \
+  --header "x-api-key: YOUR_TOKEN"
+```
+
+Any client that takes a raw HTTP MCP server config wants the same two things —
+the URL and the header:
+
+```json
+{
+  "mcpServers": {
+    "dhaga": {
+      "type": "http",
+      "url": "https://your-dhaga-host/api/mcp",
+      "headers": { "x-api-key": "YOUR_TOKEN" }
+    }
+  }
+}
+```
+
+A token is as good as your account, so treat it like a password: it goes in the
+client's config, not in a note, a repo, or a chat message. Revoke it in
+Settings and every client holding it stops working immediately.
+
+### Clients that only speak stdio
+
+Some MCP clients still launch a local process and talk over stdin/stdout rather
+than HTTP. Bridge those with
+[`mcp-remote`](https://www.npmjs.com/package/mcp-remote), which runs as the local
+process and forwards to the endpoint:
+
+```json
+{
+  "mcpServers": {
+    "dhaga": {
+      "command": "npx",
+      "args": [
+        "-y", "mcp-remote",
+        "https://your-dhaga-host/api/mcp",
+        "--header", "x-api-key:YOUR_TOKEN"
+      ]
+    }
+  }
+}
+```
+
+That's a community bridge, not something Dhaga ships — prefer a direct HTTP
+connection wherever the client offers one.
+
+## What the assistant can read
+
+Six read tools, and none of them spend AI credits:
+
+- **`dhaga_search`** — hybrid keyword + semantic search across contacts and
+  note text. It returns the people **plus the snippets that matched**, so the
+  assistant can tell you *why* someone came back rather than asserting it.
+  Capped at 20 results.
+- **`dhaga_list_contacts`** — browse with filters (name, company, tag, starred)
+  and pagination, up to 100 per page.
+- **`dhaga_get_contact`** — one person in full: details, job history, the facts
+  extracted from their notes (each with the `sourceNoteId` receipt it came
+  from), up to 25 recent notes, and their open follow-ups.
+- **`dhaga_list_follow_ups`** — everything you're on the hook for, across the
+  whole network, soonest-due first.
+- **`dhaga_find_warm_path`** — up to three introduction paths to a person or
+  company, through people you already know.
+- **`dhaga_list_upcoming_dates`** — birthdays and anniversaries in the next N
+  days (30 by default, 365 at most), resolved in your own timezone.
+
+Dhaga tells the connected model, at connect time, to treat your graph as the
+only source of truth about who you know — and to say so plainly when the answer
+isn't there rather than filling the gap from what it happens to know about a
+similarly-named public figure.
+
+## What it can write
+
+Four write tools, all **additive**:
+
+- **`dhaga_add_note`** — attach a note to a contact.
+- **`dhaga_create_contact`** — save a person. Only a name is required; title,
+  company, emails, phones, links, location and a first note are all optional.
+- **`dhaga_create_follow_up`** — open a reminder (what to do, plus an optional
+  due date).
+- **`dhaga_close_follow_up`** — mark one **done** or **dismissed**.
+
+A note written by an assistant goes through exactly the same path as one you
+type in the app: it queues background extraction, and every fact or follow-up
+derived from it keeps a `source_note_id` receipt. Delete the note later and its
+derived facts go with it, as always.
+
+## What it deliberately cannot do
+
+There is **no delete, no merge, no bulk action, no export, and no admin tool**,
+and that is a decision rather than a gap.
+
+**Why the write half stops where it does**
+
+Deleting a contact in Dhaga cascades — the person, their notes, the facts
+extracted from them, their graph edges and their embeddings all go. That is
+right when *you* click it and unrecoverable when a confused or prompt-injected
+client does. So the irreversible operations stay in the app, where a human is
+looking at them.
+
+`dhaga_close_follow_up` is the one thing that might read like a deletion and
+isn't: it changes a follow-up's status, and the follow-up stays on the contact.
+
+## What it costs
+
+**Reading your graph costs no AI credits at all.** There is deliberately no
+"ask Dhaga" tool in the MCP surface — the client on the other end is already a
+model, so it gets raw retrieval with receipts and does its own reasoning. You
+are not paying Dhaga to think on top of something that already thinks.
+
+The one exception is notes. **`dhaga_add_note`**, and `dhaga_create_contact`
+when you give it a `note`, queue the normal background extraction — **1
+credit**, exactly as if you had written the note in the app. If you're out of
+credits for the month the note is still saved; only the extraction is skipped,
+and the assistant is told so rather than left to assume it worked. See [AI
+credits](/docs/guide/ai-credits).
+
+There's also a plain request limit — **60 tool calls a minute**, per person. An
+assistant working through a question makes several calls a turn and won't
+notice it; a client stuck in a retry loop will, and that's the point.
+
+## For self-hosters
+
+MCP is **pure AGPL core**. It imports nothing from `packages/ee`, needs no
+cloud tier, and your instance serves the identical `/api/mcp` endpoint — a
+self-hosted Dhaga is a first-class MCP server, not a degraded one.
+
+**Set BETTER_AUTH_URL correctly**
+
+The OAuth issuer is derived from `BETTER_AUTH_URL`. If it doesn't match the URL
+clients actually reach your instance on, the tokens Dhaga issues will be
+rejected by the client that asked for them. The personal-access-token path is
+unaffected by this — it's a plain header.
+
+**Dynamic Client Registration today, CIMD later**
+
+The 2026-07-28 MCP spec deprecates Dynamic Client Registration in favour of
+**Client ID Metadata Documents (CIMD)**. Dhaga's authorization server is
+better-auth's `mcp` plugin, and better-auth 1.6 implements DCR but does not
+advertise CIMD yet — so DCR is what's live at `/api/auth/mcp/register`, and it
+works with the clients shipping today. CIMD support lands here when better-auth
+ships it.
 
 ---
 
@@ -1722,6 +2016,12 @@ With people selected, the bar offers:
   [Relabel relationships in bulk](#relabel-relationships-in-bulk) below.
 - **Tag** — add or remove a tag across the whole selection.
 - **Star** / **Unstar** — flag or unflag people for your Saved list.
+- **Not a person** / **Is a person** — settle in one go whether the selection is
+  people or address-book clutter ("Ola Support", "Vegetable Vendor"). Marking a
+  row **Not a person** keeps it off suggestions only; it stays listed in People,
+  in search and in every export, and nothing is deleted. Your ruling sticks —
+  Dhaga's nightly check never overrides it. See
+  [your daily briefing](/docs/guide) for what suppression does and doesn't touch.
 - **Delete** — forget the selected people. This cascades — their notes, facts,
   edges, and embeddings go too — exactly like "forget this person" on a single
   profile.
@@ -2131,9 +2431,9 @@ beneath it.
   reset, a breakdown of where the rest went by kind of action, and a list of your
   most recent AI actions. Credits are charged per action, not per model call: a
   card scan, note, quick-add or draft costs 1; a question to Ask Dhaga or a
-  pre-meeting brief costs 2; enriching a contact from the web costs 20. Nightly
-  watchlist scans are free — they show in the breakdown marked *Free* rather than
-  being hidden. Credits aren't the only gate: enrichment and pre-meeting briefs
+  pre-meeting brief costs 2; enriching a contact from the web costs 20. The
+  nightly passes — watchlist scans, contact checks and goal matches — are free;
+  they show in the breakdown marked *Free* rather than being hidden. Credits aren't the only gate: enrichment and pre-meeting briefs
   are Pro-and-up features whatever your balance says. Your allowance can be
   raised by whoever runs the instance — a
   promotional month, or credits granted to you after something went wrong on
@@ -3720,6 +4020,29 @@ at it:
 Requires `CRON_SECRET` and `FIRECRAWL_API_KEY` (or another `SEARCH_PROVIDER`)
 set — see `.env.example`. Without `CRON_SECRET` the route always returns
 401, so it's safe to leave unconfigured if you don't want the feature.
+
+### Nightly curation passes (person/service classification, goal matching)
+
+Two more sweeps ride the `/api/jobs/daily` endpoint below rather than a queue,
+both over the Anthropic **Message Batches API** and both **zero-credit** (see
+BRD §8.3):
+
+- **Person-vs-service classification** labels imported address-book rows
+  ("Ola Support", "Vegetable Vendor") so they stop appearing on proactive
+  surfaces. Nothing is deleted or hidden — the row stays in People, search,
+  merge, Wrapped and every export.
+- **Goal matching** judges contacts against the one objective a user has set,
+  writing the cohort the Home briefing draws its daily slice from.
+
+Both are two-phase, exactly like signal detection: one invocation applies the
+previous run's batch and submits a fresh one, so a graph drains over several
+nights rather than in one call. Each is capped per run
+(`PERSON_CLASSIFICATION_RUN_CAP` 1,000 contacts, `GOAL_MATCH_RUN_CAP` 150) and
+each reports a `remaining` count in the endpoint's JSON — contacts still to
+classify, and cohort slots still to fill — so you can watch a backfill drain.
+Both need a working LLM provider; without one they
+return `skipped: "no_llm"` and change nothing. They run **before** the reach-out
+digest on purpose, so the email reflects the freshest labels and cohort.
 
 ### Daily email jobs (digests and reminders)
 

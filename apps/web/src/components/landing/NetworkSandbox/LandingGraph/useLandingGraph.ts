@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { buildGraphIndexes, type GraphIndexes } from "@/components/app/graph/logic/indexes";
+import type { GraphIndexes } from "@/components/app/graph/logic/indexes";
 import { SANDBOX_CORE_ASSET, SANDBOX_FULL_ASSET } from "@/utils/constants/landing";
-import type { FullGraphEdge, FullGraphNode, FullGraphPayload, PositionMap } from "@/components/app/graph/types";
+import type { FullGraphPayload, PositionMap } from "@/components/app/graph/types";
+import { loadGraphDataset } from "./loadDataset";
 
 export type SandboxMode = "core" | "full";
 
@@ -11,49 +12,6 @@ export interface SandboxDataset {
   payload: FullGraphPayload;
   positions: PositionMap;
   indexes: GraphIndexes;
-}
-
-/** On-disk node shape emitted by scripts/export-public-graph.mjs: a FullGraphNode
- *  with baked x/y and null sublabels omitted to save bytes. */
-interface BakedNode {
-  id: string;
-  kind: FullGraphNode["kind"];
-  label: string;
-  sublabel?: string;
-  typeId?: string;
-  x: number;
-  y: number;
-}
-
-interface BakedPayload {
-  nodes: BakedNode[];
-  edges: FullGraphEdge[];
-  nodeTypes: FullGraphPayload["nodeTypes"];
-  relationshipTypes: FullGraphPayload["relationshipTypes"];
-}
-
-/** Fetch a baked asset and split it into the renderer's payload + a position
- *  map (positions come straight from the JSON — no runtime layout). */
-async function loadDataset(url: string): Promise<SandboxDataset> {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Failed to load ${url} (${res.status})`);
-  const raw = (await res.json()) as BakedPayload;
-
-  const nodes: FullGraphNode[] = raw.nodes.map((n) => ({
-    id: n.id,
-    kind: n.kind,
-    label: n.label,
-    sublabel: n.sublabel ?? null,
-    ...(n.typeId ? { typeId: n.typeId } : {}),
-  }));
-  const positions: PositionMap = new Map(raw.nodes.map((n) => [n.id, { x: n.x, y: n.y }]));
-  const payload: FullGraphPayload = {
-    nodes,
-    edges: raw.edges,
-    nodeTypes: raw.nodeTypes,
-    relationshipTypes: raw.relationshipTypes,
-  };
-  return { payload, positions, indexes: buildGraphIndexes(payload) };
 }
 
 export interface LandingGraphState {
@@ -81,7 +39,7 @@ export function useLandingGraph(): LandingGraphState {
 
   useEffect(() => {
     let active = true;
-    loadDataset(SANDBOX_CORE_ASSET)
+    loadGraphDataset(SANDBOX_CORE_ASSET)
       .then((d) => {
         if (active) setCore(d);
       })
@@ -100,7 +58,7 @@ export function useLandingGraph(): LandingGraphState {
     }
     setExploding(true);
     setError(null);
-    loadDataset(SANDBOX_FULL_ASSET)
+    loadGraphDataset(SANDBOX_FULL_ASSET)
       .then((d) => {
         setFull(d);
         setMode("full");

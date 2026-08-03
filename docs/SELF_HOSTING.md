@@ -324,6 +324,38 @@ multi-tenant deployment that scoping is doing real work. See
 `apps/web/content/docs/guide/syncing-your-phone.mdx` for the user-facing behaviour
 (including the Android limitation).
 
+**The MCP server is fully core too — your instance is a first-class MCP server,
+not a degraded one.** `lib/mcp/`, the `/api/mcp` route and the two
+`.well-known` discovery routes import nothing from `@dhaga/ee`, so they're
+unaffected by Level 1 *and* Level 2 and don't belong on the deletion list above —
+that list is unchanged. Any MCP client (claude.ai, Claude Desktop/Code, ChatGPT,
+Cursor) connects to `https://your-domain/api/mcp` and gets the same ten tools the
+hosted instance serves: six read-only ones that cost no AI credits, and four
+additive write ones. There is deliberately **no delete, merge, bulk-action,
+export or admin tool** — a prompt-injected client must not be able to cascade
+away a graph.
+
+Two credentials work, and neither needs a new env var:
+
+- **A personal access token** — create one under Settings → API keys and send it
+  as `x-api-key`. This is the simplest path, and the only one local/stdio clients
+  need: `claude mcp add --transport http dhaga https://your-domain/api/mcp
+  --header "x-api-key: <token>"`.
+- **OAuth 2.1**, if you want one-click connectors. Your instance *is* the
+  authorization server (better-auth's `mcp` plugin), with Dynamic Client
+  Registration at `/api/auth/mcp/register` and RFC 8414 / RFC 9728 discovery at
+  `/.well-known/oauth-authorization-server` and
+  `/.well-known/oauth-protected-resource`. The one thing to get right is
+  **`BETTER_AUTH_URL`**: the issuer is derived from it, so if it doesn't match the
+  URL clients actually reach you on, they will reject tokens you issued yourself.
+
+Three global auth tables are added to the boot DDL for the OAuth server
+(`oauth_application`, `oauth_access_token`, `oauth_consent` — `lib/db/ddl/oidc.ts`).
+They're applied automatically by the same `ddl_history` self-heal as everything
+else, so there is no migration step; they are instance-wide auth tables, not
+tenant tables, and are deliberately not in EE's `TENANT_TABLES`. See
+`apps/web/content/docs/guide/mcp.mdx` for the user-facing side.
+
 ### Custom database deployments
 
 `compose.yml` is a working reference, not a requirement — `DATABASE_URL` can

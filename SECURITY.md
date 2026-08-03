@@ -21,6 +21,28 @@ afterthought.
 - **Export anytime.** You can export your full graph (CSV / vCard / JSON)
   whenever you want. No lock-in.
 
+## How isolation is verified
+
+Describing a policy is not the same as proving it holds. Tenant isolation is
+covered by an automated suite that runs against a real Postgres:
+
+- **Every tenant-scoped table has its own isolation spec.** For each table, the
+  suite writes a row as one synthetic tenant and then asserts three things: a
+  privileged connection can see the row at all (so the test cannot pass
+  vacuously), a second tenant's scoped connection sees **zero** rows, and the
+  owning tenant sees exactly its own row with `user_id` stamped by the
+  *database* default rather than by application code.
+- **Coverage cannot drift silently.** A separate check that needs no database
+  asserts the spec list is exactly the registry of tenant-scoped tables, so
+  adding a table without an isolation spec fails the test suite rather than
+  going unnoticed.
+- **The database is asked what it actually enforces.** Against a live database
+  the suite reads `pg_policies` and each table's `FORCE ROW LEVEL SECURITY`
+  flag, rather than trusting that the schema migration did what it intended.
+- **Self-hosters can run it too.** The same suite is runnable against your own
+  disposable Postgres — see `docs/DEPLOYING.md`. It writes and deletes test
+  rows, so it must never be pointed at a production database.
+
 ## Reporting a vulnerability
 
 Please report suspected vulnerabilities **privately** — email
@@ -30,6 +52,20 @@ reasonable window to fix before any disclosure. We aim to acknowledge within
 
 ## Advisories
 
+- **2026-08 — tenant-isolation test coverage drift (not a vulnerability).** An
+  internal review found that 11 tenant-scoped tables added by later features —
+  including goals, messaging sessions, and contact-sync links — had no
+  row-isolation spec. These tables **were** protected: they are members of the
+  tenant-table registry, so the schema pass had given each one a `user_id`
+  column, `FORCE ROW LEVEL SECURITY`, and the same isolation policy as every
+  other table. What was missing was the automated *proof* that the policy held.
+  The gap persisted because the check that would have caught it only ran when a
+  live database was configured, so it was skipped — silently — in ordinary test
+  runs. All 11 now have specs, and every tenant-scoped table has been verified
+  isolated against a real Postgres. The coverage check no longer needs a
+  database, so a table added without a spec now fails the suite immediately.
+  No user data was known to have been accessed, and no policy was found
+  missing or misconfigured.
 - **2026-07 — calendar OAuth state binding.** The calendar OAuth `state` is now
   bound to the initiating session's user id, and the callback rejects a state
   whose user doesn't match the current session — closing an OAuth-CSRF /

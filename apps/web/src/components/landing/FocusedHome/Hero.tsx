@@ -4,6 +4,8 @@ import type { ReactElement } from "react";
 import { ArrowRight, Blocks, Globe2, MessageCircle, Send, Smartphone } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { CopyCommand } from "@/components/ui/copy-command";
+import { MCP_DOCS_PATH, SKILLS_INSTALL_COMMAND } from "@/utils/constants/skills";
 import { ProductWindow } from "./ProductWindow";
 
 export function Hero(): ReactElement {
@@ -59,6 +61,23 @@ export function Hero(): ReactElement {
                 status="Coming soon"
               />
             </ul>
+          </div>
+          <div className="mt-5 max-w-xl">
+            <p className="text-pretty text-sm leading-6 text-fog">
+              Already using Claude, Cursor, or ChatGPT? Install the skills, connect your account
+              over MCP, and it works with your network.
+            </p>
+            <CopyCommand
+              command={SKILLS_INSTALL_COMMAND}
+              label="install command"
+              className="mt-3"
+            />
+            <Link
+              href={MCP_DOCS_PATH}
+              className="mt-1 inline-flex min-h-11 items-center font-mono text-xs uppercase tracking-[0.12em] text-ember transition-colors hover:text-paper focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-trust/40"
+            >
+              How it works
+            </Link>
           </div>
         </div>
         <ProductWindow />

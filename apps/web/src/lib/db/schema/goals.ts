@@ -14,6 +14,11 @@ export const goals = pgTable("goals", {
   objective: text("objective").notNull(),
   status: text("status").notNull().default("active"), // "active" | "done" | "archived"
   resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  /** When a match pass last FINISHED for this goal. NULL means none ever has,
+   *  which is the only way to tell "not searched yet" from "searched, nobody
+   *  matched" — both otherwise render as an empty cohort. Distinct from
+   *  `resolvedAt`, which is the TERMINAL done/archived stamp. */
+  lastMatchedAt: timestamp("last_matched_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });

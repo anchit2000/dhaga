@@ -3,10 +3,12 @@ import type { GoalMatchingSubject } from "@dhaga/core";
 import { getDb } from "@/lib/db/request-scope";
 import { contacts, eventContacts, events, facts, notes } from "@/lib/db/schema";
 import { lastTouchSql } from "@/lib/repo/last-touch";
-import type { GoalRecallCandidate } from "@/lib/repo/goals";
+import type { GoalRecallCandidate } from "./recall";
 
 /**
- * The graph context the match prompt judges each recalled candidate on.
+ * The graph context the match prompt judges each recalled candidate on. Lives
+ * beside recall (it is a graph READ, not a job step) because both match passes
+ * need it — the nightly Batch job and the synchronous resolve on save.
  * `recallGoalCandidates` returns only name/title/company (it is retrieval, not
  * context assembly), and the prompt also reasons about place, where they were
  * met, what is on file about them, and how long it has been — objectives are

@@ -1,6 +1,3 @@
-import { sql } from "drizzle-orm";
-import { getDb } from "@/lib/db/request-scope";
-import { aiBudgetSettings } from "@/lib/db/schema";
 import {
   AI_PLAN_ALLOWANCES_KEY,
   AI_PLAN_CAP_ENFORCEMENT_DEFAULT,
@@ -10,6 +7,8 @@ import {
   DEFAULT_AI_PLAN_ALLOWANCES,
   type AiAllowancePlan,
 } from "@/utils/constants/ai-budget";
+import { readDollarCapConfig } from "./dollar-cap";
+import { readAll, writeKey } from "./store";
 import type { AiBudgetConfig, AiPlanAllowances, AiPromotion } from "@/types";
 
 /**
@@ -18,29 +17,10 @@ import type { AiBudgetConfig, AiPlanAllowances, AiPromotion } from "@/types";
  * settings, not a user's (see lib/db/ddl/ai-budget.ts for why putting them in
  * the tenant-scoped `settings` table would fail silently).
  *
- * The whole table is at most three rows, so every read pulls all of it in ONE
- * query and parses from there. That is deliberate: the cap resolver on the AI
- * hot path needs two or three of these values at once, and fanning that out into
- * separate `getDb()` round-trips is the exact pattern that has exhausted the
- * small tenant pool before (see docs/SCALING.md and the search round-trip fix).
+ * The table is small, so every read pulls all of it in ONE query (./store.ts)
+ * and every parser here works from that map — including the dollar gate's, so
+ * the second ceiling costs no second round-trip.
  */
-
-async function readAll(): Promise<Map<string, string>> {
-  const db = await getDb();
-  const rows = await db
-    .select({ key: aiBudgetSettings.key, value: aiBudgetSettings.value })
-    .from(aiBudgetSettings);
-  return new Map(rows.map((row) => [row.key, row.value]));
-}
-
-async function writeKey(key: string, value: string): Promise<void> {
-  const db = await getDb();
-  await db.execute(sql`
-    insert into ai_budget_settings (key, value, updated_at)
-    values (${key}, ${value}, now())
-    on conflict (key) do update set value = excluded.value, updated_at = excluded.updated_at
-  `);
-}
 
 /**
  * THE MASTER SWITCH. ON unless an admin explicitly turns it off (see
@@ -108,6 +88,7 @@ export async function getAiBudgetConfig(now: Date = new Date()): Promise<AiBudge
     allowances: readAllowances(values),
     promotion,
     promotionCredits: activePromotionCredits(promotion, now),
+    dollarCap: readDollarCapConfig(values),
   };
 }
 

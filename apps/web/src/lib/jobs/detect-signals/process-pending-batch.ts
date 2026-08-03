@@ -49,7 +49,9 @@ export async function processPendingBatch(
           continue;
         }
         try {
-          await recordAiAction("signal_detection", result.model, result.usage);
+          // Message Batches API — half price both directions. See the note in
+          // classify-people/process-pending-batch.ts.
+          await recordAiAction("signal_detection", result.model, result.usage, { batch: true });
           const { hasSignal, kind, headline, detail, sourceUrl } = result.data;
           // Same dedup guard the synchronous job used — see hasOpenSignal's
           // doc comment for why the sweep would otherwise duplicate the same

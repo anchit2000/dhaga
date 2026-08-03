@@ -67,7 +67,10 @@ export async function aiFailureResult(
   query: string,
   hits: SearchIndexResult[] | null,
 ): Promise<AiAnswerResult> {
-  if (error instanceof AiBudgetError && error.kind === "cap") {
+  // Both monthly ceilings (credits, and the operator's dollar gate) mean "no
+  // more AI until next month" — neither is retryable, so both degrade the same
+  // way. Only "burst" falls through to the retry cue below.
+  if (error instanceof AiBudgetError && error.kind !== "burst") {
     const fallbackHits =
       hits ?? (await getSearchIndex().search({ text: query, kinds: ["contact"] }));
     return {

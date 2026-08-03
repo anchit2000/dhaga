@@ -8,6 +8,7 @@ import {
   markGoalDone,
   updateGoalObjective,
 } from "@/lib/repo/goals";
+import { resolveGoalNow, type GoalResolveSkip } from "@/lib/ai/goal-resolve";
 import { PreconditionError } from "@/lib/repo/errors";
 import { MutationError, mutation, type MutationResult } from "@/lib/actions/mutation";
 
@@ -41,20 +42,49 @@ async function guard<T>(work: () => Promise<T>): Promise<T> {
  * Write the objective: create the first goal, or reword the live one. One
  * action rather than two because the strip's dialog is one dialog — the user is
  * stating what they want, and whether a row already exists is our bookkeeping.
+ *
+ * THEN RESOLVE IT, INLINE. Matching used to be nightly-cron-only, so stating a
+ * goal did nothing visible for up to 24 hours (and nothing ever, on a
+ * deployment with no cron) — the strip sat on "Finding people" and users read
+ * it as a hang. The resolve is deliberately OUTSIDE the mutation() above:
+ * mutation() holds one scoped tenant connection for the whole callback, and
+ * holding a connection across an LLM call is the pool-exhaustion outage of
+ * PR #92. lib/ai/goal-resolve opens its own short scopes around the model
+ * instead.
+ *
+ * Its outcome is not surfaced as an action ERROR: the save SUCCEEDED, and
+ * failing it would tell the user their goal was not written.
+ *
+ * But the skip reason IS returned as data, because only one of the five is
+ * legible from getActiveGoalProgress. `no_candidates` finishes a pass and
+ * stamps lastMatchedAt, so the strip reads it as "no_matches" — the other four
+ * (no_llm, rate_limited, no_budget, failed) all leave lastMatchedAt null and
+ * are indistinguishable from "nothing has run yet". Returning the reason is
+ * what lets the strip say WHICH empty it is instead of an eternal spinner.
+ *
+ * A no-op reword does not resolve, and so reports no skip. Re-judging the same
+ * candidates against the same words costs the same ~$0.019 and can only produce
+ * the same cohort, and it would burn a slot in a 3-a-day fuse.
  */
-export async function saveGoalAction(formData: FormData): Promise<MutationResult<null>> {
+export async function saveGoalAction(
+  formData: FormData,
+): Promise<MutationResult<GoalResolveSkip | null>> {
   const objective = String(formData.get("objective") ?? "").trim();
   if (!objective) return { ok: false, error: "Describe what you're trying to do." };
-  const r = await mutation("saveGoal", () =>
+  const r = await mutation("saveGoal", (userId) =>
     guard(async () => {
       const active = await getActiveGoal();
-      if (active) await updateGoalObjective(active.id, objective);
-      else await createGoal(objective);
-      return null;
+      if (!active) return { userId, goalId: (await createGoal(objective)).id, resolve: true };
+      await updateGoalObjective(active.id, objective);
+      return { userId, goalId: active.id, resolve: active.objective !== objective };
     }),
   );
-  if (r.ok) revalidatePath("/app");
-  return r;
+  if (!r.ok) return r;
+  const skipped = r.data.resolve
+    ? (await resolveGoalNow(r.data.userId, r.data.goalId, objective)).skipped
+    : null;
+  revalidatePath("/app");
+  return { ok: true, data: skipped };
 }
 
 /** Both terminal states stop matching; only one is a success, so the outcome is

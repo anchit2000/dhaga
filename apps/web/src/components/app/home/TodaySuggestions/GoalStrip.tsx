@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Archive, Check, MoreHorizontal, Pencil, Target } from "lucide-react";
 import { GoalDialog } from "./GoalDialog";
+import { GoalStatus, type GoalSaveState } from "./GoalStatus";
 import { toastError, toastSuccess } from "@/components/app/feedback";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,10 +30,16 @@ import type { GoalProgress } from "@/lib/repo/goals";
  * The burn-down is derived, never stored (lib/repo/goals/cohort.ts) — so the bar
  * moves the moment the user marks someone reached out, without this component
  * knowing anything about rows.
+ *
+ * What the strip SAYS about matching lives in ./GoalStatus, which is where the
+ * "Finding people forever" bug was. This component owns the save outcome only
+ * because it outlives the dialog that produced it: the dialog unmounts on close,
+ * and the reason a save matched nobody has to survive that.
  */
 export function GoalStrip({ progress }: { progress: GoalProgress | null }): ReactElement {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
+  const [save, setSave] = useState<GoalSaveState | null>(null);
   const [pending, startTransition] = useTransition();
 
   function resolve(run: () => Promise<MutationResult<null>>, done: string): void {
@@ -47,8 +54,12 @@ export function GoalStrip({ progress }: { progress: GoalProgress | null }): Reac
     });
   }
 
-  const percent =
-    progress && progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0;
+  /** Re-opening the dialog drops the last outcome: the user is about to produce
+   *  a new one, and a stale "nobody matched" under a fresh save reads as a hang. */
+  function openDialog(): void {
+    setSave(null);
+    setEditing(true);
+  }
 
   // No margin on the wrapper: HomeTile lays its children out in a gap-3 column.
   return (
@@ -58,7 +69,7 @@ export function GoalStrip({ progress }: { progress: GoalProgress | null }): Reac
           variant="ghost"
           size="sm"
           className="-ml-2 min-h-11 gap-1.5 px-2 font-normal normal-case text-fog hover:text-paper"
-          onClick={() => setEditing(true)}
+          onClick={openDialog}
         >
           <Target /> Set a goal
         </Button>
@@ -86,7 +97,7 @@ export function GoalStrip({ progress }: { progress: GoalProgress | null }): Reac
                 <span className="sr-only">Goal actions</span>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setEditing(true)}>
+                <DropdownMenuItem onClick={openDialog}>
                   <Pencil />
                   Edit
                 </DropdownMenuItem>
@@ -101,17 +112,8 @@ export function GoalStrip({ progress }: { progress: GoalProgress | null }): Reac
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-          <div className="mt-2 flex items-center gap-2.5">
-            {/* Amber as a FILL over the seam track — never amber as text. */}
-            <div className="h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-seam">
-              <div
-                className="h-full rounded-full bg-amber transition-[width] duration-300"
-                style={{ width: `${percent}%` }}
-              />
-            </div>
-            <span className="shrink-0 font-mono text-[10px] uppercase tracking-widest text-fog">
-              {progress.total > 0 ? `${progress.done} of ${progress.total} done` : "Finding people"}
-            </span>
+          <div className="mt-2" aria-live="polite">
+            <GoalStatus progress={progress} save={save} onEdit={openDialog} />
           </div>
         </div>
       )}
@@ -119,6 +121,7 @@ export function GoalStrip({ progress }: { progress: GoalProgress | null }): Reac
         open={editing}
         objective={progress?.objective ?? ""}
         onOpenChange={setEditing}
+        onSaveState={setSave}
       />
     </div>
   );

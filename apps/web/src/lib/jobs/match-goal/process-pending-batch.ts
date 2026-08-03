@@ -1,21 +1,10 @@
-import { randomUUID } from "node:crypto";
-import { count, eq } from "drizzle-orm";
 import { goalMatchSchema, type BatchLLMClient } from "@dhaga/core";
 import { recordAiAction } from "@/lib/ai/metering";
-import { getDb } from "@/lib/db/request-scope";
-import { goalMembers } from "@/lib/db/schema";
-import { GOAL_COHORT_MAX } from "@/utils/constants/goals";
+import { recordGoalMatchRun, type GoalMatchVerdict } from "@/lib/repo/goals";
 import { GOAL_MATCH_BATCH_KEY, setPendingBatchId } from "@/lib/repo/settings";
 import type { ScopedRunner } from "@/lib/jobs/tenant-sweep";
 
 export type PendingBatchOutcome = { done: false } | { done: true; matched: number };
-
-/** `rank` is an integer column and `fit` is a model-produced number, so it is
- *  clamped rather than trusted: a schema can describe 0–100, not enforce it. */
-function toRank(fit: number): number {
-  if (!Number.isFinite(fit)) return 0;
-  return Math.min(Math.max(Math.round(fit), 0), 100);
-}
 
 /**
  * Phase 1: apply a finished match batch as `goal_members` rows on the goal the
@@ -23,17 +12,15 @@ function toRank(fit: number): number {
  * "whatever goal is active tonight" (see ./index: the user may have reworded or
  * replaced the goal while the batch was in flight).
  *
- * Only `matches === true` becomes a member; `fit` is frozen into `rank` at match
- * time and never recomputed on read (lib/db/ddl/core/goals.ts). Inserts are
- * capped at the cohort headroom and ordered best-fit-first, so a batch larger
- * than the remaining room keeps the strongest matches. `onConflictDoNothing` on
- * the (goal_id, contact_id) unique index makes a re-applied batch a no-op.
+ * Only `matches === true` becomes a member. The insert itself — rank clamping,
+ * cohort headroom, best-fit-first ordering, and the `last_matched_at` stamp — is
+ * `recordGoalMatchRun` (lib/repo/goals/members.ts), shared with the synchronous
+ * resolve so the two passes cannot drift apart on any of it.
  *
  * NOT SET HERE: `goals.resolved_at`. In lib/repo/goals/write.ts and the DDL that
  * column is the TERMINAL timestamp, written only alongside status done/archived;
  * stamping it while the goal is still active would make an in-progress goal read
- * as closed. Nothing currently reads it for a "matching has run" state, so this
- * pass leaves the goal lifecycle entirely to the repo that owns it.
+ * as closed. "A pass has run" is `last_matched_at`, a separate column.
  *
  * Metered as `goal_matching` — its own feature, not folded into
  * `person_classification`, so an operator can tell the two nightly passes apart
@@ -57,8 +44,7 @@ export async function processPendingBatch(
   try {
     const results = await batchClient.getBatchResults(pending.batchId, goalMatchSchema);
     const matched = await runScoped(async () => {
-      const db = await getDb();
-      const accepted: { contactId: string; rank: number }[] = [];
+      const accepted: GoalMatchVerdict[] = [];
       for (const result of results) {
         if (result.status !== "succeeded" || !result.data || !result.model || !result.usage) {
           // errored/expired/canceled — unbilled by Anthropic, and this contact
@@ -66,36 +52,19 @@ export async function processPendingBatch(
           continue;
         }
         try {
-          await recordAiAction("goal_matching", result.model, result.usage);
-          if (result.data.matches) {
-            accepted.push({ contactId: result.id, rank: toRank(result.data.fit) });
-          }
+          // Message Batches API — half price both directions. THIS is why
+          // batch-ness is recorded rather than inferred from the feature:
+          // lib/ai/goal-resolve runs the same `goal_matching` feature
+          // SYNCHRONOUSLY at full price, so the feature alone cannot say.
+          await recordAiAction("goal_matching", result.model, result.usage, { batch: true });
+          if (result.data.matches) accepted.push({ contactId: result.id, fit: result.data.fit });
         } catch {
           // One result failing to meter must never drop the whole batch.
         }
       }
-      const [cohort] = await db
-        .select({ total: count() })
-        .from(goalMembers)
-        .where(eq(goalMembers.goalId, pending.goalId));
-      const room = GOAL_COHORT_MAX - (cohort?.total ?? 0);
-      const rows = accepted
-        .sort((a, b) => b.rank - a.rank || a.contactId.localeCompare(b.contactId))
-        .slice(0, Math.max(room, 0))
-        .map((row) => ({
-          id: randomUUID(),
-          goalId: pending.goalId,
-          contactId: row.contactId,
-          rank: row.rank,
-        }));
-      if (rows.length > 0) {
-        await db
-          .insert(goalMembers)
-          .values(rows)
-          .onConflictDoNothing({ target: [goalMembers.goalId, goalMembers.contactId] });
-      }
+      const inserted = await recordGoalMatchRun(pending.goalId, accepted);
       await setPendingBatchId(GOAL_MATCH_BATCH_KEY, null);
-      return rows.length;
+      return inserted;
     });
     return { done: true, matched };
   } catch {

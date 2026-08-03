@@ -518,6 +518,98 @@ self-host and on an instance that has billing — and it is a **seed**, not an
 override: the moment an admin sets a number, the stored one wins and the env var
 stops mattering.*
 
+**The dollar ceiling (built 2026-08-03).** Credits stopped bounding spend the
+moment three metered features were priced at **0 credits** on purpose —
+`signal_detection`, `person_classification`, `goal_matching` (the two rows above
+that read "0"). Folding them into credits at 1 credit each was rejected as ~26×
+mispriced, so an uncredited nightly sweep is invisible to the allowance: it costs
+real money and moves no counter. A **second, independent per-user ceiling,
+denominated in actual inference dollars**, therefore sits behind the credit
+ladder as the operator's cost backstop.
+
+The dollars are *computed, not estimated*. `apps/web/src/utils/constants/model-pricing.ts`
+holds the only copy of provider rates (`MODEL_RATES_PER_MTOK` — Haiku 4.5 $1/$5,
+Sonnet 5 $3/$15, Opus 5 $5/$25 per MTok) and `BATCH_PRICE_MULTIPLIER = 0.5`,
+the Batch API's half price in both directions; `apps/web/src/lib/ai/cost/`
+turns a recorded `ai_actions` row into USD. An unknown model is priced at the
+**dearest** known rate, and a dated snapshot (`claude-haiku-4-5-20251001`)
+matches by longest known prefix — under-reporting cost is the dangerous
+direction. **Prompt caching is not modelled and must not be**, for exactly the
+reason correction 1 above gives: every system prompt is below the minimum
+cacheable prefix, so there is no discount to apply. Batch-ness is **recorded**,
+not inferred from the feature — `ai_actions` gained a
+`batch boolean NOT NULL DEFAULT false` column (`lib/db/ddl/core/meta.ts`,
+self-healing `ADD COLUMN IF NOT EXISTS`) because `goal_matching` runs *both* a
+nightly Batch pass and a synchronous goal-resolve path, and inferring it from
+the feature would halve a real bill. History rows predating the column read
+`false`, which over-states an old batch action by 2× — the safe direction — and
+ages out within a month.
+
+Precedence, highest first (`apps/web/src/lib/ai/metering/dollar-cap.ts`),
+deliberately mirroring the credit ladder rung for rung:
+
+1. **Per-user admin override** — `settings.ai_monthly_dollar_cap_override`, the
+   same tenant-scoped shape as the credit ladder's `ai_monthly_cap_override`.
+   `0` is a valid override (lock one abusive account down for the month).
+2. **Plan-derived** — when dollar enforcement is on and a plan is in play: the
+   plan's monthly **revenue** × a multiplier (default **2.0**).
+3. **The floor** — a flat USD figure (default **$0.50**) for any plan with no
+   recurring revenue.
+4. **No ceiling** — when no plan is in play at all, or enforcement is off.
+
+| Plan | Monthly revenue | Rung | Monthly dollar ceiling |
+|---|---:|---|---:|
+| Free | $0 | floor | **$0.50** |
+| Pro | $8 | revenue × 2.0 | **$16** |
+| Lifetime / Annual | $8 (assumed) | revenue × 2.0 | **$16** |
+| Power (sized, not sold) | $24 | revenue × 2.0 | **$48** |
+| No plan in play (self-host, billing not running) | — | none | **no ceiling** |
+
+Revenue, not list price: Pro is $8/month of revenue (sold annually at $96), the
+same number the credit allowance is sized against — the $10 month-to-month
+marketing price is deliberately not used, because a ceiling must be built on
+money received. `lifetime` is one-off and has no price constant anywhere in the
+repo; amortising it at Pro's $8 is a **stated assumption**, conservative because
+a lifetime buyer paid at least a year of Pro up front. Free is the case that
+breaks a pure percentage model on day one — 0 × 2.0 = $0 would refuse every AI
+action a free user takes, including the ten their credit allowance is meant to
+buy — which is why the floor exists. Rung 4 is the other deliberate asymmetry
+with the credit ladder, whose bottom rung is a real number: a self-hoster pays
+their own provider bill, so on a core-only install with no billing the gate
+resolves to no ceiling and is **inert** (see `SELF_HOSTING.md`). There is
+deliberately **no promotion rung** — a promotion should raise what a user may
+*do*, not raise the bill we absorb without noticing.
+
+Instance-wide state lives in the existing `ai_budget_settings` table (no new
+table and **no new env var** — there is no `DHAGA_AI_MONTHLY_DOLLAR_CAP`):
+`dollar_cap_enforcement` (**on by default**,
+`AI_DOLLAR_CAP_ENFORCEMENT_DEFAULT = true` — a backstop that ships off is not a
+backstop), `dollar_cap_multiplier` (2.0), `dollar_cap_floor` ($0.50), all
+constants in `apps/web/src/utils/constants/ai-budget.ts` alongside
+`PLAN_MONTHLY_REVENUE_USD`. Enforcement sits inside the existing metering path
+(`assertAiBudget` and the `hasMonthlyAiBudget` pre-flight,
+`apps/web/src/lib/ai/metering/index.ts`), so it covers **every** action,
+including the three uncredited ones. **Credits are checked first, dollars
+second**: the credit message is the one a user can act on ("you've used your 300
+credits" → upgrade), while the dollar gate is the operator's backstop and should
+only speak when the credit ladder did not already stop it. The dollar check sits
+*outside* the `hasUnlimitedAiCredits` early return on purpose — an
+unlimited-credit plan (Lifetime) is exactly the account nothing else bounds.
+Failure matches the credit cap: `AiBudgetError` with `kind: "dollar_cap"` (the
+kinds are now `"cap" | "dollar_cap" | "burst"`), message "This account has
+reached its monthly AI spending limit. It resets at the start of next month."
+Both monthly ceilings are non-retryable; only `"burst"` is worth retrying.
+
+`/app/admin/ai-credits` (now **"AI cost & credits"**, hosted/EE only) carries
+the evidence: **cost this month** split total / credited / uncredited from real
+recorded tokens, with **measured** $/credit and all-in $/credit shown next to
+the ~$0.006 blended ceiling this section's credit table assumed — drift between
+those two numbers is the signal to re-derive the credit prices — plus a
+per-feature table of the uncredited spend; and **top 10 accounts by AI cost**
+with each one's ceiling, the rung that set it, and **utilisation %**, so "is
+200% the right multiplier?" is answered from data (typical Pro inference is
+~$1.35 against $8 of revenue, ~17%) rather than intuition.
+
 ### 8.4 Revenue streams
 
 1. **Pro (individual):** hosted sync + a monthly AI-credit allowance (§8.3 — 300 credits, sold as such on /pricing since 2026-07-31 and enforced by default since the same date) + enrichment + alerts. Monthly, yearly, and a **lifetime tier** — deliberately echoing the incumbent card scanner's proven one-time-purchase psychology.

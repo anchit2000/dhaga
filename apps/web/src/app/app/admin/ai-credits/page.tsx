@@ -4,6 +4,11 @@ import { EnforcementCard } from "@/components/app/admin/ai-budget/EnforcementCar
 import { GrantCard } from "@/components/app/admin/ai-budget/GrantCard";
 import { PlanAllowanceCard } from "@/components/app/admin/ai-budget/PlanAllowanceCard";
 import { PromotionCard } from "@/components/app/admin/ai-budget/PromotionCard";
+import { CostCard } from "@/components/app/admin/ai-budget/cost/CostCard";
+import { DollarCapCard } from "@/components/app/admin/ai-budget/cost/DollarCapCard";
+import { DollarEnforcementCard } from "@/components/app/admin/ai-budget/cost/DollarEnforcementCard";
+import { TopSpendersCard } from "@/components/app/admin/ai-budget/cost/TopSpendersCard";
+import { getAiCostSummary } from "@/components/app/admin/ai-budget/cost/data";
 import { instanceDefaultCap } from "@/lib/ai/metering";
 import { requireAdminForPage } from "@/lib/hosted/gate";
 import { getAiBudgetConfig } from "@/lib/repo/ai-budget";
@@ -11,26 +16,33 @@ import { getAiBudgetConfig } from "@/lib/repo/ai-budget";
 export const metadata = { title: "AI credits — Admin — Dhaga" };
 
 /**
- * Instance-wide AI credit controls. Four levers, in the order an operator
- * reasons about them: is anything enforced at all → what does each plan get →
- * is a promotion running → who got made whole, and why.
+ * Instance-wide AI cost and credit controls. What it actually cost first —
+ * an operator who cannot see the bill cannot judge any of the levers below it —
+ * then the two ceilings, in the order they are enforced: credits (what a user
+ * may DO) and dollars (what their month may COST).
  *
- * The precedence blurb below is a verbatim restatement of the contract in
- * lib/ai/metering/cap/index.ts. If one changes, the other changes in the same
- * edit — an operator reading this screen must not be reading last month's rules.
+ * The precedence blurbs below are verbatim restatements of the contracts in
+ * lib/ai/metering/cap/index.ts and lib/ai/metering/dollar-cap.ts. If one
+ * changes, the other changes in the same edit — an operator reading this screen
+ * must not be reading last month's rules.
  */
 export default async function AdminAiCreditsPage() {
   await requireAdminForPage();
+  // Sequential, never Promise.all: both reads are cross-tenant work against a
+  // three-connection pool (docs/SCALING.md).
   const config = await getAiBudgetConfig();
+  const cost = await getAiCostSummary(config.dollarCap);
 
   return (
     <div className="max-w-2xl space-y-6">
       <div>
-        <h1 className="font-display text-2xl tracking-tight">AI credits</h1>
+        <h1 className="font-display text-2xl tracking-tight">AI cost &amp; credits</h1>
         <p className="mt-1 text-sm text-fog">
-          Monthly AI-credit allowances for this instance. Precedence, highest first:
-          per-user override → promotion → plan allowance → the instance default. Active
-          grants are added on top of whichever one wins.
+          Two independent ceilings. CREDITS cap what a user may do — precedence, highest
+          first: per-user override → promotion → plan allowance → the instance default,
+          with active grants added on top of whichever wins. DOLLARS cap what their month
+          may cost us, and are the only ceiling that can see the three features priced at
+          0 credits.
         </p>
         <p className="mt-2 text-sm text-fog">
           <code>DHAGA_AI_MONTHLY_CAP</code> is a <span className="text-paper">seed</span>,
@@ -38,6 +50,11 @@ export default async function AdminAiCreditsPage() {
           set here. Anything you set below wins over it.
         </p>
       </div>
+
+      <CostCard summary={cost} />
+      <TopSpendersCard rows={cost.topUsers} />
+      <DollarEnforcementCard enabled={config.dollarCap.enforced} />
+      <DollarCapCard config={config.dollarCap} />
 
       <EnforcementCard enabled={config.enforcePlanCaps} />
       <PlanAllowanceCard

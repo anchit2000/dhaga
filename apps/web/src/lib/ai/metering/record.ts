@@ -26,15 +26,23 @@ function monthStart(): Date {
  * extraction that runs as part of enrichment is billed as enrichment rather
  * than counting as a second, differently-priced action.
  *
- * `model` is set by the call that opens the action and left alone afterwards —
- * a mixed-tier action (Haiku plan + Sonnet answer) is labelled by its first
- * model while its token totals stay complete. Per-call model attribution is
- * deliberately not retained; nothing in the app prices this table per row.
+ * `model` and `batch` are set by the call that opens the action and left alone
+ * afterwards — a mixed-tier action (Haiku plan + Sonnet answer) is labelled by
+ * its first model while its token totals stay complete. Per-call model
+ * attribution is deliberately not retained.
+ *
+ * `batch` says whether the call went through the Message Batches API, which is
+ * half price both directions. It is RECORDED rather than inferred from the
+ * feature because `goal_matching` has both a nightly batch pass and a
+ * synchronous goal-resolve path — inferring "batch" from the feature would
+ * halve a real bill, and under-reporting cost is the direction the dollar gate
+ * exists to prevent. Every synchronous caller leaves it at the false default.
  */
 export async function recordAiAction(
   feature: AiActionFeature,
   model: string,
   usage: LLMUsage,
+  options: { batch?: boolean } = {},
 ): Promise<void> {
   const db = await getDb();
   const scope = currentAiActionScope();
@@ -44,6 +52,7 @@ export async function recordAiAction(
       id: scope?.id ?? randomUUID(),
       feature: scope?.feature ?? feature,
       model,
+      batch: options.batch ?? false,
       inputTokens: usage.inputTokens,
       outputTokens: usage.outputTokens,
     })

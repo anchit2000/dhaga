@@ -9,11 +9,15 @@ import {
 } from "@dhaga/core";
 import { getDb } from "@/lib/db/request-scope";
 import { goalMembers } from "@/lib/db/schema";
-import { getActiveGoal, recallGoalCandidates } from "@/lib/repo/goals";
+import {
+  formatGoalMatchPointer,
+  getActiveGoal,
+  loadGoalSubjectContext,
+  recallGoalCandidates,
+} from "@/lib/repo/goals";
 import { userToday } from "@/lib/repo/reminders/local-today";
 import { GOAL_COHORT_MAX, GOAL_MATCH_RUN_CAP } from "@/utils/constants/goals";
 import { GOAL_MATCH_BATCH_KEY, setPendingBatchId } from "@/lib/repo/settings";
-import { loadGoalSubjectContext } from "./subjects";
 import type { ScopedRunner } from "@/lib/jobs/tenant-sweep";
 import type { GoalMatchSummary } from "./index";
 
@@ -84,7 +88,9 @@ export async function submitNewBatch(
     // and the same candidates are simply recalled again next run (the pass is
     // idempotent because recall excludes contacts already matched).
     const batchId = await batchClient.submitExtractBatch(items);
-    await runScoped(() => setPendingBatchId(GOAL_MATCH_BATCH_KEY, `${batchId}|${goal.id}`));
+    await runScoped(() =>
+      setPendingBatchId(GOAL_MATCH_BATCH_KEY, formatGoalMatchPointer(batchId, goal.id)),
+    );
   }
 
   return {

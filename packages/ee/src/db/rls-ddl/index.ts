@@ -2,6 +2,7 @@ import { BESPOKE_POLICIES_DDL } from "./bespoke-policies";
 import { TENANT_TABLE_RLS_DDL } from "./tenant-tables";
 
 export { TENANT_TABLES } from "./tenant-tables";
+export { BESPOKE_TENANT_TABLES } from "./bespoke-policies";
 
 /**
  * Row-Level Security, applied on top of core's own schema — never touches

@@ -59,7 +59,12 @@ const mockHasCalendar = vi.fn();
 const mockFreeBusy = vi.fn();
 vi.mock("@/lib/repo/calendar", () => ({
   hasCalendarConnection: () => mockHasCalendar(),
-  getFreeBusy: () => mockFreeBusy(),
+  // Both arguments are forwarded: the second one is the per-phase scope runner,
+  // and whether the digest passes it is the difference between holding a tenant
+  // connection across the Google call and not (see
+  // lib/__tests__/calendar-free-busy-scope/daily-digest-no-held-connection.test.ts,
+  // which asserts that against real scopes rather than a mock).
+  getFreeBusy: (range: unknown, runScoped: unknown) => mockFreeBusy(range, runScoped),
 }));
 
 const mockBuildSuggestions = vi.fn();
@@ -157,13 +162,27 @@ describe("runDailyDigest", () => {
   });
 
   it("does not touch the calendar provider for a tenant with no calendar connected", async () => {
-    // getFreeBusy is the one unit that talks to Google from inside the tenant's DB
-    // scope; not calling it for the tenants that cannot use it keeps that hold off
-    // the common path.
+    // getFreeBusy is an outbound Google/Microsoft round-trip. For a tenant with no
+    // connection it can only ever return nothing, so making the call at all would
+    // be latency (and a provider rate-limit budget) spent on every tenant in the
+    // sweep for an answer that is known in advance.
     optIn("u1");
 
     await runDailyDigest(RUN_1);
     expect(mockFreeBusy).not.toHaveBeenCalled();
+  });
+
+  it("hands getFreeBusy the tenant scope runner instead of wrapping the call in it", async () => {
+    // The connection-hygiene contract, asserted on the ARGUMENT here and on real
+    // scopes in lib/__tests__/calendar-free-busy-scope/daily-digest-no-held-connection.test.ts:
+    // wrapping the call held one of the three tenant-pool connections open across
+    // the provider round-trip (the PR #92 failure shape).
+    optIn("u1");
+    mockHasCalendar.mockResolvedValue(true);
+
+    await runDailyDigest(RUN_1);
+    expect(mockFreeBusy).toHaveBeenCalledTimes(1);
+    expect(typeof mockFreeBusy.mock.calls[0][1]).toBe("function");
   });
 
   it("sends nothing when the tenant has not opted in — the digest is off by default", async () => {

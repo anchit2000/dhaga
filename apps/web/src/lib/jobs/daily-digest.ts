@@ -77,12 +77,13 @@ export async function runDailyDigest(now: Date = new Date()): Promise<DailyDiges
  * runs between those units, never inside one, so no connection is held across the
  * network (connection hygiene, mirroring follow-up-reminders).
  *
- * `getFreeBusy` is the one unit that talks to a calendar provider from inside its
- * scope — it interleaves the provider call with token refresh / needs-reconnect
- * writes on the tenant's own rows, so it cannot be split. It is one connection,
- * held by one tenant at a time in a sequential loop (never a fan-out), and it is
- * skipped entirely for the tenants with no calendar connected. Recorded as a
- * residual in docs/FOLLOW_UPS.md rather than papered over.
+ * `getFreeBusy` is handed that same `runScoped` rather than being wrapped in it,
+ * so its three phases (read the connection rows → call the providers → flush the
+ * token-refresh / needs-reconnect writes) each take their own short scope and the
+ * outbound Google/Microsoft call is made holding nothing. Wrapping it — as this
+ * did — put one of the three tenant-pool connections behind a third party's
+ * latency for its full duration; see docs/FOLLOW_UPS.md and the spec in
+ * lib/__tests__/calendar-free-busy-scope/.
  */
 async function sweepUser(
   runScoped: ScopedRunner,
@@ -103,7 +104,11 @@ async function sweepUser(
 
   let busy: BusyInterval[] = [];
   if (await runScoped(() => hasCalendarConnection())) {
-    busy = await runScoped(() => getFreeBusy({ from: now, to: new Date(now.getTime() + WEEK_MS) }));
+    // `runScoped` is PASSED IN, never wrapped around this call: getFreeBusy scopes
+    // each of its DB phases itself and holds none across the provider round-trip.
+    // In self-host `runScoped` is `runOnGlobal` (a plain passthrough), so there it
+    // stays exactly what it was — no pool, nothing to hold.
+    busy = await getFreeBusy({ from: now, to: new Date(now.getTime() + WEEK_MS) }, runScoped);
   }
   const { suggestions } = await runScoped(() => buildDailySuggestions({ date: now, prefs, busy }));
   if (suggestions.length === 0) return false; // nobody to suggest — send nothing

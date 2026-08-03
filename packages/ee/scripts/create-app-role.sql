@@ -63,9 +63,16 @@ END $$;
 
 GRANT USAGE, CREATE ON SCHEMA public TO dhaga_app;
 -- Supabase only: pgvector/pg_trgm live in a separate "extensions" schema.
--- Self-hosted Postgres with extensions installed directly in "public" can
--- skip this line.
-GRANT USAGE ON SCHEMA extensions TO dhaga_app;
+-- Self-hosted Postgres installs them directly in "public" and has no such
+-- schema at all, where a bare GRANT would ERROR and (because hosted SQL editors
+-- run a paste as one transaction) roll the whole script back. Guarded so this
+-- one file runs UNMODIFIED on both — a no-op where the schema is absent.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = 'extensions') THEN
+    EXECUTE 'GRANT USAGE ON SCHEMA extensions TO dhaga_app';
+  END IF;
+END $$;
 ALTER DEFAULT PRIVILEGES FOR ROLE dhaga_app IN SCHEMA public GRANT ALL ON TABLES TO dhaga_app;
 ALTER DEFAULT PRIVILEGES FOR ROLE dhaga_app IN SCHEMA public GRANT ALL ON SEQUENCES TO dhaga_app;
 

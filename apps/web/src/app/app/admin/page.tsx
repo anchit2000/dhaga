@@ -33,6 +33,17 @@ export default async function AdminDashboardPage() {
           Plan allowances, a promotional month, and make-good grants.
         </p>
       </Link>
+      {/* No StatCard: a count would need another dashboardCounts query, and
+          feedback is read, not cleared to zero. */}
+      <Link
+        href="/app/admin/feedback"
+        className="mt-4 block rounded-2xl border border-seam bg-panel p-5 transition-colors hover:border-amber/40"
+      >
+        <p className="text-sm font-medium text-paper">Feedback</p>
+        <p className="mt-1 text-sm text-fog">
+          What people wrote in from the feedback box, newest first.
+        </p>
+      </Link>
     </div>
   );
 }

@@ -1,8 +1,9 @@
 "use client";
 
-import { createContext, useCallback, useContext, useState, useTransition } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { StitchLoader } from "@/components/brand/StitchLoader";
+import { NAVIGATION_PENDING_MAX_MS } from "@/utils/constants/loader-messages";
 
 interface NavigateOptions {
   replace?: boolean;
@@ -36,6 +37,20 @@ export function NavigationFeedback({ children }: { children: React.ReactNode }) 
   const pendingHref = pendingNavigation?.fromPathname === pathname
     ? pendingNavigation.href
     : undefined;
+
+  // Same safety valve BusyOverlay has, and for the same reason: this state
+  // renders the target tab `pointer-events-none opacity-70` with a spinner (see
+  // AppNav/NavLinks), and it clears ONLY when `pathname` changes. A navigation
+  // that never lands therefore strands the nav greyed and un-clickable until the
+  // user reloads — the reported "the tab is greyed and keeps on loading unless I
+  // refresh". Releasing it after a bounded wait costs a slow-but-alive
+  // navigation nothing (the router still completes it) and gives a dead one a
+  // way out.
+  useEffect(() => {
+    if (!pendingHref) return;
+    const timer = setTimeout(() => setPendingNavigation(undefined), NAVIGATION_PENDING_MAX_MS);
+    return () => clearTimeout(timer);
+  }, [pendingHref]);
 
   const navigate = useCallback(
     (href: string, options?: NavigateOptions): void => {

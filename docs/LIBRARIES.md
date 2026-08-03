@@ -191,6 +191,20 @@ step, and keep the URL **same-origin**: a cross-origin one makes MapLibre
 re-wrap the worker in a blob and puts a CDN in the request path of a page whose
 whole point is that contact data stays with us.
 
+**A map that fails must say so — `useMapFailure` is not optional polish.**
+MapLibre reports success by firing `load`; it has no matching signal for the
+failures above, so from React "broken" and "still loading" are the same state
+and the loading veil stays up until the tab is closed. That is how the worker
+bug reached production unnoticed. `components/ui/map/use-map-failure.ts` closes
+it with two detectors — an `error` listener for what MapLibre does report
+(style fetch refused, WebGL context denied, worker rejected) and a
+`MAP_LOAD_TIMEOUT_MS` clock for what it reports nothing for — and both are
+armed only until `load` arrives, because MapLibre keeps emitting `error` for a
+single missing tile long after the map is usable. The copy script and the
+`MapLibre worker asset` vitest are the guards against the worker regressing;
+this is the guard for everything else, and for the next failure nobody has
+thought of yet.
+
 **Basemap: OpenFreeMap, never CARTO — do not "fix" this back.** mapcn defaults
 to CARTO's Positron/Dark-Matter tiles, and mapcn's own README states that
 commercial use of them requires a CARTO Enterprise licence. Dhaga is a

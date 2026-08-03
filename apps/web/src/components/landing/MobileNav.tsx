@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { ThreadMark } from "@/components/brand/ThreadMark";
+import { hasSessionHint } from "@/lib/auth/session-hint";
 import { NAV_LINKS, RESOURCE_ITEMS } from "@/utils/constants/landing";
 import type { ReactElement } from "react";
 
@@ -20,10 +21,18 @@ import type { ReactElement } from "react";
 // Resources links, and sign in. Rendered `md:hidden` from Header.
 export function MobileNav(): ReactElement {
   const [open, setOpen] = useState(false);
+  // Read on open rather than on mount: the sheet's contents only exist after a
+  // tap, so there is nothing to flash, the server and client first renders stay
+  // identical (no hydration mismatch), and the hint is as fresh as it can be.
+  const [signedIn, setSignedIn] = useState(false);
   const closeMenu = (): void => setOpen(false);
+  const handleOpenChange = (next: boolean): void => {
+    if (next) setSignedIn(hasSessionHint());
+    setOpen(next);
+  };
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
+    <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetTrigger
         render={
           <Button
@@ -82,19 +91,27 @@ export function MobileNav(): ReactElement {
         </div>
 
         <div className="mt-auto flex flex-col gap-2 border-t border-seam p-4">
-          <Button
-            variant="ghost"
-            render={<Link href="/login" onClick={closeMenu} />}
-            className="w-full"
-          >
-            Sign in
-          </Button>
-          <Button
-            render={<Link href="#request-access" onClick={closeMenu} />}
-            className="w-full"
-          >
-            Request early access
-          </Button>
+          {signedIn ? (
+            <Button render={<Link href="/app" onClick={closeMenu} />} className="w-full">
+              Dashboard
+            </Button>
+          ) : (
+            <>
+              <Button
+                variant="ghost"
+                render={<Link href="/login" onClick={closeMenu} />}
+                className="w-full"
+              >
+                Sign in
+              </Button>
+              <Button
+                render={<Link href="#request-access" onClick={closeMenu} />}
+                className="w-full"
+              >
+                Request early access
+              </Button>
+            </>
+          )}
         </div>
       </SheetContent>
     </Sheet>

@@ -19,6 +19,7 @@ export const AI_ACTION_LABELS: Record<AiActionFeature, { one: string; many: stri
   signal_detection: { one: "Watchlist scan", many: "Watchlist scans" },
   person_classification: { one: "Contact check", many: "Contact checks" },
   goal_matching: { one: "Goal match", many: "Goal matches" },
+  goal_match_now: { one: "Goal match (requested)", many: "Goal matches (requested)" },
 };
 
 /** How many users the admin cost screen lists. Bounded because the point is

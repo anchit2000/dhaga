@@ -33,8 +33,9 @@ function monthStart(): Date {
  *
  * `batch` says whether the call went through the Message Batches API, which is
  * half price both directions. It is RECORDED rather than inferred from the
- * feature because `goal_matching` has both a nightly batch pass and a
- * synchronous goal-resolve path — inferring "batch" from the feature would
+ * feature because goal matching has both a nightly Batch pass (`goal_matching`)
+ * and a synchronous on-demand one (`goal_match_now`) that judges the SAME
+ * candidates with the same prompts — inferring "batch" from the feature would
  * halve a real bill, and under-reporting cost is the direction the dollar gate
  * exists to prevent. Every synchronous caller leaves it at the false default.
  */

@@ -32,6 +32,7 @@ export const AI_ACTION_FEATURES = [
   "signal_detection",
   "person_classification",
   "goal_matching",
+  "goal_match_now",
 ] as const;
 
 export type AiActionFeature = (typeof AI_ACTION_FEATURES)[number];
@@ -88,6 +89,30 @@ export const AI_ACTION_CREDITS: Record<AiActionFeature, number> = {
    *  merged "curation" line, because the credits breakdown is per-feature and
    *  an operator debugging cost needs to know which pass burned it. */
   goal_matching: 0,
+  /**
+   * "Request now" on the goal strip: the user asking for their cohort THIS
+   * MINUTE instead of waiting for the free nightly pass above. Its own feature
+   * rather than a conditional price on `goal_matching`, for the same reason the
+   * two nightly passes are separate lines — the breakdown is per-feature, and
+   * an operator must be able to see which path burned the money.
+   *
+   * ESTIMATED, not measured. The table at the top of this file is 39 real API
+   * calls; this number has never been run against the live API, so re-derive it
+   * the first time it is. The estimate, at the cap the path enforces:
+   *
+   *   GOAL_SYNC_RESOLVE_CAP = 20 candidates, ~720 in / 45 out tokens each,
+   *   Haiku 4.5 at $1/$5 per MTok with NO batch discount (the user is waiting):
+   *     in   720 × $1 / 1e6 = $0.00072
+   *     out   45 × $5 / 1e6 = $0.000225
+   *     per candidate       = $0.000945  ×20 = $0.0189 a request
+   *   $0.0189 ÷ ~$0.006 per credit (the blended ceiling above) ≈ 3.15 → 3.
+   *
+   * Rounded DOWN, deliberately: 20 is a ceiling recall rarely reaches
+   * (`hybridSearch` slices at 20 and usually returns fewer), so a typical
+   * request costs well under the worst case this was priced from, and the
+   * dollar ceiling is the backstop for the tail rather than the credit price.
+   */
+  goal_match_now: 3,
 };
 
 /**

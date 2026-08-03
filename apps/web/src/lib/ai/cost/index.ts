@@ -51,9 +51,9 @@ export interface AiActionCostInput {
   outputTokens: number;
   /** Whether the call went through the Message Batches API (half price both
    *  directions). Recorded on the row — never inferred from the feature, because
-   *  `goal_matching` runs BOTH a nightly batch pass and a synchronous
-   *  goal-resolve path, and inferring "batch" for the latter would halve a real
-   *  bill. */
+   *  goal matching runs BOTH a nightly Batch pass (`goal_matching`) and a
+   *  synchronous on-demand one (`goal_match_now`), and inferring "batch" for
+   *  the latter would halve a real bill. */
   batch: boolean;
 }
 

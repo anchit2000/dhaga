@@ -14,8 +14,13 @@ import type { HomeTileTone } from "@/utils/constants/home";
  * `viewAll` renders the footer link every tile ends on. It lives here rather
  * than in each tile because the cells are equal-height: the link has to sit on
  * the SAME baseline across the row, which only holds if one component owns the
- * `mt-auto` and the spacing. Children still sit in a flex column, so a tile with
- * extra footer content of its own can pin that with `mt-auto` too.
+ * `mt-auto` and the spacing. It also sits OUTSIDE the scrolling body below, so
+ * the click target can never be pushed under a fold — a tile whose own footer
+ * is a navigation target belongs in this prop, not in `children`.
+ *
+ * The body scrolls once the cell is capped (HOME_TILE_CAP_CLASS): overflowing
+ * content is what used to stretch every neighbour in the grid row. Capped from
+ * `sm:` only, so at 375px the body is unconstrained and never scrolls.
  */
 export function HomeTile({
   title,
@@ -44,7 +49,7 @@ export function HomeTile({
         <h2 className="font-display text-lg">{title}</h2>
         {meta}
       </div>
-      <div className="flex min-h-0 flex-1 flex-col gap-3">{children}</div>
+      <div className="flex min-h-0 flex-1 flex-col gap-3 overscroll-contain sm:overflow-y-auto">{children}</div>
       {viewAll ? (
         <Link
           href={viewAll.href}

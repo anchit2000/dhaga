@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { EmptyState } from "@/components/app/EmptyState";
@@ -53,6 +54,18 @@ function emptyCopy(payload: MapPayload): { title: string; body: string; canRetry
 /** Renders the map payload; this component only maps phases to UI. */
 export function MapView(): React.ReactElement {
   const phase = useMapData();
+
+  // Start the map chunk downloading NOW, alongside the payload fetch instead of
+  // behind it. `dynamic` does not touch the network until MapCanvas first
+  // RENDERS, which only happens in the `ready` branch below — so the ~900 KB
+  // MapLibre chunk used to queue after GET /api/map (measured 1.1–5.5 s against
+  // a remote Postgres) rather than overlapping it. Same specifier as the
+  // `dynamic` import above, so this warms the one chunk, it does not add one.
+  useEffect(() => {
+    // Prefetch only: a failure here is re-raised by the real render path, which
+    // is what reports it. Swallowed so it cannot become an unhandled rejection.
+    void import("./canvas/MapCanvas").catch(() => {});
+  }, []);
 
   if (phase.stage === "fetching") return <MapSkeleton />;
 

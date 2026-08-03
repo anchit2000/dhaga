@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/brand/ModeToggle";
 import { ThreadMark } from "@/components/brand/ThreadMark";
+import { HeaderAuthActions } from "@/components/landing/HeaderAuthActions";
 import { ResourcesMenu } from "@/components/landing/ResourcesMenu";
 import { MobileNav } from "@/components/landing/MobileNav";
+import { SESSION_HINT_SCRIPT } from "@/lib/auth/session-hint";
 import { NAV_LINKS } from "@/utils/constants/landing";
 import type { ReactElement } from "react";
 
@@ -31,19 +32,13 @@ export function Header(): ReactElement {
         </nav>
         <div className="flex items-center gap-2 sm:gap-4">
           <ModeToggle />
-          <Link
-            href="/login"
-            className="hidden min-h-11 items-center text-sm text-fog transition-colors hover:text-paper sm:flex"
-          >
-            Sign in
-          </Link>
-          <Button render={<Link href="/#request-access" />} size="sm" className="min-h-11">
-            <span className="sm:hidden">Join beta</span>
-            <span className="hidden sm:inline">Request early access</span>
-          </Button>
+          <HeaderAuthActions />
           <MobileNav />
         </div>
       </div>
+      {/* Runs while the browser parses this HTML, so the signed-in header is
+          already correct at the first paint. Must stay outside the flex row. */}
+      <script dangerouslySetInnerHTML={{ __html: SESSION_HINT_SCRIPT }} />
     </header>
   );
 }

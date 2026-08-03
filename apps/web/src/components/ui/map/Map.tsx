@@ -7,6 +7,7 @@ import "./map.css";
 import { cn } from "@/lib/utils";
 import { MAPLIBRE_WORKER_URL } from "@/utils/constants/map";
 import { MapContext, type MapTheme } from "./context";
+import { useMapFailure } from "./use-map-failure";
 import { useResolvedTheme } from "./use-resolved-theme";
 import type { MapOptions } from "maplibre-gl";
 
@@ -41,6 +42,21 @@ function MapLoader(): React.ReactElement {
   );
 }
 
+/** Replaces the veil once the map is known to be broken. The veil alone is the
+ *  bug this fixes: it is identical whether the map is a second from ready or
+ *  will never load, so a failure used to read as "still working on it" forever
+ *  (see use-map-failure.ts). */
+function MapFailure({ message }: { message: string }): React.ReactElement {
+  return (
+    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-ink/80 px-6 text-center backdrop-blur-xs">
+      <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-destructive">
+        Map unavailable
+      </p>
+      <p className="max-w-xs text-sm text-fog">{message}</p>
+    </div>
+  );
+}
+
 /**
  * MapLibre canvas + context provider. Children (layers, controls) render only
  * once the instance exists and read `isLoaded` from `useMap()` before touching
@@ -62,6 +78,7 @@ export function Map({
   const currentStyleRef = useRef<string | null>(null);
   const resolvedTheme = useResolvedTheme(themeProp);
   const styleUrl = resolvedTheme === "dark" ? styles.dark : styles.light;
+  const failure = useMapFailure(mapInstance, isLoaded);
 
   // Construction options are read once, at mount; later changes are ignored
   // (re-creating the map would drop the camera and every layer).
@@ -116,7 +133,8 @@ export function Map({
   return (
     <MapContext.Provider value={contextValue}>
       <div ref={containerRef} className={cn("relative h-full w-full", className)}>
-        {!isLoaded || loading ? <MapLoader /> : null}
+        {failure ? <MapFailure message={failure} /> : null}
+        {!failure && (!isLoaded || loading) ? <MapLoader /> : null}
         {mapInstance ? children : null}
       </div>
     </MapContext.Provider>

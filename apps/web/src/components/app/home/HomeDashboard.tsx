@@ -10,6 +10,8 @@ import { RecentEventsTile } from "./RecentEventsTile";
 import { SignalsFeed } from "./SignalsFeed";
 import { StarredTile } from "./StarredTile";
 import { TodaySuggestions, type MeetingSlot } from "./TodaySuggestions";
+import { cn } from "@/lib/utils";
+import { HOME_TILE_CAP_CLASS } from "@/utils/constants/home";
 import type { ReactElement, ReactNode } from "react";
 import type { ContactListItem, RecentContactListItem } from "@/lib/repo/contacts";
 import type { DailySuggestion } from "@/lib/repo/daily-suggestions";
@@ -30,6 +32,13 @@ import type { QuietContact } from "@/lib/repo/strength";
  * natural height — tighter, but ragged: neighbouring tiles ended wherever their
  * content stopped, and so did their footers. Uniform cells trade some whitespace
  * for a layout that reads as one system.
+ *
+ * That trade only holds while the whitespace is BOUNDED. Uncapped, one tall tile
+ * padded every other tile out by hundreds of pixels, which is not rhythm, it is
+ * a hole. HOME_TILE_CAP_CLASS caps the cell instead of dropping `auto-rows-fr`:
+ * the shared footer baseline survives, but a tile past the cap scrolls its own
+ * body rather than dragging every neighbour up with it, so the dead space a
+ * sparse tile can carry is bounded by the cap instead of by the fullest tile.
  *
  * Data-less tiles (confirmations, signals, going-quiet, starred, suggested
  * groups) are omitted entirely and the rest re-flow to close the layout. Order
@@ -115,7 +124,7 @@ export function HomeDashboard({
           equal rows would just pad every tile out to the tallest one. */}
       <div className="dhaga-bento grid grid-cols-1 gap-4 sm:auto-rows-fr sm:grid-cols-2 xl:grid-cols-3">
         {tiles.map(({ key, node }) => (
-          <div key={key} className="flex min-w-0 flex-col [&>*]:h-full">
+          <div key={key} className={cn("flex min-w-0 flex-col [&>*]:h-full", HOME_TILE_CAP_CLASS)}>
             {node}
           </div>
         ))}

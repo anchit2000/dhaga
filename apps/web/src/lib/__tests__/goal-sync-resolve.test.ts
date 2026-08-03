@@ -1,26 +1,23 @@
 import { describe, expect, it, vi } from "vitest";
+import { AI_ACTION_CREDITS } from "@dhaga/core";
 import { createContact } from "@/lib/repo/contacts";
 import { getActiveGoalProgress } from "@/lib/repo/goals";
-import { archiveGoalAction, saveGoalAction } from "@/lib/actions/goals";
-import { resolveGoalNow } from "@/lib/ai/goal-resolve";
-import { RATE_LIMITS } from "@/utils/constants/ratelimit";
+import { archiveGoalAction, requestGoalMatchAction, saveGoalAction } from "@/lib/actions/goals";
+import { actionRows } from "./ai-action-metering/helpers";
 import type { LLMResult } from "@dhaga/core";
 
 /**
- * Stating a goal used to kick off NOTHING: runGoalMatching had one caller, the
- * nightly cron, so the Home strip sat on "Finding people" for up to 24 hours —
- * and forever on a box with no cron. A user reported it as a hang.
+ * Matching is NIGHTLY BY DEFAULT and PAID ON DEMAND.
  *
- * These tests pin the two properties that fix it and the one that must not be
- * broken while fixing it:
- *   1. saving a goal fills its cohort THERE AND THEN, with no job run;
- *   2. a pass that matched nobody is recorded as having run, so the strip can
- *      say so instead of claiming to still be searching;
- *   3. NO scoped DB connection is held across the model call — the tenant pool
- *      caps at 3 and a connection held across an LLM stream took out /app in
- *      production (PR #92). That one is asserted directly: withUserDb is
- *      wrapped to count open scopes, and the fake model records the count it
- *      sees. It must be zero.
+ * Saving a goal used to resolve its cohort inline, spending ~$0.019 of
+ * inference on every save — money the user never chose to spend, on a wait they
+ * never asked for. Saving is now a plain DB write; "Request now" buys the same
+ * match for credits, billed as the priced `goal_match_now` and not the free
+ * nightly `goal_matching`, which is what makes the allowance the fuse now that
+ * the day-long rate limit is gone. Each `it` pins one of those.
+ *
+ * Keep the pool test whatever else changes: the tenant pool caps at 3 and a
+ * connection held across an LLM stream took out /app in production (PR #92).
  */
 
 let openScopes = 0;
@@ -34,8 +31,7 @@ vi.mock("@/lib/auth/guard", () => ({
 }));
 vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
 
-// Counts scopes rather than replacing them: the REAL withUserDb still runs, so
-// this measures the actual nesting the resolve produces.
+// Counts scopes rather than replacing them: the REAL withUserDb still runs.
 vi.mock("@/lib/db/request-scope", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/db/request-scope")>();
   return {
@@ -51,8 +47,8 @@ vi.mock("@/lib/db/request-scope", async (importOriginal) => {
   };
 });
 
-// No real Anthropic client is ever constructed: a network call would fail
-// loudly rather than bill anyone.
+// No real Anthropic client is ever constructed — a network call would fail
+// loudly rather than bill anyone. `AI_ACTION_CREDITS` stays the real table.
 vi.mock("@dhaga/core", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@dhaga/core")>();
   return {
@@ -82,18 +78,29 @@ function person(name: string, title: string) {
   return { name, title, company: null, emails: [], phones: [], links: [], location: null };
 }
 
-describe("a goal resolves on save, not on the nightly cron", () => {
-  it("fills the cohort during the save, with the nightly job never running", async () => {
+describe("matching is nightly by default and paid on demand", () => {
+  it("saves a goal without calling the model at all", async () => {
     await createContact(person("Rosalind Vartanian", "Kombucha Brewmaster"), "manual");
     extractCalls = 0;
     scopesDuringModelCall = [];
     verdict = { matches: true, fit: 90 };
-
     const saved = await saveGoalAction(form("Kombucha Brewmaster"));
     expect(saved.ok).toBe(true);
+    // THE POINT OF THE CHANGE: stating a goal is free and instant. A single
+    // model call here is money the user did not agree to spend.
+    expect(extractCalls).toBe(0);
+    const progress = await getActiveGoalProgress();
+    expect(progress?.total).toBe(0);
+    // "unresolved" = the strip's "matching runs tonight", not a finished pass.
+    expect(progress?.state).toBe("unresolved");
+    expect(progress?.lastMatchedAt).toBeNull();
+  });
 
-    // runGoalMatching was NOT called anywhere in this test — the cohort exists
-    // purely because the save resolved it.
+  it("fills the cohort when the user asks for it now, with no job run", async () => {
+    // runGoalMatching is never called: the cohort exists purely because the
+    // user pressed Request now.
+    const requested = await requestGoalMatchAction();
+    expect(requested.ok).toBe(true);
     const progress = await getActiveGoalProgress();
     expect(extractCalls).toBeGreaterThan(0);
     expect(progress?.total).toBeGreaterThan(0);
@@ -101,54 +108,41 @@ describe("a goal resolves on save, not on the nightly cron", () => {
     expect(progress?.lastMatchedAt).not.toBeNull();
   });
 
+  it("bills the request as goal_match_now, not as the free nightly pass", async () => {
+    // Why it is its own feature: `goal_matching` is priced at 0 (an unasked-for
+    // nightly sweep), so metering this run under that name would hand every user
+    // unlimited free on-demand matching, and hide which path spent the money.
+    const rows = await actionRows();
+    const requested = rows.filter((row) => row.feature === "goal_match_now");
+    expect(requested).toHaveLength(1); // one action, however many it judged
+    expect(rows.some((row) => row.feature === "goal_matching")).toBe(false);
+    // Priced, not free — the credit allowance is the only fuse on this path now.
+    expect(AI_ACTION_CREDITS.goal_match_now).toBeGreaterThan(0);
+    expect(requested[0]?.inputTokens).toBeGreaterThanOrEqual(720);
+  });
+
   it("holds no scoped DB connection across the model call", async () => {
-    // The regression this guards is invisible in output — the cohort is built
-    // correctly either way, and the failure only shows up as pool exhaustion
-    // under load. So it is asserted structurally, at the moment of the call.
+    // Invisible in output — the cohort is built correctly either way and it
+    // only shows up as pool exhaustion under load — so assert it structurally.
     expect(scopesDuringModelCall.length).toBeGreaterThan(0);
     expect(scopesDuringModelCall.every((depth) => depth === 0)).toBe(true);
   });
 
   it("records a pass that matched nobody, so the strip can say so", async () => {
     await createContact(person("Yusuf Adeyemi", "Ceramics Kiln Technician"), "manual");
-    // A reword keeps the old cohort on purpose (write.ts), so the empty case
-    // needs a genuinely new goal — the user closing one and stating the next.
+    // A reword keeps the old cohort (write.ts), so this needs a NEW goal.
     await archiveGoalAction();
     verdict = { matches: false, fit: 0 };
     extractCalls = 0;
-
     await saveGoalAction(form("Ceramics Kiln Technician"));
-
+    await requestGoalMatchAction();
     const progress = await getActiveGoalProgress();
     expect(extractCalls).toBeGreaterThan(0);
-    // "Searched, nobody matched" — the state that used to be indistinguishable
-    // from "never searched", which is what left the tile searching forever.
+    // "Searched, nobody matched" — once indistinguishable from "never
+    // searched", which is what left the tile searching forever.
     expect(progress?.total).toBe(0);
     expect(progress?.state).toBe("no_matches");
     expect(progress?.lastMatchedAt).not.toBeNull();
     verdict = { matches: true, fit: 90 };
-  });
-
-  it("does not re-judge anyone when the objective is saved unchanged", async () => {
-    extractCalls = 0;
-    await saveGoalAction(form("Ceramics Kiln Technician"));
-    // Same words, same candidates, same verdicts — and a slot in a 3-a-day
-    // fuse that a user rewording their goal actually needs.
-    expect(extractCalls).toBe(0);
-  });
-
-  it("stops an edit-save loop at the daily fuse", async () => {
-    // Its own user id: the bucket is keyed per user, and the saves above have
-    // already spent points for theirs.
-    const attempts: (string | null)[] = [];
-    for (let i = 0; i <= RATE_LIMITS.goal_resolve.points; i += 1) {
-      const outcome = await resolveGoalNow("goal-fuse-user", "goal-that-does-not-exist", `try ${i}`);
-      attempts.push(outcome.skipped);
-    }
-    // `goal_matching` is priced at 0 credits, so the monthly AI cap does not
-    // bound this path — the fuse is the ONLY thing between an edit loop and an
-    // unbounded per-resolve spend.
-    expect(attempts.slice(0, RATE_LIMITS.goal_resolve.points)).not.toContain("rate_limited");
-    expect(attempts[RATE_LIMITS.goal_resolve.points]).toBe("rate_limited");
   });
 });

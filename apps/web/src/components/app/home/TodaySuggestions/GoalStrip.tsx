@@ -4,7 +4,8 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Archive, Check, MoreHorizontal, Pencil, Target } from "lucide-react";
 import { GoalDialog } from "./GoalDialog";
-import { GoalStatus, type GoalSaveState } from "./GoalStatus";
+import { GoalRequestDialog } from "./GoalRequestDialog";
+import { GoalStatus, type GoalRequestState } from "./GoalStatus";
 import { toastError, toastSuccess } from "@/components/app/feedback";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,7 +14,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { archiveGoalAction, markGoalDoneAction } from "@/lib/actions/goals";
+import {
+  archiveGoalAction,
+  markGoalDoneAction,
+  requestGoalMatchAction,
+} from "@/lib/actions/goals";
 import type { ReactElement } from "react";
 import type { MutationResult } from "@/lib/actions/mutation";
 import type { GoalProgress } from "@/lib/repo/goals";
@@ -22,24 +27,25 @@ import type { GoalProgress } from "@/lib/repo/goals";
  * The goal line at the top of Today: what the user said they're trying to do,
  * how far the cohort has burned down, and the three ways it ends.
  *
- * It lives INSIDE the Today tile rather than on a route of its own. A goal has
- * exactly one consumer (this list) and one state worth reading (how many are
- * left), so /app/goals would be an empty page for every user without a goal and
- * a duplicate of this strip for everyone else.
+ * It lives INSIDE the Today tile rather than on a route of its own: a goal has
+ * one consumer (this list) and one state worth reading (how many are left), so
+ * /app/goals would be an empty page for every user without a goal and a
+ * duplicate of this strip for everyone else.
  *
  * The burn-down is derived, never stored (lib/repo/goals/cohort.ts) — so the bar
- * moves the moment the user marks someone reached out, without this component
- * knowing anything about rows.
+ * moves the moment the user marks someone reached out.
  *
  * What the strip SAYS about matching lives in ./GoalStatus, which is where the
- * "Finding people forever" bug was. This component owns the save outcome only
- * because it outlives the dialog that produced it: the dialog unmounts on close,
- * and the reason a save matched nobody has to survive that.
+ * "Finding people forever" bug was. This component owns the outcome of a
+ * REQUESTED match only because it outlives the dialog that asked for it: the
+ * confirmation unmounts the moment the user confirms, and the reason a request
+ * matched nobody has to survive that.
  */
 export function GoalStrip({ progress }: { progress: GoalProgress | null }): ReactElement {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
-  const [save, setSave] = useState<GoalSaveState | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [request, setRequest] = useState<GoalRequestState | null>(null);
   const [pending, startTransition] = useTransition();
 
   function resolve(run: () => Promise<MutationResult<null>>, done: string): void {
@@ -54,10 +60,28 @@ export function GoalStrip({ progress }: { progress: GoalProgress | null }): Reac
     });
   }
 
-  /** Re-opening the dialog drops the last outcome: the user is about to produce
-   *  a new one, and a stale "nobody matched" under a fresh save reads as a hang. */
+  /** The paid match. Closes the confirmation first so the strip — not a modal —
+   *  carries the in-flight state, and clears it again if the ACTION itself
+   *  failed, since then nothing ran and nothing is pending. */
+  function requestMatch(): void {
+    setConfirming(false);
+    setRequest({ phase: "running" });
+    startTransition(async () => {
+      const result = await requestGoalMatchAction();
+      if (!result.ok) {
+        setRequest(null);
+        toastError(result.error);
+        return;
+      }
+      setRequest({ phase: "settled", skip: result.data });
+      router.refresh();
+    });
+  }
+
+  /** Re-opening the dialog drops the last outcome: the objective is about to
+   *  change, and a stale "nobody matched" under new words is misleading. */
   function openDialog(): void {
-    setSave(null);
+    setRequest(null);
     setEditing(true);
   }
 
@@ -113,16 +137,12 @@ export function GoalStrip({ progress }: { progress: GoalProgress | null }): Reac
             </DropdownMenu>
           </div>
           <div className="mt-2" aria-live="polite">
-            <GoalStatus progress={progress} save={save} onEdit={openDialog} />
+            <GoalStatus progress={progress} request={request} onEdit={openDialog} onRequest={() => setConfirming(true)} />
           </div>
         </div>
       )}
-      <GoalDialog
-        open={editing}
-        objective={progress?.objective ?? ""}
-        onOpenChange={setEditing}
-        onSaveState={setSave}
-      />
+      <GoalDialog open={editing} objective={progress?.objective ?? ""} onOpenChange={setEditing} />
+      <GoalRequestDialog open={confirming} onOpenChange={setConfirming} onConfirm={requestMatch} />
     </div>
   );
 }

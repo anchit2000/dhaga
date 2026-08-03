@@ -26,9 +26,10 @@ export function appNavigationTag(userId: string): string {
 
 export function getCachedAppConfig(userId: string): Promise<AppConfig> {
   return cachePerUser(APP_NAVIGATION_CACHE_KEY, userId, async () => {
-    // Inside cachePerUser the read runs within withUserDb, so getDb() resolves
-    // to that one scoped connection; hand it to isAdmin so the whole config
-    // read shares a single tenant checkout instead of opening a second one.
+    // Inside cachePerUser the read runs in this user's tenant scope — the
+    // connection the request already holds when there is one — so getDb()
+    // resolves to it; hand it to isAdmin so the whole config read shares that
+    // single tenant checkout instead of opening a second one.
     const db = await getDb();
     const [isAdmin, searchWeights, storeCardPhotos, uiTheme] = await Promise.all([
       (await getAdminGate()).isAdmin(userId, db),

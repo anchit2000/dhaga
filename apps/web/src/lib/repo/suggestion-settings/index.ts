@@ -1,6 +1,7 @@
 // Per-user suggestion/scheduling scalars + email preferences. Split per the
 // 150-line rule; import paths stay stable via this barrel:
 // @/lib/repo/suggestion-settings.
+export { getSuggestionSettings, type SuggestionSettings } from "./bundle";
 export {
   getDailySuggestionCount,
   getSchedulePrefs,

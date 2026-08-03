@@ -76,6 +76,23 @@ export const MAP_ATTRIBUTION_HTML =
  */
 export const MAPLIBRE_WORKER_URL = "/maplibre/maplibre-gl-worker.mjs";
 
+/**
+ * How long the map may sit on its loading veil before it is declared broken.
+ *
+ * The failure this guards has no error to catch. MapLibre reports "loaded" by
+ * FIRING an event, so every way of not loading — a worker URL that 404s (the
+ * v6 regression above, which shipped once), a basemap host that hangs, a
+ * WebGL context that never materialises — looks identical from React: `load`
+ * simply never arrives and the veil stays up until the tab is closed. Only a
+ * clock can tell that apart from "still loading", which is why this exists
+ * alongside the `error` listener rather than instead of it.
+ *
+ * Generous on purpose: a cold basemap fetch over a bad mobile connection is a
+ * slow map, not a broken one, and crying failure over it would be a worse bug
+ * than the one being fixed.
+ */
+export const MAP_LOAD_TIMEOUT_MS = 20_000;
+
 /** Opening camera, used until the first fit-to-places (whole world). */
 export const MAP_INITIAL_CENTER: [number, number] = [10, 25];
 export const MAP_INITIAL_ZOOM = 0.8;

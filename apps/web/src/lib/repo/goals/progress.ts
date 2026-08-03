@@ -1,6 +1,5 @@
-import { loadCohort } from "./cohort";
+import { loadActiveGoalCohort, type ActiveGoalCohort } from "./cohort";
 import { readGoalMatchPointer } from "./pointer";
-import { getActiveGoal } from "./write";
 
 /**
  * The burn-down the Home strip renders, and — the part that is new — WHY the
@@ -50,10 +49,15 @@ export interface GoalProgress {
 /** `total === done + remaining` by construction: all three come off the one
  *  derived-done expression in ./cohort.ts, so this and the daily slice cannot
  *  disagree about who is left. */
-export async function getActiveGoalProgress(): Promise<GoalProgress | null> {
-  const goal = await getActiveGoal();
-  if (!goal) return null;
-  const rows = await loadCohort(goal.id);
+export async function getActiveGoalProgress(
+  /** Injection slot: a caller that already loaded the cohort (Home renders the
+   *  strip AND today's slice from it) passes it so the goal + cohort read once
+   *  per render instead of twice — see ./cohort.ts. */
+  loaded?: ActiveGoalCohort | null,
+): Promise<GoalProgress | null> {
+  const cohort = loaded === undefined ? await loadActiveGoalCohort() : loaded;
+  if (!cohort) return null;
+  const { goal, rows } = cohort;
   const done = rows.filter((row) => row.done).length;
   const pointer = await readGoalMatchPointer();
   const state: GoalResolutionState =

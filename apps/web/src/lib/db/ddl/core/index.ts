@@ -4,6 +4,7 @@ import { META_DDL } from "./meta";
 import { MESSAGING_DDL } from "./messaging";
 import { NOTIFICATIONS_DDL } from "./notifications";
 import { GOALS_DDL } from "./goals";
+import { FEEDBACK_DDL } from "./feedback";
 
 /**
  * Idempotent schema DDL, applied on first DB open. Column names must stay in
@@ -16,5 +17,7 @@ import { GOALS_DDL } from "./goals";
  * messaging.ts depends on nothing in graph, so it is appended last —
  * notifications.ts after it, since it FKs contacts (graph) and extraction_jobs
  * (extend). goals.ts is last for the same reason — goal_members FKs contacts.
+ * feedback.ts references nothing, so its position is free; it goes last simply
+ * because appending is the smallest diff.
  */
-export const CORE_DDL = `${GRAPH_DDL}${EXTEND_DDL}${META_DDL}${MESSAGING_DDL}${NOTIFICATIONS_DDL}${GOALS_DDL}`;
+export const CORE_DDL = `${GRAPH_DDL}${EXTEND_DDL}${META_DDL}${MESSAGING_DDL}${NOTIFICATIONS_DDL}${GOALS_DDL}${FEEDBACK_DDL}`;

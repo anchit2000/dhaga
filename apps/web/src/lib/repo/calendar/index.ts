@@ -17,6 +17,11 @@ export {
   setCalendarWriteEnabled,
   type CalendarConnectionSummary,
 } from "./connections";
-export { getFreeBusy } from "./free-busy";
+export { getFreeBusy, type FreeBusyScope } from "./free-busy";
+export {
+  readFreeBusySnapshot,
+  refreshFreeBusySnapshot,
+  type FreeBusySnapshot,
+} from "./free-busy-snapshot";
 export { getExternalCalendarEvents, type ExternalCalendarEvent } from "./events";
 export { syncFollowUpToCalendars, syncNoteFollowUpsToCalendars } from "./write-out";

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { AI_ACTION_CREDITS } from "@dhaga/core";
 import {
   archiveGoal,
   createGoal,
@@ -9,6 +10,9 @@ import {
   updateGoalObjective,
 } from "@/lib/repo/goals";
 import { resolveGoalNow, type GoalResolveSkip } from "@/lib/ai/goal-resolve";
+import { aiGateReason } from "@/lib/ai/gate";
+import { requireUserId } from "@/lib/auth/guard";
+import { withUserDb } from "@/lib/db/request-scope";
 import { PreconditionError } from "@/lib/repo/errors";
 import { MutationError, mutation, type MutationResult } from "@/lib/actions/mutation";
 
@@ -18,9 +22,7 @@ import { MutationError, mutation, type MutationResult } from "@/lib/actions/muta
  * NONE of these take a goal id. MAX_ACTIVE_GOALS is 1, so "the active goal" is
  * unambiguous server-side, and the only thing the strip is ever given is the
  * burn-down (GoalProgress carries no id) — a client-supplied id would exist
- * purely to be looked up and re-validated. Resolving it inside the mutation
- * also keeps the read and the write on the ONE scoped tenant connection
- * mutation() opens, rather than a second checkout from a 3-connection pool.
+ * purely to be looked up and re-validated.
  *
  * Everything revalidates /app: Today is the only surface a goal renders on.
  */
@@ -43,48 +45,79 @@ async function guard<T>(work: () => Promise<T>): Promise<T> {
  * action rather than two because the strip's dialog is one dialog — the user is
  * stating what they want, and whether a row already exists is our bookkeeping.
  *
- * THEN RESOLVE IT, INLINE. Matching used to be nightly-cron-only, so stating a
- * goal did nothing visible for up to 24 hours (and nothing ever, on a
- * deployment with no cron) — the strip sat on "Finding people" and users read
- * it as a hang. The resolve is deliberately OUTSIDE the mutation() above:
- * mutation() holds one scoped tenant connection for the whole callback, and
- * holding a connection across an LLM call is the pool-exhaustion outage of
- * PR #92. lib/ai/goal-resolve opens its own short scopes around the model
- * instead.
+ * A PLAIN DB WRITE: free, instant, no model call. Saving used to resolve the
+ * cohort inline, spending ~$0.019 of inference on every save whether the user
+ * wanted it then or not. Matching is the nightly Batch pass's job now, and
+ * having it happen this minute is an explicit priced choice below.
  *
- * Its outcome is not surfaced as an action ERROR: the save SUCCEEDED, and
- * failing it would tell the user their goal was not written.
- *
- * But the skip reason IS returned as data, because only one of the five is
- * legible from getActiveGoalProgress. `no_candidates` finishes a pass and
- * stamps lastMatchedAt, so the strip reads it as "no_matches" — the other four
- * (no_llm, rate_limited, no_budget, failed) all leave lastMatchedAt null and
- * are indistinguishable from "nothing has run yet". Returning the reason is
- * what lets the strip say WHICH empty it is instead of an eternal spinner.
- *
- * A no-op reword does not resolve, and so reports no skip. Re-judging the same
- * candidates against the same words costs the same ~$0.019 and can only produce
- * the same cohort, and it would burn a slot in a 3-a-day fuse.
+ * It returns no data: nothing can be skipped when nothing but the write is
+ * attempted, so there is no skip reason left to carry.
  */
-export async function saveGoalAction(
-  formData: FormData,
-): Promise<MutationResult<GoalResolveSkip | null>> {
+export async function saveGoalAction(formData: FormData): Promise<MutationResult<null>> {
   const objective = String(formData.get("objective") ?? "").trim();
   if (!objective) return { ok: false, error: "Describe what you're trying to do." };
-  const r = await mutation("saveGoal", (userId) =>
+  const r = await mutation("saveGoal", () =>
     guard(async () => {
       const active = await getActiveGoal();
-      if (!active) return { userId, goalId: (await createGoal(objective)).id, resolve: true };
+      if (!active) {
+        await createGoal(objective);
+        return null;
+      }
       await updateGoalObjective(active.id, objective);
-      return { userId, goalId: active.id, resolve: active.objective !== objective };
+      return null;
+    }),
+  );
+  if (r.ok) revalidatePath("/app");
+  return r;
+}
+
+/**
+ * "Request now": buy the match the nightly pass would have done for free.
+ *
+ * The resolve is deliberately OUTSIDE mutation(): mutation() holds one scoped
+ * tenant connection for the whole callback, and holding a connection across an
+ * LLM call is the pool-exhaustion outage of PR #92. lib/ai/goal-resolve opens
+ * its own short scopes around the model instead — so the mutation here does the
+ * id lookup ONLY, and hands the resolve the ids it found.
+ *
+ * The skip reason is returned as data rather than raised as an error, because
+ * only one of the four is legible from getActiveGoalProgress afterwards:
+ * `no_candidates` stamps lastMatchedAt and reads back as "no_matches", while
+ * no_llm / no_budget / failed all leave it null and are indistinguishable from
+ * "nothing has run yet". Returning the reason is what lets the strip say WHICH
+ * empty it is instead of an eternal spinner.
+ */
+export async function requestGoalMatchAction(): Promise<MutationResult<GoalResolveSkip | null>> {
+  const r = await mutation("requestGoalMatch", (userId) =>
+    guard(async () => {
+      const active = await getActiveGoal();
+      if (!active) throw new MutationError("No active goal to match.");
+      return { userId, goalId: active.id, objective: active.objective };
     }),
   );
   if (!r.ok) return r;
-  const skipped = r.data.resolve
-    ? (await resolveGoalNow(r.data.userId, r.data.goalId, objective)).skipped
-    : null;
+  const { skipped } = await resolveGoalNow(r.data.userId, r.data.goalId, r.data.objective);
   revalidatePath("/app");
   return { ok: true, data: skipped };
+}
+
+/** What "Request now" costs and whether this user can spend it — read by the
+ *  confirmation dialog when it opens, so the price and the refusal are both on
+ *  screen BEFORE the click that would spend anything. Advisory only:
+ *  `assertAiBudget` inside the resolve is still the enforcement. */
+export interface GoalMatchOffer {
+  credits: number;
+  /** Why AI is unavailable (out of credits), or null when it is usable. */
+  gate: string | null;
+}
+
+export async function goalMatchOfferAction(): Promise<GoalMatchOffer> {
+  const userId = await requireUserId();
+  return {
+    credits: AI_ACTION_CREDITS.goal_match_now,
+    // Scoped: aiGateReason reads this tenant's metering rows through getDb().
+    gate: await withUserDb(userId, () => aiGateReason(userId)),
+  };
 }
 
 /** Both terminal states stop matching; only one is a success, so the outcome is

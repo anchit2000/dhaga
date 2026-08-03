@@ -1,13 +1,13 @@
 import { unstable_cache, revalidateTag } from "next/cache";
-import { withUserDb } from "@/lib/db/request-scope";
+import { requestScopedDbForUser, withScopedDb, withUserDb } from "@/lib/db/request-scope";
 
 /**
  * Per-user, mutation-invalidated caching over a scoped read (BRD §7.6:
  * authenticated /app/* navigation must not re-run the full Postgres query set
  * on every click).
  *
- * Both the cache key and the tag include userId, and the read runs inside
- * `withUserDb(userId, ...)` — so a cache entry can only ever hold *that* user's
+ * Both the cache key and the tag include userId, and the read runs in a tenant
+ * scope for that same userId — so a cache entry can only ever hold *that* user's
  * data. A missed invalidation therefore causes at worst same-user staleness,
  * never cross-tenant leakage; there is no TTL, entries live until a mutation
  * busts the tag.
@@ -24,6 +24,21 @@ export function perUserTag(key: string, userId: string): string {
  * is skipped (fail-open on a perf optimization). The read must be
  * JSON-serializable — unstable_cache serializes results, so a Date field would
  * come back as a string on a cache hit.
+ *
+ * CONNECTION PRESSURE — why the scope is resolved out here rather than inside
+ * the cache callback. This used to be `unstable_cache(() => withUserDb(...))`,
+ * so a cache MISS opened a SECOND tenant connection while the request already
+ * held one: a single /app render needed 2 of the tenant pool's 3 slots, and
+ * three concurrent cold requests could wait out the full acquire timeout. The
+ * miss now runs on the connection this request already holds (or is about to
+ * pin), and only falls back to its own checkout when there isn't one — a job, a
+ * script, or another tenant's scope. It has to be resolved BEFORE the callback:
+ * that lookup reads the session, and reading headers inside a cache scope is
+ * unsupported.
+ *
+ * Isolation is unchanged and must stay that way: `requestScopedDbForUser`
+ * returns a connection only when it is provably `userId`'s, so what lands under
+ * a userId-keyed entry is still only ever that user's data.
  */
 async function cached<T>(
   keyParts: string[],
@@ -31,11 +46,14 @@ async function cached<T>(
   userId: string,
   read: () => Promise<T>,
 ): Promise<T> {
+  const shared = await requestScopedDbForUser(userId);
+  const scopedRead = (): Promise<T> =>
+    shared ? withScopedDb(shared, userId, read) : withUserDb(userId, read);
   try {
-    return await unstable_cache(() => withUserDb(userId, read), keyParts, { tags: [tag] })();
+    return await unstable_cache(scopedRead, keyParts, { tags: [tag] })();
   } catch (error) {
     if (error instanceof Error && error.message.includes("incrementalCache missing")) {
-      return withUserDb(userId, read);
+      return scopedRead();
     }
     throw error;
   }

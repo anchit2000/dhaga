@@ -10,6 +10,16 @@ export const LOADER_MESSAGE_INTERVAL_MS = 2200;
  *  behind an overlay that never clears. */
 export const BUSY_OVERLAY_MAX_MS = 120_000;
 
+/** The same safety valve for the nav's pending-link state (see
+ *  NavigationFeedback). A pending link is `pointer-events-none opacity-70`, and
+ *  that state only clears when the pathname actually changes — so a navigation
+ *  that never lands (aborted RSC fetch, a request that timed out waiting on the
+ *  tenant pool) leaves the tab greyed with a spinner until a manual refresh,
+ *  which is exactly what production reported. Generous enough that a merely slow
+ *  page still shows honest progress, short enough that a dead navigation
+ *  releases the link instead of stranding it. */
+export const NAVIGATION_PENDING_MAX_MS = 20_000;
+
 export const CARD_SCAN_MESSAGES = [
   "Reading the card…",
   "Making out the details…",

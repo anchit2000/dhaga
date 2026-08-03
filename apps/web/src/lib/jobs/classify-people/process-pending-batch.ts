@@ -57,7 +57,12 @@ export async function processPendingBatch(
           continue;
         }
         try {
-          await recordAiAction("person_classification", result.model, result.usage);
+          // Message Batches API — half price both directions. Recorded so the
+          // dollar gate prices it correctly (this feature costs 0 credits, so
+          // dollars are the only ceiling that sees it at all).
+          await recordAiAction("person_classification", result.model, result.usage, {
+            batch: true,
+          });
           const updated = await db
             .update(contacts)
             .set({

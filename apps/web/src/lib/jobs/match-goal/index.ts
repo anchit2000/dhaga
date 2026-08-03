@@ -1,6 +1,6 @@
 import { getBatchLLMClient, hasBatchLLM, type BatchLLMClient } from "@dhaga/core";
 import { forEachTenant, hostedTenantIds, runOnGlobal, type ScopedRunner } from "@/lib/jobs/tenant-sweep";
-import { GOAL_MATCH_BATCH_KEY, getPendingBatchId } from "@/lib/repo/settings";
+import { readGoalMatchPointer } from "@/lib/repo/goals";
 import { processPendingBatch } from "./process-pending-batch";
 import { submitNewBatch } from "./submit-new-batch";
 
@@ -24,6 +24,12 @@ export interface GoalMatchSummary {
  * Retrieval is a query (`recallGoalCandidates` — no LLM, CLAUDE.md Rule 5); the
  * model is used only for the judgment call it is actually for.
  *
+ * THIS IS THE TOP-UP, NOT THE FIRST PASS. A goal is resolved synchronously the
+ * moment it is created or reworded (lib/ai/goal-resolve.ts) — Batch takes
+ * minutes to hours, which is unusable for someone who just stated an objective
+ * and is looking at the tile. This pass exists for what a cheap 50%-discounted
+ * overnight run is actually good at: widening a cohort as the graph grows.
+ *
  * ACCRETIVE BY DESIGN, NOT BY ACCIDENT. `hybridSearch` returns at most 20 hits
  * (its own final slice, lib/repo/search/index.ts), so one run can add at most
  * ~20 members however large GOAL_RECALL_POOL is. That ceiling is left in place
@@ -39,13 +45,8 @@ export interface GoalMatchSummary {
  * and classify-people: batches are asynchronous (up to 24h) and this cron fires
  * once a day, so a run applies the PREVIOUS batch and submits a fresh one.
  *
- * THE POINTER CARRIES THE GOAL, not just the batch id. A batch judged against
- * one objective can land on a night when the user has already replaced or
- * archived that goal; without the goal id the results would be filed under
- * whatever is active now, i.e. members matched against wording the user never
- * asked about. Anthropic caps `custom_id` at 64 characters, so two UUIDs will
- * not fit there — the goal id rides the settings value instead
- * ("<batchId>|<goalId>"), which stays opaque to lib/repo/settings.
+ * THE POINTER CARRIES THE GOAL, not just the batch id — see
+ * lib/repo/goals/pointer.ts for why, and for the one definition of its format.
  */
 export async function runGoalMatching(): Promise<GoalMatchSummary> {
   if (!hasBatchLLM()) return { scanned: 0, matched: 0, remaining: 0, skipped: "no_llm" };
@@ -72,21 +73,13 @@ export async function runGoalMatching(): Promise<GoalMatchSummary> {
   return { scanned, matched, remaining, skipped: null };
 }
 
-/** Splits the "<batchId>|<goalId>" pointer. Anything malformed is treated as no
- *  pending batch — the pass then just submits a fresh one. */
-function parsePointer(value: string): { batchId: string; goalId: string } | null {
-  const separator = value.indexOf("|");
-  if (separator <= 0) return null;
-  const goalId = value.slice(separator + 1);
-  return goalId ? { batchId: value.slice(0, separator), goalId } : null;
-}
-
 async function sweepTenant(
   runScoped: ScopedRunner,
   batchClient: BatchLLMClient,
 ): Promise<GoalMatchSummary> {
-  const pointer = await runScoped(() => getPendingBatchId(GOAL_MATCH_BATCH_KEY));
-  const pending = pointer ? parsePointer(pointer) : null;
+  // Pointer format and parsing live in lib/repo/goals/pointer.ts — the read
+  // side needs them too, to tell the strip a top-up is still in flight.
+  const pending = await runScoped(readGoalMatchPointer);
 
   let matchedFromPreviousBatch = 0;
   if (pending) {

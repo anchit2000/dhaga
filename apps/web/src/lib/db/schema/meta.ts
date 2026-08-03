@@ -1,4 +1,4 @@
-import { integer, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, integer, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 /**
  * Metering: every cloud AI call is logged (day-one requirement, BRD §8).
@@ -10,6 +10,9 @@ export const aiActions = pgTable("ai_actions", {
   model: text("model").notNull(),
   inputTokens: integer("input_tokens").notNull(),
   outputTokens: integer("output_tokens").notNull(),
+  /** Went through the Message Batches API (half price both directions). Set by
+   *  the nightly batch jobs; false for every synchronous call. */
+  batch: boolean("batch").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 

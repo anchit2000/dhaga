@@ -1,4 +1,4 @@
-import { count, eq, inArray, isNull, and } from "drizzle-orm";
+import { eq, inArray, isNull, and } from "drizzle-orm";
 import {
   PERSON_CLASSIFICATION_SYSTEM,
   buildPersonClassificationPrompt,
@@ -13,11 +13,13 @@ import type { ScopedRunner } from "@/lib/jobs/tenant-sweep";
 import { PERSON_CLASSIFICATION_BATCH_KEY, setPendingBatchId } from "@/lib/repo/settings";
 import { PERSON_CLASSIFICATION_RUN_CAP } from "@/utils/constants/person-kind";
 import { dueForClassification } from "./due";
+import { listClassificationPool } from "./pool";
 import type { PersonClassificationSummary } from "./index";
 
 /**
- * Phase 2: take up to PERSON_CLASSIFICATION_RUN_CAP contacts that are due (see
- * ./due for why the exclusion list is the safety mechanism) and submit their
+ * Phase 2: take the contacts that are due (see ./due for why the exclusion list
+ * is the safety mechanism) AND that a proactive surface could actually nominate
+ * (see ./pool for why the difference is most of the cost), and submit their
  * classification prompts as ONE Anthropic batch. `custom_id` is the contact's
  * own id, so no id map is persisted — process-pending-batch.ts reads the
  * contact id straight off each result on a later run.
@@ -36,9 +38,14 @@ export async function submitNewBatch(
 ): Promise<PersonClassificationSummary> {
   const batch = await runScoped(async () => {
     const db = await getDb();
-    // Total still-due BEFORE the cap is applied, so `remaining` below is an
-    // honest drain gauge rather than "zero because we took a page".
-    const [due] = await db.select({ total: count() }).from(contacts).where(dueForClassification);
+    // NOT every due contact — only the ones a proactive surface could actually
+    // nominate (./pool.ts, which also carries the cost arithmetic). `total` is
+    // the pool size BEFORE its cap, so `remaining` below stays an honest drain
+    // gauge rather than "zero because we took a page".
+    const pool = await listClassificationPool();
+    if (pool.ids.length === 0) {
+      return { rows: [], factsByContact: new Map<string, string[]>(), total: pool.total };
+    }
     const rows = await db
       .select({
         id: contacts.id,
@@ -50,9 +57,14 @@ export async function submitNewBatch(
       })
       .from(contacts)
       .leftJoin(companies, eq(companies.id, contacts.companyId))
-      .where(dueForClassification)
+      // dueForClassification stays in the WHERE even though the pool is already
+      // an intersection with it: the exclusions are the safety mechanism (see
+      // ./due), and they belong where the rows are actually read.
+      .where(and(dueForClassification, inArray(contacts.id, pool.ids)))
       .limit(PERSON_CLASSIFICATION_RUN_CAP);
-    if (rows.length === 0) return { rows, factsByContact: new Map<string, string[]>(), due };
+    if (rows.length === 0) {
+      return { rows, factsByContact: new Map<string, string[]>(), total: pool.total };
+    }
     const factRows = await db
       .select({ contactId: facts.contactId, text: facts.text })
       .from(facts)
@@ -71,10 +83,10 @@ export async function submitNewBatch(
       if (existing) existing.push(fact.text);
       else factsByContact.set(fact.contactId, [fact.text]);
     }
-    return { rows, factsByContact, due };
+    return { rows, factsByContact, total: pool.total };
   });
 
-  const { rows, factsByContact, due } = batch;
+  const { rows, factsByContact, total } = batch;
   const items: BatchExtractItem<PersonClassification>[] = rows.map((row) => ({
     id: row.id,
     schema: personClassificationSchema,
@@ -119,7 +131,7 @@ export async function submitNewBatch(
   return {
     scanned: rows.length,
     classified: classifiedSoFar,
-    remaining: Math.max((due?.total ?? 0) - rows.length, 0),
+    remaining: Math.max(total - rows.length, 0),
     skipped: null,
   };
 }

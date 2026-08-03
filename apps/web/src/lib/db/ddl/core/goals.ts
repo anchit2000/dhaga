@@ -18,6 +18,15 @@ CREATE TABLE IF NOT EXISTS goals (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- Additive: when a match pass last FINISHED for this goal, whether that was the
+-- synchronous resolve on save (lib/ai/goal-resolve.ts) or the nightly Batch
+-- top-up. NULL is load-bearing — it is the ONLY thing that separates "we have
+-- not looked yet" from "we looked and nobody in the graph matched", which
+-- otherwise both present as a cohort of zero and leave the tile claiming to be
+-- searching forever. Deliberately NOT resolved_at: that column is the terminal
+-- done/archived stamp, so writing it mid-goal would make a live goal read closed.
+ALTER TABLE goals ADD COLUMN IF NOT EXISTS last_matched_at timestamptz;
+
 -- Every read starts "the active goal, newest first". Partial on status keeps
 -- the index to the one live row per user, not the archive.
 CREATE INDEX IF NOT EXISTS goals_active_idx ON goals (created_at DESC) WHERE status = 'active';

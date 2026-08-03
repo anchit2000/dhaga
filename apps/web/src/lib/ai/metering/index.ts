@@ -1,10 +1,15 @@
+import { getAiBudgetConfig } from "@/lib/repo/ai-budget";
 import { enforceRateLimit, RateLimitError } from "@/lib/ratelimit";
 import { currentAiActionScope } from "./action-scope";
 import { effectiveMonthlyAiCap, hasUnlimitedAiCredits } from "./cap";
+import { effectiveMonthlyDollarCap } from "./dollar-cap";
 import { aiCreditsUsedThisMonth } from "./record";
+import { aiDollarsUsedThisMonth } from "./spend";
 
 export { currentAiActionId, newAiAction, withAiAction } from "./action-scope";
 export { aiCreditsUsedThisMonth, recordAiAction } from "./record";
+export { aiDollarsUsedThisMonth, aiSpendGroupsThisMonth } from "./spend";
+export { ceilingForPlanRevenue, effectiveMonthlyDollarCap } from "./dollar-cap";
 export {
   effectiveMonthlyAiCap,
   hasUnlimitedAiCredits,
@@ -46,6 +51,7 @@ export function aiUsageLabel({
  * request-scoped getDb().
  */
 export async function hasMonthlyAiBudget(userId: string): Promise<boolean> {
+  if (!(await withinDollarCeiling(userId))) return false;
   if (await hasUnlimitedAiCredits(userId)) return true;
   const cap = await effectiveMonthlyAiCap(userId);
   return (await aiCreditsUsedThisMonth()) < cap;
@@ -54,13 +60,33 @@ export async function hasMonthlyAiBudget(userId: string): Promise<boolean> {
 export class AiBudgetError extends Error {
   constructor(
     message: string,
-    /** Which budget tripped: the monthly billing cap, or the in-memory burst
-     *  guard. Lets callers branch on the two cases (same message unchanged). */
-    public readonly kind: "cap" | "burst",
+    /** Which budget tripped: the monthly CREDIT cap, the monthly DOLLAR ceiling
+     *  (the operator's master cost gate), or the in-memory burst guard. Lets
+     *  callers branch on the cases (same message unchanged). `cap` and
+     *  `dollar_cap` are both "no more AI this month" and should be handled
+     *  alike; only `burst` is worth retrying in seconds. */
+    public readonly kind: "cap" | "dollar_cap" | "burst",
   ) {
     super(message);
     this.name = "AiBudgetError";
   }
+}
+
+/**
+ * The master cost gate: is this user still under their monthly inference-DOLLAR
+ * ceiling? `true` when no ceiling applies (self-host, enforcement off) — see
+ * ./dollar-cap.ts for the full ladder.
+ *
+ * Costs one config read plus one aggregate over `ai_actions`, both sequential
+ * on the request-scoped connection. `hasUnlimitedAiCredits` is NOT consulted:
+ * an unlimited-CREDIT plan (Lifetime) is exactly the account this gate has to
+ * bound, since nothing else does.
+ */
+async function withinDollarCeiling(userId?: string): Promise<boolean> {
+  const config = await getAiBudgetConfig();
+  const ceiling = await effectiveMonthlyDollarCap(config, userId);
+  if (ceiling.usd === null) return true;
+  return (await aiDollarsUsedThisMonth()) < ceiling.usd;
 }
 
 /**
@@ -80,6 +106,22 @@ export class AiBudgetError extends Error {
  * directly: with the plan-cap master switch off it IS the billing gate (today's
  * behaviour, unchanged), and with it on the credit ladder decides. See ./cap.ts
  * for the full precedence.
+ *
+ * TWO INDEPENDENT CEILINGS, AND WHY CREDITS SPEAK FIRST. Credits and dollars
+ * bound different things and a user can hit either first: credits bound what a
+ * user may DO (and three metered features cost 0 credits on purpose, so credits
+ * alone no longer bound spend), while the dollar ceiling bounds what their month
+ * may COST us. Neither subsumes the other — a Lifetime account has no credit
+ * ceiling at all but still has a dollar one, and a free account can exhaust ten
+ * credits while costing six cents.
+ *
+ * Credits are therefore checked first, dollars second, because the credit
+ * message is the one a user can act on ("you've used your 300 credits" →
+ * upgrade); the dollar gate is the operator's backstop and should only be the
+ * voice in the room when the credit ladder did not already stop it. Crucially
+ * the dollar check sits OUTSIDE the `hasUnlimitedAiCredits` early return — if it
+ * were nested inside, unlimited-credit plans would bypass the master gate
+ * entirely, which is precisely the account it exists to bound.
  */
 export async function assertAiBudget(userId: string): Promise<void> {
   try {
@@ -91,9 +133,18 @@ export async function assertAiBudget(userId: string): Promise<void> {
     throw error;
   }
   if (currentAiActionScope()?.recorded) return;
-  if (await hasUnlimitedAiCredits(userId)) return;
-  const cap = await effectiveMonthlyAiCap(userId);
-  if ((await aiCreditsUsedThisMonth()) >= cap) {
-    throw new AiBudgetError(`Monthly AI credit cap reached (${cap}).`, "cap");
+
+  if (!(await hasUnlimitedAiCredits(userId))) {
+    const cap = await effectiveMonthlyAiCap(userId);
+    if ((await aiCreditsUsedThisMonth()) >= cap) {
+      throw new AiBudgetError(`Monthly AI credit cap reached (${cap}).`, "cap");
+    }
+  }
+
+  if (!(await withinDollarCeiling(userId))) {
+    throw new AiBudgetError(
+      "This account has reached its monthly AI spending limit. It resets at the start of next month.",
+      "dollar_cap",
+    );
   }
 }

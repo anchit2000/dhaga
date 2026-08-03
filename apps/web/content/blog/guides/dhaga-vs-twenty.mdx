@@ -1,18 +1,24 @@
 ---
-title: "Dhaga vs Twenty: Personal Relationship Graph or Team CRM?"
+title: "Dhaga vs Twenty: Personal CRM vs Team CRM"
 description: "Twenty and Dhaga are both open-source CRMs, but they solve different jobs. Compare capture, pipelines, AI, privacy, teams, and what full feature parity would really take."
 date: "2026-08-03"
 author: "Anchit Shrivastava"
-tags: ["dhaga", "twenty", "open-source-crm", "personal-crm", "comparison"]
+tags: ["personal-crm", "twenty", "open-source", "comparison", "guide"]
 ---
 
 <Callout title="The short version">
 [Twenty](https://twenty.com/) is a programmable, team-owned business CRM: custom objects, sales pipelines, saved views, workflows, mailbox and calendar sync, permissions, dashboards, and developer APIs. Dhaga is a personal relationship-intelligence system: capture someone when you meet, preserve the context, turn notes into a private graph, and help you remember who to call or ask for an introduction. Dhaga should not rebuild all of Twenty. It should stay independent, integrate deeply with CRMs like Twenty, and become the context-and-memory layer they do not provide.
 </Callout>
 
-Twenty and Dhaga can look similar in a screenshot. Both have people, companies,
-notes, tasks, search, open-source code, and a self-hosting story. That is where a
-feature checklist becomes misleading.
+If you searched for a **Twenty CRM alternative**, the overlap can look convincing in
+a screenshot. Twenty and Dhaga both have people, companies, notes, tasks, search,
+open-source code, and a self-hosting story. That is where a feature checklist becomes
+misleading.
+
+Full disclosure up front: I build Dhaga. So this is the same honest comparison we try
+to write across every Dhaga guide — credit the other product for what it does plainly
+better, name our own unfinished work, and pick based on the job rather than declaring
+one universal winner.
 
 The two products start with different questions.
 
@@ -25,9 +31,9 @@ One is becoming an open, programmable alternative to Salesforce. The other is a
 private memory for a professional network. They overlap, but they are not the same
 category wearing different colours.
 
-This comparison is current as of August 2026 and is written by the person building
-Dhaga. I will give Twenty full credit where it is plainly ahead, because the right
-strategy depends on seeing the size of that lead clearly.
+This comparison is current as of August 2026. Twenty is moving quickly, particularly
+around apps and AI, so verify its current documentation before making a long-term
+platform decision.
 
 ## The core difference: system of record vs system of relationship memory
 
@@ -70,7 +76,7 @@ take their call? Dhaga's answer is not “yes by default.”
   ]}
 />
 
-### Where Twenty is far ahead
+### Where Twenty wins — and it is not close on these
 
 Twenty is not merely a contacts table with an opportunity board. Its hard-won
 advantage is that its major features are **generic platform primitives**.
@@ -107,7 +113,7 @@ also been described across the docs as alpha, coming soon, or still evolving. Th
 are strategically important, but a fair comparison should not treat every roadmap
 headline as mature production capability.
 
-### Where Dhaga is meaningfully different
+### Where Dhaga wins
 
 Dhaga has advantages that do not fall out of adding another custom object to a sales
 CRM.
@@ -204,6 +210,12 @@ this person?** That means selective relationship sharing, private-by-default fac
 contact-level controls and clear ownership boundaries. It is narrower than Twenty's
 platform, but much more differentiated.
 
+That is also why the distinction between a personal and company-owned graph matters.
+Our [open-source CRM guide for startups](/blog/guides/open-source-self-hosted-crm-startups)
+covers the wider self-hosting trade-offs, while the guide to
+[warm introductions and mutual connections](/blog/guides/warm-introductions-mutual-connections)
+shows the relationship problem Dhaga is actually trying to solve.
+
 ## Which should you choose today?
 
 | If you… | Choose |
@@ -224,5 +236,7 @@ people. It is to own the layer conventional CRMs systematically miss: the moment
 relationship begins, the context that makes it human, and the memory that makes it
 useful years later.
 
-Twenty can be where a company runs the deal. [Dhaga](/) can be where the relationship
-is remembered—and where the user decides what to share.
+If you need a programmable team CRM now, Twenty is the serious answer — go use it. If
+you want the private capture, memory and warm-path layer beside it, take a look at
+[Dhaga](/). Twenty can be where a company runs the deal; Dhaga can be where the
+relationship is remembered — and where the user decides what to share.

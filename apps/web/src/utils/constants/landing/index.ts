@@ -36,6 +36,7 @@ export {
   type BillingCadence,
 } from "./pricing";
 export { NAV_LINKS, RESOURCE_ITEMS } from "./nav";
+export { GRAPH_PROOF } from "./graph-proof";
 export {
   SANDBOX_EYEBROW,
   SANDBOX_HEADING,

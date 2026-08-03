@@ -4,9 +4,9 @@ import { Footer } from "@/components/landing/Closing";
 import { Header } from "@/components/landing/Header";
 import { Access } from "./Access";
 import { Faq } from "./Faq";
+import { GraphProof } from "./GraphProof";
 import { Hero } from "./Hero";
 import { Journey } from "./Journey";
-import { Outcomes } from "./Outcomes";
 import { Trust } from "./Trust";
 import { UseCases } from "./UseCases";
 
@@ -16,9 +16,9 @@ export function FocusedHome(): ReactElement {
       <Header />
       <Hero />
       <Journey />
+      <GraphProof />
       <UseCases />
       <Trust />
-      <Outcomes />
       <Faq />
       <Access />
       <Footer />

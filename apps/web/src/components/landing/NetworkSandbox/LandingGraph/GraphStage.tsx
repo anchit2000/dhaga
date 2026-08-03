@@ -36,6 +36,7 @@ export function GraphStage({
   onExplode,
   highlightedPath = null,
   autoCircleCount = AUTO_CIRCLE_COUNT,
+  compactChrome = false,
 }: {
   payload: FullGraphPayload;
   indexes: GraphIndexes;
@@ -45,6 +46,7 @@ export function GraphStage({
   onExplode: () => void;
   highlightedPath?: readonly string[] | null;
   autoCircleCount?: number;
+  compactChrome?: boolean;
 }): React.ReactElement {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const renderStateRef = useRef(emptyRenderState());
@@ -93,15 +95,17 @@ export function GraphStage({
       ) : null}
       <div ref={containerRef} className="absolute inset-0 z-10" />
 
-      <div className="pointer-events-none absolute inset-x-3 top-3 z-20 flex justify-end">
+      <div className={`pointer-events-none absolute inset-x-3 top-3 z-20 justify-end ${compactChrome ? "hidden sm:flex" : "flex"}`}>
         <GraphSearch nodes={payload.nodes} nodeTypes={payload.nodeTypes} onPick={view.select} />
       </div>
 
       {renderer ? (
-        <GraphControls
-          renderer={renderer}
-          visibleNodeIds={() => renderer.getGraph().filterNodes((id) => !hiddenNodes.has(id))}
-        />
+        <div className={compactChrome ? "hidden sm:block" : "block"}>
+          <GraphControls
+            renderer={renderer}
+            visibleNodeIds={() => renderer.getGraph().filterNodes((id) => !hiddenNodes.has(id))}
+          />
+        </div>
       ) : null}
 
       {isolated ? (

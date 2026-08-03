@@ -27,15 +27,21 @@ function WarmPathCard(): React.ReactElement {
   );
 }
 
-function LayersChip(): React.ReactElement {
+function LayersChip({ compact = false }: { compact?: boolean }): React.ReactElement {
   return (
-    <div className="pointer-events-none absolute left-3 top-3 z-30 flex items-center gap-1.5 rounded-full border border-seam bg-panel/95 px-2.5 py-1.5 text-[10px] text-paper shadow-lg backdrop-blur">
+    <div className={`pointer-events-none absolute left-3 top-3 z-30 items-center gap-1.5 rounded-full border border-seam bg-panel/95 px-2.5 py-1.5 text-[10px] text-paper shadow-lg backdrop-blur ${compact ? "hidden sm:flex" : "flex"}`}>
       <Layers3 className="size-3" aria-hidden /> Layers
     </div>
   );
 }
 
-export function GraphStage({ scene }: { scene: GraphScene }): React.ReactElement {
+export function GraphStage({
+  scene,
+  compact = false,
+}: {
+  scene: GraphScene;
+  compact?: boolean;
+}): React.ReactElement {
   const { dataset, error } = useFeatureGraph();
   const isWarmPath = scene.id === "warmpath";
 
@@ -63,10 +69,11 @@ export function GraphStage({ scene }: { scene: GraphScene }): React.ReactElement
         explodable={false}
         exploding={false}
         onExplode={() => {}}
-        highlightedPath={isWarmPath ? FEATURE_GRAPH_WARM_PATH.ids : null}
+        highlightedPath={isWarmPath || compact ? FEATURE_GRAPH_WARM_PATH.ids : null}
         autoCircleCount={0}
+        compactChrome={compact}
       />
-      {isWarmPath ? <WarmPathCard /> : <LayersChip />}
+      {isWarmPath ? <WarmPathCard /> : <LayersChip compact={compact} />}
     </div>
   );
 }

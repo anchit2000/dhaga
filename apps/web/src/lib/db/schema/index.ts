@@ -29,6 +29,7 @@ export {
   type EdgeSuggestionRow,
   type FollowUpRow,
 } from "./notes";
+export { goals, goalMembers, type GoalRow, type GoalMemberRow } from "./goals";
 export { confirmations, type ConfirmationRow } from "./confirmations";
 export { embeddings, type EmbeddingRow } from "./embeddings";
 export { extractionJobs, type ExtractionJobRow } from "./jobs";

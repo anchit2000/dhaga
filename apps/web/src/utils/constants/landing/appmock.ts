@@ -8,14 +8,18 @@ export const MOCK_PREVIEW_NAV = [
   { label: "Map", icon: MapPin, active: false },
 ] as const;
 
-/** Home's hero "Today" tile. `bucket` is the real BUCKET_LABEL (Check-in /
- *  Due / Network) rendered as an ember mono tag, then "· reason". */
+/** Home's hero "Today" tile. `bucket` is the real BUCKET_LABEL (Check-in / Due /
+ *  Follow-up / Occasion / Signal / Quiet / Network / Goal) rendered as an ember
+ *  mono tag, then "· reason". A realistic mix, not one bucket repeated — the
+ *  goal row leads because that's what the briefing is aimed by. Keep this at
+ *  five entries: the tile shows `.slice(0, 3)` under a hardcoded "+2 more", and
+ *  MOCK_HOME_STATUS counts the whole array. */
 export const MOCK_HOME_TODAY = [
-  { personId: "sarah", name: "Sarah Chen", bucket: "Due", reason: "Quarterly · due to reconnect" },
-  { personId: "priya", name: "Priya Nair", bucket: "Check-in", reason: "Daily check-in" },
-  { personId: "rohan", name: "Rohan Mehta", bucket: "Network", reason: "12 connections in your network" },
-  { personId: "alice", name: "Alice Krejčová", bucket: "Due", reason: "Monthly · due to reconnect" },
-  { personId: "kavya", name: "Kavya Singh", bucket: "Network", reason: "8 connections in your network" },
+  { personId: "nisha", name: "Nisha Shah", bucket: "Goal", reason: "Reach out to VCs · 4 of 12 done" },
+  { personId: "alice", name: "Alice Krejčová", bucket: "Follow-up", reason: "You promised the onboarding deck" },
+  { personId: "sarah", name: "Sarah Chen", bucket: "Signal", reason: "Left Stripe — founding something new" },
+  { personId: "priya", name: "Priya Nair", bucket: "Due", reason: "Quarterly · due to reconnect" },
+  { personId: "dan", name: "Darren Adams", bucket: "Quiet", reason: "Cooling · 8 months since you spoke" },
 ] as const;
 
 export const MOCK_HOME_FOLLOWUPS = [

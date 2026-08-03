@@ -40,6 +40,15 @@ export const SUGGESTION_WEIGHTS = {
    *  due scores 0.6 × 40 = 24 and loses nothing by slipping a day, so a full
    *  30 here is what puts the occasion above it on the only day it can be met. */
   importantDate: 30,
+  /** A member of the user's active goal cohort. BELOW importantDate/followUp
+   *  because those EXPIRE and this one does not — a cohort member is still
+   *  there tomorrow, which is the same reason importantDate was pulled up to
+   *  tie followUp. ABOVE signal because the rule above holds: the objective is
+   *  the user's own sentence, so this is asserted, not inferred. Sanity check:
+   *  a just-due weekly cadence scores 0.6 × 40 = 24, so 28 > 24 is consistent
+   *  with the existing 30 > 24 — and a fully-overdue cadence (40) still wins,
+   *  which is what keeps a goal from ever outranking a kept promise. */
+  goal: 28,
   /** A real external event (job change, news), but we inferred that it matters. */
   signal: 25,
   /** Absence of contact is the weakest evidence — it is true of a long tail of
@@ -64,6 +73,7 @@ export const SUGGESTION_REASON_TERMS = [
   "cadence",
   "followUp",
   "importantDate",
+  "goal",
   "signal",
   "quiet",
   "degree",
@@ -80,6 +90,17 @@ export const SUGGESTION_CADENCE_BASE = 0.6;
 /** Same shape for a follow-up, with a higher floor: a dated task is binary
  *  (due or not) far more than a cadence is, so overdueness matters less. */
 export const SUGGESTION_FOLLOW_UP_BASE = 0.7;
+
+/** Same shape and reasoning as SUGGESTION_FOLLOW_UP_BASE: cohort membership is
+ *  near-binary — the match pass already decided this person belongs — so the
+ *  model's noisy 0..100 fit MODULATES the term (19.6 → 28) rather than deciding
+ *  it. A rank of 40 and a rank of 60 must not be the difference between showing
+ *  someone and not. */
+export const SUGGESTION_GOAL_BASE = 0.7;
+
+/** The objective is echoed into the row's reason (and the daily-digest email);
+ *  truncate before a long sentence wraps a suggestion row into three lines. */
+export const SUGGESTION_GOAL_OBJECTIVE_MAX = 40;
 
 /** Days for a signal's points to halve. A week-old job change is still worth
  *  mentioning; a month-old one is stale news, not a reason to reach out. */

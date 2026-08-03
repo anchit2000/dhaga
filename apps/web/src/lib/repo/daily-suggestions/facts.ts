@@ -1,6 +1,7 @@
-import { and, eq, inArray, isNull, ne, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { companies, contacts, eventContacts, notes } from "@/lib/db/schema";
+import { surfaceableContact } from "@/lib/repo/contacts/surfaceable";
 import { lastTouchSql } from "@/lib/repo/last-touch";
 
 /**
@@ -9,9 +10,12 @@ import { lastTouchSql } from "@/lib/repo/last-touch";
  * touch, graph degree). Bounded by the id list the sources produced (~50 rows),
  * so it needs no LIMIT of its own.
  *
- * This is also where note-mention stubs are filtered ONCE for every source —
- * "Prashant's son" is not a person you can message, and previously each source
- * had to remember to exclude them separately.
+ * This is also where the whole engine's nomination gate sits ONCE for every
+ * source (`surfaceableContact`): "Prashant's son" is not a person you can
+ * message and a service row is not one Dhaga should volunteer, and previously
+ * each source had to remember to exclude them separately. A candidate filtered
+ * here is simply absent from the map, which the scorer already treats as
+ * "stub or gone" — it is never suggested, and never hidden from People.
  */
 
 export interface CandidateFacts {
@@ -59,7 +63,7 @@ export async function getCandidateFacts(ids: string[]): Promise<Map<string, Cand
     // tables joined in, soft-deleted notes excluded, GROUP BY the contact.
     .leftJoin(notes, and(eq(notes.contactId, contacts.id), isNull(notes.deletedAt)))
     .leftJoin(eventContacts, eq(eventContacts.contactId, contacts.id))
-    .where(and(inArray(contacts.id, ids), ne(contacts.source, "mentioned")))
+    .where(and(inArray(contacts.id, ids), surfaceableContact))
     .groupBy(contacts.id, companies.id);
   return new Map(
     rows.map((row) => [

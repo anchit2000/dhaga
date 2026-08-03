@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { HomeTile } from "../HomeTile";
+import { GoalStrip } from "./GoalStrip";
 import { SuggestionRow, type MeetingSlot } from "./SuggestionRow";
 import { ThreadMark } from "@/components/brand/ThreadMark";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { markReachedOutAction } from "@/lib/actions/reminders";
 import { useOptimisticList } from "@/lib/hooks/useOptimisticList";
 import type { ReactElement } from "react";
 import type { DailySuggestion } from "@/lib/repo/daily-suggestions";
+import type { GoalProgress } from "@/lib/repo/goals";
 
 /** Home's hero tile: the curated reach-out list for today. */
 export function TodaySuggestions({
@@ -19,6 +21,7 @@ export function TodaySuggestions({
   overloaded,
   meetingCountToday,
   moreDue,
+  goalProgress,
   onSelectContact,
   className,
 }: {
@@ -28,6 +31,8 @@ export function TodaySuggestions({
   overloaded: boolean;
   meetingCountToday: number;
   moreDue: number;
+  /** The active goal's burn-down, or null when the user has no goal. */
+  goalProgress: GoalProgress | null;
   onSelectContact: (id: string) => void;
   /** Grid-span classes — HomeDashboard sizes Today's hero column. */
   className?: string;
@@ -53,6 +58,8 @@ export function TodaySuggestions({
         </span>
       }
     >
+      <GoalStrip progress={goalProgress} />
+
       {overloaded ? (
         <div className="rounded-xl bg-amber/[0.06] px-3 py-2.5">
           <p className="text-sm text-paper">You have {meetingCountToday} meetings today.</p>

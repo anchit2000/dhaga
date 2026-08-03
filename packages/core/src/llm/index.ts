@@ -64,6 +64,16 @@ export {
   type SignalDetectionSubject,
 } from "./prompts/signal-detection";
 export {
+  PERSON_CLASSIFICATION_SYSTEM,
+  buildPersonClassificationPrompt,
+  type PersonClassificationSubject,
+} from "./prompts/person-classification";
+export {
+  GOAL_MATCHING_SYSTEM,
+  buildGoalMatchingPrompt,
+  type GoalMatchingSubject,
+} from "./prompts/goal-matching";
+export {
   getBatchLLMClient,
   getLLMClient,
   getLLMProvider,

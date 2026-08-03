@@ -764,14 +764,16 @@ short "how to" for one part of the product.
 today**, alongside the follow-ups you set and the people you touched most
 recently. Dhaga weighs everyone in your graph against everything it knows is
 actually happening — a keep-in-touch rhythm that has come due, a follow-up
-dated for today, a birthday landing, a job change you asked to watch for, how
-long the silence has run, how connected someone is — and shows you the few at
-the top. Every row says why it's there:
+dated for today, a birthday landing, a job change you asked to watch for, the
+goal you're working on, how long the silence has run, how connected someone is
+— and shows you the few at the top. Every row says why it's there:
 
 - **Check-in** — someone you keep in touch with daily.
 - **Due** — your keep-in-touch rhythm for this person has run out.
 - **Follow-up** — something you promised to do is due today, or is late.
 - **Occasion** — a birthday or anniversary, today or just ahead.
+- **Goal** — they're part of the shortlist for the goal you set, and you
+  haven't reached them yet.
 - **Signal** — a job change or news story from your watchlist.
 - **Quiet** — no reason beyond the silence; you simply haven't spoken in a
   long while.
@@ -796,6 +798,71 @@ the bottom of every screen —
 moment you meet them.
 
 ![Dhaga Home showing a "To confirm" tile of pending AI confirmations, the daily briefing list of people to reach out to, a follow-ups panel, recent people, and the bottom capture dock](/docs/guide/home.png)
+
+## Working toward a goal
+
+**Set a goal** sits at the top of the Today tile. Say what you're actually
+trying to do in one plain sentence — *"reach out to VCs"*, *"reconnect with
+people from the Delhi trip"* — and Dhaga turns it into a finite shortlist of
+people **from your own graph** rather than leaving it as an intention. Overnight
+it searches your notes, titles and companies for who might fit, weighs each
+candidate against the sentence you wrote, and from then on feeds a few of them
+into the briefing each morning as **Goal** rows. The reason line hands your
+objective back to you with how many people are left.
+
+The goal itself then sits above the list as a strip: your sentence, a bar
+showing *N of M done*, and a menu to **Edit**, **Mark done**, or **Archive** it.
+There is no separate goals page — a goal has one list to feed and one number
+worth reading, and both are here.
+
+**One goal at a time.** Setting a new one closes the old one, because a goal is
+what Home is currently about and two of them would turn the briefing into a list
+of lists. **The shortlist is finite**, so it ends: you work through it a few
+people a day and then it is done, rather than a feed that refills forever.
+
+**It burns down on any real contact, not just the button.** Someone drops off
+the shortlist the moment your last contact with them moves past the day they
+were shortlisted — so writing a note about them, or scanning them at an event,
+closes them out exactly as **Reached out** does. The bar and the list can never
+disagree, because both are counted the same way.
+
+Phrase the goal the way your notes are phrased. Dhaga finds candidates by
+matching the words in your objective against what's actually written in your
+graph, so *"designers in Bangalore"* or *"people to see on my Delhi trip"*
+recall well, while something abstract like *"people who could open doors"*
+recalls poorly — nothing in your graph is worded that way.
+
+## People Dhaga doesn't suggest
+
+An imported address book is never only people: it arrives carrying "Ola
+Support", "Vegetable Vendor", "AC Repair". Dhaga reads over the contacts you've
+never done anything with and marks the ones that look like a business, a shop
+or a support line rather than someone you could message, and stops offering
+them on the surfaces where it volunteers a name — the daily briefing, the
+going-quiet list, recommendations, the graph filler.
+
+**Nothing is hidden or deleted.** A contact marked that way is still in
+**People**, still in search, still in duplicate detection and merging, still in
+your Wrapped card, and still in every export. The only thing that changes is
+that Dhaga stops putting it in front of you unasked. A row you went looking for
+is always there.
+
+**You can see the whole list, and overrule it.** The People page carries an *"N
+hidden from suggestions"* link that opens exactly those rows; each contact's own
+page shows whether the call was **Dhaga's guess** or **you marked this**, and
+one tap flips it. The People table's bulk bar can mark many at once. Your
+ruling is a lock — once you've said a row is a person, the nightly pass never
+judges it again.
+
+**Anyone you've already acted on is never judged in the first place.** If
+you've starred them, put them on your watchlist, set a keep-in-touch rhythm,
+recorded reaching out to them, or written a single note about them, Dhaga
+treats that as settled and leaves the contact out of the sweep entirely. The
+only rows it looks at are the ones nobody has ever touched.
+
+When Dhaga can't tell from the record — a bare first name and nothing else —
+it says so and leaves the contact alone rather than guessing. Only a confident
+"not a person" ever suppresses anything.
 
 ## The sections
 
@@ -881,6 +948,8 @@ two round-trips behind the scenes is still one scan:
 | Pre-meeting brief | 2 |
 | Deep research (enrich from the web) | 20 |
 | Watchlist scan (nightly) | Free |
+| Contact check (nightly) | Free |
+| Goal match (nightly) | Free |
 
 A **photo note** costs 2 — reading the image and extracting from the resulting
 text happen as two separate actions.
@@ -893,6 +962,16 @@ dominated by something other than Dhaga's own tokens.
 than being hidden, so a month of nightly scanning is visible and accounted for
 without costing you anything. You never asked for any individual scan — how
 many people you can watch is what limits them instead.
+
+**Contact checks and goal matches are free for the same reason.** A *contact
+check* is the nightly read of one contact to work out whether it is a person
+you could message or a shop your address book dragged in; a *goal match* weighs
+one contact against the goal you wrote in your own words. You never asked for
+either judgement about any particular person, so neither is billed — what
+limits them is a ceiling on how many contacts a single night's sweep may look
+at, not your allowance. A whole imported address book is worked through over a
+few nights that way, and every one of those actions still shows up in the
+breakdown marked *Free* rather than being hidden.
 
 **Credits aren't the only gate**
 
@@ -1686,6 +1765,22 @@ On-device import ships as code but needs a native app build to appear (it can't
 arrive via an over-the-air JS update or plain Expo Go), and is pending on-device
 testing.
 
+## What happens to the non-people you bring in
+
+An address book is never only people — "Ola Support", "Vegetable Vendor", "AC
+Repair" come in with everyone else. Dhaga looks over the imported rows you never
+do anything with and marks the ones that read as a business or a service, so
+they stop turning up in the Home briefing and the other places Dhaga volunteers
+a name.
+
+**Nothing is deleted or hidden.** Those rows stay in **People**, in search, in
+duplicate detection, in your Wrapped card and in every export — the only change
+is that Dhaga stops suggesting them. The People page shows an *"N hidden from
+suggestions"* link that opens exactly those rows, each contact says whether the
+call was Dhaga's guess or yours, and one tap overrules it for good. Anyone
+you've starred, noted, or reached out to is never judged at all. See
+[your daily briefing](/docs/guide) for the full behaviour.
+
 Once people are in, add [notes and facts](/docs/guide/notes-and-facts),
 [enrich them from the web](/docs/guide/enrich-from-web), or group them into
 [events](/docs/guide/groups-and-events).
@@ -1921,6 +2016,12 @@ With people selected, the bar offers:
   [Relabel relationships in bulk](#relabel-relationships-in-bulk) below.
 - **Tag** — add or remove a tag across the whole selection.
 - **Star** / **Unstar** — flag or unflag people for your Saved list.
+- **Not a person** / **Is a person** — settle in one go whether the selection is
+  people or address-book clutter ("Ola Support", "Vegetable Vendor"). Marking a
+  row **Not a person** keeps it off suggestions only; it stays listed in People,
+  in search and in every export, and nothing is deleted. Your ruling sticks —
+  Dhaga's nightly check never overrides it. See
+  [your daily briefing](/docs/guide) for what suppression does and doesn't touch.
 - **Delete** — forget the selected people. This cascades — their notes, facts,
   edges, and embeddings go too — exactly like "forget this person" on a single
   profile.
@@ -2330,9 +2431,9 @@ beneath it.
   reset, a breakdown of where the rest went by kind of action, and a list of your
   most recent AI actions. Credits are charged per action, not per model call: a
   card scan, note, quick-add or draft costs 1; a question to Ask Dhaga or a
-  pre-meeting brief costs 2; enriching a contact from the web costs 20. Nightly
-  watchlist scans are free — they show in the breakdown marked *Free* rather than
-  being hidden. Credits aren't the only gate: enrichment and pre-meeting briefs
+  pre-meeting brief costs 2; enriching a contact from the web costs 20. The
+  nightly passes — watchlist scans, contact checks and goal matches — are free;
+  they show in the breakdown marked *Free* rather than being hidden. Credits aren't the only gate: enrichment and pre-meeting briefs
   are Pro-and-up features whatever your balance says. Your allowance can be
   raised by whoever runs the instance — a
   promotional month, or credits granted to you after something went wrong on
@@ -3919,6 +4020,29 @@ at it:
 Requires `CRON_SECRET` and `FIRECRAWL_API_KEY` (or another `SEARCH_PROVIDER`)
 set — see `.env.example`. Without `CRON_SECRET` the route always returns
 401, so it's safe to leave unconfigured if you don't want the feature.
+
+### Nightly curation passes (person/service classification, goal matching)
+
+Two more sweeps ride the `/api/jobs/daily` endpoint below rather than a queue,
+both over the Anthropic **Message Batches API** and both **zero-credit** (see
+BRD §8.3):
+
+- **Person-vs-service classification** labels imported address-book rows
+  ("Ola Support", "Vegetable Vendor") so they stop appearing on proactive
+  surfaces. Nothing is deleted or hidden — the row stays in People, search,
+  merge, Wrapped and every export.
+- **Goal matching** judges contacts against the one objective a user has set,
+  writing the cohort the Home briefing draws its daily slice from.
+
+Both are two-phase, exactly like signal detection: one invocation applies the
+previous run's batch and submits a fresh one, so a graph drains over several
+nights rather than in one call. Each is capped per run
+(`PERSON_CLASSIFICATION_RUN_CAP` 1,000 contacts, `GOAL_MATCH_RUN_CAP` 150) and
+each reports a `remaining` count in the endpoint's JSON — contacts still to
+classify, and cohort slots still to fill — so you can watch a backfill drain.
+Both need a working LLM provider; without one they
+return `skipped: "no_llm"` and change nothing. They run **before** the reach-out
+digest on purpose, so the email reflects the freshest labels and cohort.
 
 ### Daily email jobs (digests and reminders)
 

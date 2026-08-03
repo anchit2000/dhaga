@@ -1,5 +1,7 @@
+import { runPersonClassification } from "@/lib/jobs/classify-people";
 import { runConfirmationsDigest } from "@/lib/jobs/confirmations-digest";
 import { runDailyDigest } from "@/lib/jobs/daily-digest";
+import { runGoalMatching } from "@/lib/jobs/match-goal";
 import { runFollowUpReminders } from "@/lib/jobs/follow-up-reminders";
 import { runImportantDateReminders } from "@/lib/jobs/important-date-reminders";
 import { runLinkedinExportReminders } from "@/lib/jobs/linkedin-export-reminders";
@@ -12,9 +14,15 @@ import { runSignalDetection } from "@/lib/jobs/detect-signals";
  * once-a-day work runs here: the messaging idle-flush (the guaranteed daily
  * floor for auto-saving quiet capture batches — a Vercel-Pro/system cron can
  * additionally drive api/jobs/messaging/flush every ~15 min), signal detection,
- * the reach-out digest, the confirmations digest, the morning follow-up
- * reminder, the due-follow-up reminder sweep, the birthday/anniversary reminder
- * sweep, and the LinkedIn export reminders.
+ * the two nightly curation passes (person-vs-service classification and goal
+ * matching — both Batch API, both zero-credit, both reported with a `remaining`
+ * count so an operator can watch a backfill drain), the reach-out digest, the
+ * confirmations digest, the morning follow-up reminder, the due-follow-up
+ * reminder sweep, the birthday/anniversary reminder sweep, and the LinkedIn
+ * export reminders.
+ * Order is load-bearing in one place: both curation passes run before the
+ * reach-out digest, which emails today's suggestions and so must see the
+ * freshest labels and cohort.
  * It's a plain authenticated GET —
  * Vercel Cron sends `Authorization: Bearer $CRON_SECRET`
  * (apps/web/vercel.json), and off Vercel ANY scheduler (system crontab, GitHub
@@ -40,6 +48,13 @@ export async function GET(request: Request): Promise<Response> {
   }
   const messagingFlush = await runMessagingFlush();
   const signals = await runSignalDetection();
+  // Both curation passes run BEFORE the digest: it emails today's suggestions,
+  // so it has to read the freshest person/service labels and goal cohort. They
+  // also have to run before each other's summaries are read — sequential awaits,
+  // matching the rest of this file, because each pass is itself a per-tenant
+  // sweep holding a connection from a small pool.
+  const personClassification = await runPersonClassification();
+  const goalMatching = await runGoalMatching();
   const digest = await runDailyDigest();
   const confirmationsDigest = await runConfirmationsDigest();
   const reminder = await runMorningReminder();
@@ -49,6 +64,8 @@ export async function GET(request: Request): Promise<Response> {
   return Response.json({
     messagingFlush,
     signals,
+    personClassification,
+    goalMatching,
     digest,
     confirmationsDigest,
     reminder,

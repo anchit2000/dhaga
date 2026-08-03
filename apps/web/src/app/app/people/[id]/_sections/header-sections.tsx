@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PersonKindChip } from "@/components/app/contact/PersonKindChip";
 import { StarButton } from "@/components/app/contact/StarButton";
 import { TagCombobox } from "@/components/app/contact/TagCombobox";
 import { MentionedPersonActions } from "@/components/app/contact/MentionedPersonActions";
@@ -42,6 +43,7 @@ export function PersonIdentityHeader({
           {[contact.title, companyName].filter(Boolean).join(" · ") ||
             "No title or company yet"}
         </p>
+        <PersonKindChip contactId={contactId} personKind={contact.personKind} personKindBy={contact.personKindBy} />
         <Suspense
           fallback={
             <div className="mt-2">

@@ -1,5 +1,6 @@
 // Split per the 150-line rule; import paths unchanged (@/lib/repo/contacts).
 export {
+  countServiceContacts,
   listAllTags,
   listContacts,
   listContactsPage,
@@ -29,6 +30,7 @@ export {
 } from "./mutations";
 export { countAuthoredContacts } from "./authored-count";
 export { setStarred } from "./star";
+export { setContactsPersonKind, setPersonKind } from "./person-kind";
 export { mergeContacts } from "./merge";
 export { getContactsForMerge, type ContactMergeRecord } from "./merge-preview";
 export { findDuplicateContactClusters, type DuplicateContactCluster } from "./duplicates";

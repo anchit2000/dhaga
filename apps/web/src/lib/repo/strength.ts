@@ -1,6 +1,7 @@
-import { and, eq, isNull, ne, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { companies, contacts, notes, eventContacts } from "@/lib/db/schema";
+import { surfaceableContact } from "@/lib/repo/contacts/surfaceable";
 import { lastTouchSql } from "@/lib/repo/last-touch";
 import {
   DECAY_AFTER_DAYS,
@@ -86,9 +87,10 @@ export async function listQuietContacts(): Promise<QuietContact[]> {
       and(eq(notes.contactId, contacts.id), isNull(notes.deletedAt)),
     )
     .leftJoin(eventContacts, eq(eventContacts.contactId, contacts.id))
-    // Exclude note-mention stubs (source "mentioned") — a bare relationship stub
-    // with an old last-touch must not surface in the "going quiet" tile.
-    .where(and(isNull(contacts.reachOutEveryDays), ne(contacts.source, "mentioned")))
+    // Only rows Dhaga may NOMINATE (lib/repo/contacts/surfaceable.ts) — neither
+    // a bare relationship stub with an old last-touch nor a service row belongs
+    // in the "going quiet" tile; a shop is not a relationship that decays.
+    .where(and(isNull(contacts.reachOutEveryDays), surfaceableContact))
     .groupBy(contacts.id, companies.id)
     .having(sql`${lastTouchSql} < now() - make_interval(days => ${DECAY_AFTER_DAYS})`);
   return rows

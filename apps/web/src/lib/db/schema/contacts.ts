@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { boolean, integer, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, integer, jsonb, pgTable, real, text, timestamp } from "drizzle-orm/pg-core";
 import type {
   Address,
   ContactMethod,
@@ -58,6 +58,20 @@ export const contacts = pgTable("contacts", {
   // Explicit user favourite — distinct from watchedForSignals (which drives the
   // proactive signal scans). Powers the Saved page's Starred tab + home tile.
   starred: boolean("starred").notNull().default(false),
+  // Noise suppression for bulk-imported address-book rows ("Vegetable Vendor",
+  // "Ola Support"). "person" | "service" | "unknown"; NULL = never judged. NULL
+  // and "unknown" both behave as not-suppressed, but they are different
+  // instructions to the nightly sweep — NULL means "batch it", "unknown" means
+  // "the model declined, leave it alone". Only "service" suppresses, and only
+  // from PROACTIVE surfaces (lib/repo/contacts/surfaceable.ts) — the row stays
+  // fully findable everywhere the user navigated on purpose.
+  personKind: text("person_kind"),
+  // "model" | "user". "user" is a lock: the sweep never re-judges a user ruling.
+  personKindBy: text("person_kind_by").notNull().default("model"),
+  // Model certainty 0..1 (NULL when the user set it). Orders the review list;
+  // never decides suppression.
+  personKindConfidence: real("person_kind_confidence"),
+  personClassifiedAt: timestamp("person_classified_at", { withTimezone: true }),
   source: text("source").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),

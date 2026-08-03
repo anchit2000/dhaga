@@ -1,6 +1,7 @@
-import { and, eq, isNull, ne, notInArray, or, sql } from "drizzle-orm";
+import { and, eq, isNull, notInArray, or, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { companies, contacts, edges } from "@/lib/db/schema";
+import { surfaceableContact } from "@/lib/repo/contacts/surfaceable";
 
 /**
  * The daily-suggestion fallback: "if a slot is left, recommend one more person
@@ -40,13 +41,15 @@ export async function listGraphFallbackCandidates(
     .from(contacts)
     .leftJoin(companies, eq(companies.id, contacts.companyId))
     .leftJoin(edges, and(isNull(edges.deletedAt), touchesContact))
-    // Exclude note-mention stubs (source "mentioned") the same way every other
-    // real-contacts query does — a stub with one relationship edge (e.g.
-    // "Prashant's son") must not surface as a "who else to reach out to?".
+    // Only rows Dhaga may NOMINATE (see lib/repo/contacts/surfaceable.ts): a
+    // note-mention stub with one relationship edge (e.g. "Prashant's son") must
+    // not surface as a "who else to reach out to?", and neither must a service
+    // row — degree centrality is exactly what promotes the vegetable vendor
+    // everyone in the address book is edged to. Both stay findable in People.
     .where(
       excludeIds.length > 0
-        ? and(ne(contacts.source, "mentioned"), notInArray(contacts.id, excludeIds))
-        : ne(contacts.source, "mentioned"),
+        ? and(surfaceableContact, notInArray(contacts.id, excludeIds))
+        : surfaceableContact,
     )
     .groupBy(contacts.id, companies.id)
     .having(sql`count(${edges.id}) > 0`)

@@ -4,6 +4,7 @@ import {
   SUGGESTION_CADENCE_BASE,
   SUGGESTION_DEGREE_SATURATION,
   SUGGESTION_FOLLOW_UP_BASE,
+  SUGGESTION_GOAL_BASE,
   SUGGESTION_SIGNAL_HALF_LIFE_DAYS,
   SUGGESTION_WEIGHTS,
 } from "@/utils/constants/suggestions";
@@ -83,6 +84,20 @@ function importantDateNorm(candidate: SuggestionCandidate): number {
   return candidate.importantDate.daysUntil <= 0 ? 1 : 0.5;
 }
 
+/**
+ * Membership earns the base; the match pass's fit ramps the remainder (19.6 →
+ * 28 points). No decay and no clock: a cohort member is exactly as relevant
+ * tomorrow, which is precisely why the weight sits below the terms that expire.
+ * The "a few per day" ceiling is GOAL_DAILY_SLICE, applied when candidates are
+ * GATHERED — never here, because a cap is cross-candidate state and this
+ * function is pure per candidate.
+ */
+function goalNorm(candidate: SuggestionCandidate): number {
+  if (!candidate.goal) return 0;
+  const fit = Math.min(Math.max(candidate.goal.rank, 0), 100) / 100;
+  return SUGGESTION_GOAL_BASE + (1 - SUGGESTION_GOAL_BASE) * fit;
+}
+
 function signalNorm(candidate: SuggestionCandidate, todayMs: number): number {
   if (!candidate.signal) return 0;
   return 0.5 ** (daysSince(candidate.signal.createdAt, todayMs) / SUGGESTION_SIGNAL_HALF_LIFE_DAYS);
@@ -102,6 +117,7 @@ export function scoreCandidate(
     cadence: cadenceNorm(candidate, todayMs),
     followUp: followUpNorm(candidate, todayMs),
     importantDate: importantDateNorm(candidate),
+    goal: goalNorm(candidate),
     signal: signalNorm(candidate, todayMs),
     quiet: quietNorm(candidate, todayMs),
     degree: Math.min(candidate.degree / SUGGESTION_DEGREE_SATURATION, 1),

@@ -52,6 +52,12 @@ export const TENANT_TABLES = [
   // The open "which person did you mean?" question for one chat. Holds the
   // pending note body — per-tenant PII, same reasoning as the session tables.
   "messaging_pending_questions",
+  // The user's current objective and the contacts matched to it. Per-tenant for
+  // two reasons: goal_members is contact-derived PII, and goals.objective is the
+  // user's private intent in their own words ("find a co-founder", "line up a
+  // new job") — the single most sensitive free-text field outside notes.
+  "goals",
+  "goal_members",
 ] as const;
 
 /**

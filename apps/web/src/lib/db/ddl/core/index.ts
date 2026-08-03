@@ -3,6 +3,7 @@ import { EXTEND_DDL } from "./extend";
 import { META_DDL } from "./meta";
 import { MESSAGING_DDL } from "./messaging";
 import { NOTIFICATIONS_DDL } from "./notifications";
+import { GOALS_DDL } from "./goals";
 
 /**
  * Idempotent schema DDL, applied on first DB open. Column names must stay in
@@ -14,6 +15,6 @@ import { NOTIFICATIONS_DDL } from "./notifications";
  * which reference those tables — so the concatenation order is load-bearing.
  * messaging.ts depends on nothing in graph, so it is appended last —
  * notifications.ts after it, since it FKs contacts (graph) and extraction_jobs
- * (extend).
+ * (extend). goals.ts is last for the same reason — goal_members FKs contacts.
  */
-export const CORE_DDL = `${GRAPH_DDL}${EXTEND_DDL}${META_DDL}${MESSAGING_DDL}${NOTIFICATIONS_DDL}`;
+export const CORE_DDL = `${GRAPH_DDL}${EXTEND_DDL}${META_DDL}${MESSAGING_DDL}${NOTIFICATIONS_DDL}${GOALS_DDL}`;

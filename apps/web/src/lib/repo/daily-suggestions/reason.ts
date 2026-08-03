@@ -1,5 +1,6 @@
 import { CADENCE_OPTIONS } from "@/utils/constants/app";
 import {
+  SUGGESTION_GOAL_OBJECTIVE_MAX,
   SUGGESTION_REASON_TERMS,
   SUGGESTION_SIGNAL_HEADLINE_MAX,
 } from "@/utils/constants/suggestions";
@@ -17,8 +18,9 @@ import type { ScoredTerm, SuggestionBucket, SuggestionCandidate } from "./types"
  * excluded outright: "you starred them" is not a thing to do today, and this
  * string is emailed verbatim.
  *
- * SECURITY: signal headlines and follow-up actions are LLM-derived free text, so
- * `reason` is only ever rendered in a TEXT NODE (TodaySuggestions.tsx, and
+ * SECURITY: signal headlines and follow-up actions are LLM-derived free text —
+ * and the goal objective is raw user input echoed back — so `reason` is only
+ * ever rendered in a TEXT NODE (TodaySuggestions.tsx, and
  * lib/email/daily-digest.ts whose escapeHtml covers `& < >` only). Do not move
  * it into an HTML attribute.
  */
@@ -52,14 +54,30 @@ function importantDateCopy(candidate: SuggestionCandidate): SuggestionCopy | nul
   return { bucket: "date", reason: `${date.label} ${upcomingDateBadge(date.daysUntil).label}` };
 }
 
+/** The one ellipsis treatment, shared by every free-text reason. */
+function truncate(text: string, max: number): string {
+  return text.length <= max ? text : `${text.slice(0, max - 1).trimEnd()}…`;
+}
+
+/**
+ * The goal row says only two things, and NEITHER can be a fabrication: the
+ * objective is the user's own sentence handed straight back, and `remaining` is
+ * a SQL count of cohort members not yet contacted. That is exactly why there is
+ * no model-written "why they fit" here — this string is emailed verbatim by
+ * lib/email/daily-digest.ts, where nobody is around to catch a plausible lie
+ * about a person.
+ */
+function goalCopy(candidate: SuggestionCandidate): SuggestionCopy | null {
+  const goal = candidate.goal;
+  if (!goal) return null;
+  const objective = truncate(goal.objective, SUGGESTION_GOAL_OBJECTIVE_MAX);
+  return { bucket: "goal", reason: `${objective} · ${goal.remaining} left` };
+}
+
 function signalCopy(candidate: SuggestionCandidate): SuggestionCopy | null {
   const headline = candidate.signal?.headline;
   if (!headline) return null;
-  const reason =
-    headline.length <= SUGGESTION_SIGNAL_HEADLINE_MAX
-      ? headline
-      : `${headline.slice(0, SUGGESTION_SIGNAL_HEADLINE_MAX - 1).trimEnd()}…`;
-  return { bucket: "signal", reason };
+  return { bucket: "signal", reason: truncate(headline, SUGGESTION_SIGNAL_HEADLINE_MAX) };
 }
 
 function quietCopy(candidate: SuggestionCandidate): SuggestionCopy {
@@ -78,6 +96,7 @@ const COPY: Record<
   cadence: cadenceCopy,
   followUp: followUpCopy,
   importantDate: importantDateCopy,
+  goal: goalCopy,
   signal: signalCopy,
   quiet: quietCopy,
   degree: degreeCopy,

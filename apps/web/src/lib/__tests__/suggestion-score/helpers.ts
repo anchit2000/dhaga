@@ -38,6 +38,7 @@ export function candidate(overrides: Partial<SuggestionCandidate> = {}): Suggest
     degree: 0,
     followUp: null,
     importantDate: null,
+    goal: null,
     signal: null,
     ...overrides,
   };

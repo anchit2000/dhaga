@@ -1,65 +1,14 @@
 // Runtime services: the LLM gateway, prompt builders, heuristic parse, web
 // search, geocoding, retrieval/embeddings, and calendar providers. Re-exported from
 // index.ts via `export *`.
-export {
-  AnthropicLLMClient,
-  OpenAILLMClient,
-  BRIEF_SYSTEM,
-  CAPTURE_EXTRACTION_SYSTEM,
-  CARD_SCAN_PROMPT,
-  CARD_SCAN_SYSTEM,
-  CARD_TRANSCRIPTION_PROMPT,
-  CARD_TRANSCRIPTION_SYSTEM,
-  CONTACT_PARSE_SYSTEM,
-  DRAFT_SYSTEM,
-  ENRICHMENT_SYSTEM,
-  ENRICHMENT_EXTRACTION_SYSTEM,
-  NOTE_EXTRACTION_SYSTEM,
-  SEARCH_ANSWER_SYSTEM,
-  SEARCH_QUERY_SYSTEM,
-  buildBriefPrompt,
-  buildContactParsePrompt,
-  buildDraftPrompt,
-  buildEnrichmentPrompt,
-  buildEnrichmentExtractionPrompt,
-  buildNoteExtractionPrompt,
-  buildSearchAnswerPrompt,
-  buildSearchQueryPrompt,
-  type BriefContext,
-  type DraftContext,
-  type EnrichmentSubject,
-  type NodeTypeRef,
-  getBatchLLMClient,
-  getLLMClient,
-  getLLMProvider,
-  hasBatchLLM,
-  hasLLM,
-  registerLLMProvider,
-  selectLLMProvider,
-  type BatchExtractItem,
-  type BatchExtractResult,
-  type BatchLLMClient,
-  type BatchResultStatus,
-  type CompleteOptions,
-  type ExtractOptions,
-  type LLMClient,
-  type LLMImage,
-  type LLMResult,
-  type LLMUsage,
-  type LLMProvider,
-  type LLMProviderCapabilities,
-  type ModelTier,
-  type OpenAILLMClientOptions,
-} from "./llm";
-export { PHOTO_NOTE_PROMPT, PHOTO_NOTE_SYSTEM } from "./llm";
-export {
-  SIGNAL_DETECTION_SYSTEM,
-  buildSignalDetectionPrompt,
-  type SignalDetectionSubject,
-} from "./llm";
-export { heuristicContactParse } from "./parse/heuristic-contact";
-export { cardReceiptText } from "./parse/card-receipt";
-export { withUrlScheme } from "./parse/web-url";
+//
+// Split into a directory per the 150-line rule; import paths are unchanged
+// ("./services" resolves here). The LLM gateway's names live in ./llm and are
+// re-exported wholesale below — the allowlist itself stays explicit there.
+export * from "./llm";
+export { heuristicContactParse } from "../parse/heuristic-contact";
+export { cardReceiptText } from "../parse/card-receipt";
+export { withUrlScheme } from "../parse/web-url";
 export {
   FirecrawlSearchClient,
   getSearchClient,
@@ -71,7 +20,7 @@ export {
   type SearchOptions,
   type SearchProvider,
   type SearchResult,
-} from "./search";
+} from "../search";
 export {
   NominatimGeocodingClient,
   OSM_ATTRIBUTION,
@@ -86,7 +35,7 @@ export {
   type GeocodingClient,
   type GeocodingProvider,
   type RateLimitedRunner,
-} from "./geocoding";
+} from "../geocoding";
 export {
   assertCompatibleVectorDimensions,
   DEFAULT_EMBEDDING_DIMENSIONS,
@@ -102,7 +51,7 @@ export {
   type VectorSearchOptions,
   type VectorStore,
   type VectorWriteOptions,
-} from "./retrieval";
+} from "../retrieval";
 export {
   getSearchIndex,
   registerSearchIndex,
@@ -114,7 +63,7 @@ export {
   type SearchQuery,
   type SearchWeights,
   type SearchWriteOptions,
-} from "./search-index";
+} from "../search-index";
 export {
   DemoCalendarProvider,
   GoogleCalendarProvider,
@@ -145,4 +94,4 @@ export {
   type SpreadItem,
   type TimeRange,
   type WorkingHours,
-} from "./calendar";
+} from "../calendar";

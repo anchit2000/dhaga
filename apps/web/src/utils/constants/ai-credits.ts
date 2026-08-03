@@ -17,6 +17,8 @@ export const AI_ACTION_LABELS: Record<AiActionFeature, { one: string; many: stri
   brief: { one: "Pre-meeting brief", many: "Pre-meeting briefs" },
   enrichment: { one: "Deep research", many: "Deep research" },
   signal_detection: { one: "Watchlist scan", many: "Watchlist scans" },
+  person_classification: { one: "Contact check", many: "Contact checks" },
+  goal_matching: { one: "Goal match", many: "Goal matches" },
 };
 
 /**

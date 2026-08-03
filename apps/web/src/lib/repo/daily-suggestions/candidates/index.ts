@@ -1,33 +1,43 @@
+import { GOAL_DAILY_SLICE } from "@/utils/constants/goals";
+import { goalNominations, type GoalNomination } from "./goal";
+import { byOverdueRatio, dueByEndOfToday } from "./order";
+import type { GoalCohortSlice } from "@/lib/repo/goals";
 import type { GraphFallbackCandidate } from "@/lib/repo/graph-fallback";
 import type { DueReachOut, OpenFollowUpItem, UpcomingImportantDate } from "@/lib/repo/reminders";
 import type { SignalItem } from "@/lib/repo/signals";
-import type { CandidateFacts } from "./facts";
+import type { CandidateFacts } from "../facts";
 import type {
   SuggestionCandidate,
   SuggestionFollowUpEvidence,
+  SuggestionGoalEvidence,
   SuggestionImportantDateEvidence,
   SuggestionSignalEvidence,
-} from "./types";
+} from "../types";
 
 /**
- * Who is even in the running today. Merges the five sources (cadence, open
- * follow-ups, important dates, signals, graph fallback) into ONE row per
- * contact, so a person due on three counts is scored once with all three pieces
- * of evidence attached rather than appearing three times. PURE — the queries
- * happen in ./index.ts, which owns the sequential-await discipline.
+ * Who is even in the running today. Merges the six sources (cadence, open
+ * follow-ups, important dates, the goal cohort, signals, graph fallback) into
+ * ONE row per contact, so a person due on three counts is scored once with all
+ * three pieces of evidence attached rather than appearing three times. PURE —
+ * the queries happen in ../index.ts, which owns the sequential-await discipline.
+ *
+ * Split per the 150-line rule; import paths unchanged
+ * (@/lib/repo/daily-suggestions/candidates). The per-source eligibility/ordering
+ * transforms live in ./order and ./goal.
  */
 
-const DAY_MS = 86_400_000;
+export { byOverdueRatio, dueByEndOfToday };
 
 export interface CandidateEvidence {
   cadenceDue: boolean;
   followUp: SuggestionFollowUpEvidence | null;
   importantDate: SuggestionImportantDateEvidence | null;
+  goal: SuggestionGoalEvidence | null;
   signal: SuggestionSignalEvidence | null;
 }
 
 function emptyEvidence(): CandidateEvidence {
-  return { cadenceDue: false, followUp: null, importantDate: null, signal: null };
+  return { cadenceDue: false, followUp: null, importantDate: null, goal: null, signal: null };
 }
 
 /**
@@ -54,36 +64,24 @@ function mergeSource<T>(
   }
 }
 
-/**
- * Most-overdue-FIRST, which is not the oldest-touch-first order listDueReachOuts
- * returns (its own docblock names this: a yearly contact 400 days late has a
- * ratio of 0.09, a weekly one 8 days late has 1.14). Capping the unsorted list
- * would drop exactly the people the cadence term exists to surface.
- */
-function byOverdueRatio(due: DueReachOut[], todayMs: number): DueReachOut[] {
-  const ratio = (item: DueReachOut): number =>
-    item.everyDays > 0 ? (todayMs - item.lastTouch.getTime()) / DAY_MS / item.everyDays : 0;
-  return [...due].sort((a, b) => ratio(b) - ratio(a) || a.id.localeCompare(b.id));
-}
-
 /** Cadence carries no evidence object (everyDays + lastTouch come off the
  *  contact row in facts.ts) — only the assertion that this source found the
- *  contact due, which cadenceNorm in ./score.ts needs and must not lose. */
+ *  contact due, which cadenceNorm in ../score.ts needs and must not lose. */
 const markCadenceDue = (evidence: CandidateEvidence): void => {
   evidence.cadenceDue = true;
 };
 
-/** Only follow-ups DATED on or before the end of the user's today: an undated
- *  one is waiting, not due, and says nothing about today in particular. */
-function dueByEndOfToday(followUps: OpenFollowUpItem[], todayMs: number): OpenFollowUpItem[] {
-  const endOfDay = todayMs + DAY_MS;
-  return followUps.filter((item) => item.dueDate !== null && item.dueDate.getTime() < endOfDay);
-}
+/** ./goal already flattened the slice per contact; folding it in is a plain set. */
+const byContactId = (item: GoalNomination): string => item.contactId;
+const applyGoal = (evidence: CandidateEvidence, item: GoalNomination): void => {
+  evidence.goal = item.evidence;
+};
 
 export function gatherCandidates(params: {
   due: DueReachOut[];
   followUps: OpenFollowUpItem[];
   importantDates: UpcomingImportantDate[];
+  goal: GoalCohortSlice | null;
   signals: SignalItem[];
   limit: number;
   todayMs: number;
@@ -109,6 +107,9 @@ export function gatherCandidates(params: {
       evidence.importantDate = { label: item.label, daysUntil: item.daysUntil };
     },
   );
+  // Capped at GOAL_DAILY_SLICE, not `limit`: a goal is the one source that
+  // could otherwise nominate its whole cohort.
+  mergeSource(map, goalNominations(params.goal), GOAL_DAILY_SLICE, byContactId, applyGoal);
   mergeSource(
     map,
     params.signals,

@@ -18,5 +18,9 @@ export const CREDIT_EXAMPLES = [
   },
   { price: "2 credits", action: "Ask your network a question, or get a pre-meeting brief" },
   { price: "20 credits", action: "Deep research on a person or company, from the live web" },
-  { price: "Free", action: "The nightly job-change and news watch on contacts you follow" },
+  {
+    price: "Free",
+    action:
+      "The nightly job-change and news watch on contacts you follow, the people a goal picks out, and the address-book noise it keeps out of suggestions",
+  },
 ] as const;

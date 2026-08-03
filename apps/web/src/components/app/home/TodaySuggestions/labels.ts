@@ -10,6 +10,7 @@ export const BUCKET_LABEL: Record<DailySuggestion["bucket"], string> = {
   cadence: "Due",
   "follow-up": "Follow-up",
   date: "Occasion",
+  goal: "Goal",
   signal: "Signal",
   quiet: "Quiet",
   graph: "Network",

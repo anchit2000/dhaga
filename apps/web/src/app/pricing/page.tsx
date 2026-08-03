@@ -73,6 +73,21 @@ export default function PricingPage(): ReactElement {
             ))}
           </ul>
           <p className="mt-6 max-w-2xl text-sm text-fog">
+            <span className={`font-mono text-xs ${styles.creditPrice}`}>
+              0 credits
+            </span>{" "}
+            — goals and address-book noise filtering, on every plan. Write what
+            you&apos;re working on in plain words — &ldquo;reach out to
+            VCs&rdquo; — and Dhaga picks that cohort out of your own graph,
+            surfaces a few each day, and burns the list down as you reach out.
+            It also judges which imported address-book rows are people worth a
+            message, so the plumber and the ride-hail support line stay out of
+            your daily suggestions — never suggested, always findable: still in
+            People, still searchable, still in every export, with one tap to
+            overrule. Both run on the nightly batch sweep, throttled by how many
+            contacts a night it looks at rather than billed.
+          </p>
+          <p className="mt-6 max-w-2xl text-sm text-fog">
             Credits reset on the 1st and don&apos;t roll over. When a month runs
             out the app keeps working — notes and contacts still save, search
             falls back to keywords — and the AI resumes at the reset. There is

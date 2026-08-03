@@ -444,6 +444,7 @@ multiple rounded up (`packages/core/src/metering/credits.ts`):
 | Ask Dhaga · pre-meeting brief | 2 | Sonnet reasoning over retrieved context |
 | Deep research | 20 | Web search billed on top of tokens |
 | Watchlist change scan | 0 | Throttled by the watch limit, not by credits — billing it would eat ~125 credits/month for ~$0.10 of Batch inference |
+| Nightly curation sweep — person/service classification, goal match | 0 | Throttled by a per-night contact cap, not by credits. **ESTIMATED, not measured** (the table above is 39 real calls; neither of these has been run against the live API): a 5,000-contact graph is classified once for roughly **$2.4** of Batch inference — ~400 credits at the ~$0.006/credit blended ceiling, which is exactly why billing it would be wrong. Re-check once measured |
 
 **Plan sizing.** At a blended ceiling of ~$0.006 of inference per credit, and
 taking the worst month a user could physically spend an allowance on (all

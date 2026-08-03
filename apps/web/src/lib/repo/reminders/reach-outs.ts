@@ -1,6 +1,7 @@
-import { and, eq, isNotNull, isNull, ne, sql } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { companies, contacts, eventContacts, notes } from "@/lib/db/schema";
+import { surfaceableContact } from "@/lib/repo/contacts/surfaceable";
 import { lastTouchSql } from "@/lib/repo/last-touch";
 
 /** Idea #2: "when should I remind you to reach out" — cadence per contact. */
@@ -53,8 +54,11 @@ export async function listDueReachOuts(): Promise<DueReachOut[]> {
         // fan-out, so only the small minority of contacts that actually carry a
         // cadence get expanded. In HAVING it would fan out the whole table.
         isNotNull(contacts.reachOutEveryDays),
-        // Note-mention stubs ("Prashant's son") are not people you can message.
-        ne(contacts.source, "mentioned"),
+        // Only rows Dhaga may NOMINATE (lib/repo/contacts/surfaceable.ts):
+        // note-mention stubs ("Prashant's son") are not people you can message,
+        // and a service row must not nag from Home's due feed. Both stay
+        // findable in People — this filters the feed, not the graph.
+        surfaceableContact,
       ),
     )
     .groupBy(contacts.id, companies.id)

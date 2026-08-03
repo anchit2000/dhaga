@@ -5,7 +5,7 @@ import { AskDemo } from "@/components/landing/AskDemo";
 import { Footer } from "@/components/landing/Closing";
 import { Comparison } from "@/components/landing/Comparison";
 import { Faq } from "@/components/landing/Faq";
-import { FeatureHighlights } from "@/components/landing/FeatureHighlights";
+import { DailyLoop, FeatureHighlights } from "@/components/landing/FeatureHighlights";
 import { Access } from "@/components/landing/FocusedHome/Access";
 import { Header } from "@/components/landing/Header";
 import { NetworkSandbox } from "@/components/landing/NetworkSandbox";
@@ -15,7 +15,8 @@ import { SITE_URL } from "@/utils/constants/site";
 const TITLE = "Features — Dhaga";
 const DESCRIPTION =
   "Explore how Dhaga captures meetings, notes, voice, messages and cards, " +
-  "builds a private knowledge graph, finds warm paths and helps you follow up.";
+  "builds a private knowledge graph, finds warm paths and helps you follow up " +
+  "— with a daily briefing aimed by the goal you set.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -56,6 +57,7 @@ export default function FeaturesPage(): ReactElement {
       <StatsBand />
       <HowItWorks />
       <FeatureHighlights />
+      <DailyLoop />
       <AskDemo />
       <NetworkSandbox />
       <Comparison />

@@ -16,6 +16,7 @@ export type SuggestionBucket =
   | "cadence"
   | "follow-up"
   | "date"
+  | "goal"
   | "signal"
   | "quiet"
   | "graph";
@@ -81,6 +82,20 @@ export interface SuggestionImportantDateEvidence {
   daysUntil: number;
 }
 
+/**
+ * This candidate's place in the active goal's cohort, if any. Deliberately NOT
+ * in CADENCE_BUCKETS above: a goal row is discretionary, not due, so it must
+ * never inflate Home's "+N more due" footer.
+ */
+export interface SuggestionGoalEvidence {
+  /** The user's own words, verbatim from the goal. */
+  objective: string;
+  /** The match pass's fit 0..100, frozen at match time. */
+  rank: number;
+  /** Cohort members not yet reached out to — a SQL count, not an estimate. */
+  remaining: number;
+}
+
 /** The newest undismissed signal for this candidate, if any. */
 export interface SuggestionSignalEvidence {
   headline: string;
@@ -112,5 +127,6 @@ export interface SuggestionCandidate {
   degree: number;
   followUp: SuggestionFollowUpEvidence | null;
   importantDate: SuggestionImportantDateEvidence | null;
+  goal: SuggestionGoalEvidence | null;
   signal: SuggestionSignalEvidence | null;
 }

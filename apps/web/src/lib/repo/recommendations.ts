@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull, ne, or } from "drizzle-orm";
+import { and, eq, inArray, isNull, or } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import {
   companies,
@@ -6,6 +6,7 @@ import {
   edges,
   eventContacts,
 } from "@/lib/db/schema";
+import { surfaceableContact } from "@/lib/repo/contacts/surfaceable";
 import { listContactConnections } from "./connections";
 
 export type NetworkIntent = "general" | "founder" | "sales" | "investor";
@@ -139,7 +140,10 @@ export async function recommendContactsPage(
     })
     .from(contacts)
     .leftJoin(companies, eq(companies.id, contacts.companyId))
-    .where(ne(contacts.source, "mentioned"))
+    // "Who to reach out to" is a proactive nomination, so it draws only from
+    // the surfaceable set (lib/repo/contacts/surfaceable.ts) — no mention stubs,
+    // no service rows. Both remain findable everywhere the user browses.
+    .where(surfaceableContact)
     .limit(500);
 
   const myTags = new Set(me.tags.map((tag) => tag.toLowerCase()));

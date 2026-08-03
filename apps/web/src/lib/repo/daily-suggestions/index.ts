@@ -3,6 +3,7 @@ import {
   MIN_SUGGESTIONS_ON_BUSY_DAY,
   SUGGESTION_SOURCE_LIMIT_FACTOR,
 } from "@/utils/constants/suggestions";
+import { listGoalCohortSlice } from "@/lib/repo/goals";
 import { listGraphFallbackCandidates } from "@/lib/repo/graph-fallback";
 import { listAllOpenFollowUps, listDueReachOuts, listUpcomingImportantDates } from "@/lib/repo/reminders";
 import { listNewSignals } from "@/lib/repo/signals";
@@ -21,9 +22,10 @@ import type { DueReachOut, OpenFollowUpItem } from "@/lib/repo/reminders";
 import type { SignalItem } from "@/lib/repo/signals";
 
 /**
- * The unified "reach out to these N people today" engine. Five sources —
- * keep-in-touch cadence, open follow-ups, important dates, watchlist signals and
- * graph degree — nominate candidates; ONE additive score (./score.ts) then ranks
+ * The unified "reach out to these N people today" engine. Six sources —
+ * keep-in-touch cadence, open follow-ups, important dates, the active goal's
+ * cohort, watchlist signals and graph degree — nominate candidates; ONE
+ * additive score (./score.ts) then ranks
  * them all against each other, and the winning term names the row (./reason.ts).
  * There are no priority buckets: a birthday today can outrank a cadence that
  * came due this morning, which the old first-come-first-served ordering could
@@ -83,13 +85,25 @@ export async function buildDailySuggestions(
   const signals = options.signals ?? (await listNewSignals());
   const leadDays = await getImportantDateLeadDays();
   const importantDates = await listUpcomingImportantDates(leadDays, now);
+  // dayIndex is needed here, not just at scoring time: the goal slice rotates on
+  // it, so today's cohort members are picked from the same day key the rotation
+  // modifier uses.
+  const dayIndex = Math.floor(todayMs / DAY_MS);
+  const goal = await listGoalCohortSlice(dayIndex);
 
   const limit = count * SUGGESTION_SOURCE_LIMIT_FACTOR;
-  const evidence = gatherCandidates({ due, followUps, importantDates, signals, limit, todayMs });
+  const evidence = gatherCandidates({
+    due,
+    followUps,
+    importantDates,
+    goal,
+    signals,
+    limit,
+    todayMs,
+  });
   mergeGraphCandidates(evidence, await listGraphFallbackCandidates([...evidence.keys()], limit));
   const facts = await getCandidateFacts([...evidence.keys()]);
 
-  const dayIndex = Math.floor(todayMs / DAY_MS);
   const scored = buildCandidates(evidence, facts)
     .map((candidate) => scoreCandidate(candidate, todayMs, dayIndex))
     .sort(compareScored);
@@ -112,6 +126,7 @@ export type {
   SuggestionBucket,
   SuggestionCandidate,
   SuggestionFollowUpEvidence,
+  SuggestionGoalEvidence,
   SuggestionImportantDateEvidence,
   SuggestionSignalEvidence,
   SuggestionTermId,

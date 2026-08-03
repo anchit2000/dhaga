@@ -380,6 +380,29 @@ Requires `CRON_SECRET` and `FIRECRAWL_API_KEY` (or another `SEARCH_PROVIDER`)
 set — see `.env.example`. Without `CRON_SECRET` the route always returns
 401, so it's safe to leave unconfigured if you don't want the feature.
 
+### Nightly curation passes (person/service classification, goal matching)
+
+Two more sweeps ride the `/api/jobs/daily` endpoint below rather than a queue,
+both over the Anthropic **Message Batches API** and both **zero-credit** (see
+BRD §8.3):
+
+- **Person-vs-service classification** labels imported address-book rows
+  ("Ola Support", "Vegetable Vendor") so they stop appearing on proactive
+  surfaces. Nothing is deleted or hidden — the row stays in People, search,
+  merge, Wrapped and every export.
+- **Goal matching** judges contacts against the one objective a user has set,
+  writing the cohort the Home briefing draws its daily slice from.
+
+Both are two-phase, exactly like signal detection: one invocation applies the
+previous run's batch and submits a fresh one, so a graph drains over several
+nights rather than in one call. Each is capped per run
+(`PERSON_CLASSIFICATION_RUN_CAP` 1,000 contacts, `GOAL_MATCH_RUN_CAP` 150) and
+each reports a `remaining` count in the endpoint's JSON — contacts still to
+classify, and cohort slots still to fill — so you can watch a backfill drain.
+Both need a working LLM provider; without one they
+return `skipped: "no_llm"` and change nothing. They run **before** the reach-out
+digest on purpose, so the email reflects the freshest labels and cohort.
+
 ### Daily email jobs (digests and reminders)
 
 Every recurring email — the reach-out digest, the confirmations digest, the

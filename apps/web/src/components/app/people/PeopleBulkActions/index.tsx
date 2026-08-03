@@ -1,52 +1,34 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { Building2, Link2, Star, StarOff, Tag, Trash2, Users } from "lucide-react";
-import { toast } from "sonner";
-import { toastError } from "@/components/app/feedback";
+import { useRef, useState } from "react";
+import { Building2, EyeOff, Link2, Star, StarOff, Tag, Trash2, User, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GitMergeIcon } from "@/components/ui/animated-icons";
-import { bulkStarContactsAction } from "@/lib/actions/contacts";
-import { AddToCompanyDialog } from "./AddToCompanyDialog";
-import { BulkAffiliationDialog } from "./BulkAffiliationDialog";
-import { BulkDeleteDialog } from "./BulkDeleteDialog";
-import { BulkTagDialog } from "./BulkTagDialog";
-import { ContactMergeDialog } from "./ContactMergeDialog";
-import { GroupByDialog } from "./GroupByDialog";
+import { PERSON_KIND_LABELS } from "@/utils/constants/person-kind";
+import { AddToCompanyDialog } from "../AddToCompanyDialog";
+import { BulkAffiliationDialog } from "../BulkAffiliationDialog";
+import { BulkDeleteDialog } from "../BulkDeleteDialog";
+import { BulkTagDialog } from "../BulkTagDialog";
+import { ContactMergeDialog } from "../ContactMergeDialog";
+import { GroupByDialog } from "../GroupByDialog";
+import { useBulkFlagActions } from "./use-bulk-flag-actions";
 import type { AnimatedIconHandle } from "@/components/ui/animated-icons";
 
 type OpenDialog = "merge" | "company" | "affiliation" | "tag" | "group" | "delete" | null;
 
 /**
  * The action triggers slotted into the People {@link BulkActionBar}: merge,
- * add-to-company, tag, group-by, star/unstar, and delete. Each dialog clears
- * the parent selection on success via `onClear`.
+ * add-to-company, tag, group-by, star/unstar, person/service, and delete. Each
+ * dialog clears the parent selection on success via `onClear`; the two
+ * flag-flipping actions live in {@link useBulkFlagActions}.
  */
 export function PeopleBulkActions({ ids, onClear }: { ids: string[]; onClear: () => void }) {
-  const router = useRouter();
   const [dialog, setDialog] = useState<OpenDialog>(null);
-  const [starOp, setStarOp] = useState<"star" | "unstar" | null>(null);
-  const [pending, startTransition] = useTransition();
   const mergeIconRef = useRef<AnimatedIconHandle>(null);
-
-  function setStarred(starred: boolean): void {
-    setStarOp(starred ? "star" : "unstar");
-    startTransition(async () => {
-      const formData = new FormData();
-      formData.set("contactIds", JSON.stringify(ids));
-      formData.set("starred", starred ? "true" : "false");
-      const result = await bulkStarContactsAction(formData);
-      setStarOp(null);
-      if (!result.ok) {
-        toastError(result.error);
-        return;
-      }
-      router.refresh();
-      onClear();
-      toast.success(`${starred ? "Starred" : "Unstarred"} ${ids.length} contacts`);
-    });
-  }
+  const { pending, starOp, kindOp, setStarred, setPersonKind } = useBulkFlagActions({
+    ids,
+    onClear,
+  });
 
   return (
     <>
@@ -90,6 +72,25 @@ export function PeopleBulkActions({ ids, onClear }: { ids: string[]; onClear: ()
         disabled={pending}
       >
         <StarOff /> Unstar
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setPersonKind("service")}
+        loading={pending && kindOp === "service"}
+        disabled={pending}
+        title="Keep these off suggestions — they stay listed in People"
+      >
+        <EyeOff /> {PERSON_KIND_LABELS.service}
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setPersonKind("person")}
+        loading={pending && kindOp === "person"}
+        disabled={pending}
+      >
+        <User /> Is a person
       </Button>
       <Button variant="destructive" size="sm" onClick={() => setDialog("delete")}>
         <Trash2 /> Delete

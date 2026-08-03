@@ -44,6 +44,19 @@ function person(name: string) {
   return { name, title: null, company: null, emails: [], phones: [], links: [], location: null };
 }
 
+/**
+ * Push a contact past DECAY_AFTER_DAYS so the going-quiet term can nominate
+ * them. The pass judges the NOMINATION POOL, not the graph
+ * (lib/jobs/classify-people/pool.ts), and a just-created contact is in neither
+ * term — so a fixture that stays at "created today" would test nothing about
+ * the exclusions it is here for.
+ */
+async function backdate(contactId: string): Promise<void> {
+  const db = await getDb();
+  const old = new Date(Date.now() - 400 * 86_400_000);
+  await db.update(contacts).set({ createdAt: old, updatedAt: old }).where(eq(contacts.id, contactId));
+}
+
 function serviceVerdict(contactId: string): BatchExtractResult<PersonClassification> {
   return {
     id: contactId,
@@ -79,6 +92,9 @@ describe("nightly person classification — Batch API two-phase job", () => {
     await setStarred(starred, true);
     const noted = await createContact(person("Classify Noted Row"), "import");
     await addNote(noted, "text", "Caught up over chai about their new job.");
+    // All three are pool-eligible, so the exclusions below are the ONLY reason
+    // two of them are left out.
+    for (const id of [nominated, starred, noted]) await backdate(id);
 
     await setPendingBatchId(PERSON_CLASSIFICATION_BATCH_KEY, null);
     submittedItems = null;
@@ -96,6 +112,32 @@ describe("nightly person classification — Batch API two-phase job", () => {
     // nothing ever classified.
     expect((await readContact(nominated))?.classifiedAt).not.toBeNull();
     expect(await getPendingBatchId(PERSON_CLASSIFICATION_BATCH_KEY)).toBe("msgbatch_classify_1");
+  });
+
+  it("judges the nomination pool, not the whole address book", async () => {
+    // The cost defect: the sweep used to take every un-acted-on contact, 1000 a
+    // night, until a 5,000-row address book had been judged (~$2.35). Most of
+    // it bought nothing — the label only does anything through
+    // surfaceableContact, and a contact nothing has touched can reach a
+    // proactive surface only via the going-quiet or degree terms, both of which
+    // take a bounded top-N. This row is in neither: freshly created, so not
+    // decayed, and no edges.
+    const unreachable = await createContact(person("Classify Fresh Import Row"), "import");
+    const reachable = await createContact(person("Classify Decayed Row"), "import");
+    await backdate(reachable);
+
+    await setPendingBatchId(PERSON_CLASSIFICATION_BATCH_KEY, null);
+    submittedItems = null;
+    await runPersonClassification();
+
+    expect(submittedIds()).toContain(reachable);
+    expect(submittedIds()).not.toContain(unreachable);
+    // And nothing is wrongly hidden while it waits: unjudged is NULL, which
+    // surfaceableContact treats as NOT suppressed, so the fresh row is still
+    // offered everywhere until the night it actually becomes a candidate.
+    expect((await readContact(unreachable))?.personKind).toBeNull();
+
+    await setPendingBatchId(PERSON_CLASSIFICATION_BATCH_KEY, null);
   });
 
   it("phase 1 applies a finished batch and clears the pointer, and an errored result writes nothing", async () => {

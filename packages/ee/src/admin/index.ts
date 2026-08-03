@@ -6,5 +6,6 @@ export const adminGate = {
 
 export * from "./repo";
 export * from "./usage";
+export * from "./spend";
 export * from "./subscription-admin";
 export * from "./ai-grants";

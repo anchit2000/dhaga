@@ -21,6 +21,11 @@ export const AI_ACTION_LABELS: Record<AiActionFeature, { one: string; many: stri
   goal_matching: { one: "Goal match", many: "Goal matches" },
 };
 
+/** How many users the admin cost screen lists. Bounded because the point is
+ *  "who is costing us the most", not a directory — and because resolving each
+ *  one's plan and ceiling is real work against a three-connection pool. */
+export const ADMIN_TOP_SPENDER_LIMIT = 10;
+
 /**
  * History rows can carry a feature this build has never heard of — a renamed
  * action, or a self-hoster who rolled back. `creditsForAiAction` already charges

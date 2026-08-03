@@ -35,6 +35,19 @@ export const GOAL_RANK_BAND = 25;
  * single run. The remainder is picked up by the next run. */
 export const GOAL_MATCH_RUN_CAP = 150;
 
+/**
+ * Hard cap on contacts ONE synchronous resolve may judge (lib/ai/goal-resolve).
+ * The cost fuse per resolve, and the fan-out bound: the sync path judges its
+ * candidates concurrently, so this is also how many Anthropic calls one save
+ * can open at once.
+ *
+ * Sized at what recall can actually return — `hybridSearch` slices at 20 — so
+ * it costs nothing today and stays a real ceiling if that slice ever widens.
+ * Arithmetic: sync Haiku (no Batch discount) at ~720 in / 45 out ≈ $0.00094 a
+ * contact, so one resolve is at most 20 × $0.00094 ≈ $0.019.
+ */
+export const GOAL_SYNC_RESOLVE_CAP = 20;
+
 /** Member states. No "done": done is DERIVED from the contact's last touch
  * moving past matched_at (see lib/db/ddl/core/goals.ts). */
 export const GOAL_STATES = ["pending", "skipped"] as const;

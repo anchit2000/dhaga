@@ -10,8 +10,21 @@ CREATE TABLE IF NOT EXISTS ai_actions (
   model text NOT NULL,
   input_tokens integer NOT NULL,
   output_tokens integer NOT NULL,
+  -- Did this call go through the Message Batches API? Batch is half price both
+  -- directions, so the dollar gate (lib/ai/metering/dollar-cap.ts) cannot price
+  -- a row without it. RECORDED rather than inferred from the feature: goal_matching
+  -- runs both a nightly batch pass AND a synchronous goal-resolve path, so a
+  -- feature-based inference would halve a real bill — the dangerous direction.
+  batch boolean NOT NULL DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+
+-- Self-heals databases whose ai_actions pre-dates the column (CREATE TABLE IF
+-- NOT EXISTS is a no-op against an existing table). History rows land on FALSE,
+-- which OVER-states the cost of pre-existing nightly batch actions by 2×. That
+-- is the safe direction and it ages out within a month of the column shipping;
+-- backfilling by feature would be a guess written into the record.
+ALTER TABLE ai_actions ADD COLUMN IF NOT EXISTS batch boolean NOT NULL DEFAULT false;
 
 -- Backs the credits history page's keyset pagination (WHERE (created_at, id) <
 -- (cursor.at, cursor.id) ORDER BY created_at DESC, id DESC) — without it every

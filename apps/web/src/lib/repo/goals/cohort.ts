@@ -12,15 +12,17 @@ import { GOAL_DAILY_SLICE, GOAL_RANK_BAND } from "@/utils/constants/goals";
 import { getActiveGoal } from "./write";
 
 /**
- * The goal read side: today's slice for the suggestion engine, and the burn-down
- * for the UI.
+ * The goal read side: the cohort, and today's slice of it for the suggestion
+ * engine. The burn-down the UI renders is ./progress.ts, which reads the same
+ * `loadCohort` — split out per the 150-line rule, and so that the ONE
+ * derived-done expression below still has exactly one definition.
  *
  * DONE IS DERIVED, NEVER STORED. A member is done once the contact's last touch
  * (lastTouchSql — a note, an event scan, an explicit "I reached out") has moved
  * past `matched_at`. There is no `done` state and `markReachedOut` deliberately
  * writes nothing here: it has six callers, none of which know goals exist, so a
  * stored flag would go stale the moment the user acted anywhere other than the
- * goal tile. Because both functions below read that one expression, the
+ * goal tile. Because every reader goes through that one expression, the
  * pending list and the progress count cannot disagree — writing a note about
  * someone IS contacting them, and both surfaces learn it at the same instant.
  *
@@ -44,15 +46,7 @@ export interface GoalCohortSlice {
   members: GoalCohortMember[];
 }
 
-export interface GoalProgress {
-  objective: string;
-  /** Cohort size the user is working through: matched members minus skipped. */
-  total: number;
-  done: number;
-  remaining: number;
-}
-
-interface CohortRow extends GoalCohortMember {
+export interface CohortRow extends GoalCohortMember {
   done: boolean;
 }
 
@@ -63,7 +57,7 @@ interface CohortRow extends GoalCohortMember {
  * later classified as a service is not someone to volunteer). Bounded by
  * GOAL_COHORT_MAX, so it needs no LIMIT of its own.
  */
-async function loadCohort(goalId: string): Promise<CohortRow[]> {
+export async function loadCohort(goalId: string): Promise<CohortRow[]> {
   const db = await getDb();
   const rows = await db
     .select({
@@ -120,12 +114,3 @@ export async function listGoalCohortSlice(dayIndex: number): Promise<GoalCohortS
   };
 }
 
-/** The burn-down: `total === done + remaining` by construction, because all
- *  three come off the one derived-done expression above. */
-export async function getActiveGoalProgress(): Promise<GoalProgress | null> {
-  const goal = await getActiveGoal();
-  if (!goal) return null;
-  const rows = await loadCohort(goal.id);
-  const done = rows.filter((row) => row.done).length;
-  return { objective: goal.objective, total: rows.length, done, remaining: rows.length - done };
-}

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { count, sql } from "drizzle-orm";
+import { recordAiAction, withAiAction } from "@/lib/ai/metering";
 import { getDb } from "@/lib/db/request-scope";
 import { aiActions } from "@/lib/db/schema";
 
@@ -57,6 +58,25 @@ export async function clearBudgetControls(): Promise<void> {
   const db = await getDb();
   await db.execute(sql`DELETE FROM ai_budget_settings`);
   await db.execute(sql`DELETE FROM ai_credit_grants`);
+}
+
+/**
+ * One nightly batch classification, recorded exactly as
+ * jobs/classify-people/process-pending-batch.ts does it. Shared by the dollar-
+ * ceiling suites because it is the precise combination the master cost gate
+ * exists for: 0 CREDITS (so the credit cap cannot see it at all) and real
+ * money (so the dollar ceiling can). One million Haiku input tokens at $1/MTok,
+ * halved for the Batch API = $0.50.
+ */
+export async function recordNightlyClassification(inputTokens = 1_000_000): Promise<void> {
+  await withAiAction("person_classification", async () => {
+    await recordAiAction(
+      "person_classification",
+      "claude-haiku-4-5",
+      { inputTokens, outputTokens: 0 },
+      { batch: true },
+    );
+  });
 }
 
 /**

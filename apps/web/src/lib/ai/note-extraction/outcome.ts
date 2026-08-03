@@ -35,13 +35,15 @@ export function noLlmOutcome(): NoteExtractionOutcome {
 }
 
 /**
- * Map an LLM-phase error to a terminal outcome. The monthly cap ("cap") is a
- * budget wall, not a failure — return a non-retryable blocked outcome so the
- * note is kept and the UI shows a calm paid-feature notice. Burst ("burst") and
- * every other error stay retryable.
+ * Map an LLM-phase error to a terminal outcome. A monthly ceiling — the credit
+ * cap ("cap") or the operator's dollar gate ("dollar_cap") — is a budget wall,
+ * not a failure: return a non-retryable blocked outcome so the note is kept and
+ * the UI shows a calm paid-feature notice. Retrying either before the month
+ * rolls over would only burn the job's attempts. Burst ("burst") and every
+ * other error stay retryable.
  */
 export function mapExtractionError(error: unknown): NoteExtractionOutcome {
-  if (error instanceof AiBudgetError && error.kind === "cap") {
+  if (error instanceof AiBudgetError && error.kind !== "burst") {
     return {
       applied: false,
       failed: false,

@@ -55,4 +55,81 @@ export interface AiBudgetConfig {
    *  rather than by the caller so the window is compared in one place — and so
    *  no component has to read a clock during render. */
   promotionCredits: number | null;
+  /** The master cost gate — a per-user monthly ceiling in real inference
+   *  DOLLARS, independent of the credit ladder above. Read from the same single
+   *  `ai_budget_settings` query, so it costs no extra round-trip. */
+  dollarCap: AiDollarCapConfig;
+}
+
+/** The instance-wide knobs behind the dollar ceiling. */
+export interface AiDollarCapConfig {
+  enforced: boolean;
+  /** Plan monthly revenue × this = that plan's ceiling. */
+  multiplier: number;
+  /** USD ceiling for plans with no recurring revenue (free), where a multiple
+   *  of $0 would refuse every action. */
+  floorUsd: number;
+}
+
+/** The dollar ceiling actually in force for one user, and which rung set it —
+ *  so the admin screen can explain a number instead of just printing it. */
+export type AiDollarCeilingSource = "override" | "plan" | "floor" | "unset";
+
+export interface AiDollarCeiling {
+  /** USD per month. `null` = no dollar ceiling applies to this user. */
+  usd: number | null;
+  source: AiDollarCeilingSource;
+}
+
+/** One 0-credit feature's real dollar cost — the blind spot the master gate
+ *  exists to close, shown apart from credited spend rather than folded into it. */
+export interface AiUncreditedFeatureCost {
+  feature: string;
+  label: string;
+  actions: number;
+  usd: number;
+}
+
+/** One user's month on the admin cost screen. */
+export interface AiUserCostRow {
+  userId: string;
+  email: string;
+  plan: string;
+  usd: number;
+  credits: number;
+  /** The dollar ceiling in force for them, and which rung set it. */
+  ceiling: AiDollarCeiling;
+  /** `usd / ceiling.usd` as a percentage; null when no ceiling applies. */
+  utilisationPct: number | null;
+}
+
+/** Everything the admin cost card renders, from one cross-tenant read. */
+export interface AiCostSummary {
+  totalUsd: number;
+  creditedUsd: number;
+  uncreditedUsd: number;
+  totalCredits: number;
+  totalActions: number;
+  /** Credited dollars ÷ credited credits — what a credit MEASURABLY costs,
+   *  to sit beside the ~$0.006 blended ceiling the credit table assumed. Null
+   *  when no credited action has run this month. */
+  measuredUsdPerCredit: number | null;
+  /** The same figure with uncredited spend folded back in: what a credit costs
+   *  once the free riders are paid for out of credited revenue. */
+  allInUsdPerCredit: number | null;
+  uncreditedFeatures: AiUncreditedFeatureCost[];
+  topUsers: AiUserCostRow[];
+}
+
+/** One (feature, model, batch) bucket of a month's recorded AI usage. Priced by
+ *  lib/ai/cost, which needs exactly `model` + tokens + `batch`. */
+export interface AiSpendGroup {
+  feature: string;
+  model: string;
+  batch: boolean;
+  inputTokens: number;
+  outputTokens: number;
+  actions: number;
+  /** `actions × the feature's credit price` — 0 for the uncredited features. */
+  credits: number;
 }

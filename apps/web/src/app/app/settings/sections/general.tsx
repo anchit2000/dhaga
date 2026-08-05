@@ -29,6 +29,7 @@ import { CardPhotoSetting } from "@/components/app/settings/CardPhotoSetting";
 import { VoiceTeaching } from "@/components/app/settings/VoiceTeaching";
 import { ApiKeysSetting } from "@/components/app/settings/ApiKeysSetting";
 import { BillingSetting } from "@/components/app/settings/BillingSetting";
+import { preferredProcessor } from "@/lib/billing/processor";
 import { ProfileSetting } from "@/components/app/settings/ProfileSetting";
 import { AppearanceSetting } from "@/components/app/settings/AppearanceSetting";
 import { SecuritySetting } from "@/components/app/settings/SecuritySetting";
@@ -69,7 +70,15 @@ export async function BillingSection() {
     hasLLM() ? hasUnlimitedAiCredits(userId) : Promise.resolve(false),
   ]);
   const aiUsage = hasLLM() ? { used, cap: await effectiveMonthlyAiCap(), unlimited } : null;
-  return <BillingSetting summary={planSummary} aiUsage={aiUsage} />;
+  // Country → which processor's button leads and which currency the cards
+  // show. A default, never a lock; see lib/billing/processor.
+  return (
+    <BillingSetting
+      summary={planSummary}
+      aiUsage={aiUsage}
+      preferred={await preferredProcessor()}
+    />
+  );
 }
 
 export async function SecuritySection() {

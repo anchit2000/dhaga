@@ -1,16 +1,14 @@
-import {
-  createBillingPortalSessionAction,
-  createCheckoutSessionAction,
-} from "@/lib/actions/billing";
+import { createBillingPortalSessionAction } from "@/lib/actions/billing";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ActionForm } from "@/components/app/ActionForm";
-import { RazorpayCheckoutButton } from "@/components/app/settings/RazorpayCheckoutButton";
+import { PlanPicker } from "@/components/app/settings/PlanPicker";
 import type { PlanSummary } from "@/lib/hosted/gate";
 
 const PLAN_LABEL: Record<PlanSummary["plan"], string> = {
   free: "Free",
   pro: "Pro",
+  power: "Power",
   lifetime: "Lifetime",
 };
 
@@ -50,9 +48,13 @@ function AiCreditsRow({ used, cap, unlimited }: AiUsage) {
 export function BillingSetting({
   summary,
   aiUsage,
+  preferred,
 }: {
   summary: PlanSummary;
   aiUsage?: AiUsage | null;
+  /** Which processor leads, from the request's country. Default keeps the
+   *  component usable from surfaces that don't resolve geo. */
+  preferred?: "stripe" | "razorpay";
 }) {
   return (
     <div className="space-y-4 rounded-2xl border border-seam bg-panel p-5 sm:p-6">
@@ -81,38 +83,7 @@ export function BillingSetting({
       </div>
       {aiUsage ? <AiCreditsRow {...aiUsage} /> : null}
       {summary.plan === "free" ? (
-        <div className="flex flex-wrap gap-2 border-t border-seam pt-4">
-          {summary.stripeEnabled ? (
-            <>
-              <ActionForm
-                action={createCheckoutSessionAction}
-                errorMessage="Couldn't start checkout — please try again."
-              >
-                <input type="hidden" name="plan" value="pro" />
-                <Button type="submit" size="sm">
-                  Go Pro
-                </Button>
-              </ActionForm>
-              <ActionForm
-                action={createCheckoutSessionAction}
-                errorMessage="Couldn't start checkout — please try again."
-              >
-                <input type="hidden" name="plan" value="lifetime" />
-                <Button type="submit" variant="outline" size="sm">
-                  Buy Lifetime
-                </Button>
-              </ActionForm>
-            </>
-          ) : null}
-          {/* INR alternative. Razorpay's Orders API is one-time only, so a Pro
-              bought here is a prepaid year that does NOT auto-renew. */}
-          {summary.razorpayEnabled ? (
-            <>
-              <RazorpayCheckoutButton plan="pro" />
-              <RazorpayCheckoutButton plan="lifetime" />
-            </>
-          ) : null}
-        </div>
+        <PlanPicker summary={summary} preferred={preferred ?? "stripe"} />
       ) : null}
     </div>
   );

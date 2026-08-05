@@ -85,12 +85,15 @@ export async function handleRazorpayWebhook(rawBody: string, signature: string):
       // An unrecognised status is not an excuse to guess: skip rather than
       // grant or revoke on a value this code has never seen.
       if (!userId || !status) break;
+      // Tier from the notes stamped at creation, same binding the confirm path
+      // trusts. Anything unrecognised is not silently promoted to Pro.
+      const tier = entity.notes?.plan === "power" ? "power" : "pro";
       await upsertSubscription({
         userId,
         stripeCustomerId: null,
         stripeSubscriptionId: null,
         razorpaySubscriptionId: entity.id,
-        plan: "pro",
+        plan: tier,
         status,
         currentPeriodEnd: entity.current_end ? new Date(entity.current_end * 1000) : null,
       });

@@ -84,7 +84,7 @@ export default async function AdminUserDetailPage({
 
       <SubscriptionControls
         userId={user.id}
-        currentPlan={(subscription?.plan ?? "free") as "free" | "pro" | "lifetime"}
+        currentPlan={(subscription?.plan ?? "free") as "free" | "pro" | "power" | "lifetime"}
         currentExpiry={subscription?.currentPeriodEnd ?? null}
         currentCredits={aiCapOverride}
       />

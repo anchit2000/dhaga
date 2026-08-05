@@ -61,8 +61,13 @@ export interface SignupGate {
   requestAccess(email: string): Promise<boolean>;
 }
 
+/** A buyable combination. Lifetime has no cadence — nothing renews. */
+export type PlanOffer =
+  | { plan: "pro" | "power"; cadence: "monthly" | "yearly" }
+  | { plan: "lifetime" };
+
 export interface PlanSummary {
-  plan: "free" | "pro" | "lifetime";
+  plan: "free" | "pro" | "power" | "lifetime";
   status: string | null;
   hasStripeCustomer: boolean;
   /** Which processors this instance actually has keys for. An instance may
@@ -70,6 +75,9 @@ export interface PlanSummary {
    *  control only for the ones that would work. */
   stripeEnabled: boolean;
   razorpayEnabled: boolean;
+  /** Only the combinations with a configured price id, per processor — the UI
+   *  must never offer a button whose price env var is missing. */
+  offers: { stripe: PlanOffer[]; razorpay: PlanOffer[] };
 }
 
 export interface BillingGate {
@@ -82,7 +90,7 @@ export interface BillingGate {
    *  all when this is null, so self-hosters never see a "buy" button for a
    *  product not for sale on their instance. */
   getPlanSummary(userId: string): Promise<PlanSummary | null>;
-  createCheckoutUrl(userId: string, plan: "pro" | "lifetime"): Promise<string>;
+  createCheckoutUrl(userId: string, selection: PlanOffer): Promise<string>;
   createPortalUrl(userId: string): Promise<string>;
 }
 

@@ -1,6 +1,6 @@
 // Dhaga Cloud only — see packages/ee/LICENSE. Self-hosters can delete this
 // whole api/razorpay/** folder; nothing else in the app references it.
-import { createRazorpayCheckout, razorpayEnabled } from "@dhaga/ee/billing";
+import { createRazorpayCheckout, parsePlanSelection, razorpayEnabled } from "@dhaga/ee/billing";
 import { requireUserIdFromRequest } from "@/lib/auth/guard";
 
 /**
@@ -29,13 +29,16 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const body: unknown = await request.json().catch(() => null);
-  const plan = (body as { plan?: unknown } | null)?.plan;
-  if (plan !== "pro" && plan !== "lifetime") {
-    return Response.json({ error: "Body must be { plan: 'pro' | 'lifetime' }." }, { status: 400 });
+  const selection = parsePlanSelection(body);
+  if (!selection) {
+    return Response.json(
+      { error: "Body must be { plan: 'pro'|'power', cadence: 'monthly'|'yearly' } or { plan: 'lifetime' }." },
+      { status: 400 },
+    );
   }
 
   try {
-    return Response.json(await createRazorpayCheckout(userId, plan));
+    return Response.json(await createRazorpayCheckout(userId, selection));
   } catch (error) {
     // Never echo the Razorpay error text: a misconfigured key pair surfaces
     // there, and this response is client-visible.

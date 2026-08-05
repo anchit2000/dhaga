@@ -13,7 +13,7 @@ async function db() {
 }
 
 export interface SetSubscriptionInput {
-  plan: "free" | "pro" | "lifetime";
+  plan: "free" | "pro" | "power" | "lifetime";
   expiry: Date | null;
 }
 

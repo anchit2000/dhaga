@@ -11,7 +11,7 @@ import { Select } from "@/components/ui/select";
 
 interface SubscriptionControlsProps {
   userId: string;
-  currentPlan: "free" | "pro" | "lifetime";
+  currentPlan: "free" | "pro" | "power" | "lifetime";
   currentExpiry: Date | null;
   currentCredits: number | null;
 }
@@ -49,6 +49,7 @@ export function SubscriptionControls({
             <Select id="plan" name="plan" defaultValue={currentPlan}>
               <option value="free">Free</option>
               <option value="pro">Pro</option>
+              <option value="power">Power</option>
               <option value="lifetime">Lifetime</option>
             </Select>
           </div>

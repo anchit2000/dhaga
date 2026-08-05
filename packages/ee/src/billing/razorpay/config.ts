@@ -34,22 +34,6 @@ export function getRazorpayWebhookSecret(): string {
 }
 
 /**
- * Pro is a Razorpay **Plan**, not an amount: the plan owns the price AND the
- * billing interval, so switching Pro from monthly to yearly is a dashboard
- * change with no code change, and the renewal date comes back from Razorpay
- * rather than being guessed at 365 days.
- *
- * Same shape as the Stripe path, where STRIPE_PRICE_* hold Dashboard ids
- * rather than literal amounts — an id can't be fat-fingered into a wrong
- * charge the way a paise integer can.
- */
-export function proPlanId(): string {
-  const id = process.env.RAZORPAY_PLAN_PRO;
-  if (!id) throw new Error("RAZORPAY_PLAN_PRO is required to sell Pro through Razorpay.");
-  return id;
-}
-
-/**
  * Lifetime stays an Order, not a Plan: it is a single payment with nothing to
  * renew, which is precisely what the Subscriptions API cannot express. So this
  * one is still an amount — in PAISE, minimum 100.

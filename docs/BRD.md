@@ -471,9 +471,20 @@ notes, the priciest credit):
 
 (The table uses annual-plan monthly equivalents for unit economics. Public
 pricing shows Pro at $10 month-to-month or $8/month billed $96 yearly, and the
-planned Power tier at $30 month-to-month or $24/month billed $288 yearly. Power
-remains sized but not sold; the first 500 Pro seats can request a $79 first
-year, shown separately from standard billing.)
+planned Power tier at $30 month-to-month or $24/month billed $288 yearly. The
+first 500 Pro seats can request a $79 first year, shown separately from standard
+billing.)
+
+(**Power is now wired for sale**, not just sized — it has an `EntitlementPlan`
+member, a stored `plan` value and price-id slots for both processors, so it goes
+live the moment those prices exist in the dashboards. **Lifetime is priced at
+$299**, ~3.1× the annual price; that figure is a judgement call, not a measured
+one, and it is the plan whose economics are least defensible — an uncapped
+allowance means its true cost is bounded only by the ~$16/month dollar ceiling,
+so a buyer who stays five years can consume far more inference than they paid
+for. Revisit before promoting it. INR pricing is approximate parity at ~₹87/USD
+— ₹899 / ₹8,499 monthly-yearly Pro, ₹2,599 / ₹24,999 Power, ₹25,999 Lifetime —
+not a PPP discount, so the margins in the table above carry over unchanged.)
 
 (Margins are after Stripe's 2.9% + $0.30; hosting is not included.) A 100-credit
 Pro tier would clear ~94% margin but ration the product to a sixth of the heavy

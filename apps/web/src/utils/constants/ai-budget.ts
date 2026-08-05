@@ -119,9 +119,8 @@ export const AI_PLAN_CAP_ENFORCEMENT_DEFAULT = true;
  * The plans whose monthly allowance an admin can edit. `self_hosted` is absent
  * on purpose: it is the "billing isn't running on this instance" sentinel, not
  * a plan anybody is on, and plan-cap enforcement is skipped entirely when no
- * plan is in play. `power` is sized but NOT SOLD (no Stripe price, not an
- * `EntitlementPlan`) — editable here so the ladder is reviewed as one thing,
- * inert until the tier ships.
+ * plan is in play. `power` is now a real, sellable tier (it has price ids and
+ * is an `EntitlementPlan`), so its allowance here is live rather than inert.
  */
 export const AI_ALLOWANCE_PLANS = ["free", "pro", "lifetime", "power"] as const;
 
@@ -139,7 +138,7 @@ export const AI_ALLOWANCE_PLAN_LABELS: Record<AiAllowancePlan, string> = {
   free: "Free",
   pro: "Pro",
   lifetime: "Lifetime / Annual",
-  power: "Power (sized, not sold)",
+  power: "Power",
 };
 
 /** Whether an `EntitlementPlan` has an editable allowance in the ladder above. */

@@ -61,11 +61,15 @@ export async function handleStripeWebhook(rawBody: string, signature: string): P
         const subId =
           typeof session.subscription === "string" ? session.subscription : session.subscription.id;
         const sub = await stripe.subscriptions.retrieve(subId);
+        // Tier comes from the metadata checkout.ts stamped on the session, so a
+        // new price id can never be mistaken for Pro. Falls back to "pro" only
+        // for sessions created before Power existed.
+        const tier = session.metadata?.plan === "power" ? "power" : "pro";
         await upsertSubscription({
           userId,
           stripeCustomerId: customerId,
           stripeSubscriptionId: sub.id,
-          plan: "pro",
+          plan: tier,
           status: STRIPE_STATUS_TO_STORED[sub.status],
           currentPeriodEnd: periodEnd(sub),
           cancelAtPeriodEnd: sub.cancel_at_period_end,

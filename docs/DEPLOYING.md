@@ -60,18 +60,30 @@ account once it's live.
   without it, regardless of whether the other vars below are set.
 - `DHAGA_ADMIN_EMAILS` — comma-separated emails that bootstrap into admins
   on signup (see SELF_HOSTING.md's "Creating the first admin user").
-- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_PRO_ANNUAL`,
-  `STRIPE_PRICE_LIFETIME` — from the Stripe Dashboard (test-mode keys while
-  developing). Omit `STRIPE_SECRET_KEY` to run hosted mode without billing
-  (e.g. a free beta) — the billing UI simply doesn't render without it.
-- `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`,
-  `RAZORPAY_PLAN_PRO`, `RAZORPAY_PRICE_LIFETIME_INR` — optional INR checkout,
-  independent of Stripe. Setting the key pair adds a "Pay in INR" button to
-  `/app/settings`; either processor on its own is enough for the billing UI to
-  render. Pro is a Razorpay **Plan id** (the plan owns price *and* cadence, so
-  monthly↔yearly is a dashboard change); Lifetime is a one-time Order, so it is
-  an amount in **paise** (₹1 = 100 paise), set per-instance because no INR
-  price exists anywhere in the repo.
+- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and one price id per
+  (tier, cadence): `STRIPE_PRICE_PRO_MONTHLY`, `STRIPE_PRICE_PRO_ANNUAL`,
+  `STRIPE_PRICE_POWER_MONTHLY`, `STRIPE_PRICE_POWER_ANNUAL`, plus the one-time
+  `STRIPE_PRICE_LIFETIME`. Any left blank is simply not offered — the picker
+  renders only combinations that have a price. Omit `STRIPE_SECRET_KEY`
+  entirely to run hosted mode without billing (e.g. a free beta).
+  Reference prices, BRD §8.3: Pro $10/mo or $96/yr, Power $30/mo or $288/yr,
+  Lifetime $299.
+- **Local currency is Stripe Adaptive Pricing**, a Dashboard setting on
+  Checkout — not code and not extra env vars. Turn it on there and a visitor in
+  the UAE is quoted dirhams off the same price id.
+- `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, one
+  **Plan id** per (tier, cadence) — `RAZORPAY_PLAN_PRO_MONTHLY`,
+  `RAZORPAY_PLAN_PRO_YEARLY`, `RAZORPAY_PLAN_POWER_MONTHLY`,
+  `RAZORPAY_PLAN_POWER_YEARLY` — and `RAZORPAY_PRICE_LIFETIME_INR` in **paise**
+  (₹1 = 100 paise). Optional and independent of Stripe: either processor alone
+  is enough for the billing UI to render. Reference prices: Pro ₹899/mo or
+  ₹8,499/yr, Power ₹2,599/mo or ₹24,999/yr, Lifetime ₹25,999 — roughly parity
+  with the USD figures, so BRD §8.3's margins carry over.
+- **Processor routing** is by `x-vercel-ip-country`: India leads with Razorpay,
+  everywhere else with Stripe (`RAZORPAY_COUNTRIES`,
+  `apps/web/src/lib/billing/processor.ts`). It only reorders the buttons —
+  both stay clickable wherever both are configured, because IP geo is wrong
+  often enough that locking someone out of paying is the worse failure.
 - Register the Razorpay webhook at
   `https://your-domain/api/razorpay/webhook`, subscribed to at least
   `subscription.activated`, `subscription.charged`, `subscription.halted`,

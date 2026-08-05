@@ -1,6 +1,8 @@
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { getSubscriptionForUser } from "./repo";
 import { createCheckoutUrl, createPortalUrl } from "./checkout";
+import { availableCombinations } from "./catalog";
+import { stripeEnabled } from "./stripe-client";
 import { razorpayEnabled } from "./razorpay";
 import type { SubscriptionRow } from "../db/schema";
 
@@ -15,7 +17,7 @@ import type { SubscriptionRow } from "../db/schema";
 export function isUnlimitedAiSub(sub: SubscriptionRow | null, now: Date = new Date()): boolean {
   if (!sub) return false;
   if (sub.status !== "active") return false;
-  if (sub.plan !== "pro" && sub.plan !== "lifetime") return false;
+  if (sub.plan !== "pro" && sub.plan !== "power" && sub.plan !== "lifetime") return false;
   return sub.currentPeriodEnd === null || sub.currentPeriodEnd > now;
 }
 
@@ -28,18 +30,23 @@ export async function getPlanSummary(userId: string) {
   // beta) — no processor configured means no billing UI at all, not a broken
   // one. An instance may sell through either processor or both, so this asks
   // "is anything for sale here", not "is Stripe configured".
-  const stripeEnabled = Boolean(process.env.STRIPE_SECRET_KEY);
-  if (!stripeEnabled && !razorpayEnabled()) return null;
+  const stripe = stripeEnabled();
+  const razorpay = razorpayEnabled();
+  if (!stripe && !razorpay) return null;
   const sub = await getSubscriptionForUser(userId);
   return {
-    plan: (sub?.plan ?? "free") as "free" | "pro" | "lifetime",
+    plan: (sub?.plan ?? "free") as "free" | "pro" | "power" | "lifetime",
     status: sub?.status ?? null,
     hasStripeCustomer: Boolean(sub?.stripeCustomerId),
-    stripeEnabled,
-    // Drives whether the INR button renders. The Stripe portal/checkout
-    // buttons stay keyed off stripeEnabled, so an instance selling only
-    // through Razorpay never shows a Stripe control that would throw.
-    razorpayEnabled: razorpayEnabled(),
+    stripeEnabled: stripe,
+    razorpayEnabled: razorpay,
+    // Only the (tier, cadence) pairs this instance has a configured price for.
+    // A button whose price env var is missing would always error, so it is
+    // never rendered — the UI offers exactly what can actually be bought.
+    offers: {
+      stripe: stripe ? availableCombinations("stripe") : [],
+      razorpay: razorpay ? availableCombinations("razorpay") : [],
+    },
   };
 }
 
@@ -51,6 +58,15 @@ export const billingGate = {
 };
 
 export { handleStripeWebhook } from "./webhook";
+export {
+  availableCombinations,
+  parsePlanSelection,
+  BILLING_CADENCES,
+  BILLING_TIERS,
+  type BillingCadence,
+  type BillingTier,
+  type PlanSelection,
+} from "./catalog";
 export {
   confirmRazorpayPayment,
   createRazorpayCheckout,

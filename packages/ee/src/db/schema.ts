@@ -59,7 +59,11 @@ export const subscriptions = pgTable("subscriptions", {
   razorpaySubscriptionId: text("razorpay_subscription_id"),
   /** Most recent captured payment, on either path. */
   razorpayPaymentId: text("razorpay_payment_id"),
-  plan: text("plan").notNull(), // 'lifetime' | 'pro'
+  // 'lifetime' | 'pro' | 'power'. The TIER only — billing cadence is NOT
+  // stored: it lives in the processor's price/plan object, and the renewal
+  // boundary it implies is already carried by currentPeriodEnd. Persisting it
+  // would be a second copy that can drift from the thing actually charging.
+  plan: text("plan").notNull(),
   status: text("status").notNull(), // 'active' | 'past_due' | 'canceled' | 'incomplete'
   currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
   cancelAtPeriodEnd: boolean("cancel_at_period_end").notNull().default(false),
@@ -68,5 +72,5 @@ export const subscriptions = pgTable("subscriptions", {
 });
 
 export type SubscriptionRow = typeof subscriptions.$inferSelect;
-export type SubscriptionPlan = "lifetime" | "pro";
+export type SubscriptionPlan = "lifetime" | "pro" | "power";
 export type SubscriptionStatus = "active" | "past_due" | "canceled" | "incomplete";

@@ -117,6 +117,7 @@ export async function fetchOrder(orderId: string): Promise<RazorpayOrder> {
 export async function createSubscription(input: {
   planId: string;
   userId: string;
+  tier: string;
 }): Promise<RazorpaySubscription> {
   // Read the plan's period so total_count spans the same wall-clock horizon
   // whatever cadence the dashboard is set to.
@@ -126,7 +127,7 @@ export async function createSubscription(input: {
     plan_id: input.planId,
     total_count: perYear * SUBSCRIPTION_HORIZON_YEARS,
     customer_notify: 1,
-    notes: { userId: input.userId, plan: "pro" },
+    notes: { userId: input.userId, plan: input.tier },
   });
   return toSubscription(subscription);
 }

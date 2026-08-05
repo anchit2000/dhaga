@@ -14,15 +14,22 @@
 export type PlanFeature = "enrichment" | "pre_meeting_brief" | "multi_device_sync";
 
 /** `self_hosted` = billing isn't running on this instance (no EE / no Stripe). */
-export type EntitlementPlan = "free" | "pro" | "lifetime" | "self_hosted";
+export type EntitlementPlan = "free" | "pro" | "power" | "lifetime" | "self_hosted";
 
 export const PLAN_FEATURES: Record<EntitlementPlan, readonly PlanFeature[]> = {
   free: [],
   pro: ["enrichment", "pre_meeting_brief", "multi_device_sync"],
+  // Power is Pro's feature set with a bigger credit allowance — the tiers are
+  // separated by volume, not by capability, so nothing is gated away from Pro.
+  power: ["enrichment", "pre_meeting_brief", "multi_device_sync"],
   lifetime: ["enrichment", "pre_meeting_brief", "multi_device_sync"],
   // Nothing is for sale on a self-hosted instance — the owner gets everything.
   self_hosted: ["enrichment", "pre_meeting_brief", "multi_device_sync"],
 };
+
+/** Power's allowance. Named separately because ai-budget.ts references it
+ *  directly when sizing the dollar ceiling. */
+export const POWER_PLAN_AI_CREDITS_PER_MONTH = 1000;
 
 /**
  * Monthly AI-credit allowance the credit model supports per plan (BRD §8.3),
@@ -48,14 +55,10 @@ export const PLAN_FEATURES: Record<EntitlementPlan, readonly PlanFeature[]> = {
 export const PLAN_AI_CREDITS_PER_MONTH: Record<EntitlementPlan, number | null> = {
   free: 10,
   pro: 300,
+  power: POWER_PLAN_AI_CREDITS_PER_MONTH,
   lifetime: null,
   self_hosted: null,
 };
-
-/** The Power tier is sized here but not yet sold — no Stripe price and no
- *  `EntitlementPlan` member. Kept beside its siblings so the credit ladder is
- *  reviewed as one thing when it does ship. */
-export const POWER_PLAN_AI_CREDITS_PER_MONTH = 1000;
 
 export const FEATURE_LABELS: Record<PlanFeature, string> = {
   enrichment: "Company enrichment, job-change detection & news alerts",

@@ -443,7 +443,9 @@ to at least `checkout.session.completed`, `customer.subscription.updated`,
 
 INR checkout, independent of Stripe: an instance can run either processor or
 both. Env vars (`packages/ee/.env.example`): `RAZORPAY_KEY_ID`,
-`RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `RAZORPAY_PLAN_PRO` and
+`RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, a Plan id per (tier, cadence)
+— `RAZORPAY_PLAN_PRO_MONTHLY`, `RAZORPAY_PLAN_PRO_YEARLY`,
+`RAZORPAY_PLAN_POWER_MONTHLY`, `RAZORPAY_PLAN_POWER_YEARLY` — and
 `RAZORPAY_PRICE_LIFETIME_INR`.
 
 **Pro is a Razorpay Plan; Lifetime is an Order.** Pro rides the Subscriptions
@@ -506,9 +508,43 @@ either a deployed preview or a tunnel (`cloudflared`, `ngrok`) pointed at
 - **No billing portal.** `createPortalUrl` throws a specific error for a
   Razorpay-paid plan; the "Manage billing" button is hidden for them. Cancelling
   a Razorpay subscription is dashboard-side for now.
-- **One Pro cadence at a time.** `RAZORPAY_PLAN_PRO` is a single plan id, so an
-  instance sells whichever cadence that plan defines. Offering monthly *and*
-  yearly side by side is the plan-matrix work, not this.
+
+---
+
+## 6b. Plan matrix, processor routing, local currency
+
+Tiers are **Pro** and **Power**, each sold **monthly** or **yearly**, plus a
+one-time **Lifetime**. Prices per BRD §8.3 — Pro $10/mo or $96/yr, Power $30/mo
+or $288/yr, Lifetime $299 (INR at rough parity: ₹899 / ₹8,499 / ₹2,599 /
+₹24,999 / ₹25,999).
+
+Cadence is **not stored**. The subscription row keeps the tier only; the
+interval lives in the Stripe Price / Razorpay Plan, and the renewal boundary it
+implies is already `current_period_end`. A second copy could drift from the
+thing actually charging.
+
+- [ ] **Only configured combinations appear.** Unset `STRIPE_PRICE_POWER_MONTHLY`
+      → Power's monthly button vanishes rather than erroring
+      (`availableCombinations`).
+- [ ] **The cadence toggle re-prices both cards**, and the yearly view shows the
+      struck-through original plus the "Save 20%" badge.
+- [ ] **Buying Power grants Power**, not Pro: the row's `plan` is `power` and the
+      credit allowance becomes 1,000 (`PLAN_AI_CREDITS_PER_MONTH`).
+- [ ] **A Razorpay plan id this instance doesn't sell grants nothing** —
+      `tierForRazorpayPlanId` returns null → `wrong_plan` → 400. Unit-tested.
+- [ ] **Admin can comp Power** at `/app/admin/users/[id]`, and the subscriptions
+      table filters by it.
+
+### Processor routing
+
+- [ ] **From an Indian IP**, the INR button comes first and the cards show ₹.
+      From anywhere else, Stripe leads and cards show $.
+      (`x-vercel-ip-country`; absent locally, so Stripe leads in dev.)
+- [ ] **Both remain clickable** wherever both processors are configured. Routing
+      reorders, it never removes — a VPN user must still be able to pay.
+- [ ] **Local currency for non-INR is Stripe Adaptive Pricing**, a Dashboard
+      setting, not code. With it off, everyone outside India is charged USD.
+      Nothing in this repo converts currency.
 
 ---
 

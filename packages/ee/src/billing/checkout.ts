@@ -1,20 +1,24 @@
 import { getStripe, priceIdFor } from "./stripe-client";
 import { getSubscriptionForUser, getUserEmail } from "./repo";
+import type { PlanSelection } from "./catalog";
 
 function baseUrl(): string {
   return process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
 }
 
-export async function createCheckoutUrl(userId: string, plan: "pro" | "lifetime"): Promise<string> {
+export async function createCheckoutUrl(userId: string, selection: PlanSelection): Promise<string> {
   const stripe = getStripe();
   const existing = await getSubscriptionForUser(userId);
   const email = existing ? undefined : ((await getUserEmail(userId)) ?? undefined);
 
   const session = await stripe.checkout.sessions.create({
-    mode: plan === "lifetime" ? "payment" : "subscription",
-    line_items: [{ price: priceIdFor(plan), quantity: 1 }],
+    mode: selection.plan === "lifetime" ? "payment" : "subscription",
+    line_items: [{ price: priceIdFor(selection), quantity: 1 }],
     client_reference_id: userId,
-    metadata: { userId, plan },
+    // `plan` is the TIER the webhook will store. Carried in metadata rather
+    // than re-derived from the price id, so adding a price never silently
+    // grants the wrong tier.
+    metadata: { userId, plan: selection.plan },
     // Null when the existing row came from Razorpay — that user has no Stripe
     // customer yet, so Checkout should create one rather than be handed a null.
     customer: existing?.stripeCustomerId ?? undefined,

@@ -53,9 +53,11 @@ export const billingGate = {
 export { handleStripeWebhook } from "./webhook";
 export {
   confirmRazorpayPayment,
-  createRazorpayOrder,
+  createRazorpayCheckout,
+  handleRazorpayWebhook,
   razorpayEnabled,
   type ConfirmFailure,
+  type ConfirmInput,
   type ConfirmResult,
-  type RazorpayOrderForCheckout,
+  type RazorpayCheckoutHandoff,
 } from "./razorpay";

@@ -10,10 +10,12 @@ import {
   RAZORPAY_PLAN_DESCRIPTION,
 } from "@/utils/constants/razorpay";
 
+/** Razorpay returns the subscription id for Pro and the order id for Lifetime. */
 interface RazorpayHandlerResponse {
-  razorpay_order_id: string;
   razorpay_payment_id: string;
   razorpay_signature: string;
+  razorpay_order_id?: string;
+  razorpay_subscription_id?: string;
 }
 
 interface RazorpayInstance {
@@ -23,13 +25,16 @@ interface RazorpayInstance {
 
 interface RazorpayOptions {
   key: string;
-  amount: number;
-  currency: string;
   name: string;
   description: string;
-  order_id: string;
   handler(response: RazorpayHandlerResponse): void;
   modal?: { ondismiss?(): void };
+  /** Orders (Lifetime) carry an explicit amount... */
+  amount?: number;
+  currency?: string;
+  order_id?: string;
+  /** ...Subscriptions (Pro) do not — the Plan owns the price and cadence. */
+  subscription_id?: string;
 }
 
 declare global {
@@ -37,6 +42,11 @@ declare global {
     Razorpay?: new (options: RazorpayOptions) => RazorpayInstance;
   }
 }
+
+/** Discriminated handoff from /api/razorpay/order. */
+type CheckoutHandoff =
+  | { mode: "subscription"; subscriptionId: string; keyId: string }
+  | { mode: "order"; orderId: string; amountPaise: number; currency: string; keyId: string };
 
 function loadCheckoutScript(): Promise<void> {
   if (window.Razorpay) return Promise.resolve();
@@ -56,9 +66,10 @@ function loadCheckoutScript(): Promise<void> {
 }
 
 /**
- * INR checkout. Pays through Razorpay's hosted modal, then hands the signed
- * response to /api/razorpay/verify — the plan is only granted once the server
- * has re-read the order from Razorpay, so nothing here is trusted.
+ * INR checkout. Pro opens a Razorpay Subscription (recurring, re-charged by
+ * Razorpay); Lifetime opens a one-time Order. Either way the signed response
+ * goes to /api/razorpay/verify, and the plan is granted only once the server
+ * has re-read the object from Razorpay — nothing here is trusted.
  *
  * `plan` is the only thing sent to the order endpoint; the price lives on the
  * server. Sending an amount from the browser would make the price negotiable.
@@ -76,14 +87,19 @@ export function RazorpayCheckoutButton({ plan }: { plan: "pro" | "lifetime" }): 
           body: JSON.stringify(response),
         });
         if (!result.ok) {
-          // Money may well have left the customer's account here, so never say
-          // "payment failed" — say it isn't confirmed yet and keep the id.
+          // Money may well have left the customer's account here, and the
+          // webhook will still grant the plan — so never say "payment failed".
           toast.error(
-            `Payment received but not yet confirmed. Quote ${response.razorpay_payment_id} if it doesn't appear shortly.`,
+            `Payment received but not confirmed yet. Quote ${response.razorpay_payment_id} if your plan doesn't appear shortly.`,
           );
           return;
         }
-        toast.success("Payment confirmed — your plan is active.");
+        const body = (await result.json()) as { active?: boolean };
+        toast.success(
+          body.active
+            ? "Payment confirmed — your plan is active."
+            : "Payment approved — your plan activates once the first charge settles.",
+        );
         router.refresh();
       } catch {
         toast.error(
@@ -105,23 +121,18 @@ export function RazorpayCheckoutButton({ plan }: { plan: "pro" | "lifetime" }): 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan }),
       });
-      if (!created.ok) throw new Error("order creation failed");
-      const order = (await created.json()) as {
-        orderId: string;
-        amountPaise: number;
-        currency: string;
-        keyId: string;
-      };
+      if (!created.ok) throw new Error("checkout creation failed");
+      const handoff = (await created.json()) as CheckoutHandoff;
       const checkout = window.Razorpay;
       if (!checkout) throw new Error("checkout unavailable");
 
       const instance = new checkout({
-        key: order.keyId,
-        amount: order.amountPaise,
-        currency: order.currency,
+        key: handoff.keyId,
         name: RAZORPAY_CHECKOUT_NAME,
         description: RAZORPAY_PLAN_DESCRIPTION[plan],
-        order_id: order.orderId,
+        ...(handoff.mode === "subscription"
+          ? { subscription_id: handoff.subscriptionId }
+          : { order_id: handoff.orderId, amount: handoff.amountPaise, currency: handoff.currency }),
         handler: (response) => void verify(response),
         // Dismissing the modal is a cancel, not an error — no toast, just
         // release the button so they can try again.

@@ -52,10 +52,12 @@ export const subscriptions = pgTable("subscriptions", {
   // Razorpay rows always set razorpayPaymentId and leave the Stripe ids null.
   stripeCustomerId: text("stripe_customer_id"),
   stripeSubscriptionId: text("stripe_subscription_id"), // null for Lifetime (one-time payment)
+  // Set on the Lifetime path only — a one-time Order.
   razorpayOrderId: text("razorpay_order_id"),
-  // The captured payment. Razorpay's Orders API is one-time only, so there is
-  // no renewing-subscription id to store — a prepaid Pro term is expressed
-  // entirely by currentPeriodEnd.
+  // Set on the Pro path — a recurring Razorpay Subscription that re-charges on
+  // its own. Mirrors stripeSubscriptionId, and is what webhook events key on.
+  razorpaySubscriptionId: text("razorpay_subscription_id"),
+  /** Most recent captured payment, on either path. */
   razorpayPaymentId: text("razorpay_payment_id"),
   plan: text("plan").notNull(), // 'lifetime' | 'pro'
   status: text("status").notNull(), // 'active' | 'past_due' | 'canceled' | 'incomplete'

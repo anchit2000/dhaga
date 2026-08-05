@@ -6,7 +6,8 @@ export const RAZORPAY_CHECKOUT_SCRIPT_SRC = "https://checkout.razorpay.com/v1/ch
 /** Shown as the merchant name inside the payment modal. */
 export const RAZORPAY_CHECKOUT_NAME = "Dhaga";
 
+/** Pro's cadence lives in the Razorpay Plan, so the label can't claim a term. */
 export const RAZORPAY_PLAN_DESCRIPTION: Record<"pro" | "lifetime", string> = {
-  pro: "Dhaga Pro — 1 year",
+  pro: "Dhaga Pro",
   lifetime: "Dhaga Lifetime",
 };

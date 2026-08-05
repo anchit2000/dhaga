@@ -61,9 +61,11 @@ CREATE TABLE IF NOT EXISTS subscriptions (
 -- the columns are added, and stripe_customer_id stops being mandatory because a
 -- Razorpay row has no Stripe customer to name.
 ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS razorpay_order_id text;
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS razorpay_subscription_id text;
 ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS razorpay_payment_id text;
 ALTER TABLE subscriptions ALTER COLUMN stripe_customer_id DROP NOT NULL;
 CREATE INDEX IF NOT EXISTS subscriptions_razorpay_payment_id_idx ON subscriptions (razorpay_payment_id);
+CREATE INDEX IF NOT EXISTS subscriptions_razorpay_subscription_id_idx ON subscriptions (razorpay_subscription_id);
 CREATE INDEX IF NOT EXISTS subscriptions_stripe_customer_id_idx ON subscriptions (stripe_customer_id);
 CREATE INDEX IF NOT EXISTS subscriptions_stripe_subscription_id_idx ON subscriptions (stripe_subscription_id);
 CREATE INDEX IF NOT EXISTS subscriptions_status_plan_created_idx ON subscriptions (status, plan, created_at DESC);

@@ -443,10 +443,21 @@ to at least `checkout.session.completed`, `customer.subscription.updated`,
 
 INR checkout, independent of Stripe: an instance can run either processor or
 both. Env vars (`packages/ee/.env.example`): `RAZORPAY_KEY_ID`,
-`RAZORPAY_KEY_SECRET`, and prices **in paise** —
-`RAZORPAY_PRICE_PRO_INR`, `RAZORPAY_PRICE_LIFETIME_INR`. There is no INR price
-anywhere in the repo (every constant is USD), so these are per-instance and the
-values in `.env.local` are ₹1/₹2 placeholders for test mode, **not** a price.
+`RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `RAZORPAY_PLAN_PRO` and
+`RAZORPAY_PRICE_LIFETIME_INR`.
+
+**Pro is a Razorpay Plan; Lifetime is an Order.** Pro rides the Subscriptions
+API, so Razorpay re-charges on its own and the plan owns both price and cadence
+— moving Pro between monthly and yearly is a dashboard change, no deploy.
+Lifetime is a single payment with nothing to renew, which the Subscriptions API
+cannot express, so it stays an Order with an amount in **paise**. There is no
+INR price anywhere in the repo (every constant is USD), so both are set
+per-instance and the `.env.local` Lifetime value is a test placeholder, **not**
+a price.
+
+The webhook secret is a **different secret** from the API key secret (Dashboard
+› Settings › Webhooks). Using the API secret rejects every event — there is a
+unit test pinning that behaviour.
 
 Both `/api/razorpay/*` routes 404 unless `DHAGA_HOSTED_MODE=true` **and** both
 keys are set — so `next dev` on the default `.env.local` (PGlite) will not
@@ -471,18 +482,33 @@ serve them; use a dev server carrying `.env.vercel`'s `DATABASE_URL`.
 - [ ] **Unverified (needs a live run):** nobody has run a real Razorpay
       test-mode purchase against this code yet.
 
-**Known gaps, deliberate — do not read these as bugs found in testing:**
+### Webhook (the authoritative grant path)
 
-- **No webhook.** `/api/razorpay/verify` is the only path that grants a plan,
-  and the buyer's browser must call it. A customer who pays and closes the tab
-  is charged and not upgraded. Stripe doesn't have this hole because its
-  webhook is server-to-server. Closing it needs a `payment.captured` webhook.
-- **Pro does not auto-renew.** Razorpay's Orders API is one-time only, so Pro
-  is sold as a prepaid year: `currentPeriodEnd` is set 365 days out and
-  `isUnlimitedAiSub` lapses it correctly, but nothing re-charges. Recurring
-  INR billing needs the Razorpay Subscriptions API.
+`stripe listen` has no Razorpay equivalent, so testing this needs a public URL:
+either a deployed preview or a tunnel (`cloudflared`, `ngrok`) pointed at
+`/api/razorpay/webhook`.
+
+- [ ] **Closing the tab still upgrades.** Complete a payment, then kill the tab
+      before the modal finishes returning. `subscription.charged` (or
+      `payment.captured` for Lifetime) grants the plan anyway. This is the
+      whole reason the webhook exists.
+- [ ] **Wrong secret fails closed.** Point `RAZORPAY_WEBHOOK_SECRET` at the API
+      key secret instead → every event 400s, no rows written.
+- [ ] **Renewal keeps the plan alive.** In test mode, a `subscription.charged`
+      event pushes `current_period_end` forward.
+- [ ] **A failed charge drops the entitlement.** `subscription.halted` →
+      `past_due` → `hasUnlimitedAi` returns false while the row survives.
+- [ ] **Redelivery is a no-op.** Replay the same event; the upsert is keyed on
+      `userId` and rewrites identical values.
+
+**Remaining limits, deliberate — not bugs found in testing:**
+
 - **No billing portal.** `createPortalUrl` throws a specific error for a
-  Razorpay-paid plan; the "Manage billing" button is hidden for them.
+  Razorpay-paid plan; the "Manage billing" button is hidden for them. Cancelling
+  a Razorpay subscription is dashboard-side for now.
+- **One Pro cadence at a time.** `RAZORPAY_PLAN_PRO` is a single plan id, so an
+  instance sells whichever cadence that plan defines. Offering monthly *and*
+  yearly side by side is the plan-matrix work, not this.
 
 ---
 

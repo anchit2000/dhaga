@@ -12,11 +12,11 @@ import { requireUserIdFromRequest } from "@/lib/auth/guard";
  * moved. Neither alone is sufficient, and the entitlement is written only
  * after confirmRazorpayPayment re-reads the order from Razorpay.
  *
- * KNOWN GAP: this is the only path that grants a Razorpay plan, and it depends
- * on the browser surviving long enough to call it. A customer whose payment
- * succeeds but who closes the tab first is charged and NOT upgraded. Closing
- * that hole needs a Razorpay webhook (payment.captured) the way Stripe already
- * has one — see docs/TESTING.md §6a.
+ * This is the FAST path, not the authoritative one: /api/razorpay/webhook
+ * writes the same rows server-to-server, so a customer who pays and closes the
+ * tab before this fires still gets what they paid for. Both are idempotent
+ * upserts keyed on userId — whichever lands first wins and the other re-writes
+ * the same values.
  */
 export async function POST(request: Request): Promise<Response> {
   if (process.env.DHAGA_HOSTED_MODE !== "true" || !razorpayEnabled()) {
@@ -31,19 +31,27 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
-  const orderId = body?.razorpay_order_id;
   const paymentId = body?.razorpay_payment_id;
   const signature = body?.razorpay_signature;
-  if (typeof orderId !== "string" || typeof paymentId !== "string" || typeof signature !== "string") {
+  // Exactly one of these is present: a Subscription for Pro, an Order for
+  // Lifetime. They sign DIFFERENT payloads, so which one arrived decides which
+  // signature check runs.
+  const orderId = typeof body?.razorpay_order_id === "string" ? body.razorpay_order_id : undefined;
+  const subscriptionId =
+    typeof body?.razorpay_subscription_id === "string" ? body.razorpay_subscription_id : undefined;
+  if (typeof paymentId !== "string" || typeof signature !== "string" || (!orderId && !subscriptionId)) {
     return Response.json(
-      { error: "razorpay_order_id, razorpay_payment_id and razorpay_signature are required." },
+      {
+        error:
+          "razorpay_payment_id, razorpay_signature and one of razorpay_order_id / razorpay_subscription_id are required.",
+      },
       { status: 400 },
     );
   }
 
   let result: Awaited<ReturnType<typeof confirmRazorpayPayment>>;
   try {
-    result = await confirmRazorpayPayment(userId, { orderId, paymentId, signature });
+    result = await confirmRazorpayPayment(userId, { orderId, subscriptionId, paymentId, signature });
   } catch (error) {
     console.error("[razorpay] payment confirmation failed", error);
     return Response.json({ error: "Couldn't confirm payment." }, { status: 500 });
@@ -57,5 +65,8 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: "Payment could not be verified." }, { status: 400 });
   }
 
-  return Response.json({ success: true, plan: result.plan });
+  // `active: false` is a success: an approved mandate whose first charge
+  // hasn't settled. The client says "activating" rather than "active", and
+  // subscription.charged flips it via the webhook.
+  return Response.json({ success: true, plan: result.plan, active: result.active });
 }

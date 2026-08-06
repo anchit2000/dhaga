@@ -4,7 +4,7 @@
  * case produces. The lines appended to a batch's closing summary live in
  * ./notices.
  */
-import { MESSAGING_QUESTION_TTL_MINUTES, MESSAGING_SESSION_IDLE_MINUTES, type MessagingQuestionOption } from "./config";
+import { idleWindowLabel } from "./config";
 
 export function notRecognizedReply(): string {
   return "👋 I don't recognize this chat yet. Open Dhaga → Settings → Messaging, generate a link token, and send it here to connect your account.";
@@ -19,7 +19,16 @@ export function invalidTokenReply(): string {
 }
 
 export function ackFirstItemReply(): string {
-  return "👍 Got it — keep forwarding contacts/notes, then reply DONE to save. (I'll auto-save after " + MESSAGING_SESSION_IDLE_MINUTES + " min of quiet.)";
+  return "👍 Got it — keep forwarding, then reply DONE to save. Best one person at a time: notes covering several people can end up on the wrong one. (I'll auto-save after " + idleWindowLabel() + " of quiet.)";
+}
+
+/**
+ * The open batch is full and nothing more is accepted until it is saved. Said
+ * plainly and with the count, because the alternative — quietly swallowing an
+ * eleventh forward — is the sender losing a contact and never knowing.
+ */
+export function batchFullReply(limit: number): string {
+  return `⛔ This batch already has ${limit} items and isn't saved yet. Reply DONE to save it — I can't take anything more until you do, or I'd start guessing who each note belongs to.`;
 }
 
 export function processingReply(itemCount: number): string {
@@ -73,7 +82,7 @@ export function noContactFoundReply(): string {
 
 /** The batch produced nothing except an open question — say that, not "nothing found". */
 export function awaitingAnswerReply(): string {
-  return "⏳ Nothing saved yet — answer my question above and I'll file that note.";
+  return "⏳ Nothing saved yet — open Dhaga → Inbox and pick who that note is about.";
 }
 
 /** Processing threw. Nothing is lost (items stay), so invite a retry. */
@@ -86,28 +95,13 @@ export function locationNoteBody(label: string): string {
   return "📍 Location: " + label;
 }
 
-/** Ask which person a note belongs to. Numbered so a one-character reply answers it. */
-export function chooseContactReply(subjectName: string | null, options: readonly MessagingQuestionOption[]): string {
-  const lines = options.map(
-    (option, index) => `${index + 1}. ${option.label}${option.sublabel ? ` (${option.sublabel})` : ""}`,
-  );
-  const who = subjectName ? `more than one "${subjectName}"` : "more than one person";
-  return [
-    `🤔 That note could be about ${who}. Which one did you mean?`,
-    ...lines,
-    `Reply with a number or a name — or "new" for a new person. (I'll ask again after ${MESSAGING_QUESTION_TTL_MINUTES} min.)`,
-  ].join("\n");
-}
-
-/** The answer landed: the pending note is now on that person. */
-export function questionAnsweredReply(contactName: string): string {
-  return `✅ Saved that note on ${contactName}.`;
-}
-
 /**
- * The sender moved on without answering. The note is never dropped — it becomes
- * a new person — and we say so before handling whatever they sent instead.
+ * The question a note-subject confirmation asks in the app's inbox. No numbered
+ * list and no "reply with…": the candidates are rendered as buttons there, and
+ * asking in chat could only ever resolve ONE ambiguity per batch while quietly
+ * turning the rest into duplicate people.
  */
-export function questionAbandonedReply(contactName: string): string {
-  return `📝 No answer to my question, so I saved that note under a new person, ${contactName}. Merge them in Dhaga if that's a duplicate.`;
+export function chooseContactQuestion(subjectName: string | null): string {
+  const who = subjectName ? `more than one "${subjectName}"` : "more than one person";
+  return `This note could be about ${who}. Which one did you mean?`;
 }

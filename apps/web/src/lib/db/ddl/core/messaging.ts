@@ -56,8 +56,17 @@ CREATE TABLE IF NOT EXISTS messaging_session_items (
   kind text NOT NULL,
   payload jsonb NOT NULL,
   provider_message_id text,
-  created_at timestamptz NOT NULL DEFAULT now()
+  created_at timestamptz NOT NULL DEFAULT now(),
+  processed_at timestamptz
 );
+
+-- Per-item completion stamp, so a batch is RESUMABLE. A flush runs in a
+-- background after() on a function with a hard time ceiling, so a long batch
+-- (a day's worth of forwards) can be killed mid-walk. Without this, re-driving
+-- it would re-create every contact and note it already wrote; with it, the
+-- retry picks up exactly where it stopped. Added by ALTER too, since the CREATE
+-- above is IF NOT EXISTS and never reaches an existing install.
+ALTER TABLE messaging_session_items ADD COLUMN IF NOT EXISTS processed_at timestamptz;
 
 -- Idempotency guard against duplicate webhook deliveries. Postgres treats NULLs
 -- as distinct, so items lacking a provider message id (e.g. synthesized) coexist.

@@ -15,6 +15,7 @@ import { fakeClient, resetStore, store } from "./harness";
 vi.mock("@/lib/db/request-scope", async () => (await import("./mocks")).requestScopeMock());
 vi.mock("next/server", async () => (await import("./mocks")).afterMock());
 vi.mock("@/lib/repo/messaging", async () => (await import("./mocks")).repoMessagingMock());
+vi.mock("@/lib/repo/confirmations", async () => (await import("./mocks")).confirmationsMock());
 vi.mock("@/lib/repo/contacts", async () => (await import("./mocks")).contactsMock());
 vi.mock("@/lib/repo/notes", async () => (await import("./mocks")).notesMock());
 vi.mock("@/lib/repo/embeddings", async () => (await import("./mocks")).embeddingsMock());

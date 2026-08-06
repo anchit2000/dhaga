@@ -66,34 +66,37 @@ summary lists what it skipped and why.
 
 ## How a batch works
 
-Forwarding is **positional**, so the order you send things in is what Dhaga
-acts on — no guessing:
+Order matters, but **naming a person beats order**:
 
 - A **contact card or photo** sets the *current contact*.
-- **Text that follows** attaches to that contact as notes and facts.
+- **Text that names someone** is filed on that person — matched to whoever is
+  already in your graph, or created if nobody matches — even when a different
+  card came first. A note about Bob never lands on Alice just because Alice's
+  card arrived earlier.
+- **Text that names nobody** ("wants intros to fintech founders") falls back to
+  the current contact. That one is a guess, and the summary labels it as such.
 - A leading **text with no card** establishes the contact on its own, the same
   way pasted text does in [quick-add](/docs/guide/capturing-people).
-- Forward **several cards** in one batch and you get several contacts — each one
-  collects the messages sent after it.
+- Forward **several cards** in one batch and you get several contacts.
 
 ## When Dhaga isn't sure who you mean
 
-If a forwarded note could be about more than one person in your graph, Dhaga
-asks **in the chat** rather than guessing:
+If a forwarded note could be about more than one person in your graph — two
+Rohans, say — Dhaga does **not** guess and does **not** interrogate you in chat.
+It raises the note in your **Inbox**, where you pick who it belongs to:
 
 ```
-🤔 That note could be about more than one "Ajay". Which one did you mean?
-1. Ajay Shrivastava (STPI)
-2. Ajay Kumar (Infosys)
+This note could be about more than one "Rohan". Which one did you mean?
+  [ Rohan Mehta · STPI ]   [ Rohan Iyer · Infosys ]   [ New person ]
 ```
 
-Reply with the **number**, the **name**, or **`new`** for a new person. If you
-reply with something else entirely, the question is dropped, the note is saved
-under a new person so it can't be lost (merge them later if that's a duplicate),
-and your new message is handled normally. A question expires after an hour.
+The note travels *inside* that confirmation, so nothing is written to anybody
+until you choose — and nothing can be lost if you never do. Each ambiguous note
+gets its own entry, so a batch that raises five of them gets five, and the batch
+summary tells you how many are waiting.
 
 A note that matches exactly one person is attached to them silently — no
-question, and no duplicate contact.
+confirmation, and no duplicate contact.
 
 ## Closing a batch
 
@@ -102,11 +105,19 @@ is ever lost:
 
 1. **Reply `DONE`** (or `finish`, `end`, `/done`) to save immediately.
 2. **Start a new forward** and any earlier open batch is saved first.
-3. **Walk away** — an idle batch auto-saves after about 15 minutes of quiet
-   (self-hosters can tune this with `DHAGA_MESSAGING_IDLE_MINUTES`).
+3. **Walk away** — an idle batch auto-saves after 24 hours of quiet (self-hosters
+   can tune this with `DHAGA_MESSAGING_IDLE_MINUTES`).
 
-When a batch is saved, the bot replies with a summary of who and what it stored
-so you can open Dhaga and review.
+A batch also stops accepting forwards once it holds 10 unsaved items
+(`DHAGA_MESSAGING_MAX_OPEN_ITEMS`). The bot says so rather than swallowing the
+message: the longer a batch runs, the more notes it has to file by assumption, so
+it asks you to close it while you still remember who each one was about.
+
+When a batch is saved, the bot replies with a summary of who and what it stored —
+including **where each note went and why**: whether the note named that person,
+whether it created them because nobody matched, or whether it was *assumed* to be
+about them because the note named nobody at all. Assumptions are the ones worth
+skimming; fix any of them in Dhaga.
 
 <Callout title="Voice notes aren't supported yet">
 Forward a voice note and the bot replies *"Voice notes aren't supported yet —

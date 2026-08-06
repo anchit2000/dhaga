@@ -10,8 +10,10 @@ import {
 } from "@/lib/repo/messaging";
 import {
   ackFirstItemReply,
+  batchFullReply,
   emptyMessageReply,
   emptySessionReply,
+  MESSAGING_MAX_OPEN_ITEMS,
   MESSAGING_SESSION_IDLE_MINUTES,
   processingReply,
   unsupportedAttachmentReply,
@@ -90,14 +92,27 @@ export async function handleContent(
 
   const appended = await withUserDb(userId, async () => {
     const session = await getOrCreateOpenSession({ provider, externalId });
+    // BACKPRESSURE: a full batch is refused, not silently swallowed. Checked
+    // before the insert so the refusal is honest — nothing is stored that the
+    // sender was just told wasn't accepted.
+    if (session.itemCount >= MESSAGING_MAX_OPEN_ITEMS) {
+      return { full: true, duplicate: false, wasFirst: false };
+    }
     const result = await appendSessionItem({
       sessionId: session.id,
       kind: normalized.kind,
       payload: normalized.payload,
       providerMessageId: msg.messageId,
     });
-    return { duplicate: result.duplicate, wasFirst: session.itemCount === 0 };
+    return { full: false, duplicate: result.duplicate, wasFirst: session.itemCount === 0 };
   });
+  if (appended.full) {
+    await client.sendText({
+      externalUserId: externalId,
+      text: batchFullReply(MESSAGING_MAX_OPEN_ITEMS),
+    });
+    return;
+  }
   if (appended.duplicate) return; // idempotent provider retry
   // Ack only the first item — subsequent ones stay silent to avoid spam.
   if (appended.wasFirst) await client.sendText({ externalUserId: externalId, text: ackFirstItemReply() });

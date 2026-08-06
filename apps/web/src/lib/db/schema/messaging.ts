@@ -63,6 +63,8 @@ export const messagingSessionItems = pgTable("messaging_session_items", {
   payload: jsonb("payload").notNull(),
   providerMessageId: text("provider_message_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  /** Set when the walk finished this item — makes a killed batch resumable. */
+  processedAt: timestamp("processed_at", { withTimezone: true }),
 });
 
 export type MessagingSessionItemRow = typeof messagingSessionItems.$inferSelect;

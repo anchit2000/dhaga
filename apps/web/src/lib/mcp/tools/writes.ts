@@ -1,4 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/server";
+import { bareMethods } from "@dhaga/core";
 import { createContact } from "@/lib/repo/contacts";
 import { addNote, setFollowUpStatus } from "@/lib/repo/notes";
 import { addFollowUp } from "@/lib/repo/manual-entries";
@@ -68,8 +69,10 @@ export function registerWriteTools(server: McpServer): void {
             name,
             title: title ?? null,
             company: company ?? null,
-            emails,
-            phones,
+            // The tool's public input stays bare string arrays — widening an
+            // MCP contract to labeled objects would break every client.
+            emails: bareMethods(emails),
+            phones: bareMethods(phones),
             links,
             location: location ?? null,
           },

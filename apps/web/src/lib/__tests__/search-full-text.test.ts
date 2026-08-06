@@ -7,7 +7,7 @@ import { addNote } from "@/lib/repo/notes";
 import { applyExtraction } from "@/lib/repo/graph";
 import { createEvent, addContactToEvent } from "@/lib/repo/events";
 import { hybridSearch } from "@/lib/repo/search";
-import { emptyExtractedContact, type ExtractedContact, type NoteExtraction } from "@dhaga/core";
+import { bareMethods, emptyExtractedContact, type ExtractedContact, type NoteExtraction } from "@dhaga/core";
 
 function contact(overrides: Partial<ExtractedContact>): ExtractedContact {
   return { ...emptyExtractedContact(), ...overrides };
@@ -36,11 +36,11 @@ describe("hybridSearch covers every searchable field, not just name/title/facts/
 
   beforeAll(async () => {
     emailContact = await createContact(
-      contact({ name: "Iris Kowalski", emails: ["iris@quantumforge.io"] }),
+      contact({ name: "Iris Kowalski", emails: bareMethods(["iris@quantumforge.io"]) }),
       "manual",
     );
     phoneContact = await createContact(
-      contact({ name: "Marcus Webb", phones: ["+1-415-555-0199"] }),
+      contact({ name: "Marcus Webb", phones: bareMethods(["+1-415-555-0199"]) }),
       "manual",
     );
     linkContact = await createContact(

@@ -973,6 +973,30 @@ Each case gets a contact, a note, or a reply saying why not. Covered by
       → transcribed into a note on the person; a caption is kept as well.
       Test this on **Telegram specifically**: Telegram sends no mime type, and
       every Telegram photo used to be dropped for that reason alone.
+- [ ] **The photo itself survives.** Open the contact the forward created — the
+      original image is in the card-photo strip, not just the text read off it.
+      Delete that note and confirm the photo goes with it. Then turn **Settings
+      → Capture → Card photos** off, forward another photo, and confirm the note
+      still lands but no image is kept. Forwarded photos used to keep nothing at
+      all, which is what made a misread noticeboard impossible to check.
+- [ ] **Forward a photo of something with no person on it** — a society
+      noticeboard, an office directory, a poster with an org's phone numbers.
+      The contact is named after the **organisation**, never saved blank (a
+      blank-named contact is unfindable by search), and where the source says
+      *whose* number is whose — "Society office – 75076…", "MNGL – 97646…
+      (Navnath)" — those **labels land on the phone/email rows**, not as an
+      anonymous list. With no organisation on it either, expect *"Unnamed
+      contact"*.
+- [ ] **Tell the bot what to do rather than telling it something.** After that
+      photo, send *"R10 Universe Society contact details, create a new
+      contact"*. It must **not** become a note, and must **not** produce
+      follow-ups like *"Create a new contact"* — that exact sequence used to
+      generate two phantom follow-ups the user had to delete. Send the same
+      instruction as the **first** item of a fresh batch and it must still
+      create the contact it names: an instruction is skipped, never dropped.
+      Then send *"call Priya on Tuesday"* and confirm that **is** kept as a note
+      and does open a follow-up — information phrased as a command to yourself
+      is content, not an instruction to the bot.
 - [ ] **Voice note** → replies *"Voice notes aren't supported yet — coming
       soon! For now please type it, send a photo, or forward a contact."* It is
       refused at the door, not stored as a stub. This message is gated on a

@@ -105,7 +105,7 @@ describe("a note with one unambiguous match", () => {
     // through the inbox without reading it, which is how a real ambiguity gets
     // resolved wrong.
     expect(store.confirmations).toEqual([]);
-    expect(store.notes).toEqual([{ contactId: "c1", kind: "text", body: NOTE }]);
+    expect(store.notes).toMatchObject([{ contactId: "c1", kind: "text", body: NOTE }]);
     expect(contactNames()).toEqual([]);
     expect(summary).toContain("Saved Rohan Mehta");
   });

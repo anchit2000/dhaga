@@ -1,5 +1,5 @@
 import type { MessagingClient } from "@dhaga/core/src/messaging";
-import type { NoteAttributionBasis } from "@/utils/constants/messaging";
+import { UNNAMED_CONTACT_NAME, type NoteAttributionBasis } from "@/utils/constants/messaging";
 
 /**
  * Mutable state threaded through the positional walk of a session's items.
@@ -65,7 +65,7 @@ export function recordAttribution(
   contactName: string,
   basis: NoteAttributionBasis,
 ): void {
-  state.attributions.push({ contactName: contactName || "Unnamed contact", basis });
+  state.attributions.push({ contactName: contactName || UNNAMED_CONTACT_NAME, basis });
 }
 
 /**

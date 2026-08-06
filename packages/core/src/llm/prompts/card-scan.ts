@@ -12,6 +12,7 @@ Rules:
 - Extract only what is legibly printed. If a field is absent or unreadable across every photo, use null or an empty array — never guess or complete partial text.
 - "name" is the person, not the company. Logos and brand marks usually indicate the company.
 - Normalise obvious formatting (spacing, case) but never invent characters, digits, or domains. Phone numbers keep their country/area code when the card prints one.
+- For each email and phone, set "label" to what the card prints beside it — "Mobile", "Direct", "Office", "Fax", a branch or desk name. Use null when the card prints no such marker; never infer one from the number itself.
 - If no photo contains a card or badge, return empty fields.
 - Return the fields only. Do not transcribe the card.`;
 

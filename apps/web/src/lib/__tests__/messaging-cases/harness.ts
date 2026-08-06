@@ -21,6 +21,7 @@ import type { ConfirmationOption } from "@dhaga/core";
  */
 
 export interface StoredNote {
+  id: string;
   contactId: string;
   kind: string;
   body: string;
@@ -48,7 +49,9 @@ export interface FakeStore {
   userId: string | null;
   linkToken: string | null;
   candidates: Array<{ id: string; name: string; title: string | null }>;
-  extraction: { contact: ExtractedContact; isNoteAboutPerson: boolean; subjectName: string; noteBody: string };
+  /** `isInstruction` is optional: only the cases ABOUT instructions set it, and
+   *  the default — "this is content" — is the safe reading everywhere else. */
+  extraction: { contact: ExtractedContact; isNoteAboutPerson: boolean; subjectName: string; noteBody: string; isInstruction?: boolean };
   /** Per-call extraction results, consumed in order. A batch that spans several
    *  people needs a different parse per note; when empty, `extraction` stands. */
   extractionQueue: FakeStore["extraction"][];
@@ -56,6 +59,10 @@ export interface FakeStore {
   scan: { contact?: ExtractedContact; rawText?: string; error?: string };
   photoText: string | null;
   media: DownloadedMedia | null;
+  /** Photos kept as visual receipts, with the note each hangs off. */
+  cardImages: Array<{ contactId: string; noteId: string | null; count: number }>;
+  /** The per-user "keep captured photos" privacy switch. */
+  storePhotos: boolean;
 }
 
 export const store: FakeStore = emptyStore();
@@ -72,12 +79,14 @@ function emptyStore(): FakeStore {
     userId: "user-1",
     linkToken: null,
     candidates: [],
-    extraction: { contact: contact("Nobody"), isNoteAboutPerson: false, subjectName: "", noteBody: "" },
+    extraction: { contact: contact("Nobody"), isNoteAboutPerson: false, subjectName: "", noteBody: "", isInstruction: false },
     extractionQueue: [],
     contactParseCalls: 0,
     scan: {},
     photoText: null,
     media: null,
+    cardImages: [],
+    storePhotos: true,
   };
 }
 

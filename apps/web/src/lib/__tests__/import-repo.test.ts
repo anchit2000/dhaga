@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { profileFromExtracted } from "@dhaga/core";
+import { bareMethods, profileFromExtracted } from "@dhaga/core";
 import { importContacts } from "@/lib/repo/import";
 import { getContact, listContacts } from "@/lib/repo/contacts";
 import { listNotes } from "@/lib/repo/notes";
@@ -19,8 +19,8 @@ const candidate = (
     name,
     title: null,
     company,
-    emails,
-    phones,
+    emails: bareMethods(emails),
+    phones: bareMethods(phones),
     links: [],
     location: null,
   }),

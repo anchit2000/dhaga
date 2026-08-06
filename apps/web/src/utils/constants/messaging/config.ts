@@ -45,6 +45,16 @@ export function isDoneDelimiter(text: string): boolean {
 export const MAX_SESSION_ITEMS = 50;
 
 /**
+ * The last-resort name for a contact a capture could not name at all. A saved
+ * contact with an EMPTY name is the real failure this guards: it renders as a
+ * blank row, cannot be found by search, and gives the user nothing to recognise
+ * it by. A visible placeholder is at least something they can rename — and it
+ * is the same string `recordAttribution` shows for a nameless contact, so the
+ * batch summary and the contact row agree.
+ */
+export const UNNAMED_CONTACT_NAME = "Unnamed contact";
+
+/**
  * WHY a note ended up on the person it ended up on. Every note the walk files
  * carries one, because filing is guesswork and the sender is the only one who
  * can catch a wrong guess:

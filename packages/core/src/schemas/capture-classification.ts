@@ -29,6 +29,11 @@ const captureClassificationShape = {
     .describe(
       "The note to store — the user's words, lightly cleaned, never invented; null when isNoteAboutPerson is false.",
     ),
+  isInstruction: z
+    .boolean()
+    .describe(
+      'true when the text is an INSTRUCTION addressed to this assistant about what to do with the capture ("create a new contact", "save this under Acme", "add these details") rather than content worth storing. An instruction that also names its subject still fills "name"/"company" as usual.',
+    ),
 } as const;
 
 export const captureClassificationSchema = z.object(captureClassificationShape);
@@ -36,17 +41,19 @@ export type CaptureClassification = z.infer<typeof captureClassificationSchema>;
 
 /**
  * The quick-add capture schema: contact fields + the note classification, in a
- * single structured output. `extractedContactSchema` is intentionally left
- * untouched (26+ construction sites and the offline heuristic parser depend on
- * its exact shape) — the classification rides on top only for this one call.
+ * single structured output. The classification fields ride on top of
+ * `extractedContactSchema` for this one call only; that schema stays the lean
+ * shape every construction site and the offline heuristic parser share.
  */
 export const captureExtractionSchema = extractedContactSchema.extend(
   captureClassificationShape,
 );
 export type CaptureExtraction = z.infer<typeof captureExtractionSchema>;
 
-/** The neutral classification used on the offline/no-AI paths: not a note, so
- *  capture falls through to the existing contact-add behavior. */
+/** The neutral classification used on the offline/no-AI paths: not a note and
+ *  not an instruction, so capture falls through to the existing contact-add
+ *  behavior. Erring towards "content" is deliberate — misreading a real note as
+ *  an instruction would drop it, and nothing may ever be dropped silently. */
 export function emptyCaptureClassification(): CaptureClassification {
-  return { isNoteAboutPerson: false, subjectName: null, noteBody: null };
+  return { isNoteAboutPerson: false, subjectName: null, noteBody: null, isInstruction: false };
 }

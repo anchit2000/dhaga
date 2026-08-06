@@ -1,3 +1,4 @@
+import type { ExtractedMethod } from "../schemas/contact-fields";
 import type { ExtractedContact } from "../schemas/contact";
 
 /**
@@ -18,13 +19,21 @@ import type { ExtractedContact } from "../schemas/contact";
  * place (apps/web/src/lib/ai/card-transcription.ts, docs/TESTING.md §7c). What
  * this function returns is what the user sees for the few seconds in between.
  */
+/** "Society office – 7507626215", or just the value when nothing labeled it.
+ *  The label is part of the receipt: a bare list of four numbers is not an
+ *  audit trail of a noticeboard that said which was which. */
+function methodLine(method: ExtractedMethod): string {
+  const label = method.label?.trim();
+  return label ? `${label} – ${method.value.trim()}` : method.value;
+}
+
 export function cardReceiptText(contact: ExtractedContact): string {
   const role = [contact.title, contact.company].filter((part) => part?.trim()).join(" · ");
   const lines = [
     contact.name.trim(),
     role,
-    ...contact.emails,
-    ...contact.phones,
+    ...contact.emails.map(methodLine),
+    ...contact.phones.map(methodLine),
     ...contact.links,
     contact.location ?? "",
   ];

@@ -41,6 +41,7 @@ export function useAsyncData<T>(options: AsyncDataOptions<T>): AsyncDataResult<T
     enabled: options.enabled ?? true,
     initialData: options.initialData,
     staleTime: options.staleMs === "forever" ? Infinity : options.staleMs,
+    retry: options.retries ?? false,
     refetchInterval:
       typeof refetchIntervalMs === "function"
         ? (query) => refetchIntervalMs(query.state.data, query.state.fetchFailureCount)

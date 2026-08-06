@@ -1570,6 +1570,21 @@ relationship still uses it, so you never lose data by accident).
 For a quick fix, you don't have to leave the Add relationship dialog: click
 the pencil next to any of your custom types in the picker to rename it inline.
 
+## Fixing a relationship you already added
+
+Relationships listed on a person or entity page each carry a **pencil**. Click
+it to change **who the relationship connects to**, the relationship type, or its
+direction — the same pickers and the same live *"Rohan — father of → Priya"*
+preview as when you added it, with a **Swap** button for when the arrow points
+the wrong way. Picked the wrong Kabir out of the two in your graph? Search for
+the right one in **Connected to** and save; the relationship moves, and the
+person it used to point at is left with nothing.
+
+Editing corrects the existing relationship rather than replacing it, so one that
+came from a note keeps its receipt back to that note. The one end you can't
+change is the person or entity whose page you're on — open the other end's page
+if that's the one you meant to move.
+
 ---
 
 # Exploring the graph
@@ -1902,6 +1917,38 @@ process and forwards to the endpoint:
 That's a community bridge, not something Dhaga ships — prefer a direct HTTP
 connection wherever the client offers one.
 
+## Installing the skills
+
+MCP hands your client the tools. A **skill** hands it the judgement about when
+and how to use them — search before you need a contact id, quote the receipt a
+fact came from, don't invent a connector that isn't there. Dhaga publishes
+three, and one command installs them:
+
+```bash
+npx skills add https://www.dhaga.app
+```
+
+- **`dhaga-setup`** — connecting a client: connector or personal access token,
+  the config each one wants, and what a 401 usually means.
+- **`dhaga-network`** — the reading half: search first, cite the note a fact
+  came from, work out a warm intro path, run a weekly review, and say *"not in
+  your network"* rather than answering from what the model happens to know
+  about a similarly-named public figure.
+- **`dhaga-capture`** — the writing half: look for the person before creating
+  them, keep to what you actually said, set a due date only when you gave one,
+  and leave a follow-up open unless you confirmed it's done.
+
+Self-hosters install from their own instance — `npx skills add
+https://your-dhaga-host` — because the skills are plain static files served
+from `/.well-known/skills/`, like any other asset.
+
+Installing them is optional. The tools behave the same either way; the skills
+only change how well a client uses them.
+
+Both the command and your endpoint are copyable from **Settings › Account ›
+Connect your AI assistant**, which already knows the URL of the instance you're
+signed in to.
+
 ## What the assistant can read
 
 Six read tools, and none of them spend AI credits:
@@ -2129,8 +2176,15 @@ belongs to before it saves anything.
 1. Open **Settings → Messaging** (`/app/settings`).
 2. Generate a **link token** — a short, single-use code that expires in a few
    minutes.
-3. Send that code to the bot as a message. Dhaga links your chat to your
-   account and replies to confirm.
+3. **Scan the QR with your phone**, one per channel:
+   - **Telegram** opens the bot with a **Start** button — tap it and you're
+     linked. The code travels in the link, so there's nothing to type.
+   - **WhatsApp** opens a chat with the code already in the message box — just
+     hit send.
+
+   On a phone you can tap the code instead of scanning it. Prefer to do it by
+   hand? Copy the token and send it to the bot as an ordinary message — that
+   still works exactly as before.
 
 From then on, anything you forward from that chat lands in *your* graph. A chat
 that isn't linked yet gets a friendly nudge back explaining how to link it.
@@ -2177,22 +2231,22 @@ Order matters, but **naming a person beats order**:
 
 ## When Dhaga isn't sure who you mean
 
-If a forwarded note could be about more than one person in your graph, Dhaga
-asks **in the chat** rather than guessing:
+If a forwarded note could be about more than one person in your graph — two
+Rohans, say — Dhaga does **not** guess and does **not** interrogate you in chat.
+It raises the note in your **Inbox**, where you pick who it belongs to:
 
 ```
-🤔 That note could be about more than one "Rohan". Which one did you mean?
-1. Rohan Mehta (STPI)
-2. Rohan Iyer (Infosys)
+This note could be about more than one "Rohan". Which one did you mean?
+  [ Rohan Mehta · STPI ]   [ Rohan Iyer · Infosys ]   [ New person ]
 ```
 
-Reply with the **number**, the **name**, or **`new`** for a new person. If you
-reply with something else entirely, the question is dropped, the note is saved
-under a new person so it can't be lost (merge them later if that's a duplicate),
-and your new message is handled normally. A question expires after an hour.
+The note travels *inside* that confirmation, so nothing is written to anybody
+until you choose — and nothing can be lost if you never do. Each ambiguous note
+gets its own entry, so a batch that raises five of them gets five, and the batch
+summary tells you how many are waiting.
 
 A note that matches exactly one person is attached to them silently — no
-question, and no duplicate contact.
+confirmation, and no duplicate contact.
 
 ## Closing a batch
 
@@ -2563,6 +2617,16 @@ would mean rendering them fresh on every visit and giving up their page speed.
 
 **Reset to default** puts both back: the Dhaga theme and Geist Pixel. It's
 greyed out when you're already on both.
+
+## Connect your AI assistant
+
+**Account → Connect your AI assistant** sits directly above the **API keys**
+card. It shows two things, each copyable in one click: this instance's **MCP
+endpoint**, and the **`npx skills add`** command that teaches an assistant how
+to use Dhaga. A token from the card below it is what a client running on your
+own machine — Claude Code, Cursor — signs in with; claude.ai and ChatGPT connect
+as a connector instead and need no token at all. Which route is yours, and what
+to paste where, is in [Connect your AI assistant](/docs/guide/mcp).
 
 ## Your time zone
 
@@ -3736,8 +3800,7 @@ With it unset:
   (`TenantGate`, `SignupGate`, `BillingGate`, `AdminGate`) short-circuits to
   its permissive default *before* it ever tries to load `@dhaga/ee` — so it
   doesn't matter whether the package is physically present.
-- The EE-only routes (`/api/access-requests`, `/api/stripe/webhook`,
-  `/api/razorpay/order`, `/api/razorpay/verify`, `/api/razorpay/webhook`)
+- The two EE-only routes (`/api/access-requests`, `/api/stripe/webhook`)
   additionally check the flag themselves and return `404` if it's off, so an
   unrelated visitor can't accidentally trigger EE's schema setup against your
   database even if `packages/ee` happens to be installed and `DATABASE_URL`
@@ -3759,7 +3822,6 @@ packages/ee/
 apps/web/src/app/app/admin/
 apps/web/src/app/api/access-requests/
 apps/web/src/app/api/stripe/
-apps/web/src/app/api/razorpay/
 apps/web/src/lib/actions/admin/
 apps/web/src/components/app/admin/
 apps/web/src/components/app/table/AdminTables.tsx
@@ -3827,7 +3889,7 @@ In hosted mode the reward is delivered Stripe-safely. An advocate who already
 has a live Stripe subscription is given a Stripe coupon — set
 `STRIPE_REFERRAL_COUPON_ID` to a `duration: once`, 100%-off coupon you create in
 the Stripe dashboard — while free/comp users get an additive comp Pro month
-(their `current_period_end` is extended, never downgrading a higher tier). If
+(their `current_period_end` is extended, never downgrading a lifetime grant). If
 `STRIPE_REFERRAL_COUPON_ID` is unset when a paying advocate qualifies, the grant
 fails loud and the referral stays `pending` for retry rather than silently
 half-rewarding.
@@ -3862,10 +3924,10 @@ controls it.
 From a user's detail page (`/app/admin/users/[id]`) an admin can, without
 Stripe, comp that user's access:
 
-- **Plan** — set `free`, `pro`, or `power`. `free` removes the subscription
+- **Plan** — set `free`, `pro`, or `lifetime`. `free` removes the subscription
   row (the account falls back to the instance default allowance); `pro` and
-  `power` move it onto that plan's monthly allowance — 300 credits a month for
-  Pro, 1,000 for Power.
+  `lifetime` move it onto that plan's monthly allowance — 300 credits a month
+  for Pro, no ceiling at all for Lifetime.
 - **Expiry** — an optional date on a paid plan. Once it passes the plan stops
   being in play and the account drops back to the instance default allowance
   (leave it blank for no expiry).
@@ -3891,8 +3953,8 @@ behind it:
 
 - **Plan-cap enforcement** — a master switch that is **on by default**
   (`AI_PLAN_CAP_ENFORCEMENT_DEFAULT = true`). In the shipped state every user is
-  held to the monthly allowance for their plan: Free, Pro and Power each have a
-  number. That is what the pricing page states — it sells
+  held to the monthly allowance for their plan: Free and Pro have a number,
+  Lifetime / Annual has no cap. That is what the pricing page states — it sells
   Pro and Annual as **300 credits a month** and says what runs out when they do
   — so leave it on unless you have a reason not to. Turning it **off** is an
   escape hatch (a migration, an incident), not a resting state: the allowances
@@ -4485,37 +4547,10 @@ account once it's live.
   without it, regardless of whether the other vars below are set.
 - `DHAGA_ADMIN_EMAILS` — comma-separated emails that bootstrap into admins
   on signup (see Self-hosting's "Creating the first admin user").
-- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and one price id per
-  (tier, cadence): `STRIPE_PRICE_PRO_MONTHLY`, `STRIPE_PRICE_PRO_ANNUAL`,
-  `STRIPE_PRICE_POWER_MONTHLY`, `STRIPE_PRICE_POWER_ANNUAL`. Any left blank is
-  simply not offered — the picker
-  renders only combinations that have a price. Omit `STRIPE_SECRET_KEY`
-  entirely to run hosted mode without billing (e.g. a free beta).
-  Reference prices, BRD §8.3: Pro $10/mo or $96/yr, Power $30/mo or $288/yr.
-  Every tier is recurring — there is no one-time purchase.
-- **Local currency is Stripe Adaptive Pricing**, a Dashboard setting on
-  Checkout — not code and not extra env vars. Turn it on there and a visitor in
-  the UAE is quoted dirhams off the same price id.
-- `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, one
-  **Plan id** per (tier, cadence) — `RAZORPAY_PLAN_PRO_MONTHLY`,
-  `RAZORPAY_PLAN_PRO_YEARLY`, `RAZORPAY_PLAN_POWER_MONTHLY`,
-  `RAZORPAY_PLAN_POWER_YEARLY`. Optional and independent of Stripe: either
-  processor alone is enough for the billing UI to render. Reference prices: Pro
-  ₹899/mo or ₹8,499/yr, Power ₹2,599/mo or ₹24,999/yr — roughly parity with the
-  USD figures, so BRD §8.3's margins carry over.
-- **Processor routing** is by `x-vercel-ip-country`: India leads with Razorpay,
-  everywhere else with Stripe (`RAZORPAY_COUNTRIES`,
-  `apps/web/src/lib/billing/processor.ts`). It only reorders the buttons —
-  both stay clickable wherever both are configured, because IP geo is wrong
-  often enough that locking someone out of paying is the worse failure.
-- Register the Razorpay webhook at
-  `https://your-domain/api/razorpay/webhook`, subscribed to at least
-  `subscription.activated`, `subscription.charged`, `subscription.halted`,
-  `subscription.cancelled`. Its secret is **per-endpoint
-  and not the API key secret**. Without it, a customer who closes the tab
-  mid-redirect is charged and never upgraded, and renewals never update the
-  stored status. Razorpay-paid customers also have no billing portal —
-  cancelling is dashboard-side.
+- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_PRO_ANNUAL`,
+  `STRIPE_PRICE_LIFETIME` — from the Stripe Dashboard (test-mode keys while
+  developing). Omit `STRIPE_SECRET_KEY` to run hosted mode without billing
+  (e.g. a free beta) — the billing UI simply doesn't render without it.
 - Register the webhook in Stripe pointing at
   `https://your-domain/api/stripe/webhook`, subscribed to at least
   `checkout.session.completed`, `customer.subscription.updated`,
@@ -4560,6 +4595,12 @@ everywhere):
    bypasses RLS unconditionally even while `rolbypassrls` reads false). Don't
    rely on this alone for a fresh setup, though — check via the script's own
    verification query *before* traffic hits it, not after.
+4. To prove the isolation itself rather than just the role's attributes,
+   run `packages/ee/src/db/__tests__/rls-isolation.integration.test.ts` —
+   it asserts, per tenant table, that a second tenant's scoped read sees
+   nothing of the first's. Its file header carries the run instructions.
+   It writes and then deletes rows, so point it at a disposable Postgres
+   (the `compose.yml` database is one) and **never** at production.
 
 ### Migrating off Supabase (or any hosted Postgres) later
 
@@ -4573,10 +4614,11 @@ migration, not a code change:
 
 1. On the new Postgres target: install the `pgvector` and `pg_trgm`
    extensions, then run `packages/ee/scripts/create-app-role.sql` against
-   it to create `dhaga_app` there too (self-hosted Postgres usually keeps
-   extensions in the `public` schema rather than Supabase's separate
-   `extensions` schema — skip that one `GRANT USAGE ON SCHEMA extensions`
-   line if so).
+   it to create `dhaga_app` there too — it runs unmodified on both, no
+   editing step: the one Supabase-specific statement
+   (`GRANT USAGE ON SCHEMA extensions`) is guarded and no-ops on a
+   self-hosted Postgres, which keeps extensions in `public` rather than
+   Supabase's separate `extensions` schema.
 2. `pg_dump --no-owner --no-acl <source> | psql <target>` (or
    `pg_restore --no-owner --no-acl` if using the custom format) — `--no-owner`
    matters because the dump would otherwise try to assign ownership to a

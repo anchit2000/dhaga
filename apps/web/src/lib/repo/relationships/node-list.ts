@@ -17,6 +17,9 @@ export interface NodeRelationship {
   /** Contact endpoints only: the row is a hidden "mentioned" person. */
   mentioned: boolean;
   predicate: string;
+  /** True when the edge is stored viewed-node → other. Needed to seed the edit
+   *  dialog's direction toggle, since `role` has already corrected for it. */
+  viewerIsSource: boolean;
   /** How the other endpoint relates to the viewed node, direction-corrected. */
   role: string;
 }
@@ -103,6 +106,7 @@ export async function listNodeRelationships(
       sublabel: label.sublabel,
       mentioned: label.mentioned,
       predicate: side.predicate,
+      viewerIsSource: side.viewerIsSource,
       role: relationshipRole(side.predicate, side.viewerIsSource, customLabels),
     }];
   });

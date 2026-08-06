@@ -1,5 +1,9 @@
 /** Home-dashboard constants (the /app landing surface). */
 
+import { BellRing, Building2, CalendarDays, NotebookPen, Shapes, Sparkles, Users, Waypoints } from "lucide-react";
+
+import type { LucideIcon } from "lucide-react";
+
 /**
  * The most DB round-trips one Home render may cost.
  *
@@ -62,16 +66,34 @@ export const DUE_CHECK_INS_ANCHOR = "due";
  */
 export const DUE_CHECK_INS_HREF = `/app/follow-ups#${DUE_CHECK_INS_ANCHOR}`;
 
-export const HOME_STAT_TONE_CLASSES: Record<string, string> = {
-  People: "text-trust",
-  Companies: "text-calm",
-  Notes: "text-magic",
-  Facts: "text-magic",
-  Relationships: "text-calm",
-  Events: "text-trust",
-  "Open follow-ups": "text-human",
-  Entities: "text-trust",
+/**
+ * What one metric looks like on Home's stat strip — a lucide glyph plus the
+ * semantic hue its sparkline and icon badge share, so a tile is recognisable by
+ * shape and colour before the number is read. One entry per metric keeps the
+ * two surfaces that render these tiles (StatStrip and the landing mock) from
+ * drifting apart, and keeps the hue from being stated twice per metric.
+ *
+ * Hues are the four brand accents, which resolve per theme in globals.css — the
+ * icon is a tinted `bg-<hue>/10` plate rather than amber-on-light, which the
+ * brand rules forbid for anything but a fill.
+ */
+export const HOME_STAT_TONES: Record<string, { icon: LucideIcon; spark: string; badge: string }> = {
+  People: { icon: Users, spark: "text-trust", badge: "bg-trust/10 text-trust" },
+  Companies: { icon: Building2, spark: "text-calm", badge: "bg-calm/10 text-calm" },
+  Notes: { icon: NotebookPen, spark: "text-magic", badge: "bg-magic/10 text-magic" },
+  Facts: { icon: Sparkles, spark: "text-magic", badge: "bg-magic/10 text-magic" },
+  Relationships: { icon: Waypoints, spark: "text-calm", badge: "bg-calm/10 text-calm" },
+  Events: { icon: CalendarDays, spark: "text-trust", badge: "bg-trust/10 text-trust" },
+  "Open follow-ups": { icon: BellRing, spark: "text-human", badge: "bg-human/10 text-human" },
+  Entities: { icon: Shapes, spark: "text-trust", badge: "bg-trust/10 text-trust" },
 };
+
+/** Fallback for a metric added to a tile list before it is given an identity above. */
+export const HOME_STAT_TONE_FALLBACK = {
+  icon: Sparkles,
+  spark: "text-trust",
+  badge: "bg-trust/10 text-trust",
+} as const;
 
 /**
  * The three-step "how it works" strip shown on the first-run empty state,

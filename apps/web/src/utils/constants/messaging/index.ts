@@ -21,9 +21,11 @@ export {
   MESSAGING_SESSION_IDLE_MINUTES,
   MESSAGING_SESSION_STATUSES,
   NOTE_ATTRIBUTION_BASES,
+  extractLinkToken,
   idleWindowLabel,
   isDoneDelimiter,
   looksLikeLinkToken,
+  parseStartCommand,
   type BuiltinMessagingProvider,
   type MessagingItemKind,
   type MessagingRejection,
@@ -32,6 +34,7 @@ export {
 } from "./config";
 export {
   ackFirstItemReply,
+  alreadyLinkedReply,
   awaitingAnswerReply,
   batchFullReply,
   chooseContactQuestion,
@@ -60,3 +63,4 @@ export {
   unreadableItemNotice,
   voiceSkippedNotice,
 } from "./notices";
+export { messagingLinkUrl, telegramLinkUrl, whatsappLinkUrl } from "./links";

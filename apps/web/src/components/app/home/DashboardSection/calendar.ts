@@ -1,5 +1,10 @@
 import { after } from "next/server";
-import { dayLoad, findOpenSlots, type BusyInterval, type OpenSlot } from "@dhaga/core";
+import {
+  dayLoad,
+  findOpenSlots,
+  type OpenSlot,
+} from "@dhaga/core/src/calendar/availability";
+import type { BusyInterval } from "@dhaga/core/src/calendar/types";
 import { getCurrentUser } from "@/lib/auth/guard";
 import { readFreeBusySnapshot, refreshFreeBusySnapshot } from "@/lib/repo/calendar";
 import { DEFAULT_MEETING_DURATION_MINUTES } from "@/utils/constants/suggestions";

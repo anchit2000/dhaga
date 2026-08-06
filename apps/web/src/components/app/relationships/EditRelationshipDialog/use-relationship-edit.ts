@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { humanizePredicate } from "@dhaga/core";
+import { humanizePredicate } from "@dhaga/core/src/relationships/roles";
 import { updateRelationshipAction } from "@/lib/actions/relationships";
 import type { RelationshipTypeOption } from "@/lib/actions/relationship-types";
 import type { GraphTarget } from "@/lib/repo/graph-data";

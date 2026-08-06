@@ -11,7 +11,11 @@ import { empty, followUp, importantDate, notification } from "./helpers";
 describe("rowActions", () => {
   it("hands completeFollowUpAction's ids to a follow-up only", () => {
     const item = followUp("f1", "2026-07-30T00:00:00.000Z", false);
-    expect(rowActions(item).complete).toEqual({ followUpId: "f1", contactId: "c-f1" });
+    expect(rowActions(item).complete).toEqual({
+      followUpId: "f1",
+      contactId: "c-f1",
+      expectedDueDate: "2026-07-30T00:00:00.000Z",
+    });
     expect(rowActions(item).notificationId).toBeNull();
   });
 

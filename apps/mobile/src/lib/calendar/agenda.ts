@@ -1,6 +1,7 @@
 import { UNTITLED_DEVICE_EVENT } from "@/utils/constants/calendar";
 
 import type { AgendaDay, AgendaItem, DeviceEvent, FollowUpSummary } from "./types";
+import { followUpLabel } from "./follow-up-label";
 
 /**
  * Merging this phone's real events with Dhaga's follow-ups into one agenda.
@@ -89,7 +90,7 @@ export function buildAgenda(
     push(followUpDayKey(followUp.dueDate), {
       kind: "followUp",
       id: followUp.id,
-      contactName: followUp.contactName,
+      associationLabel: followUpLabel(followUp),
       action: followUp.action,
       dueHint: followUp.dueHint,
       overdue: due.getTime() < today.getTime(),

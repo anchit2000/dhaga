@@ -5,12 +5,14 @@ import { Check, Pencil } from "lucide-react";
 import { ActionForm, runAction } from "@/components/app/ActionForm";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
+import { RecurrenceFields } from "@/components/app/tasks/RecurrenceFields";
+import { recurrenceRuleFromFields } from "@dhaga/core/src/dates";
 import {
   completeFollowUpAction,
   dismissFollowUpAction,
-  updateFollowUpAction,
 } from "@/lib/actions/follow-ups";
-import { formatDate } from "@/utils/format-date";
+import { updateTaskAction } from "@/lib/actions/tasks";
+import { formatDueDate } from "@/utils/format-date";
 import { DeleteButton } from "./DeleteButton";
 import { SaveButton } from "./SaveButton";
 import type { FollowUpRow } from "@/lib/db/schema";
@@ -29,6 +31,13 @@ export function FollowUpItem({
 }) {
   const [editing, setEditing] = useState(false);
   const [dueDate, setDueDate] = useState<Date | null>(followUp.dueDate);
+  const recurrence = recurrenceRuleFromFields({
+    frequency: followUp.recurrenceFrequency,
+    interval: followUp.recurrenceInterval,
+    weekday: followUp.recurrenceWeekday,
+    monthDay: followUp.recurrenceMonthDay,
+    month: followUp.recurrenceMonth,
+  });
 
   if (editing) {
     return (
@@ -38,7 +47,10 @@ export function FollowUpItem({
             // Keep the row in edit mode (action + date intact) if the save
             // throws — a transient failure toasts, never the full-page boundary.
             const ok = await runAction(
-              () => updateFollowUpAction(formData),
+              async () => {
+                const result = await updateTaskAction(formData);
+                if (!result.ok) throw new Error(result.error);
+              },
               "Couldn't save the follow-up — try again.",
             );
             if (ok) setEditing(false);
@@ -46,17 +58,19 @@ export function FollowUpItem({
           className="flex flex-col gap-2 sm:flex-row sm:items-center"
         >
           <input type="hidden" name="followUpId" value={followUp.id} />
+          <input type="hidden" name="taskId" value={followUp.id} />
           <input type="hidden" name="contactId" value={contactId} />
           <Input
             name="action"
             defaultValue={followUp.action}
             required
             autoFocus
-            className="h-9 flex-1 text-sm"
+            className="min-h-11 flex-1 text-sm"
           />
           <div className="sm:w-44">
             <DatePicker
               name="dueDate"
+              submissionMode="date"
               value={dueDate}
               onChange={setDueDate}
               placeholder="When — optional"
@@ -70,10 +84,13 @@ export function FollowUpItem({
                 setEditing(false);
                 setDueDate(followUp.dueDate);
               }}
-              className="text-xs text-fog transition-colors hover:text-paper"
+              className="min-h-11 px-3 text-xs text-fog transition-colors hover:text-paper"
             >
               Cancel
             </button>
+          </div>
+          <div className="sm:basis-full">
+            <RecurrenceFields initial={recurrence} />
           </div>
         </form>
       </li>
@@ -89,11 +106,12 @@ export function FollowUpItem({
       >
         <input type="hidden" name="followUpId" value={followUp.id} />
         <input type="hidden" name="contactId" value={contactId} />
+        <input type="hidden" name="expectedDueDate" value={followUp.dueDate?.toISOString() ?? ""} />
         <button
           type="submit"
           aria-label="Mark done"
           title="Mark done"
-          className="flex size-5 items-center justify-center rounded-full border border-amber/50 text-ember transition-colors hover:bg-amber/15"
+          className="flex size-11 items-center justify-center rounded-full border border-amber/50 text-ember transition-colors hover:bg-amber/15"
         >
           <Check className="size-3" />
         </button>
@@ -101,7 +119,7 @@ export function FollowUpItem({
       <p className="min-w-0 flex-1 text-sm text-paper">
         {followUp.action}
         {followUp.dueDate ? (
-          <span className="text-fog"> — {formatDate(followUp.dueDate)}</span>
+          <span className="text-fog"> — {formatDueDate(followUp.dueDate)}</span>
         ) : followUp.dueHint ? (
           <span className="text-fog"> — {followUp.dueHint}</span>
         ) : null}
@@ -114,7 +132,7 @@ export function FollowUpItem({
           setDueDate(followUp.dueDate);
           setEditing(true);
         }}
-        className="shrink-0 rounded-full p-1 text-fog transition-colors hover:bg-wash/[0.06] hover:text-paper"
+        className="flex size-11 shrink-0 items-center justify-center rounded-full text-fog transition-colors hover:bg-wash/[0.06] hover:text-paper"
       >
         <Pencil className="size-3.5" />
       </button>

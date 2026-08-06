@@ -191,6 +191,26 @@ step, and keep the URL **same-origin**: a cross-origin one makes MapLibre
 re-wrap the worker in a blob and puts a CDN in the request path of a page whose
 whole point is that contact data stays with us.
 
+**The isolated app and worker responses must carry matching COEP.** The
+2026-08-06 production incident was not a missing file: Chrome fetched the
+correct worker with status 200, then blocked it as `ERR_BLOCKED_BY_RESPONSE`;
+CDP reported `coep-frame-resource-needs-coep-header`. `/app/**` already sends
+`Cross-Origin-Embedder-Policy: credentialless` for Dhaga Voice, but the
+same-origin worker response did not. `next.config.ts` therefore applies the same
+header to `/maplibre/:path*`. Do not remove or narrow that rule independently of
+the app-shell policy. The `MapLibre worker asset` test pins both the URL and the
+header seam.
+
+On every preview that changes Next headers, MapLibre, or the worker-copy step:
+
+1. Inspect `/app/map` and confirm `COOP: same-origin` plus
+   `COEP: credentialless`.
+2. Inspect `MAPLIBRE_WORKER_URL` and confirm a 200 JavaScript response plus
+   `COEP: credentialless`.
+3. Open `/app/map` in Chrome with the Network and Console panels recording. The
+   worker must complete without either error above, the loading veil must clear,
+   and the canvas and attribution must render.
+
 **A map that fails must say so — `useMapFailure` is not optional polish.**
 MapLibre reports success by firing `load`; it has no matching signal for the
 failures above, so from React "broken" and "still loading" are the same state

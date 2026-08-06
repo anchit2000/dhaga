@@ -8,6 +8,8 @@ import { upsertEmbedding } from "@/lib/repo/embeddings";
 import { withUserDb } from "@/lib/db/request-scope";
 import { runEnrichmentSearch } from "@/lib/ai/enrich";
 import { withAiAction } from "@/lib/ai/metering";
+import { logActionError } from "@/lib/actions/resilience";
+import { syncDeletedFollowUpsToCalendars } from "@/lib/repo/calendar";
 import {
   extractAndApplyNote,
   type NoteExtractionOutcome,
@@ -44,6 +46,16 @@ async function indexNote(
   }
 }
 
+async function cleanRemovedCalendarEvents(userId: string, ids: string[]): Promise<void> {
+  try {
+    await syncDeletedFollowUpsToCalendars(userId, ids);
+  } catch (error) {
+    // Calendar cleanup is retried from durable orphaned link receipts by the
+    // successful note sync; an unavailable provider must not lose extraction.
+    logActionError("calendarWriteOut", error);
+  }
+}
+
 export async function processNote(
   job: ExtractionJobRow,
   userId: string,
@@ -52,14 +64,15 @@ export async function processNote(
   if (!job.noteId) throw new Error("This note-extraction job has no note.");
   const noteId = job.noteId;
   // Load phase (DB): stage + read contact/note + clear prior derivations.
-  const { contactName, noteBody } = await withUserDb(userId, async () => {
+  const { contactName, noteBody, removedFollowUpIds } = await withUserDb(userId, async () => {
     await setExtractionJobStage(job.id, "extracting");
     const [detail, note] = await Promise.all([getContact(job.contactId), getNote(noteId)]);
     if (!detail) throw new Error("Contact not found.");
     if (!note) throw new Error("Note not found.");
-    await clearNoteDerivations(note.id); // idempotent re-run on retry
-    return { contactName: detail.contact.name, noteBody: note.body };
+    const removedFollowUpIds = await clearNoteDerivations(note.id); // idempotent re-run on retry
+    return { contactName: detail.contact.name, noteBody: note.body, removedFollowUpIds };
   });
+  await cleanRemovedCalendarEvents(userId, removedFollowUpIds);
   emit({ type: "stage", stage: "extracting" });
   await indexNote(userId, noteId, job.contactId, noteBody);
   // extractAndApplyNote self-scopes its DB phases around the LLM call.
@@ -114,10 +127,11 @@ async function runEnrichment(
     text = findings.text;
     await withUserDb(userId, () => attachExtractionJobNote(job.id, findings.noteId));
   }
-  await withUserDb(userId, async () => {
+  const removedFollowUpIds = await withUserDb(userId, async () => {
     await setExtractionJobStage(job.id, "extracting");
-    await clearNoteDerivations(noteId);
+    return clearNoteDerivations(noteId);
   });
+  await cleanRemovedCalendarEvents(userId, removedFollowUpIds);
   emit({ type: "stage", stage: "extracting" });
   await indexNote(userId, noteId, job.contactId, text);
   // extractAndApplyNote self-scopes its DB phases around the LLM call.

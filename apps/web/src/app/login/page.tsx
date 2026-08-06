@@ -5,8 +5,9 @@ import { enabledSocialProviders } from "@/lib/auth/config/social";
 import { LoginForm } from "@/components/app/LoginForm";
 import { ModeToggle } from "@/components/brand/ModeToggle";
 import { ThreadMark } from "@/components/brand/ThreadMark";
+import { publicPageMetadata } from "@/utils/public-page-metadata";
 
-export const metadata = { title: "Sign in — Dhaga" };
+export const metadata = publicPageMetadata("login");
 
 export default async function LoginPage() {
   if (await getCurrentUser()) redirect("/app");

@@ -7,9 +7,9 @@ export function OpenSource() {
       <div className="mx-auto grid max-w-6xl items-center gap-14 px-6 py-24 lg:grid-cols-2">
         <div>
           <p className="font-mono text-xs uppercase tracking-[0.22em] text-ember">Open source</p>
-          <h2 className="mt-4 max-w-none text-balance font-display text-4xl font-medium sm:text-5xl">
+          <h1 className="mt-4 max-w-none text-balance font-display text-4xl font-medium sm:text-5xl">
             <DecryptedText text="Trust you can read, line by line." />
-          </h2>
+          </h1>
           <ul className="mt-8 space-y-4">
             {OSS_PILLARS.map((pillar) => (
               <li key={pillar.bold} className="flex gap-3 text-sm">

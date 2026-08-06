@@ -91,9 +91,9 @@ export function gatherCandidates(params: {
   mergeSource(map, byOverdueRatio(params.due, todayMs), limit, (item) => item.id, markCadenceDue);
   mergeSource(
     map,
-    dueByEndOfToday(params.followUps, todayMs),
+    dueByEndOfToday(params.followUps, todayMs).filter((item) => item.contactId !== null),
     limit,
-    (item) => item.contactId,
+    (item) => item.contactId!,
     (evidence, item) => {
       evidence.followUp = { action: item.action, dueDate: item.dueDate, createdAt: item.createdAt };
     },

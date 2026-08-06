@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { FACT_TYPES } from "@dhaga/core";
+import { calendarDayToUtcDate, FACT_TYPES, parseCalendarDate } from "@dhaga/core";
 import { mutation, MutationError } from "@/lib/actions/mutation";
 import { scheduleCalendarWriteOut } from "@/lib/calendar/write-out";
 import { getContact } from "@/lib/repo/contacts";
@@ -55,8 +55,9 @@ export async function createFollowUpAction(
   const contactId = String(formData.get("contactId") ?? "");
   const action = String(formData.get("action") ?? "").trim();
   const dueRaw = String(formData.get("dueDate") ?? "").trim();
-  const parsedDue = dueRaw ? new Date(dueRaw) : null;
-  const dueDate = parsedDue && !Number.isNaN(parsedDue.getTime()) ? parsedDue : null;
+  const calendarDay = dueRaw ? parseCalendarDate(dueRaw) : null;
+  const dueDate = calendarDay ? calendarDayToUtcDate(calendarDay) : null;
+  if (dueRaw && !dueDate) return { error: "Choose a valid due date." };
   if (!contactId) return { error: "Missing contact." };
   if (!action) return { error: "Describe the follow-up first." };
   // mutation() pins the getContact read + insert to one tenant-pool connection

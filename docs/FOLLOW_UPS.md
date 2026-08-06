@@ -7,6 +7,23 @@ hardening, and correctness items. Grouped by area.
 
 ## Follow-up calendar, notifications & reminders (2026-07-27)
 
+**Extended 2026-08-06:** `/app/tasks` supports general tasks with optional
+person/company links. Follow-ups and tasks can recur daily, weekly, monthly, or
+yearly and advance one occurrence on completion. Note hints such as “next
+Monday”, “in 10 days”, and “next weekend” resolve through deterministic
+calendar-day maths in the user's time
+zone; the weekend case schedules Saturday immediately and offers Sunday in
+Confirmations. Keep-in-touch now accepts weekday/day/month selectors. Auto
+persists a capacity-aware weekday. An explicit crowded day warns before any
+write; **Save anyway** preserves that choice, while Cancel restores the
+previous schedule. Calendar-aware records avoid 30/365-day approximations; legacy
+cadence-only records retain elapsed-day behavior.
+Deleting or reprocessing a note now removes every follow-up derived from that
+receipt in the same DB transaction. Existing `calendar_event_links` remain as
+durable deletion receipts until a post-commit DB → provider → DB reconciliation
+removes the old external event; provider I/O never runs inside the note
+transaction, and a later note sync retries any orphaned receipt.
+
 Shipped on `feat/followups-calendar` (not an open item — recorded here because it
 resolves part of the hosted email-job fan-out gap below):
 

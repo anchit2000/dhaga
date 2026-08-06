@@ -27,6 +27,17 @@ describe("planCalendarWrites", () => {
     expect(plan.creates[0].event.description).toBe("Send the analytical engine notes");
   });
 
+  it("uses a personal task's action as its calendar title", () => {
+    const task = followUp({
+      contactId: null,
+      contactName: null,
+      companyId: null,
+      companyName: null,
+      action: "Order shop supplies",
+    });
+    expect(planCalendarWrites([task], {}).creates[0].event.title).toBe("Order shop supplies");
+  });
+
   it("UPDATES rather than re-creates when we already hold a link", () => {
     // Without this the calendar gains a second copy of every follow-up on every
     // run — the single failure mode the link store exists to prevent.

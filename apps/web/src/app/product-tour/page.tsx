@@ -25,6 +25,7 @@ export const metadata: Metadata = {
     siteName: "Dhaga",
     url: `${SITE_URL}/product-tour`,
     locale: "en_US",
+    images: ["/opengraph-image.png"],
   },
 };
 

@@ -52,7 +52,7 @@ export function followUpReminderHtml(
       return `<div style="border-left:2px solid #e2a44c;padding:2px 0 2px 12px;margin:0 0 14px;">
         <p style="margin:0;font-size:15px;color:#f3ede2;">
           ${tag}${escapeHtml(item.action)}<span style="color:#a49a8a;"> — ${escapeHtml(
-            item.contactName,
+            item.contactName ?? item.companyName ?? item.associationLabel,
           )}</span>${when}
         </p>
       </div>`;

@@ -1,4 +1,4 @@
-import { hasLLM } from "@dhaga/core";
+import { hasLLM } from "@dhaga/core/src/llm/registry";
 import { QuickAddForm } from "@/components/app/QuickAddForm";
 import { activeEventId } from "@/lib/active-event";
 import {

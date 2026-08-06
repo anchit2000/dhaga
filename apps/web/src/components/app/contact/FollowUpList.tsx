@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { createFollowUpAction } from "@/lib/actions/manual-entries";
+import { createTaskAction } from "@/lib/actions/tasks";
+import { taskInputFromForm } from "@/lib/actions/task-input";
 import type { FollowUpRow } from "@/lib/db/schema";
 import { useOptimisticList } from "@/lib/hooks/useOptimisticList";
 import { AddFollowUpForm } from "./AddFollowUpForm";
@@ -24,24 +25,28 @@ export function FollowUpList({
     errorMessage: "Couldn't add the follow-up — try again.",
   });
 
-  function handleAdd(action: string, dueDate: Date | null): void {
+  function handleAdd(data: FormData): void {
+    data.set("contactId", contactId);
+    const input = taskInputFromForm(data);
+    if (typeof input === "string") return;
     const optimisticFollowUp: FollowUpRow = {
       id: `optimistic-${crypto.randomUUID()}`,
       contactId,
-      action,
+      action: input.action,
       dueHint: null,
-      dueDate,
+      dueDate: input.dueDate,
+      recurrenceFrequency: input.recurrence?.frequency ?? null,
+      recurrenceInterval: input.recurrence?.interval ?? null,
+      recurrenceWeekday: input.recurrence?.weekday ?? null,
+      recurrenceMonthDay: input.recurrence?.monthDay ?? null,
+      recurrenceMonth: input.recurrence?.month ?? null,
       status: "open",
       sourceNoteId: null,
       createdAt: new Date(),
     };
     add(optimisticFollowUp, async () => {
-      const data = new FormData();
-      data.set("contactId", contactId);
-      data.set("action", action);
-      if (dueDate) data.set("dueDate", dueDate.toISOString());
-      const result = await createFollowUpAction({}, data);
-      if (result.error) return result.error;
+      const result = await createTaskAction(data);
+      if (!result.ok) return result.error;
       router.refresh();
       return null;
     });

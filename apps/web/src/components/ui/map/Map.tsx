@@ -37,7 +37,7 @@ export interface MapProps extends Omit<MapOptions, "container" | "style"> {
 function MapLoader(): React.ReactElement {
   return (
     <div className="absolute inset-0 z-10 flex items-center justify-center bg-ink/60 backdrop-blur-xs">
-      <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-amber">Loading map</p>
+      <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-ember">Loading map</p>
     </div>
   );
 }

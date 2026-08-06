@@ -12,6 +12,21 @@ const DATE_FORMAT = new Intl.DateTimeFormat("en-GB", {
   year: "numeric",
 });
 
+const DUE_DATE_FORMAT = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
+const FULL_DUE_DATE_FORMAT = new Intl.DateTimeFormat("en-GB", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
 const WEEKDAY_TIME_FORMAT = new Intl.DateTimeFormat("en-GB", {
   weekday: "short",
   hour: "numeric",
@@ -21,6 +36,15 @@ const WEEKDAY_TIME_FORMAT = new Intl.DateTimeFormat("en-GB", {
 /** "16 Jul 2026" — use instead of `date.toLocaleDateString()` in client components. */
 export function formatDate(date: Date): string {
   return DATE_FORMAT.format(date);
+}
+
+/** Semantic due dates are stored at UTC midnight and must display that UTC day. */
+export function formatDueDate(date: Date): string {
+  return DUE_DATE_FORMAT.format(date);
+}
+
+export function formatFullDueDate(date: Date): string {
+  return FULL_DUE_DATE_FORMAT.format(date);
 }
 
 const DATE_TIME_FORMAT = new Intl.DateTimeFormat("en-GB", {

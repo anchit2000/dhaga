@@ -15,3 +15,4 @@ export {
   toImportantDateEvents,
   unscheduledFollowUps,
 } from "./to-events";
+export { reconcileResolvedFollowUpEvent } from "./resolve-event";

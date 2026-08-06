@@ -1,4 +1,5 @@
-import { bareMethods, profileFromExtracted } from "@dhaga/core";
+import { bareMethods } from "@dhaga/core/src/schemas/contact-fields";
+import { profileFromExtracted } from "@dhaga/core/src/schemas/contact";
 import { rowToRecord } from "./types";
 import type { ImportCandidate } from "./types";
 

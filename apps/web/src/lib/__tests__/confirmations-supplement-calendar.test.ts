@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { emptyExtractedContact, type NoteExtraction } from "@dhaga/core";
 import { createContact } from "@/lib/repo/contacts";
-import { addNote } from "@/lib/repo/notes";
+import { addNote, listOpenFollowUps } from "@/lib/repo/notes";
 import {
   createSupplementConfirmation,
   dismissConfirmation,
@@ -57,7 +57,7 @@ function extractionWithFollowUp(action: string): NoteExtraction {
   return {
     facts: [],
     relationships: [],
-    follow_ups: [{ action, due_hint: "next week" }],
+    follow_ups: [{ action, due_hint: "tomorrow" }],
     tags: [],
   };
 }
@@ -96,6 +96,7 @@ describe("confirming a supplement mirrors its follow-ups to the calendar", () =>
     // ...and that note id is what actually reaches the confirmed follow-up:
     // openFollowUpIdsForNote is the very query the sync uses to expand it.
     expect(await openFollowUpIdsForNote(noteId)).toHaveLength(1);
+    expect((await listOpenFollowUps(contactId))[0]?.dueDate).not.toBeNull();
   });
 
   it("schedules nothing for a confirmation that writes no extraction", async () => {

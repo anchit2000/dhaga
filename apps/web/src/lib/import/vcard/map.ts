@@ -2,7 +2,7 @@
  * Map a parsed vCard (its VProp list) into a rich ContactProfile plus a
  * human receipt. Follows the shared spec's step-6 field mapping exactly.
  */
-import { emptyContactProfile } from "@dhaga/core";
+import { emptyContactProfile } from "@dhaga/core/src/schemas/contact";
 import type { ContactProfile } from "@dhaga/core";
 import type { VProp } from "./tokenize";
 import { resolveLabel, resolvePhoneLabel } from "./labels";

@@ -6,10 +6,17 @@
 export const EXTEND_DDL = `
 CREATE TABLE IF NOT EXISTS follow_ups (
   id text PRIMARY KEY,
-  contact_id text NOT NULL REFERENCES contacts(id),
+  user_id text,
+  contact_id text REFERENCES contacts(id),
+  company_id text REFERENCES companies(id),
   action text NOT NULL,
   due_hint text,
   due_date timestamptz,
+  recurrence_frequency text,
+  recurrence_interval integer,
+  recurrence_weekday integer,
+  recurrence_month_day integer,
+  recurrence_month integer,
   status text NOT NULL DEFAULT 'open',
   source_note_id text REFERENCES notes(id),
   created_at timestamptz NOT NULL DEFAULT now()
@@ -18,6 +25,7 @@ CREATE TABLE IF NOT EXISTS follow_ups (
 -- Additive for pre-existing tables: manual follow-ups store a machine date here
 -- (the date picker); due_hint stays for the LLM's free-text timing prose.
 ALTER TABLE follow_ups ADD COLUMN IF NOT EXISTS due_date timestamptz;
+ALTER TABLE follow_ups ADD COLUMN IF NOT EXISTS user_id text;
 
 -- The person page lists only a contact's OPEN follow-ups, newest-first. Partial
 -- on status keeps the index to the handful of live rows per contact.

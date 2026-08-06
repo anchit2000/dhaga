@@ -86,7 +86,7 @@ describe("createFollowUpAction", () => {
     const due = new Date("2026-08-15T00:00:00.000Z");
     const result = await createFollowUpAction(
       {},
-      form({ contactId, action: "Send the deck", dueDate: due.toISOString() }),
+      form({ contactId, action: "Send the deck", dueDate: "2026-08-15" }),
     );
 
     expect(result.error).toBeUndefined();

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireUserId } from "@/lib/auth/guard";
 import { mutation } from "@/lib/actions/mutation";
 import { extractAndApplyNote } from "@/lib/ai/note-extraction";
+import { scheduleCalendarWriteOut } from "@/lib/calendar/write-out";
 import {
   dismissConfirmation,
   resolveConfirmation,
@@ -57,6 +58,11 @@ export async function resolveConfirmationAction(
       result.noteBody,
     );
     revalidatePath(`/app/people/${result.contactId}`);
+  } else if (result?.kind === "follow_up_date") {
+    const userId = await requireUserId();
+    scheduleCalendarWriteOut(userId, result.followUpId);
+    revalidatePath("/app/calendar");
+    revalidatePath("/app/follow-ups");
   }
 }
 

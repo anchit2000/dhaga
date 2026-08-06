@@ -1,4 +1,4 @@
-import { isEducationPredicate } from "@dhaga/core";
+import { isEducationPredicate } from "@dhaga/core/src/relationships/affiliation";
 import type { Position } from "@dhaga/core";
 
 /**

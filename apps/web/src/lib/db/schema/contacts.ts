@@ -51,6 +51,13 @@ export const contacts = pgTable("contacts", {
   // Keep-in-touch cadence: remind when the last touch is older than this.
   reachOutEveryDays: integer("reach_out_every_days"),
   lastReachedOutAt: timestamp("last_reached_out_at", { withTimezone: true }),
+  // Calendar-aware selectors for the cadence. reachOutEveryDays remains the
+  // backwards-compatible interval/scoring field for existing contacts.
+  reachOutRecurrenceFrequency: text("reach_out_recurrence_frequency"),
+  reachOutRecurrenceInterval: integer("reach_out_recurrence_interval"),
+  reachOutRecurrenceWeekday: integer("reach_out_recurrence_weekday"),
+  reachOutRecurrenceMonthDay: integer("reach_out_recurrence_month_day"),
+  reachOutRecurrenceMonth: integer("reach_out_recurrence_month"),
   // Proactive intelligence (v1.2, BRD §6.7): opt-in per contact, own-graph +
   // web-search only — never automatic mass lookup.
   watchedForSignals: boolean("watched_for_signals").notNull().default(false),
@@ -108,5 +115,14 @@ export const positions = pgTable("positions", {
 
 export type CompanyRow = typeof companies.$inferSelect;
 export type CompanyAliasRow = typeof companyAliases.$inferSelect;
-export type ContactRow = typeof contacts.$inferSelect;
+type ContactSelect = typeof contacts.$inferSelect;
+type ContactScheduleKey =
+  | "reachOutRecurrenceFrequency"
+  | "reachOutRecurrenceInterval"
+  | "reachOutRecurrenceWeekday"
+  | "reachOutRecurrenceMonthDay"
+  | "reachOutRecurrenceMonth";
+/** Optional while callers and stored exports roll forward from day-count-only cadence. */
+export type ContactRow = Omit<ContactSelect, ContactScheduleKey> &
+  Partial<Pick<ContactSelect, ContactScheduleKey>>;
 export type PositionRow = typeof positions.$inferSelect;

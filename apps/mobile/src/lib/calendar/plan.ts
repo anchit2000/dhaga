@@ -47,7 +47,7 @@ export function planCalendarWrites(
   for (const followUp of followUps) {
     seen.add(followUp.id);
     const event = followUpToCalendarEvent({
-      contactName: followUp.contactName,
+      contactName: followUp.contactName ?? followUp.companyName ?? null,
       action: followUp.action,
       dueDate: toDueDate(followUp.dueDate),
       status: followUp.status,

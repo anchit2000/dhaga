@@ -1,3 +1,4 @@
+import { formatCalendarDate } from "@dhaga/core/src/dates";
 import type { RelationshipInput } from "@/lib/repo/relationships";
 import type { GraphTarget } from "@/lib/repo/graph-data";
 
@@ -41,7 +42,7 @@ export function buildFactFormData(contactId: string, text: string, type: string)
   return data;
 }
 
-/** FormData for createFollowUpAction — dueDate as an ISO string (omitted when
+/** FormData for createFollowUpAction — dueDate as YYYY-MM-DD (omitted when
  *  the user left the "when" empty; the action treats absence as an open item). */
 export function buildFollowUpFormData(
   contactId: string,
@@ -51,6 +52,6 @@ export function buildFollowUpFormData(
   const data = new FormData();
   data.set("contactId", contactId);
   data.set("action", action);
-  if (dueDate) data.set("dueDate", dueDate.toISOString());
+  if (dueDate) data.set("dueDate", formatCalendarDate(dueDate));
   return data;
 }

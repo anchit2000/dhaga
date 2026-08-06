@@ -12,6 +12,7 @@ import type { ExternalCalendarEvent } from "@/lib/repo/calendar";
 import {
   isFollowUpEventProps,
   isImportantDateEventProps,
+  reconcileResolvedFollowUpEvent,
   toCalendarEvents,
   toExternalCalendarEvents,
   toImportantDateEvents,
@@ -33,20 +34,16 @@ const HEADER_TOOLBAR = {
 } as const;
 
 /**
- * Full-screen follow-up calendar. Renders client-only (useCalendarInitialView is
- * null until mounted, so FullCalendar never touches `window` during SSR). Drag a
- * dated event or a tray chip onto the grid to reschedule it (useReschedule owns
+ * Full-screen follow-up calendar. FullCalendar mounts client-only. Drag a dated
+ * event or a tray chip onto the grid to reschedule it (useReschedule owns
  * both paths and the tray's live list). Clicking opens the details dialog. The
  * events array is a stable useMemo so imperative changes (event.remove(),
  * received events) are never clobbered by a React re-render.
- *
  * `externalEvents` are read-only context from a CONNECTED calendar, merged onto
  * the same grid: they cannot be dragged (editable:false per event, plus the
  * guard in useReschedule) and clicking one opens nothing, because Dhaga owns no
- * record to act on. `importantDates` are recurring birthday/anniversary
- * occurrences DERIVED from contacts — read-only for the same reason, but a click
- * opens the contact, which is where they are actually edited. The caption under
- * the grid says both things in the UI.
+ * record. `importantDates` are recurring birthday/anniversary occurrences DERIVED
+ * from contacts — also read-only, but a click opens the contact for editing.
  */
 export function CalendarBoard({
   items,
@@ -71,8 +68,8 @@ export function CalendarBoard({
   const [selected, setSelected] = useState<SelectedFollowUp | null>(null);
   const initialView = useCalendarInitialView();
 
-  function removeEvent(id: string): void {
-    calendarRef.current?.getApi().getEventById(id)?.remove();
+  function resolveEvent(id: string, advancedTo: string | null): void {
+    reconcileResolvedFollowUpEvent(calendarRef.current?.getApi().getEventById(id) ?? null, advancedTo);
   }
 
   function handleEventClick(arg: EventClickArg): void {
@@ -91,8 +88,11 @@ export function CalendarBoard({
       id: arg.event.id,
       contactId: props.contactId,
       contactName: props.contactName,
+      companyId: props.companyId,
+      companyName: props.companyName,
+      associationLabel: props.associationLabel,
       action: props.action,
-      dueDate: arg.event.startStr || null,
+      dueDate: props.dueDate,
     });
   }
 
@@ -143,7 +143,7 @@ export function CalendarBoard({
         onOpenChange={(open) => {
           if (!open) setSelected(null);
         }}
-        onResolved={removeEvent}
+        onResolved={resolveEvent}
       />
     </div>
   );

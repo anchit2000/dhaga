@@ -14,30 +14,24 @@ import { createContact } from "../contacts";
 import { upsertEmbedding } from "../embeddings";
 import { addNote, verifyFact } from "../notes";
 import { applyExtraction } from "../graph/apply-extraction";
+import { userToday } from "../reminders/local-today";
+import { applyFollowUpDate } from "./apply-follow-up-date";
 
-/** A note_subject resolution: attach to an EXISTING contact, or CREATE a new
- *  one from the name the user typed (prefilled from the classifier), then
- *  attach. Both thread through applyNoteSubject to the same addNote pipeline. */
 export type NoteSubjectChoice =
   | { contactId: string }
   | { createName: string };
 
-/** The user's selection at resolve time. entity_link needs a target (which
- *  candidate, or "create new"); subject_resolution needs the chosen subject;
- *  note_subject needs the person to attach the note to (existing or new).
- *  enrichment_match / supplement carry everything in their payload already. */
 export type ConfirmationChoice =
   | { target: EdgeSuggestionTarget }
   | { subjectContactId: string }
-  | { noteSubject: NoteSubjectChoice };
+  | { noteSubject: NoteSubjectChoice }
+  | { followUpDate: string };
 
-/** What the resolver wrote, so callers can revalidate the right pages. `note`
- *  reports the attached-to contact and the freshly minted note so the action
- *  can run fact extraction OUTSIDE the resolve's DB scope (never over an LLM). */
 export type ConfirmationResult =
   | { kind: "edge"; dstType: string; dstId: string }
   | { kind: "fact"; factId: string }
   | { kind: "extraction"; contactId: string }
+  | { kind: "follow_up_date"; followUpId: string }
   | { kind: "note"; contactId: string; noteId: string; contactName: string; noteBody: string };
 
 async function applyEntityLink(
@@ -83,14 +77,6 @@ async function applySubjectResolution(
   return { kind: "edge", dstType: payload.apply.dstType, dstId: payload.apply.dstId };
 }
 
-/**
- * Attach the pending note to the chosen person — an existing contact, or a new
- * one created from the typed name (a REAL contact, not a "mentioned" stub, so
- * downstream fact extraction runs on it). Mints the note + its embedding here
- * (DB only, inside the resolve scope); the LLM fact-extraction is handled by the
- * caller AFTER this scope releases (see resolveConfirmationAction) so no tenant
- * connection is ever held across the model call — mirrors attachCapturedNoteAction.
- */
 async function applyNoteSubject(
   payload: NoteSubjectPayload,
   choice: ConfirmationChoice | undefined,
@@ -136,6 +122,11 @@ export async function applyConfirmation(
       return applySubjectResolution(payload, sourceNoteId, choice);
     case "note_subject":
       return applyNoteSubject(payload, choice);
+    case "follow_up_date":
+      return applyFollowUpDate(
+        payload,
+        choice && "followUpDate" in choice ? choice : undefined,
+      );
     case "enrichment_match":
       await verifyFact(payload.apply.factId);
       return { kind: "fact", factId: payload.apply.factId };
@@ -143,7 +134,10 @@ export async function applyConfirmation(
       if (!sourceNoteId) {
         throw new Error("supplement confirmation needs a source note receipt");
       }
-      await applyExtraction(payload.apply.contactId, sourceNoteId, payload.apply.extraction);
+      const today = await userToday();
+      await applyExtraction(payload.apply.contactId, sourceNoteId, payload.apply.extraction, {
+        today,
+      });
       // A confirmed supplement writes follow-ups through exactly the same
       // applyExtraction the capture path uses, so they have to reach a
       // write-enabled calendar the same way (lib/ai/note-extraction schedules

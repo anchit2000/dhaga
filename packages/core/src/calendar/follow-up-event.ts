@@ -19,7 +19,7 @@ const DAY_MS = 86_400_000;
 
 /** The follow-up fields the mapping needs — a structural subset of the DB row. */
 export interface FollowUpForCalendar {
-  contactName: string;
+  contactName: string | null;
   action: string;
   dueDate: Date | null;
   status: string;
@@ -39,7 +39,7 @@ export function followUpToCalendarEvent(
   if (!action) return null;
   const start = followUp.dueDate;
   return {
-    title: `Follow up: ${followUp.contactName}`.trim(),
+    title: followUp.contactName ? `Follow up: ${followUp.contactName}` : action,
     start,
     // All-day, one day long. Providers render the exclusive end date the same
     // way the in-app calendar pins a due date: from the UTC date part.

@@ -105,6 +105,13 @@ export function withScopedDb<T>(db: DhagaDb, userId: string, work: () => Promise
   return explicitDb.run({ db, userId }, work);
 }
 
+/** Make repo getDb() calls join a caller-owned transaction. The current tenant
+ * identity is preserved when present; tests/self-host need no synthetic user. */
+export function withTransactionDb<T>(db: DhagaDb, work: () => Promise<T>): Promise<T> {
+  const scope = explicitDb.getStore();
+  return explicitDb.run({ db, userId: scope?.userId ?? "" }, work);
+}
+
 /** Runs cacheable work with an explicit tenant instead of reading request APIs.
  *  The work runs inside ONE tenant transaction (scoped.run) whose transaction-
  *  local GUC self-clears at COMMIT — so the same code is correct on the session

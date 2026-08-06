@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatDate, formatWeekdayTime } from "@/utils/format-date";
+import { formatDate, formatDueDate, formatFullDueDate, formatWeekdayTime } from "@/utils/format-date";
 
 /**
  * Client components render once on the server (server's locale) and once
@@ -30,5 +30,19 @@ describe("formatWeekdayTime", () => {
     const hh = String(date.getHours()).padStart(2, "0");
     const mm = String(date.getMinutes()).padStart(2, "0");
     expect(formatWeekdayTime(date)).toBe(`${weekday} ${hh}:${mm}`);
+  });
+});
+
+describe.each(["Asia/Kolkata", "America/Los_Angeles"])("due dates in %s", (timeZone) => {
+  it("renders the stored calendar day without a timezone shift", () => {
+    const original = process.env.TZ;
+    process.env.TZ = timeZone;
+    try {
+      const due = new Date("2026-08-01T00:00:00.000Z");
+      expect(formatDueDate(due)).toBe("1 Aug 2026");
+      expect(formatFullDueDate(due)).toBe("Saturday, 1 August 2026");
+    } finally {
+      process.env.TZ = original;
+    }
   });
 });

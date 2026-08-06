@@ -2,6 +2,7 @@ import { and, eq, inArray, or, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import {
   contacts,
+  confirmations,
   edges,
   edgeSuggestions,
   facts,
@@ -99,6 +100,7 @@ export async function cascadeForget(tx: DhagaDb, id: string): Promise<void> {
     await tx.select({ id: notes.id }).from(notes).where(eq(notes.contactId, id))
   ).map((row) => row.id);
   if (noteIds.length > 0) {
+    await tx.delete(confirmations).where(inArray(confirmations.sourceNoteId, noteIds));
     await tx.delete(edges).where(inArray(edges.sourceNoteId, noteIds));
     await tx.delete(facts).where(inArray(facts.sourceNoteId, noteIds));
     await tx.delete(edgeSuggestions).where(inArray(edgeSuggestions.sourceNoteId, noteIds));
@@ -118,7 +120,10 @@ export async function cascadeForget(tx: DhagaDb, id: string): Promise<void> {
       ),
     );
   await tx.delete(facts).where(eq(facts.contactId, id));
-  await tx.delete(followUps).where(eq(followUps.contactId, id));
+  // Source-note rows owned by this contact were removed above with their
+  // receipts. User-authored tasks survive forgetting the association.
+  await tx.update(followUps).set({ contactId: null }).where(eq(followUps.contactId, id));
+  await tx.delete(confirmations).where(eq(confirmations.contactId, id));
   // Pending relationship suggestions naming this contact as their source —
   // src_contact_id is a NOT NULL RESTRICT FK to contacts.id, so any that
   // survive (e.g. suggestions raised from another contact's note) would

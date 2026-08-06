@@ -24,4 +24,8 @@ export {
   type FreeBusySnapshot,
 } from "./free-busy-snapshot";
 export { getExternalCalendarEvents, type ExternalCalendarEvent } from "./events";
-export { syncFollowUpToCalendars, syncNoteFollowUpsToCalendars } from "./write-out";
+export {
+  syncDeletedFollowUpsToCalendars,
+  syncFollowUpToCalendars,
+  syncNoteFollowUpsToCalendars,
+} from "./write-out";

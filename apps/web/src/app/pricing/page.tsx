@@ -27,6 +27,7 @@ export const metadata: Metadata = {
     siteName: "Dhaga",
     url: `${SITE_URL}/pricing`,
     locale: "en_US",
+    images: ["/opengraph-image.png"],
   },
   twitter: {
     card: "summary_large_image",

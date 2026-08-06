@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { and, eq, inArray } from "drizzle-orm";
 import { connectionCapabilities, followUpToCalendarEvent } from "@dhaga/core";
 import { getDb } from "@/lib/db/request-scope";
-import { calendarConnections, calendarEventLinks, contacts, followUps } from "@/lib/db/schema";
+import { calendarConnections, calendarEventLinks, companies, contacts, followUps } from "@/lib/db/schema";
 import { decryptToken, encryptOptionalToken, encryptToken } from "@/lib/crypto/tokens";
 import { providerFor } from "../access";
 import type { WriteOutcome, WritePlan, WriteTarget } from "./types";
@@ -24,13 +24,13 @@ export async function loadWritePlan(followUpId: string): Promise<WritePlan> {
       dueDate: followUps.dueDate,
       status: followUps.status,
       contactName: contacts.name,
+      companyName: companies.name,
     })
     .from(followUps)
-    .innerJoin(contacts, eq(contacts.id, followUps.contactId))
+    .leftJoin(contacts, eq(contacts.id, followUps.contactId))
+    .leftJoin(companies, eq(companies.id, followUps.companyId))
     .where(eq(followUps.id, followUpId))
     .limit(1);
-  if (!followUp) return EMPTY_PLAN;
-
   const rows = await db
     .select()
     .from(calendarConnections)
@@ -64,7 +64,16 @@ export async function loadWritePlan(followUpId: string): Promise<WritePlan> {
       externalEventId: link?.externalEventId ?? null,
     };
   });
-  return { followUpId, event: followUpToCalendarEvent(followUp), targets };
+  return {
+    followUpId,
+    event: followUp
+      ? followUpToCalendarEvent({
+          ...followUp,
+          contactName: followUp.contactName ?? followUp.companyName,
+        })
+      : null,
+    targets,
+  };
 }
 
 /**

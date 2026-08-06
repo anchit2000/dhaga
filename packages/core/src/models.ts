@@ -88,6 +88,12 @@ export {
   type MergeConflict,
 } from "./schemas/merge";
 export {
+  followUpDatePayloadSchema,
+  updateFollowUpDateApplySchema,
+  type FollowUpDatePayload,
+  type UpdateFollowUpDateApply,
+} from "./schemas/confirmation-date";
+export {
   CONFIRMATION_TYPES,
   confirmationOptionSchema,
   insertEdgeApplySchema,

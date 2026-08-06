@@ -26,7 +26,7 @@ export function UnscheduledTray({ items }: { items: CalendarFollowUp[] }) {
       longPressDelay: 200,
       eventData: (chip) => ({
         id: chip.getAttribute("data-followup-id") ?? "",
-        title: chip.getAttribute("data-followup-title") ?? "",
+        title: chip.getAttribute("data-followup-title") ?? "Task",
         create: true,
       }),
     });
@@ -53,11 +53,11 @@ export function UnscheduledTray({ items }: { items: CalendarFollowUp[] }) {
             <div
               key={item.id}
               data-followup-id={item.id}
-              data-followup-title={item.contactName}
+              data-followup-title={item.associationLabel}
               title={item.action}
               className="flex min-h-[44px] shrink-0 cursor-grab select-none flex-col justify-center rounded-xl border border-seam bg-panel px-3 py-2 transition-colors hover:border-amber/40 active:cursor-grabbing"
             >
-              <span className="text-sm font-medium text-paper">{item.contactName}</span>
+              <span className="text-sm font-medium text-paper">{item.associationLabel}</span>
               <span className="max-w-[12rem] truncate text-xs text-fog">{item.action}</span>
             </div>
           ))}

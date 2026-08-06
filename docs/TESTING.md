@@ -107,15 +107,10 @@ once-a-day job fits the Hobby tier as-is. Vercel notes it may run the job at
 any point within the scheduled hour, not the exact minute. The route always
 401s unless `CRON_SECRET` is set (fails closed by design — see §7j).
 
-**Resetting to blank on this path:** unlike local PGlite, there's no folder
-to delete — start a fresh Supabase project. On a throwaway project you could
-instead `TRUNCATE` the app's tables from the SQL editor (`contacts`, `notes`,
-`facts`, `edges`, `events`, `embeddings`, etc. — see
-`apps/web/src/lib/db/ddl/core.ts` for the full list; the `user`/`session`/
-`account` auth tables are separate and truncating them signs everyone out).
-**Never against Dhaga's own Supabase instance**, which holds data that cannot
-be recreated — nothing deletes from it (see CLAUDE.md). For a disposable graph
-use local PGlite (§1b) or the local Docker Postgres.
+**Need a blank database?** Use local PGlite (§1b), local Docker Postgres, or a
+brand-new disposable Supabase project. Never run destructive SQL, reset, delete,
+or recreate commands against Dhaga's shared Supabase instance; it contains data
+that cannot be recreated (see `CLAUDE.md`).
 
 ### 1b. Local dev — fastest loop for the core product only
 
@@ -1172,6 +1167,34 @@ in them as genuinely unrun rather than "probably fine".
 
 ---
 
+### 7z. Tasks, recurrence, date confirmations, and recovery states
+
+- [ ] Open `/app/tasks`; create an undated task with no associations, then one
+      linked only to a company. Confirm both save without a placeholder person.
+- [ ] Create daily and weekly recurring tasks, mark each done once, and confirm
+      the same row advances exactly one occurrence and appears on `/app/calendar`.
+- [ ] Add a person follow-up with daily/weekly/monthly/yearly recurrence; verify
+      its cadence controls and completion behavior match Tasks.
+- [ ] Add a note containing “reach out next weekend”. Confirm Saturday appears
+      on Calendar before review, then exercise Keep Saturday and Move to Sunday
+      from `/app/confirmations`.
+- [ ] On a person's Keep in touch card, verify weekly/fortnightly weekday,
+      monthly/quarterly day, and twice-yearly/yearly month/day controls. Auto must
+      survive refresh; an explicit over-capacity weekday must remain unsaved
+      until **Save anyway**, then persist without silently changing days.
+- [ ] Visit unknown public and `/app` URLs in light/dark at 375px and desktop.
+      Confirm branded recovery actions, reduced-motion behavior, and no layout
+      shift in the new route loading states.
+- [ ] On the same preview deployment, inspect `/app/map` and the URL in
+      `MAPLIBRE_WORKER_URL`. The app response must carry
+      `Cross-Origin-Opener-Policy: same-origin` and
+      `Cross-Origin-Embedder-Policy: credentialless`; the worker must be 200
+      JavaScript with `Cross-Origin-Embedder-Policy: credentialless` too.
+- [ ] Open `/app/map` in Chrome with DevTools recording. Confirm the MapLibre
+      worker completes without `ERR_BLOCKED_BY_RESPONSE` or
+      `coep-frame-resource-needs-coep-header`, the loading veil clears, the
+      canvas and attribution render, and no new console error is emitted.
+
 ## 8. What works with zero API keys vs. what needs one
 
 Confirmed via `hasLLM()` (`packages/core/src/llm/index.ts:46-48`, `Boolean(
@@ -1227,21 +1250,18 @@ load. There is no coded cap on contact count anywhere (checked
 AI-action cap, not row count), so the practical ceiling is UI render
 performance, not storage.
 
-**`apps/web/scripts/seed-dummy-graph.mjs`** seeds (or removes) exactly one
-synthetic, RLS-scoped account to test this without touching real data:
+**`apps/web/scripts/seed-dummy-graph.mjs`** can add one synthetic, RLS-scoped
+account on a disposable local database. Do not run it against `.env.vercel` or
+any Supabase URL:
 
 ```bash
 cd apps/web
-node --env-file=.env.vercel scripts/seed-dummy-graph.mjs create --contacts=1000
-node --env-file=.env.vercel scripts/seed-dummy-graph.mjs recreate --contacts=200   # or any other size
-node --env-file=.env.vercel scripts/seed-dummy-graph.mjs delete                    # tear down when done
-# equivalently: npm run seed:dummy-graph -- <create|delete|recreate> [--contacts=N]
+node scripts/seed-dummy-graph.mjs create --contacts=1000
 ```
 
-Swap `--env-file=.env.vercel` for whichever env file points `DATABASE_URL`
-at the Postgres you want to load — this needs real Postgres (hosted mode's
-RLS), the same constraint as §3; it does nothing useful against embedded
-PGlite.
+If the script needs real Postgres/RLS behavior, point it only at the disposable
+local Docker database. The shared Supabase instance is additive/read-only for
+testing: never use the script's delete or recreate modes there.
 
 What it does: creates one `user` row + a `credential` account (via
 `better-auth/crypto`'s `hashPassword`, so the account logs in through the
@@ -1252,9 +1272,8 @@ transaction — inserts N contacts, N/15 companies, and N/3 relationship
 edges, all tagged `user_id = dummy-loadtest-user`. Because
 `packages/ee`'s `tenant_isolation` RLS policy (`packages/ee/src/db/
 rls-ddl.ts`) scopes every read/write/delete by that session variable,
-`delete`/`recreate` can only ever see and remove this one account's rows —
-it cannot read or touch any other tenant's data, however large this
-account's own row count gets.
+RLS scopes the generated rows, but that is not permission to delete them from a
+shared instance; use disposable local storage for teardown experiments.
 
 - [ ] **Confirmed by a live run (2026-07-12):** ran `create --contacts=1000`
       against the deployed Vercel project's Supabase — created 67
@@ -1263,10 +1282,9 @@ account's own row count gets.
       `apps/web/src/lib/repo/graph-data.ts:58-69` — so `/app/graph` renders
       roughly 2,000+ nodes/edges total for this account). Log in as that
       account and open `/app/graph` and `/app/people` to feel where render
-      time and pan/zoom actually degrade — re-run `recreate` at other sizes
+      time and pan/zoom actually degrade — use fresh disposable local databases at other sizes
       to bracket it. **Not yet done:** nobody has recorded the actual
       degradation threshold from a live run — this section only confirms
       the seeding step works, not a measured performance number.
-- [ ] Run `delete` when finished — leaving the dummy account in a shared
-      Supabase project is harmless (it's fully isolated by RLS) but there's
-      no reason to keep it around once you have your numbers.
+- [ ] Discard the disposable local database when finished. Do not delete rows
+      from the shared Supabase instance.

@@ -67,20 +67,25 @@ export async function getNote(noteId: string): Promise<NoteRow | null> {
  * a second copy of every fact. Hard delete (not tombstone) — these rows are
  * being regenerated from the same note, so there's no receipt to preserve.
  */
-export async function clearNoteDerivations(noteId: string): Promise<void> {
+export async function clearNoteDerivations(noteId: string): Promise<string[]> {
   const db = await getDb();
-  await db.transaction(async (tx) => {
+  return db.transaction(async (tx) => {
     const factRows = await tx
       .select({ id: facts.id })
       .from(facts)
       .where(eq(facts.sourceNoteId, noteId));
+    const followUpRows = await tx
+      .select({ id: followUps.id })
+      .from(followUps)
+      .where(eq(followUps.sourceNoteId, noteId));
     await tx.delete(facts).where(eq(facts.sourceNoteId, noteId));
     await tx.delete(edges).where(eq(edges.sourceNoteId, noteId));
     await tx.delete(edgeSuggestions).where(eq(edgeSuggestions.sourceNoteId, noteId));
-    await tx.delete(confirmations).where(and(eq(confirmations.sourceNoteId, noteId), eq(confirmations.status, "pending")));
+    await tx.delete(confirmations).where(eq(confirmations.sourceNoteId, noteId));
     await tx.delete(followUps).where(eq(followUps.sourceNoteId, noteId));
     await deleteNotePositions(tx, noteId);
     for (const row of factRows) await deleteEmbedding("fact", row.id, tx);
+    return followUpRows.map((row) => row.id);
   });
 }
 
@@ -99,22 +104,28 @@ export async function clearNoteDerivations(noteId: string): Promise<void> {
  * embeddings survive, so deleted content stays verbatim-searchable forever
  * with no reconciliation job to catch the drift. All-or-nothing closes that.
  */
-export async function deleteNote(noteId: string): Promise<void> {
+export async function deleteNote(noteId: string): Promise<string[]> {
   const db = await getDb();
   const now = new Date();
-  await db.transaction(async (tx) => {
+  return db.transaction(async (tx) => {
+    const followUpRows = await tx
+      .select({ id: followUps.id })
+      .from(followUps)
+      .where(eq(followUps.sourceNoteId, noteId));
     await tx.update(notes).set({ deletedAt: now }).where(eq(notes.id, noteId));
     await tx.update(facts).set({ deletedAt: now }).where(eq(facts.sourceNoteId, noteId));
     await tx.update(edges).set({ deletedAt: now }).where(eq(edges.sourceNoteId, noteId));
     // Suggestions/confirmations are pending workflow items, not receipts — a
     // deleted note's "confirm this" prompts are moot, so drop them outright.
     await tx.delete(edgeSuggestions).where(eq(edgeSuggestions.sourceNoteId, noteId));
-    await tx.delete(confirmations).where(and(eq(confirmations.sourceNoteId, noteId), eq(confirmations.status, "pending")));
+    await tx.delete(confirmations).where(eq(confirmations.sourceNoteId, noteId));
+    await tx.delete(followUps).where(eq(followUps.sourceNoteId, noteId));
     // Jobs/degrees this note derived. Positions carry no deleted_at, so these
     // are hard deleted rather than tombstoned — and only rows with THIS note as
     // their receipt: a user-entered job is never touched (deleteNotePositions).
     await deleteNotePositions(tx, noteId);
     await deleteCardImagesByNote(noteId, tx);
     await deleteEmbeddingsForNote(noteId, tx);
+    return followUpRows.map((row) => row.id);
   });
 }

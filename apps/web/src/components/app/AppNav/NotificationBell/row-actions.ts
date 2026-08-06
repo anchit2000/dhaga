@@ -1,4 +1,5 @@
 import type { FeedItem } from "./feed";
+import { companyFilteredHref } from "@/utils/company-href";
 
 /**
  * The ONE place a feed item's ids become action arguments. Each field is
@@ -9,7 +10,7 @@ import type { FeedItem } from "./feed";
 export interface FeedRowActions {
   href: string | null;
   /** Follow-ups only: the ids completeFollowUpAction requires. */
-  complete: { followUpId: string; contactId: string } | null;
+  complete: { followUpId: string; contactId: string | null; expectedDueDate: string | null } | null;
   /** Persisted notifications only: the id read/dismiss take. */
   notificationId: string | null;
 }
@@ -18,8 +19,14 @@ export function rowActions(item: FeedItem): FeedRowActions {
   switch (item.kind) {
     case "follow-up":
       return {
-        href: `/app/people/${item.contactId}`,
-        complete: { followUpId: item.id, contactId: item.contactId },
+        href: item.contactId ? `/app/people/${item.contactId}`
+          : item.companyId && item.companyName
+            ? companyFilteredHref(item.companyName) : "/app/tasks",
+        complete: {
+          followUpId: item.id,
+          contactId: item.contactId,
+          expectedDueDate: item.dueDate,
+        },
         notificationId: null,
       };
     case "important-date":

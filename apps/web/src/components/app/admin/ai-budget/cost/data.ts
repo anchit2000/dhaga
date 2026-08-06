@@ -1,5 +1,5 @@
 // Dhaga Cloud only — see packages/ee/LICENSE.
-import { creditsForAiAction } from "@dhaga/core";
+import { creditsForAiAction } from "@dhaga/core/src/metering/credits";
 import { aiCeilingContextFor, aiSpendThisMonthByUser, type AiSpendByUserRow } from "@dhaga/ee/admin";
 import { ceilingForPlanRevenue } from "@/lib/ai/metering";
 import { costOfAiAction } from "@/lib/ai/cost";

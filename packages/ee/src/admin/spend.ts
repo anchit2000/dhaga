@@ -100,6 +100,11 @@ interface RawContextRow {
  * `getSubscription` + an override read would be two round-trips per user
  * against a three-connection pool, which is the exact shape that has exhausted
  * it before (docs/SCALING.md).
+ *
+ * `sql.param` on the id list is load-bearing: a bare `${userIds}` is expanded by
+ * drizzle into a parenthesised `(a, b, c)` value list, so `any(...)` received
+ * `any(($2))` and Postgres tried to read the single id as an array literal
+ * ("malformed array literal", 22P02). One bound param + an explicit cast.
  */
 export async function aiCeilingContextFor(
   userIds: string[],
@@ -113,7 +118,7 @@ export async function aiCeilingContextFor(
       from "user" u
       left join subscriptions s on s.user_id = u.id
       left join settings st on st.user_id = u.id and st.key = ${dollarOverrideKey}
-      where u.id = any(${userIds})
+      where u.id = any(${sql.param(userIds)}::text[])
     `);
     return (result.rows as unknown as RawContextRow[]).map((row) => {
       const override = row.dollar_override === null ? NaN : Number(row.dollar_override);

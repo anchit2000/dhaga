@@ -17,6 +17,8 @@ export function followUp(id: string, dueDate: string, overdue: boolean): Calenda
     action: "Send the deck",
     dueDate,
     dueHint: null,
+    // The bell only ever previews OPEN follow-ups.
+    status: "open",
     overdue,
   };
 }

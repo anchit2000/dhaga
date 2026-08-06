@@ -19,6 +19,8 @@ export type FollowUpEventProps = {
   action: string;
   dueDate: string;
   dueHint: string | null;
+  /** Done rows ride the grid as history: read-only, never "Mark done" again. */
+  status: "open" | "done";
   overdue: boolean;
 };
 

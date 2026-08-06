@@ -58,12 +58,12 @@ describe("cardReceiptText", () => {
     const receipt = cardReceiptText({
       ...scanned,
       phones: [
-        { value: "7507626215", label: "Society office" },
-        { value: "9764648750", label: "MNGL (Navnath)" },
+        { value: "9999900102", label: "Society office" },
+        { value: "9999900103", label: "MNGL (Ravi)" },
       ],
     });
-    expect(receipt).toContain("Society office – 7507626215");
-    expect(receipt).toContain("MNGL (Navnath) – 9764648750");
+    expect(receipt).toContain("Society office – 9999900102");
+    expect(receipt).toContain("MNGL (Ravi) – 9999900103");
   });
 
   it("prints an unlabeled method as the bare value, with no orphan separator", () => {

@@ -15,7 +15,7 @@ Rules:
 - "name" is the person's full name, not a company name. When the text gives an organisation's details and names no individual (a noticeboard, an office directory, a society circular), leave "name" empty and put the organisation in "company" — do not invent a person.
 - Put job titles in "title" and organisations in "company" — when a line is ambiguous, prefer the interpretation consistent with the rest of the text.
 - Include every email, phone number, and URL found.
-- For each email and phone, set "label" to whoever or whatever the text says it belongs to, copied from beside it — a role ("admin", "secretary"), a desk ("Society office"), a service and person ("MNGL (Navnath)"), or a kind ("Work", "Mobile"). Use null only when the text really gives no such hint; never guess a label from the value itself.`;
+- For each email and phone, set "label" to whoever or whatever the text says it belongs to, copied from beside it — a role ("admin", "secretary"), a desk ("Society office"), a service and person ("MNGL (Ravi)"), or a kind ("Work", "Mobile"). Use null only when the text really gives no such hint; never guess a label from the value itself.`;
 
 export function buildContactParsePrompt(rawText: string, today?: CalendarDay): string {
   return `${todayLine(today)}\n\nCaptured text:\n"""\n${rawText}\n"""`;
@@ -40,5 +40,5 @@ You are ALSO deciding whether this capture is a NOTE ABOUT A PERSON rather than 
 
 You are ALSO deciding whether the text is an INSTRUCTION to you rather than something to store:
 - Set "isInstruction" true when the text tells you what to do with the capture — "create a new contact", "save this under Acme", "add these details", "file this one under work" — instead of recording an observation or listing details.
-- An instruction usually names its subject ("R10 Universe Society contact details, create a new contact"). Extract that name into "name" or "company" exactly as the rules above require; it is what the thing being created should be called.
+- An instruction usually names its subject ("Maple Court Society contact details, create a new contact"). Extract that name into "name" or "company" exactly as the rules above require; it is what the thing being created should be called.
 - Set isInstruction false for anything that carries information worth keeping, even when phrased as a command to yourself ("call Priya on Tuesday" is a note, not an instruction to you). When in doubt, false — storing a stray line costs the user nothing, dropping a real note costs them the note.`;

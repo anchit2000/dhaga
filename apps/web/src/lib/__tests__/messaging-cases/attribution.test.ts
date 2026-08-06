@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { registerMessagingProvider } from "@dhaga/core/src/messaging";
-import { batchFullReply, MESSAGING_MAX_OPEN_ITEMS } from "@/utils/constants/messaging";
-import { contact, contactNames, fakeClient, fakeProvider, resetStore, store } from "./harness";
+import { UNNAMED_CONTACT_NAME, createdPersonLine } from "@/utils/constants/messaging";
+import { contactNames, outcomeFor, resetStore, store } from "./harness";
+import { fakeProvider } from "./provider";
+import { person, plan } from "./plans";
 
 vi.mock("@/lib/db/request-scope", async () => (await import("./mocks")).requestScopeMock());
 vi.mock("next/server", async () => (await import("./mocks")).afterMock());
@@ -10,143 +12,134 @@ vi.mock("@/lib/repo/confirmations", async () => (await import("./mocks")).confir
 vi.mock("@/lib/repo/contacts", async () => (await import("./mocks")).contactsMock());
 vi.mock("@/lib/repo/notes", async () => (await import("./mocks")).notesMock());
 vi.mock("@/lib/repo/embeddings", async () => (await import("./mocks")).embeddingsMock());
+vi.mock("@/lib/repo/card-images", async () => (await import("./mocks")).cardImagesMock());
+vi.mock("@/lib/repo/settings", async () => (await import("./mocks")).settingsMock());
+vi.mock("@/lib/repo/edge-suggestions", async () => (await import("./mocks")).aiMock().edges);
 vi.mock("@/lib/ai/note-extraction", async () => (await import("./mocks")).noteExtractionMock());
-vi.mock("@/lib/ai/contact-extraction", async () => (await import("./mocks")).contactExtractionMock());
+vi.mock("@/lib/ai/batch-plan", async () => (await import("./mocks")).batchPlanMock());
 vi.mock("@/lib/ai/card-scan", async () => (await import("./mocks")).aiMock().cardScan);
 vi.mock("@/lib/ai/photo-note", async () => (await import("./mocks")).aiMock().photoNote);
 vi.mock("@/lib/ai/metering", async () => (await import("./mocks")).aiMock().metering);
-vi.mock("@/lib/repo/edge-suggestions", async () => (await import("./mocks")).aiMock().edges);
 vi.mock("@/app/api/telegram/route", async () => (await import("./mocks")).aiMock().owner);
 
-const { handleInboundMessage, processMessagingSession } = await import("@/lib/messaging");
+const { processMessagingSession } = await import("@/lib/messaging");
 const { itemRow } = await import("./mocks");
 
 /**
  * WHO A NOTE BELONGS TO — the decision a 24h capture window makes constantly and
  * the one nobody but the sender can check.
  *
- * A batch spanning a day can cover a dozen people. The rules encoded here: a
- * note that NAMES someone is routed on its own merits no matter whose card came
- * first; a note that names nobody falls back to the running contact but is
- * declared as an ASSUMPTION in the summary; and the batch refuses to grow past
- * the configured cap rather than quietly accumulating notes it will have to
- * guess about.
+ * This file exists because of a REPORTED BUG. The old walk read each message on
+ * its own with a "current contact" cursor carried between them; a first message
+ * that raised an ambiguity left the cursor unset, and the next message ("Create
+ * a new contact") arrived unable to know the first existed. It created a contact
+ * literally named "Unnamed contact" while the user's real note sat stranded in a
+ * confirmation the UI could not display.
+ *
+ * The rules encoded here: the batch is planned as a WHOLE, so a later message is
+ * read beside the one it refers to; a full name that merely shares a first name
+ * with existing contacts is a NEW person, not an ambiguity; and an id the
+ * planner was never shown is refused outright, because filing a stranger's notes
+ * onto a real contact is the worst outcome this flow has.
  */
-const VCARD = "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Ada Lovelace\r\nEND:VCARD";
+const BIO =
+  "https://linkedin.com/in/priyaraman — Priya Raman is the founder of Lumen Labs. Introduced to me by Neha Kulkarni.";
 
-function namesNobody() {
-  return { contact: contact("Nobody"), isNoteAboutPerson: false, subjectName: "", noteBody: "" };
-}
-
-function namesPerson(name: string, body: string) {
-  return { contact: contact(name), isNoteAboutPerson: true, subjectName: name, noteBody: body };
-}
+/** First-name collisions, all unrelated to Priya Raman. */
+const OTHER_PRIYAS = [
+  { id: "c1", name: "Priya Nair", title: "Northwind Retail" },
+  { id: "c2", name: "Priya Ma'am", title: null },
+  { id: "c3", name: "Priya Venkat Ma'am", title: null },
+];
 
 async function runBatch(): Promise<string> {
   await processMessagingSession("user-1", { id: "session-1", provider: "fake", externalId: "chat-1" });
   return store.sent.at(-1) ?? "";
 }
 
-async function deliverText(text: string, id: string): Promise<void> {
-  const raw = JSON.stringify({ from: "chat-1", messages: [{ id, content: { type: "text", text } }] });
-  for (const message of fakeClient.parseInbound(raw)) {
-    await handleInboundMessage(fakeClient, message);
-  }
-}
-
 beforeEach(() => {
   resetStore();
   registerMessagingProvider(fakeProvider);
+  store.candidates = OTHER_PRIYAS;
 });
 
-describe("a batch that spans several people", () => {
-  it("routes a note that names someone else instead of filing it on the card that came first", async () => {
-    // Ada's card establishes the cursor; the next note is explicitly about Bob.
-    store.items.push(itemRow("contact_card", { vcard: VCARD, displayName: "Ada Lovelace" }));
-    store.items.push(itemRow("text", { text: "Bob Chen is raising a seed round" }));
-    store.extractionQueue = [namesPerson("Bob Chen", "is raising a seed round")];
+describe("a bio followed by 'Create a new contact'", () => {
+  it("becomes ONE contact named Priya Raman, never an 'Unnamed contact'", async () => {
+    store.items.push(itemRow("text", { text: BIO }));
+    store.items.push(itemRow("text", { text: "Create a new contact" }));
+    store.plan = plan({
+      people: [person({ name: "Priya Raman", seqs: [1, 2], notes: [{ body: BIO, seqs: [1] }] })],
+    });
+
+    const summary = await runBatch();
+
+    // WHY: this is the reported failure, verbatim. The directive is only
+    // meaningful beside the message before it, so the fix is that ONE call sees
+    // both — assert that first, because everything below follows from it.
+    expect(store.planCalls).toHaveLength(1);
+    expect(store.planCalls[0].items.map((item) => item.seq)).toEqual([1, 2]);
+
+    expect(contactNames()).toEqual(["Priya Raman"]);
+    expect(contactNames()).not.toContain(UNNAMED_CONTACT_NAME);
+    expect(store.notes.map((note) => note.body)).toEqual([BIO]);
+    // The directive is ACCOUNTED FOR, not stored and not dropped: it told us
+    // what to do with message 1 and carried nothing of its own.
+    expect(outcomeFor(2)?.kind).toBe("directive");
+    expect(summary).toBe(createdPersonLine("Priya Raman", 1));
+  });
+});
+
+describe("a full name that shares a first name with known contacts", () => {
+  it("creates a new person, with no confirmation and no note on the wrong Priya", async () => {
+    store.items.push(itemRow("text", { text: BIO }));
+    store.plan = plan({
+      people: [person({ name: "Priya Raman", seqs: [1], notes: [{ body: BIO, seqs: [1] }] })],
+    });
 
     await runBatch();
 
-    // WHY: filing Bob's note onto Ada — whose card merely happened to arrive
-    // first — is silent data corruption the sender has no way to notice. Naming
-    // a person must outrank the batch's running cursor, always.
-    expect(contactNames()).toContain("Bob Chen");
-    const bobId = [...store.contacts.entries()].find(([, name]) => name === "Bob Chen")?.[0];
-    const adaId = [...store.contacts.entries()].find(([, name]) => name === "Ada Lovelace")?.[0];
-    const bobNote = store.notes.find((note) => note.body.includes("seed round"));
-    expect(bobNote?.contactId).toBe(bobId);
-    expect(bobNote?.contactId).not.toBe(adaId);
-  });
-
-  it("attaches to the person already in the graph when the note names them", async () => {
-    store.candidates = [{ id: "existing-bob", name: "Bob Chen", title: "CTO" }];
-    store.items.push(itemRow("text", { text: "Bob Chen wants an intro" }));
-    store.extractionQueue = [namesPerson("Bob Chen", "wants an intro")];
-
-    const summary = await runBatch();
-
-    expect(store.notes[0].contactId).toBe("existing-bob");
-    expect(contactNames()).toEqual([]); // matched, never duplicated
-    expect(summary).toContain("Bob Chen: 1 note that named them");
+    // WHY: "Priya Raman" resembling three unrelated Priyas is a resemblance, not
+    // an ambiguity. Treating it as one is what parked the user's note where they
+    // could not reach it — so the pool is offered to the planner and the
+    // planner's answer, not the LIKE match, decides.
+    expect(store.candidateQuery).toContain("Priya Raman");
+    expect(store.planCalls[0].candidates.map((candidate) => candidate.name)).toEqual([
+      "Priya Nair",
+      "Priya Ma'am",
+      "Priya Venkat Ma'am",
+    ]);
+    expect(store.confirmations).toEqual([]);
+    expect(contactNames()).toEqual(["Priya Raman"]);
+    const wrongPriyas = OTHER_PRIYAS.map((candidate) => candidate.id);
+    expect(store.notes.map((note) => note.contactId)).not.toEqual(
+      expect.arrayContaining(wrongPriyas),
+    );
   });
 });
 
-describe("the summary states its assumptions", () => {
-  it("declares a note that named nobody as ASSUMED, not as fact", async () => {
-    store.items.push(itemRow("contact_card", { vcard: VCARD, displayName: "Ada Lovelace" }));
-    store.items.push(itemRow("text", { text: "wants intros to fintech founders" }));
-    store.extractionQueue = [namesNobody()];
+describe("a plan naming a contact id nobody offered", () => {
+  it("creates the person instead of writing against a stranger's id", async () => {
+    store.items.push(itemRow("text", { text: BIO }));
+    store.plan = plan({
+      people: [
+        person({
+          name: "Priya Raman",
+          existingContactId: "id-never-shown-to-the-model",
+          seqs: [1],
+          notes: [{ body: BIO, seqs: [1] }],
+        }),
+      ],
+    });
 
     const summary = await runBatch();
 
-    // WHY: this note could belong to anyone in the batch — it was filed on Ada
-    // purely because she came last. A summary that reports that as settled is
-    // the difference between a correctable guess and a silent error.
-    expect(summary).toContain("ASSUMED");
-    expect(summary).toContain("Ada Lovelace");
-  });
-
-  it("says nothing about attribution when the batch filed no notes", async () => {
-    store.items.push(itemRow("contact_card", { vcard: VCARD, displayName: "Ada Lovelace" }));
-
-    const summary = await runBatch();
-    expect(summary).not.toContain("ASSUMED");
-    expect(summary).not.toContain("Here's where each note went");
-  });
-});
-
-describe("an unclosed batch", () => {
-  it("refuses the item past the cap and says why, instead of swallowing it", async () => {
-    for (let index = 0; index < MESSAGING_MAX_OPEN_ITEMS; index += 1) {
-      await deliverText(`note ${index}`, `m${index}`);
-    }
-    expect(store.items).toHaveLength(MESSAGING_MAX_OPEN_ITEMS);
-
-    store.sent.length = 0;
-    await deliverText("one too many", "overflow");
-
-    // WHY: the sender is standing in front of someone. An eleventh forward that
-    // vanishes silently costs them a contact they believe they captured.
-    expect(store.sent).toEqual([batchFullReply(MESSAGING_MAX_OPEN_ITEMS)]);
-    expect(store.items).toHaveLength(MESSAGING_MAX_OPEN_ITEMS);
-  });
-});
-
-describe("a batch re-driven after being cut short", () => {
-  it("resumes from the unprocessed items rather than redoing the finished ones", async () => {
-    const first = itemRow("text", { text: "Ada Lovelace, Acme" });
-    store.items.push(first);
-    store.items.push(itemRow("text", { text: "Bob Chen, Globex" }));
-    (first as { processedAt: Date | null }).processedAt = new Date(); // already walked
-    store.extraction = { ...namesNobody(), contact: contact("Bob Chen") };
-
-    await runBatch();
-
-    // WHY: a run killed mid-walk gets re-driven by the daily sweep. Without the
-    // per-item stamp, every retry re-creates the contacts and notes the first
-    // pass already wrote — duplicates the sender then has to merge by hand.
-    expect(contactNames()).toEqual(["Bob Chen"]);
-    expect(store.notes).toHaveLength(1);
+    // WHY: the model never sees a database id it was not handed, so a returned
+    // id outside the candidate pool is a hallucination. Honouring one would file
+    // this batch's notes onto an unrelated real person — silent corruption the
+    // sender cannot see. Creating a duplicate is the recoverable failure.
+    expect(contactNames()).toEqual(["Priya Raman"]);
+    expect(store.notes[0].contactId).not.toBe("id-never-shown-to-the-model");
+    expect([...store.contacts.keys()]).toContain(store.notes[0].contactId);
+    expect(summary).toBe(createdPersonLine("Priya Raman", 1));
   });
 });

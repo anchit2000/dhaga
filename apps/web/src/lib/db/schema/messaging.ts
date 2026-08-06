@@ -41,7 +41,11 @@ export const messagingLinkTokens = pgTable("messaging_link_tokens", {
 
 export type MessagingLinkTokenRow = typeof messagingLinkTokens.$inferSelect;
 
-/** TENANT data: one batch of forwarded content (no user_id — EE's RLS adds it). */
+/** TENANT data: one batch of forwarded content (no user_id — EE's RLS adds it).
+ *  The three audit columns are the batch's own record of what became of it —
+ *  written by the walk, not reconstructed, because once the resulting contacts
+ *  and notes are edited or deleted there is no way back to what actually
+ *  happened. They are what the capture log (settings → messaging) reads. */
 export const messagingSessions = pgTable("messaging_sessions", {
   id: text("id").primaryKey(),
   provider: text("provider").notNull(),
@@ -50,6 +54,12 @@ export const messagingSessions = pgTable("messaging_sessions", {
   lastItemAt: timestamp("last_item_at", { withTimezone: true }).defaultNow().notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  /** When the walk finished this batch (success or failure). */
+  processedAt: timestamp("processed_at", { withTimezone: true }),
+  /** The exact reply the sender was sent — the audit's "what happened". */
+  summary: text("summary"),
+  /** PII-free failure reason when status is "failed". Never the content. */
+  error: text("error"),
 });
 
 export type MessagingSessionRow = typeof messagingSessions.$inferSelect;
@@ -65,6 +75,11 @@ export const messagingSessionItems = pgTable("messaging_session_items", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   /** Set when the walk finished this item — makes a killed batch resumable. */
   processedAt: timestamp("processed_at", { withTimezone: true }),
+  /** AUDIT: what this specific message became. See MESSAGING_ITEM_OUTCOMES. */
+  outcomeKind: text("outcome_kind"),
+  /** AUDIT: the specifics behind outcomeKind — which contact/note/confirmation
+   *  it produced, so the capture log can link straight to the result. */
+  outcome: jsonb("outcome"),
 });
 
 export type MessagingSessionItemRow = typeof messagingSessionItems.$inferSelect;

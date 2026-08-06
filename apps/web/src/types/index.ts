@@ -23,6 +23,15 @@ export type {
 } from "./ai-usage";
 
 export type {
+  CaptureLogCursorDto,
+  CaptureLogEntryDto,
+  CaptureLogItemDto,
+  CaptureLogPageDto,
+  CaptureOutcomeLink,
+  CapturePayloadPreview,
+} from "./capture-log";
+
+export type {
   AskExample,
   ComparisonRow,
   FaqItem,

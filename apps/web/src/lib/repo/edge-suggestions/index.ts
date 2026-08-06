@@ -6,6 +6,7 @@ export {
   type RelationshipCandidate,
   type PersonResolution,
 } from "./candidates";
+export { findBatchCandidates } from "./batch-candidates";
 export {
   findEntityCandidates,
   resolveEntityObject,

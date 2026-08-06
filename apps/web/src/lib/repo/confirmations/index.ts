@@ -7,6 +7,7 @@ export {
   createSubjectResolutionConfirmation,
   createNoteSubjectConfirmation,
 } from "./create";
+export type { ConfirmationOrigin } from "./insert";
 export { createFollowUpDateConfirmation } from "./follow-up-date";
 export {
   listPendingConfirmations,

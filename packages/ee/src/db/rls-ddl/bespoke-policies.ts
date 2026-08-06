@@ -33,6 +33,15 @@ export const BESPOKE_POLICIES_DDL = `
 CREATE INDEX IF NOT EXISTS ai_actions_user_created_idx
   ON ai_actions (user_id, created_at DESC, id DESC);
 
+-- messaging_sessions gets the same treatment, and for the same reason: the
+-- capture log (settings -> messaging) pages every batch a sender ever forwarded
+-- with the identical keyset shape. The core DDL creates a (created_at, id)
+-- index, which is the right one for a self-host where no user_id column exists;
+-- here the tenant filter leads, or Postgres reads every tenant's batches and
+-- sorts them in memory to return one user's page.
+CREATE INDEX IF NOT EXISTS messaging_sessions_user_created_idx
+  ON messaging_sessions (user_id, created_at DESC, id DESC);
+
 -- positions joined the tenant list after rows already existed (it shipped
 -- with the rich-contact work without RLS registration). The generic loop
 -- above leaves those pre-existing rows with user_id NULL — invisible to

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 
 import { CameraCaptureView } from "@/components/camera-capture-view";
 import { CropReviewStrip } from "@/components/crop-review/strip";
@@ -8,9 +8,9 @@ import { ResultBanner } from "@/components/result-banner";
 import { BottomDock } from "@/components/bottom-dock";
 import { EventNamePrompt } from "@/components/event-name-prompt";
 import { LinkedInQrPrompt } from "@/components/linkedin-qr-prompt";
-import { COLORS } from "@/utils/constants";
 
 import { buildDockActions } from "./dock-actions";
+import { styles } from "./styles";
 import { useCaptureFlow } from "./use-capture-flow";
 import { useDictation } from "./use-dictation";
 import { useLinkedInQrCapture } from "./use-linkedin-qr";
@@ -140,17 +140,3 @@ export default function CaptureScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: COLORS.ink },
-  overlay: { position: "absolute", bottom: 0, left: 0, right: 0, padding: 20, gap: 16 },
-  retry: {
-    borderColor: COLORS.amber,
-    borderWidth: 1,
-    borderRadius: 999,
-    minHeight: 48,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  retryLabel: { color: COLORS.amber, fontSize: 15, fontWeight: "600" },
-});

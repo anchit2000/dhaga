@@ -16,6 +16,7 @@ export const confirmations = pgTable("confirmations", {
   type: text("type").notNull(),
   status: text("status").notNull().default("pending"), // pending | resolved | dismissed
   payload: jsonb("payload").$type<ConfirmationPayload>().notNull(),
+  origin: text("origin"), // inline | messaging; NULL = inline (pre-column rows)
   sourceNoteId: text("source_note_id").references(() => notes.id),
   contactId: text("contact_id").references(() => contacts.id),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

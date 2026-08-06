@@ -1,6 +1,11 @@
 import { hasMessagingProvider } from "@dhaga/core/src/messaging";
 import { requireUserIdForPage } from "@/lib/auth/guard";
-import { getActiveTokenForUser, listIdentitiesForUser } from "@/lib/repo/messaging";
+import {
+  getActiveTokenForUser,
+  listIdentitiesForUser,
+  listUnfinishedBatches,
+} from "@/lib/repo/messaging";
+import { CAPTURE_LOG_UNFINISHED_LIMIT } from "@/utils/constants/capture-log";
 import { MESSAGING_PROVIDERS, MESSAGING_PROVIDER_LABELS } from "@/utils/constants/messaging";
 import { MessagingSettings } from "@/components/app/settings/MessagingSettings";
 
@@ -23,6 +28,11 @@ export async function MessagingSection() {
     getActiveTokenForUser(userId),
     listIdentitiesForUser(userId),
   ]);
+  // Sequential, and NOT folded into the Promise.all above: the two reads there
+  // are cross-tenant routing lookups, this one is an RLS-scoped tenant read on
+  // the request-scoped connection, and fanning getDb() out has exhausted the
+  // three-connection tenant pool in this repo before.
+  const unfinished = await listUnfinishedBatches(CAPTURE_LOG_UNFINISHED_LIMIT);
   const providers = MESSAGING_PROVIDERS.map((id) => ({
     id,
     label: MESSAGING_PROVIDER_LABELS[id],
@@ -42,6 +52,8 @@ export async function MessagingSection() {
         maskedId: maskMessagingExternalId(identity.externalId),
         linkedAt: identity.linkedAt.toISOString(),
       }))}
+      unfinishedCount={unfinished.length}
+      unfinishedLimit={CAPTURE_LOG_UNFINISHED_LIMIT}
       telegramBotUsername={process.env.TELEGRAM_BOT_USERNAME ?? null}
       whatsappNumber={process.env.WHATSAPP_BUSINESS_NUMBER ?? null}
     />

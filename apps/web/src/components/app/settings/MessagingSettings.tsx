@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/utils/format-date";
 import { LINK_TOKEN_TTL_MINUTES } from "@/utils/constants/messaging";
+import { CaptureLogCard } from "./CaptureLog";
 import { MessagingLinkPanel, UnlinkButton } from "./MessagingSettingsClient";
 
 interface ProviderStatus {
@@ -26,12 +27,17 @@ export function MessagingSettings({
   providers,
   activeToken,
   identities,
+  unfinishedCount,
+  unfinishedLimit,
   telegramBotUsername,
   whatsappNumber,
 }: {
   providers: ProviderStatus[];
   activeToken: { token: string; expiresAt: string } | null;
   identities: LinkedIdentity[];
+  /** Batches that never reached a terminal state, capped at `unfinishedLimit`. */
+  unfinishedCount: number;
+  unfinishedLimit: number;
   telegramBotUsername: string | null;
   whatsappNumber: string | null;
 }) {
@@ -94,6 +100,8 @@ export function MessagingSettings({
           whatsappNumber={whatsappNumber}
         />
       </div>
+
+      <CaptureLogCard unfinishedCount={unfinishedCount} unfinishedLimit={unfinishedLimit} />
 
       <div className="space-y-3 border-t border-seam pt-4">
         <p className="text-sm font-medium text-paper">Linked chats</p>

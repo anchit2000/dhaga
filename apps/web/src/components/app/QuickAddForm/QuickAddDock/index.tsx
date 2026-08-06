@@ -1,12 +1,13 @@
 "use client";
 
-import { useRef, useState, type RefObject } from "react";
+import { useRef, useState } from "react";
 import { Camera, Loader2, Mic, Square, Upload, UserPlus } from "lucide-react";
 import { type DockItemData } from "@/components/ui/dock";
 import { MAX_CARD_IMAGES } from "@/utils/constants/app";
 import { PhotoCropper } from "../../PhotoCropper";
 import { WebcamCapture } from "../WebcamCapture";
 import { DockBar } from "./dock-bar";
+import type { QuickAddDockProps } from "./types";
 
 /**
  * Floating quick-add dock: voice dictation, live webcam capture (frames go to
@@ -26,31 +27,7 @@ export function QuickAddDock({
   captureOpen = false,
   onCaptureToggle,
   floating = true,
-}: {
-  formAction: (formData: FormData) => void;
-  /** Hands the camera's frames to the card-photo tray (crop / reorder / remove
-   *  live there) instead of scanning them blind. */
-  onPhotosCaptured: (files: File[]) => void;
-  /** Opens the capture dialog when the dock owns no dictation (no `voice`). */
-  onVoiceStart?: () => void;
-  /** Dictation controls, owned by CaptureForm. Absent on the collapsed dock. */
-  voice?: {
-    supported: boolean;
-    listening: boolean;
-    transcribing: boolean;
-    loadingProgress: number | null;
-    start: () => void;
-    stop: () => void;
-  };
-  pasteTextareaRef: RefObject<HTMLTextAreaElement | null>;
-  captureOpen?: boolean;
-  onCaptureToggle?: () => void;
-  /** Fixed-to-viewport bottom bar (standalone page). Set false to render
-   *  in-flow instead — needed inside the capture Dialog, whose CSS transform
-   *  makes it the containing block for `fixed` descendants, which otherwise
-   *  pins the dock to the dialog's own bottom edge and overlaps its content. */
-  floating?: boolean;
-}) {
+}: QuickAddDockProps) {
   const [showCamera, setShowCamera] = useState(false);
   const [capturedPhotos, setCapturedPhotos] = useState<File[]>([]);
   const [photoToCrop, setPhotoToCrop] = useState<File | null>(null);

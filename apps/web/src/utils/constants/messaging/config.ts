@@ -78,6 +78,33 @@ export function looksLikeLinkToken(text: string): boolean {
 }
 
 /**
+ * A `/start` command, with its payload if it carried one. Telegram sends this
+ * when someone opens the bot — bare on a normal open, and with the token as a
+ * payload when they arrive via a QR/deep link (see ./links). Also matches the
+ * `/start@botname` form Telegram uses in groups.
+ *
+ * Returned as a shape rather than a bare string so callers can tell the two
+ * cases apart: a bare `/start` is somebody saying hello and must never be
+ * stored as a note, while `/start <token>` is a link attempt.
+ */
+export function parseStartCommand(text: string): { payload: string | null } | null {
+  const match = /^\/start(?:@[A-Za-z0-9_]+)?(?:\s+(\S+))?\s*$/.exec(text.trim());
+  if (!match) return null;
+  return { payload: match[1] ?? null };
+}
+
+/**
+ * The link token a message carries — typed bare, or delivered as a `/start`
+ * payload by a scanned deep link. Null when the message isn't a link attempt,
+ * so the caller can treat it as ordinary content.
+ */
+export function extractLinkToken(text: string): string | null {
+  const start = parseStartCommand(text);
+  const candidate = start ? (start.payload ?? "") : text;
+  return looksLikeLinkToken(candidate) ? candidate.trim().toUpperCase() : null;
+}
+
+/**
  * Idle auto-flush window — a batch with no DONE is saved after this many
  * minutes of no activity. Env-overridable for self-hosters; floored at 1 so a
  * bad value can never disable the flush entirely.

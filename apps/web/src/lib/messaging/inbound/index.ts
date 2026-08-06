@@ -2,7 +2,7 @@ import type { MessagingClient, NormalizedInboundMessage } from "@dhaga/core/src/
 import { logActionError } from "@/lib/actions/resilience";
 import { resolveOwnerUserId } from "@/app/api/telegram/route";
 import { resolveUserIdByIdentity } from "@/lib/repo/messaging";
-import { isDoneDelimiter } from "@/utils/constants/messaging";
+import { alreadyLinkedReply, isDoneDelimiter, parseStartCommand } from "@/utils/constants/messaging";
 import { handleContent, handleDone } from "./content";
 import { handleUnlinked } from "./link";
 
@@ -36,9 +36,19 @@ export async function handleInboundMessage(
       return;
     }
 
-    if (msg.content.type === "text" && isDoneDelimiter(msg.content.text)) {
-      await handleDone(client, msg, userId);
-      return;
+    if (msg.content.type === "text") {
+      // `/start` is a greeting, not content — Telegram sends it on every open,
+      // and a scanned link sends it with the token attached. Either way this
+      // chat is ALREADY linked, so storing it would put "/start ABCD2345" in
+      // the batch as if it were a note about somebody.
+      if (parseStartCommand(msg.content.text)) {
+        await client.sendText({ externalUserId: msg.externalUserId, text: alreadyLinkedReply() });
+        return;
+      }
+      if (isDoneDelimiter(msg.content.text)) {
+        await handleDone(client, msg, userId);
+        return;
+      }
     }
     await handleContent(client, msg, userId);
   } catch (error) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { formatCalendarDate, parseImportantDate } from "@dhaga/core";
+import { formatCalendarDate, parseImportantDate } from "@dhaga/core/src/dates";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import {

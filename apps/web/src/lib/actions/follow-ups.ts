@@ -1,30 +1,67 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { calendarDayToUtcDate, parseCalendarDate } from "@dhaga/core";
 import { mutation, type MutationResult } from "@/lib/actions/mutation";
 import { scheduleCalendarWriteOut } from "@/lib/calendar/write-out";
 import { setFollowUpStatus, updateFollowUp } from "@/lib/repo/notes";
+import type { TaskCompletion } from "@/lib/repo/tasks";
 
 /**
  * Every mutation here calls scheduleCalendarWriteOut with the acting user, so a
- * connection that is upgraded AND write-enabled stays in step: an edited or
- * rescheduled follow-up moves, and a completed or dismissed one is DELETED from
- * the Dhaga calendar rather than lingering there. The sync runs after the
- * response (see lib/calendar/write-out.ts) and never fails the save.
+ * connection that is upgraded AND write-enabled stays in step: edits and
+ * recurring completions move the event, while terminal completions/dismissals
+ * delete it. The sync runs after the response (see lib/calendar/write-out.ts)
+ * and never fails the save.
  */
 
-export async function completeFollowUpAction(formData: FormData): Promise<void> {
+function completionInput(formData: FormData): {
+  followUpId: string;
+  contactId: string;
+  expectedDueDate: Date | null;
+} {
   const followUpId = String(formData.get("followUpId") ?? "");
   const contactId = String(formData.get("contactId") ?? "");
-  if (!followUpId) return;
+  const expectedRaw = String(formData.get("expectedDueDate") ?? "").trim();
+  return { followUpId, contactId, expectedDueDate: expectedRaw ? new Date(expectedRaw) : null };
+}
+
+function revalidateCompletion(userId: string, followUpId: string, contactId: string): void {
+  scheduleCalendarWriteOut(userId, followUpId);
+  if (contactId) revalidatePath(`/app/people/${contactId}`);
+  revalidatePath("/app");
+  revalidatePath("/app/tasks");
+  revalidatePath("/app/follow-ups");
+  revalidatePath("/app/calendar");
+}
+
+/** Form-compatible completion for list surfaces that refresh after mutation. */
+export async function completeFollowUpAction(formData: FormData): Promise<void> {
+  const input = completionInput(formData);
+  if (!input.followUpId) return;
   const r = await mutation("completeFollowUp", async (userId) => {
-    await setFollowUpStatus(followUpId, "done");
+    await setFollowUpStatus(input.followUpId, "done", input.expectedDueDate);
     return userId;
   });
   if (!r.ok) throw new Error(r.error);
-  scheduleCalendarWriteOut(r.data, followUpId);
-  revalidatePath(`/app/people/${contactId}`);
-  revalidatePath("/app");
+  revalidateCompletion(r.data, input.followUpId, input.contactId);
+}
+
+/** Calendar completion also returns the next occurrence so its imperative event
+ * can move without waiting for a route refresh. Null means the row is finished. */
+export async function completeCalendarFollowUpAction(
+  formData: FormData,
+): Promise<{ advancedTo: string | null }> {
+  const input = completionInput(formData);
+  if (!input.followUpId) return { advancedTo: null };
+  const r = await mutation("completeCalendarFollowUp", async (userId) => ({
+    completion: await setFollowUpStatus(input.followUpId, "done", input.expectedDueDate),
+    userId,
+  }));
+  if (!r.ok) throw new Error(r.error);
+  revalidateCompletion(r.data.userId, input.followUpId, input.contactId);
+  const completion: TaskCompletion = r.data.completion;
+  return { advancedTo: completion?.advancedTo?.toISOString() ?? null };
 }
 
 /**
@@ -38,16 +75,17 @@ export async function updateFollowUpAction(formData: FormData): Promise<void> {
   const action = String(formData.get("action") ?? "").trim();
   if (!followUpId || !action) return;
   const dueRaw = String(formData.get("dueDate") ?? "").trim();
-  const parsedDue = dueRaw ? new Date(dueRaw) : null;
-  const dueDate = parsedDue && !Number.isNaN(parsedDue.getTime()) ? parsedDue : null;
+  const calendarDay = dueRaw ? parseCalendarDate(dueRaw) : null;
+  const dueDate = calendarDay ? calendarDayToUtcDate(calendarDay) : null;
   const r = await mutation("updateFollowUp", async (userId) => {
     await updateFollowUp(followUpId, { action, dueDate });
     return userId;
   });
   if (!r.ok) throw new Error(r.error);
   scheduleCalendarWriteOut(r.data, followUpId);
-  revalidatePath(`/app/people/${contactId}`);
+  if (contactId) revalidatePath(`/app/people/${contactId}`);
   revalidatePath("/app");
+  revalidatePath("/app/tasks");
 }
 
 /**
@@ -66,8 +104,9 @@ export async function dismissFollowUpAction(formData: FormData): Promise<void> {
   });
   if (!r.ok) throw new Error(r.error);
   scheduleCalendarWriteOut(r.data, followUpId);
-  revalidatePath(`/app/people/${contactId}`);
+  if (contactId) revalidatePath(`/app/people/${contactId}`);
   revalidatePath("/app");
+  revalidatePath("/app/tasks");
 }
 
 /**
@@ -82,9 +121,10 @@ export async function rescheduleFollowUpAction(input: {
   id: string;
   dueDate: string | null;
 }): Promise<MutationResult<void>> {
+  const day = input.dueDate ? parseCalendarDate(input.dueDate) : null;
   const r = await mutation("rescheduleFollowUp", async (userId) => {
     await updateFollowUp(input.id, {
-      dueDate: input.dueDate ? new Date(input.dueDate) : null,
+      dueDate: day ? calendarDayToUtcDate(day) : null,
     });
     return userId;
   });

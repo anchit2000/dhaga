@@ -5,9 +5,9 @@ export const metadata = { title: "Confirmations — Dhaga" };
 export const dynamic = "force-dynamic";
 
 /**
- * The confirmations inbox — doubts the extractor raised before writing anything
- * to the graph. Force-dynamic: the pending set changes as notes are captured and
- * as the user resolves rows here.
+ * The confirmations inbox — most doubts gate graph writes, while ambiguous
+ * dates arrive with a safe default already scheduled. Force-dynamic because
+ * pending rows change as notes are captured and resolved.
  */
 export default async function ConfirmationsPage(): Promise<React.ReactElement> {
   const userId = await requireUserIdForPage();
@@ -18,8 +18,8 @@ export default async function ConfirmationsPage(): Promise<React.ReactElement> {
         <p className="font-mono text-[10px] uppercase tracking-widest text-ember">Inbox</p>
         <h1 className="mt-1 font-display text-2xl tracking-tight">Confirmations</h1>
         <p className="mt-1.5 max-w-2xl text-sm text-fog">
-          Doubts the extractor raised before touching your graph. Confirm or dismiss each —
-          nothing is written until you do.
+          Most questions wait before changing your graph. Date questions already have a
+          scheduled default, which you can keep or move.
         </p>
       </div>
       <ConfirmationsInbox userId={userId} />

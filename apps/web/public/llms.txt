@@ -39,7 +39,7 @@ Sections run in order of what a reader needs first, not by directory. `## Option
 - [Calendar & reminders](https://www.dhaga.app/docs/guide/calendar): See every follow-up and upcoming birthday on a full-screen calendar — drag to reschedule, schedule date-less ones from the tray, and stay nudged by the notification bell and opt-in reminder emails.
 - [Capturing people](https://www.dhaga.app/docs/guide/capturing-people): Add a person to your graph from pasted text, a card photo, voice, your webcam, or a file — with a review step that confirms the fields before saving.
 - [Companies](https://www.dhaga.app/docs/guide/companies): View, create, rename, delete, and merge the companies in your graph — with duplicate detection — from a dedicated management page.
-- [Confirmations](https://www.dhaga.app/docs/guide/confirmations): A unified inbox for the doubts AI raises — when extraction is ambiguous it defers to a confirmation instead of guessing, and nothing touches your graph until you confirm.
+- [Confirmations](https://www.dhaga.app/docs/guide/confirmations): Review ambiguous AI suggestions and calendar-date choices without letting uncertainty make a silent decision.
 - [Enrich from the web](https://www.dhaga.app/docs/guide/enrich-from-web): Search the public web for a person's footprint on demand — always user-triggered, cited on every finding, and saved as a note you can delete.
 - [Custom entities](https://www.dhaga.app/docs/guide/entities): Model the non-person things that connect your people — gyms, schools, projects — as custom entity nodes with their own types.
 - [Exploring the graph](https://www.dhaga.app/docs/guide/exploring-the-graph): Your whole network on one canvas — find warm-path intros, open a node's edges in a side panel, toggle layers, and zoom or reset the view.
@@ -53,6 +53,7 @@ Sections run in order of what a reader needs first, not by directory. `## Option
 - [Settings & import](https://www.dhaga.app/docs/guide/settings): The Settings page — profile, appearance, billing, 2FA, calendar, suggestions, card-photo storage, voice teaching, API keys — and importing your contacts from a file, a Google or Outlook connect, or your phone.
 - [Share & invite](https://www.dhaga.app/docs/guide/share-and-invite): Wrapped turns your graph into a contact-free share card you can post anywhere; Invite friends gives you and a friend a free month of Pro.
 - [Syncing with your phone](https://www.dhaga.app/docs/guide/syncing-your-phone): Keep your phone's address book and Dhaga in step, both ways — with a three-way merge that never silently overwrites, and a hard line that keeps your notes and facts off every device your contacts sync to.
+- [Tasks & recurring follow-ups](https://www.dhaga.app/docs/guide/tasks-and-followups): Track work with or without a person, add optional company context, repeat follow-ups on a calendar cadence, and turn clear note dates into calendar items.
 
 ## Self-hosting, extending & contributing
 

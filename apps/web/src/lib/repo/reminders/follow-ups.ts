@@ -1,17 +1,11 @@
-import { asc, eq, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
-import { contacts, followUps } from "@/lib/db/schema";
+import { followUps } from "@/lib/db/schema";
+import { listTasks } from "@/lib/repo/tasks";
 import { listDueReachOuts } from "./reach-outs";
+import type { TaskItem } from "@/lib/repo/tasks";
 
-export interface OpenFollowUpItem {
-  id: string;
-  contactId: string;
-  contactName: string;
-  action: string;
-  dueHint: string | null;
-  dueDate: Date | null;
-  createdAt: Date;
-}
+export type OpenFollowUpItem = TaskItem;
 
 /**
  * All open follow-ups across the graph, for the Home feed and /app/follow-ups.
@@ -24,21 +18,7 @@ export interface OpenFollowUpItem {
  * dated-before-undated split; the two keys after it apply to one group each.
  */
 export async function listAllOpenFollowUps(): Promise<OpenFollowUpItem[]> {
-  const db = await getDb();
-  return db
-    .select({
-      id: followUps.id,
-      contactId: followUps.contactId,
-      contactName: contacts.name,
-      action: followUps.action,
-      dueHint: followUps.dueHint,
-      dueDate: followUps.dueDate,
-      createdAt: followUps.createdAt,
-    })
-    .from(followUps)
-    .innerJoin(contacts, eq(contacts.id, followUps.contactId))
-    .where(eq(followUps.status, "open"))
-    .orderBy(sql`${followUps.dueDate} IS NULL`, asc(followUps.dueDate), asc(followUps.createdAt));
+  return (await listTasks()).filter((task) => task.status === "open");
 }
 
 export interface PendingReminderSummary {

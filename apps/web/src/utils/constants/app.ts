@@ -1,6 +1,6 @@
 /** App-shell constants (the product UI under /app, not the landing page). */
 
-import { BookOpen, Building2, CalendarDays, CirclePlus, Gift, GitMerge, Home, Inbox, MapPin, Newspaper, Shapes, Sparkles, Star, Upload, Users, Waypoints } from "lucide-react";
+import { BookOpen, Building2, CalendarDays, CirclePlus, Gift, GitMerge, Home, Inbox, ListTodo, MapPin, Newspaper, Shapes, Sparkles, Star, Upload, Users, Waypoints } from "lucide-react";
 import type { CaptureImageType } from "@dhaga/core/src/api/capture";
 import type { RecentReason } from "@/lib/repo/last-touch";
 import { PLAN_AI_CREDITS_PER_MONTH } from "./plans";
@@ -13,6 +13,7 @@ export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
 export const APP_NAV_LINKS = [
   { href: "/app", label: "Home", icon: Home },
   { href: "/app/calendar", label: "Calendar", icon: CalendarDays },
+  { href: "/app/tasks", label: "Tasks", icon: ListTodo },
   { href: "/app/confirmations", label: "Confirmations", icon: Inbox },
   { href: "/app/graph", label: "Graph", icon: Waypoints },
   { href: "/app/map", label: "Map", icon: MapPin },

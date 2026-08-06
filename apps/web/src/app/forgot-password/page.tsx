@@ -4,8 +4,9 @@ import { getCurrentUser } from "@/lib/auth/guard";
 import { ForgotPasswordForm } from "@/components/app/auth/ForgotPasswordForm";
 import { ModeToggle } from "@/components/brand/ModeToggle";
 import { ThreadMark } from "@/components/brand/ThreadMark";
+import { publicPageMetadata } from "@/utils/public-page-metadata";
 
-export const metadata = { title: "Reset your password — Dhaga" };
+export const metadata = publicPageMetadata("forgotPassword");
 
 export default async function ForgotPasswordPage() {
   if (await getCurrentUser()) redirect("/app");

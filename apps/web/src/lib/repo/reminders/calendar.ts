@@ -1,6 +1,8 @@
 import { daysUntil } from "@dhaga/core";
+import type { RecurrenceRule } from "@dhaga/core";
 import { FOLLOW_UP_LEAD_DAYS } from "@/utils/constants/reminders";
 import { listAllOpenFollowUps } from "./follow-ups";
+import { taskAssociationLabel } from "@/lib/repo/tasks";
 import { localDay, userTimeZone } from "./local-today";
 
 export type CalendarFollowUp = {
@@ -15,8 +17,12 @@ export type CalendarFollowUp = {
    */
   kind: "follow-up";
   id: string;
-  contactId: string;
-  contactName: string;
+  contactId: string | null;
+  contactName: string | null;
+  companyId: string | null;
+  companyName: string | null;
+  associationLabel: string;
+  recurrence: RecurrenceRule | null;
   action: string;
   dueDate: string | null; // ISO
   dueHint: string | null;
@@ -67,6 +73,10 @@ async function loadFollowUps(): Promise<{ items: CalendarFollowUp[]; timeZone: s
       id: row.id,
       contactId: row.contactId,
       contactName: row.contactName,
+      companyId: row.companyId,
+      companyName: row.companyName,
+      associationLabel: taskAssociationLabel(row),
+      recurrence: row.recurrence,
       action: row.action,
       dueHint: row.dueHint,
       dueDate: row.dueDate ? row.dueDate.toISOString() : null,

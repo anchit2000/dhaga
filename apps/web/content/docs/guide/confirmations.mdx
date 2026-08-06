@@ -1,6 +1,6 @@
 ---
 title: Confirmations
-description: A unified inbox for the doubts AI raises — when extraction is ambiguous it defers to a confirmation instead of guessing, and nothing touches your graph until you confirm.
+description: Review ambiguous AI suggestions and calendar-date choices without letting uncertainty make a silent decision.
 ---
 
 When Dhaga is *sure* about what it extracted, it just writes it. When it isn't —
@@ -8,16 +8,17 @@ a name that could be two different people, a web-sourced fact that might not be
 the right person — it doesn't guess. It parks the doubt as a **confirmation** and
 lets you decide. **AI proposes, code disposes:** the model only ever writes a
 confirmation row; your graph is changed by a deterministic resolver, and only
-once you say yes.
+once you say yes. Calendar-date confirmations are the documented exception:
+they preserve an already-scheduled safe default while asking which day you want.
 
 The **`/app/confirmations`** inbox is where those doubts collect. **Confirmations**
 sits in the left nav with a small amber count pill when any are waiting.
 
 ![The Confirmations inbox at /app/confirmations (a top-nav item with a count badge) with pending questions grouped by type — "Links to confirm", each offering candidate contacts to pick from plus a search box and confirm/dismiss actions](/docs/guide/confirmations.png)
 
-## The four kinds of doubt
+## The five kinds of confirmation
 
-Each confirmation is one of four types, phrased as a plain question:
+Most confirmations hold an AI doubt; the fifth records a calendar choice:
 
 - **Entity link** — an ambiguous mention. You wrote "I know Ajay" and you have two
   Ajays; Dhaga asks which contact the relationship should point at rather than
@@ -30,6 +31,8 @@ Each confirmation is one of four types, phrased as a plain question:
   fact.
 - **Supplement** — a batch of newly-extracted facts and edges ready to fold into
   an existing contact, once you okay the addition.
+- **Follow-up date** — “next weekend” is scheduled for Saturday immediately.
+  Keep it there or move it to Sunday; dismissing leaves Saturday scheduled.
 
 ## Confirm or dismiss
 
@@ -39,12 +42,13 @@ Every row shows the question and — where relevant — the candidates to choose
   it links the edge to the contact you picked, verifies the fact, or folds in the
   supplement. The action is stored on the confirmation, never re-derived from
   free text, so what you approve is exactly what runs.
-- **Dismiss** and the doubt is discarded, changing nothing.
+- **Dismiss** and an AI doubt is discarded, changing nothing. Dismissing a date
+  choice keeps its already-scheduled Saturday default.
 
-<Callout title="Nothing changes until you confirm">
-A pending confirmation has written **no** edge, fact, or relationship to your
-graph. That's the point — ambiguous extraction waits for you instead of leaving
-you to clean up a wrong guess later.
+<Callout title="Doubts wait; date choices are already scheduled">
+Entity, subject, enrichment, and supplement doubts write nothing until you
+confirm. A follow-up-date card is different: Saturday is already on your
+calendar so the reminder cannot disappear while it waits for review.
 </Callout>
 
 ## Who is this note about?

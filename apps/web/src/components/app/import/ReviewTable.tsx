@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { methodValues, primaryPosition } from "@dhaga/core";
+import { methodValues } from "@dhaga/core/src/schemas/contact-fields";
+import { primaryPosition } from "@dhaga/core/src/schemas/contact";
 import { DataTable, type DataTableColumn } from "@/components/app/table/DataTable";
 import type { ImportCandidate } from "@/lib/import";
 

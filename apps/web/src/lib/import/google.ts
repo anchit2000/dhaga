@@ -1,4 +1,4 @@
-import { profileFromExtracted } from "@dhaga/core";
+import { profileFromExtracted } from "@dhaga/core/src/schemas/contact";
 import { rowToRecord } from "./types";
 import type { ImportCandidate } from "./types";
 

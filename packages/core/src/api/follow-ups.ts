@@ -1,3 +1,5 @@
+import type { RecurrenceRule } from "../dates/recurrence";
+
 /**
  * Wire contract for `GET /api/follow-ups`. Types only (no runtime code): clients
  * deep-import this module so the Anthropic SDK re-exported by the package
@@ -17,14 +19,20 @@ export type FollowUpStatus = "open" | "done" | "dismissed";
 /** One follow-up as the server publishes it. */
 export interface FollowUpSummary {
   id: string;
-  contactId: string;
+  /** Null for a company task or an unlinked general TODO. */
+  contactId: string | null;
   /** Third-party PII: never log this, and never send it to an LLM. */
-  contactName: string;
+  contactName: string | null;
+  /** Optional for backwards compatibility with clients predating company tasks. */
+  companyId?: string | null;
+  companyName?: string | null;
   action: string;
   /** ISO timestamp, or null for an undated follow-up (web's Unscheduled tray). */
   dueDate: string | null;
   dueHint: string | null;
   status: FollowUpStatus;
+  /** Omitted by older servers; null means one-off. */
+  recurrence?: RecurrenceRule | null;
 }
 
 /**

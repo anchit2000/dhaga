@@ -1,11 +1,9 @@
-import { randomUUID } from "node:crypto";
 import type {
   ConfirmationOption,
   ConfirmationPayload,
   NoteExtraction,
 } from "@dhaga/core";
-import { getDb } from "@/lib/db/request-scope";
-import { confirmations } from "@/lib/db/schema";
+import { insertConfirmation } from "./insert";
 import type { ConfirmationView } from "./queue";
 
 /**
@@ -14,17 +12,6 @@ import type { ConfirmationView } from "./queue";
  * `contactId` is the contact the row is "about" so the inbox can group/filter
  * and EE can scope it; it is nullable for rows with no single subject yet.
  */
-async function insertConfirmation(
-  payload: ConfirmationPayload,
-  sourceNoteId: string | null,
-  contactId: string | null,
-): Promise<string> {
-  const db = await getDb();
-  const id = randomUUID();
-  await db.insert(confirmations).values({ id, type: payload.type, payload, sourceNoteId, contactId });
-  return id;
-}
-
 export async function createEntityLinkConfirmation(input: {
   srcContactId: string;
   predicate: string;

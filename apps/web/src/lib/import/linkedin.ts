@@ -1,4 +1,4 @@
-import { profileFromExtracted } from "@dhaga/core";
+import { profileFromExtracted } from "@dhaga/core/src/schemas/contact";
 import { LINKEDIN_IMPORT_RECEIPT_PREFIX } from "@/utils/constants/linkedin";
 import { rowToRecord } from "./types";
 import type { ImportCandidate } from "./types";

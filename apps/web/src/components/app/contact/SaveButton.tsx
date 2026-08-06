@@ -25,7 +25,7 @@ export function SaveButton({ label = "Save" }: { label?: string }) {
       title={label}
       onMouseEnter={() => iconRef.current?.startAnimation()}
       onMouseLeave={() => iconRef.current?.stopAnimation()}
-      className="rounded-full p-1 text-ember transition-colors hover:bg-amber/15 disabled:pointer-events-none"
+      className="flex size-11 items-center justify-center rounded-full text-ember transition-colors hover:bg-amber/15 disabled:pointer-events-none"
     >
       {pending ? (
         <Loader2 className="size-3.5 animate-spin" />

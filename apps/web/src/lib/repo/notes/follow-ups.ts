@@ -1,6 +1,8 @@
 import { and, desc, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { followUps, type FollowUpRow } from "@/lib/db/schema";
+import { completeTask } from "@/lib/repo/tasks";
+import type { TaskCompletion } from "@/lib/repo/tasks";
 
 export async function listOpenFollowUps(contactId: string): Promise<FollowUpRow[]> {
   const db = await getDb();
@@ -14,9 +16,12 @@ export async function listOpenFollowUps(contactId: string): Promise<FollowUpRow[
 export async function setFollowUpStatus(
   followUpId: string,
   status: "done" | "dismissed",
-): Promise<void> {
+  expectedOccurrence: Date | null = null,
+): Promise<TaskCompletion> {
+  if (status === "done") return completeTask(followUpId, expectedOccurrence);
   const db = await getDb();
   await db.update(followUps).set({ status }).where(eq(followUps.id, followUpId));
+  return { advancedTo: null, changed: true };
 }
 
 /**

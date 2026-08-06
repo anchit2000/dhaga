@@ -68,7 +68,8 @@ function reminderDay(item: FeedItem): string {
 }
 
 function reminderName(item: FeedItem): string {
-  return item.kind === "notification" ? (item.contactName ?? "") : item.contactName;
+  if (item.kind === "notification") return item.contactName ?? "";
+  return item.kind === "follow-up" ? item.associationLabel : item.contactName;
 }
 
 function createdAt(item: FeedItem): string {

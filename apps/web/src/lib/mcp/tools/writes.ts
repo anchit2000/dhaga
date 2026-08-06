@@ -1,12 +1,12 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import { createContact } from "@/lib/repo/contacts";
 import { addNote, setFollowUpStatus } from "@/lib/repo/notes";
-import { addFollowUp } from "@/lib/repo/manual-entries";
+import { createTask } from "@/lib/repo/tasks";
 import { createExtractionJob } from "@/lib/repo/extraction-jobs";
 import { hasMonthlyAiBudget } from "@/lib/ai/metering";
 import { withUserDb } from "@/lib/db/request-scope";
 import { userIdFromAuth } from "../auth";
-import { jsonResult } from "../result";
+import { errorResult, jsonResult } from "../result";
 import { addNoteInput, closeFollowUpInput, createContactInput, createFollowUpInput } from "../schemas";
 
 /**
@@ -100,13 +100,20 @@ export function registerWriteTools(server: McpServer): void {
       inputSchema: createFollowUpInput,
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     },
-    async ({ contactId, action, dueDate }, ctx) => {
+    async ({ contactId, companyId, action, dueDate, recurrence }, ctx) => {
       const userId = userIdFromAuth(ctx.http?.authInfo);
       // Parsed as UTC midnight — follow-up due dates are calendar days, not
       // instants, and the reminder job compares them in the user's timezone.
       const due = dueDate ? new Date(`${dueDate}T00:00:00Z`) : null;
-      const followUpId = await withUserDb(userId, () => addFollowUp(contactId, action, due));
-      return jsonResult({ followUpId, contactId, action, dueDate: dueDate ?? null });
+      const followUpId = await withUserDb(userId, () => createTask(userId, {
+        contactId: contactId ?? null,
+        companyId: companyId ?? null,
+        action,
+        dueDate: due,
+        recurrence: recurrence ?? null,
+      }));
+      return jsonResult({ followUpId, contactId: contactId ?? null,
+        companyId: companyId ?? null, action, dueDate: dueDate ?? null, recurrence: recurrence ?? null });
     },
   );
 
@@ -119,10 +126,21 @@ export function registerWriteTools(server: McpServer): void {
       inputSchema: closeFollowUpInput,
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     },
-    async ({ followUpId, status }, ctx) => {
+    async ({ followUpId, status, expectedDueDate }, ctx) => {
       const userId = userIdFromAuth(ctx.http?.authInfo);
-      await withUserDb(userId, () => setFollowUpStatus(followUpId, status));
-      return jsonResult({ followUpId, status });
+      const expected = expectedDueDate ? new Date(`${expectedDueDate}T00:00:00Z`) : null;
+      const completion = await withUserDb(userId, () => setFollowUpStatus(followUpId, status, expected));
+      if (status === "done" && !completion.changed) {
+        return errorResult(
+          "This recurring occurrence was not completed. List follow-ups again and retry with its current expectedDueDate.",
+        );
+      }
+      return jsonResult({
+        followUpId,
+        status,
+        changed: completion.changed,
+        nextOccurrence: completion.advancedTo,
+      });
     },
   );
 }

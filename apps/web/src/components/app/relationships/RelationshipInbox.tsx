@@ -1,4 +1,4 @@
-import { humanizePredicate } from "@dhaga/core";
+import { humanizePredicate } from "@dhaga/core/src/relationships/roles";
 import {
   confirmEdgeSuggestionAction,
   dismissEdgeSuggestionAction,

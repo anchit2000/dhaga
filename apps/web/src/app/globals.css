@@ -358,6 +358,27 @@ html {
   }
 }
 
+@keyframes dhaga-search-peek {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-0.2deg);
+  }
+  50% {
+    transform: translateY(-0.35rem) rotate(0.2deg);
+  }
+}
+
+.dhaga-search-scene {
+  animation: dhaga-search-peek 4s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dhaga-search-scene {
+    animation: none;
+  }
+}
+
 /* Home bento: tiles rise in with a soft stagger on first paint (HomeDashboard) */
 .dhaga-bento > * {
   animation: dhaga-rise 0.45s ease-out both;

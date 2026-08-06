@@ -1,0 +1,46 @@
+{
+  "description": "Dhaga repository policy checks, adapted for Codex hook payloads.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^Bash$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/dhaga-policy.mjs\" pre-tool",
+            "commandWindows": "powershell -NoProfile -Command \"$r=(git rev-parse --show-toplevel); node (Join-Path $r '.codex/hooks/dhaga-policy.mjs') pre-tool\"",
+            "timeout": 900,
+            "statusMessage": "Checking repository policy..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "^(apply_patch|Edit|Write)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/dhaga-policy.mjs\" post-edit",
+            "commandWindows": "powershell -NoProfile -Command \"$r=(git rev-parse --show-toplevel); node (Join-Path $r '.codex/hooks/dhaga-policy.mjs') post-edit\"",
+            "timeout": 180,
+            "statusMessage": "Checking edited files..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/dhaga-policy.mjs\" stop",
+            "commandWindows": "powershell -NoProfile -Command \"$r=(git rev-parse --show-toplevel); node (Join-Path $r '.codex/hooks/dhaga-policy.mjs') stop\"",
+            "timeout": 30,
+            "statusMessage": "Checking branch status..."
+          }
+        ]
+      }
+    ]
+  }
+}

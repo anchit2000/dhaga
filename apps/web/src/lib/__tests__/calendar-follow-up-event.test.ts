@@ -28,6 +28,15 @@ describe("followUpToCalendarEvent", () => {
     });
   });
 
+  it("uses an unlinked task's action as its useful calendar title", () => {
+    expect(followUpToCalendarEvent({
+      contactName: null,
+      action: "Reconcile the shop accounts",
+      dueDate: DUE,
+      status: "open",
+    })?.title).toBe("Reconcile the shop accounts");
+  });
+
   it.each([["done"], ["dismissed"]])(
     "returns no event for a %s follow-up so it cannot linger on the calendar",
     (status) => {

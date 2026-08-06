@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { computeScalarConflicts } from "@dhaga/core";
+import { computeScalarConflicts } from "@dhaga/core/src/schemas/merge";
 import { Button } from "@/components/ui/button";
 import {
   DialogClose,

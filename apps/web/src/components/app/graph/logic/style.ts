@@ -3,7 +3,7 @@ import {
   humanizePredicate,
   relationshipRole,
   type RelationshipLabelMap,
-} from "@dhaga/core";
+} from "@dhaga/core/src/relationships";
 import type { GraphNodePalette } from "../canvas/theme";
 import type { FullGraphEdge, FullGraphNode, GraphNodeKind, GraphNodeType } from "../types";
 

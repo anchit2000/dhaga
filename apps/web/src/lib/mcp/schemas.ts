@@ -79,13 +79,21 @@ export const createContactInput = z.object({
 });
 
 export const createFollowUpInput = z.object({
-  contactId: z.string().min(1).describe("Contact the follow-up is about."),
+  contactId: z.string().min(1).optional().describe("Optional person the task is about."),
+  companyId: z.string().min(1).optional().describe("Optional company the task is about."),
   action: z.string().min(1).max(500).describe("What to do, e.g. 'send the deck'."),
   dueDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .optional()
     .describe("Due date as YYYY-MM-DD. Omit for an undated reminder."),
+  recurrence: z.object({
+    frequency: z.enum(["daily", "weekly", "monthly", "yearly"]),
+    interval: z.number().int().min(1).default(1),
+    weekday: z.number().int().min(0).max(6).nullable().default(null),
+    monthDay: z.number().int().min(1).max(31).nullable().default(null),
+    month: z.number().int().min(1).max(12).nullable().default(null),
+  }).optional().describe("Repeat schedule. Requires dueDate."),
 });
 
 export const closeFollowUpInput = z.object({
@@ -96,4 +104,6 @@ export const closeFollowUpInput = z.object({
   status: z
     .enum(["done", "dismissed"])
     .describe("'done' if it happened, 'dismissed' if it no longer applies."),
+  expectedDueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional()
+    .describe("Current occurrence date from the list result; required to advance recurring tasks safely."),
 });

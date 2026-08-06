@@ -158,7 +158,9 @@ const SPECS: readonly TableSpec[] = [
   },
   {
     table: "follow_ups",
-    insert: sql`INSERT INTO follow_ups (id, contact_id, action) VALUES (${rid("follow_ups")}, ${CONTACT}, 'rls-test')`,
+    // A general TODO has no contact/company association but is still tenant
+    // data: user_id/default RLS, not a foreign key, is its ownership boundary.
+    insert: sql`INSERT INTO follow_ups (id, action) VALUES (${rid("follow_ups")}, 'rls-test')`,
     where: sql`id = ${rid("follow_ups")}`,
   },
   {
@@ -425,6 +427,18 @@ describe.skipIf(!RUN)("RLS isolates every tenant table (integration)", () => {
       );
     },
   );
+
+  it("rejects linking a task to another tenant's contact", async () => {
+    const b = await openTenantConnection(TENANT_B);
+    try {
+      await expect(b.run((db) => db.execute(sql`
+        INSERT INTO follow_ups (id, contact_id, action)
+        VALUES (${rid("cross-tenant-follow-up")}, ${CONTACT}, 'must fail')
+      `))).rejects.toThrow();
+    } finally {
+      await b.release();
+    }
+  });
 });
 
 /**

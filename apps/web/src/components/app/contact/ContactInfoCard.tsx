@@ -1,6 +1,6 @@
 import { DetailChips } from "./DetailChips";
 import type { ContactDetail, PositionView } from "@/lib/repo/contacts";
-import { isEducationPredicate } from "@dhaga/core";
+import { isEducationPredicate } from "@dhaga/core/src/relationships/affiliation";
 import type { Address } from "@dhaga/core";
 
 function formatAddress(address: Address): string {

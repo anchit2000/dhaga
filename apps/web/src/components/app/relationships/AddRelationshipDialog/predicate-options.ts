@@ -1,4 +1,4 @@
-import { RELATIONSHIP_ROLES, humanizePredicate } from "@dhaga/core";
+import { RELATIONSHIP_ROLES, humanizePredicate } from "@dhaga/core/src/relationships/roles";
 import type { RelationshipEndpointKind } from "@/lib/repo/relationships";
 
 export interface PredicateOption {

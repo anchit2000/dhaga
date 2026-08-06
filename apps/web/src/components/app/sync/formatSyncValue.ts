@@ -1,4 +1,4 @@
-import { SCALAR_FIELDS } from "@dhaga/core";
+import { SCALAR_FIELDS } from "@dhaga/core/src/sync/types";
 import type { ScalarField, SyncField } from "@dhaga/core";
 
 /**

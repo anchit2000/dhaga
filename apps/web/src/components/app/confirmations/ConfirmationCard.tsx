@@ -1,5 +1,6 @@
 import { EntityLinkCard } from "./EntityLinkCard";
 import { EnrichmentMatchCard } from "./EnrichmentMatchCard";
+import { FollowUpDateCard } from "./FollowUpDateCard";
 import { NoteSubjectCard } from "./NoteSubjectCard";
 import { SubjectResolutionCard } from "./SubjectResolutionCard";
 import { SupplementCard } from "./SupplementCard";
@@ -59,6 +60,15 @@ export function ConfirmationCard({
     case "note_subject":
       return (
         <NoteSubjectCard
+          id={id}
+          contactId={contactId}
+          contactName={contactName}
+          payload={payload}
+        />
+      );
+    case "follow_up_date":
+      return (
+        <FollowUpDateCard
           id={id}
           contactId={contactId}
           contactName={contactName}

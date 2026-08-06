@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { and, eq, ilike, isNull, or, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
-import { companies, contacts, edges, positions } from "@/lib/db/schema";
+import { companies, contacts, edges, followUps, positions } from "@/lib/db/schema";
 import { PreconditionError } from "@/lib/repo/errors";
 
 /**
@@ -83,6 +83,7 @@ export async function deleteCompany(id: string): Promise<void> {
     if (!existing) throw new PreconditionError("Company not found.");
     await tx.update(contacts).set({ companyId: null }).where(eq(contacts.companyId, id));
     await tx.update(positions).set({ companyId: null }).where(eq(positions.companyId, id));
+    await tx.update(followUps).set({ companyId: null }).where(eq(followUps.companyId, id));
     await tx
       .update(edges)
       .set({ deletedAt: now })

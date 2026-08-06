@@ -26,7 +26,8 @@ export function OpenFollowUpsList({ followUps }: { followUps: OpenFollowUpItem[]
     remove(item, async () => {
       const data = new FormData();
       data.set("followUpId", item.id);
-      data.set("contactId", item.contactId);
+      data.set("contactId", item.contactId ?? "");
+      data.set("expectedDueDate", item.dueDate?.toISOString() ?? "");
       await action(data);
       // The actions revalidate /app and the contact page, not this route —
       // refresh so this list's server data drops the row and reconciles.

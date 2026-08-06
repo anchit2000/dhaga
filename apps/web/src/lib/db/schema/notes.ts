@@ -1,5 +1,5 @@
-import { boolean, jsonb, pgTable, real, text, timestamp } from "drizzle-orm/pg-core";
-import { contacts } from "./contacts";
+import { boolean, integer, jsonb, pgTable, real, text, timestamp } from "drizzle-orm/pg-core";
+import { companies, contacts } from "./contacts";
 import { entities } from "./entities";
 
 /** A note belongs to exactly one of contact/entity (app-enforced). */
@@ -73,14 +73,23 @@ export const edgeSuggestions = pgTable("edge_suggestions", {
 
 export const followUps = pgTable("follow_ups", {
   id: text("id").primaryKey(),
-  contactId: text("contact_id")
-    .notNull()
-    .references(() => contacts.id),
+  // Direct ownership is required because a general task has no contact/company
+  // through which hosted RLS could infer its tenant.
+  userId: text("user_id"),
+  // Both associations are optional: contact = person follow-up, company =
+  // company task, neither = general TODO. Existing person rows are unchanged.
+  contactId: text("contact_id").references(() => contacts.id, { onDelete: "set null" }),
+  companyId: text("company_id").references(() => companies.id, { onDelete: "set null" }),
   action: text("action").notNull(),
   // Free-text timing hint the LLM fills with prose ("next quarter"). Manual
   // entries use dueDate instead — a machine date from the date picker.
   dueHint: text("due_hint"),
   dueDate: timestamp("due_date", { withTimezone: true }),
+  recurrenceFrequency: text("recurrence_frequency"),
+  recurrenceInterval: integer("recurrence_interval"),
+  recurrenceWeekday: integer("recurrence_weekday"),
+  recurrenceMonthDay: integer("recurrence_month_day"),
+  recurrenceMonth: integer("recurrence_month"),
   status: text("status").notNull(), // "open" | "done" | "dismissed"
   sourceNoteId: text("source_note_id").references(() => notes.id),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -90,4 +99,16 @@ export type NoteRow = typeof notes.$inferSelect;
 export type FactRow = typeof facts.$inferSelect;
 export type EdgeRow = typeof edges.$inferSelect;
 export type EdgeSuggestionRow = typeof edgeSuggestions.$inferSelect;
-export type FollowUpRow = typeof followUps.$inferSelect;
+type FollowUpSelect = typeof followUps.$inferSelect;
+type FollowUpScheduleKey =
+  | "userId"
+  | "companyId"
+  | "recurrenceFrequency"
+  | "recurrenceInterval"
+  | "recurrenceWeekday"
+  | "recurrenceMonthDay"
+  | "recurrenceMonth";
+/** New scheduling fields stay optional in the public row type so optimistic
+ *  rows and older API fixtures remain source-compatible during rollout. */
+export type FollowUpRow = Omit<FollowUpSelect, FollowUpScheduleKey> &
+  Partial<Pick<FollowUpSelect, FollowUpScheduleKey>>;

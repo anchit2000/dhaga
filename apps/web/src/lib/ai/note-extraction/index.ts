@@ -7,6 +7,7 @@ import {
   hasLLM,
   noteExtractionSchema,
   type LLMUsage,
+  type CalendarDay,
   type NoteExtraction,
 } from "@dhaga/core";
 import { withUserDb } from "@/lib/db/request-scope";
@@ -64,11 +65,14 @@ async function runNoteExtraction(
   let extraction: NoteExtraction;
   let model: string;
   let usage: LLMUsage;
+  let today: CalendarDay;
   try {
     // Prep phase (DB): one short scoped-db lifetime, released BEFORE the LLM
     // call (see ./prep). The registry and the day both ride in the VOLATILE
     // user prompt, so the cached system prefix stays byte-stable.
-    const { nodeTypes, today } = await prepareNoteExtraction(userId);
+    const prep = await prepareNoteExtraction(userId);
+    const { nodeTypes } = prep;
+    today = prep.today;
     // LLM phase: no DB connection is held across this ~minute-long call.
     const result = await getLLMClient().extract({
       schema: noteExtractionSchema,
@@ -94,6 +98,7 @@ async function runNoteExtraction(
       await recordAiAction("note_extraction", model, usage);
       const { factIds } = await applyExtraction(contactId, noteId, extraction, {
         unverified: enrichment,
+        today,
       });
       // Enrichment writes facts unverified (kept as-is) AND raises one
       // enrichment_match confirmation per fact — web findings can be the wrong

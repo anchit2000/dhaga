@@ -1,0 +1,9 @@
+{
+  "session_id": "fixture-session",
+  "cwd": ".",
+  "hook_event_name": "PostToolUse",
+  "tool_name": "apply_patch",
+  "tool_input": {
+    "command": "*** Begin Patch\n*** Update File: apps/web/src/example.ts\n@@\n-old\n+new\n*** Move to: apps/web/src/moved.ts\n*** End Patch"
+  }
+}

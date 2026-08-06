@@ -7,6 +7,11 @@ import type { ConfirmationType } from "@dhaga/core";
 /** Group order + copy for the inbox; each type gets its own section. */
 const GROUPS: { type: ConfirmationType; title: string; blurb: string }[] = [
   {
+    type: "follow_up_date",
+    title: "Dates to confirm",
+    blurb: "A date is already scheduled — keep Saturday or move the follow-up to Sunday.",
+  },
+  {
     type: "entity_link",
     title: "Links to confirm",
     blurb: "A note named a person or place the extractor couldn't pin down on its own.",

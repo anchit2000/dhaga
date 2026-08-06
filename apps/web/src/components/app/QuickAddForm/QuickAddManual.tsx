@@ -2,7 +2,7 @@
 
 import { type ReactElement } from "react";
 import { ArrowLeft } from "lucide-react";
-import { emptyContactProfile } from "@dhaga/core";
+import { emptyContactProfile } from "@dhaga/core/src/schemas/contact";
 import { cn } from "@/lib/utils";
 import { ContactForm } from "../ContactForm";
 import { EventPicker, type EventOption } from "../EventPicker";

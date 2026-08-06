@@ -26,7 +26,7 @@ export function toCalendarEvents(items: CalendarFollowUp[]): EventInput[] {
     .filter((item): item is CalendarFollowUp & { dueDate: string } => item.dueDate !== null)
     .map((item) => ({
       id: item.id,
-      title: item.contactName,
+      title: item.associationLabel,
       allDay: true,
       // Date-only portion (YYYY-MM-DD): the ISO dueDate is a UTC timestamp, and
       // feeding a UTC-midnight stamp to an allDay event shifts the day back one
@@ -38,7 +38,11 @@ export function toCalendarEvents(items: CalendarFollowUp[]): EventInput[] {
         kind: "follow-up",
         contactId: item.contactId,
         contactName: item.contactName,
+        companyId: item.companyId,
+        companyName: item.companyName,
+        associationLabel: item.associationLabel,
         action: item.action,
+        dueDate: item.dueDate,
         dueHint: item.dueHint,
         overdue: item.overdue,
       } satisfies FollowUpEventProps,

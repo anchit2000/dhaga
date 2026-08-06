@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { confirmationPayloadSchema } from "@dhaga/core";
-import { getDb } from "@/lib/db/request-scope";
+import { getDb, withTransactionDb } from "@/lib/db/request-scope";
 import { confirmations } from "@/lib/db/schema";
 import { deleteFact } from "../notes";
 import { applyConfirmation, type ConfirmationChoice, type ConfirmationResult } from "./apply";
@@ -17,28 +17,51 @@ export async function resolveConfirmation(
   choice?: ConfirmationChoice,
 ): Promise<ConfirmationResult | null> {
   const db = await getDb();
-  const [row] = await db
-    .select()
-    .from(confirmations)
-    .where(and(eq(confirmations.id, id), eq(confirmations.status, "pending")))
-    .limit(1);
-  if (!row) return null;
+  const [pending] = await db.select().from(confirmations)
+    .where(and(eq(confirmations.id, id), eq(confirmations.status, "pending"))).limit(1);
+  if (!pending) return null;
+  const payload = confirmationPayloadSchema.parse(pending.payload);
+  if (payload.type === "follow_up_date") {
+    return db.transaction((tx) => withTransactionDb(tx, async () => {
+      const [row] = await tx
+        .update(confirmations)
+        .set({ status: "resolving" })
+        .where(and(eq(confirmations.id, id), eq(confirmations.status, "pending")))
+        .returning();
+      if (!row) return null;
+      const result = await applyConfirmation(payload, row.sourceNoteId, choice);
+      await tx.update(confirmations).set({ status: "resolved", resolvedAt: new Date() })
+        .where(and(eq(confirmations.id, id), eq(confirmations.status, "resolving")));
+      return result;
+    }));
+  }
 
-  const payload = confirmationPayloadSchema.parse(row.payload);
-  const result = await applyConfirmation(payload, row.sourceNoteId, choice);
-  await db
-    .update(confirmations)
-    .set({ status: "resolved", resolvedAt: new Date() })
-    .where(eq(confirmations.id, id));
-  return result;
+  // Other confirmation kinds may embed or schedule post-response work. Claim
+  // in one committed statement so no network call is held inside a transaction.
+  const [claimed] = await db
+      .update(confirmations)
+      .set({ status: "resolving" })
+      .where(and(eq(confirmations.id, id), eq(confirmations.status, "pending")))
+      .returning();
+  if (!claimed) return null;
+  try {
+    const result = await applyConfirmation(payload, claimed.sourceNoteId, choice);
+    await db.update(confirmations).set({ status: "resolved", resolvedAt: new Date() })
+      .where(and(eq(confirmations.id, id), eq(confirmations.status, "resolving")));
+    return result;
+  } catch (error) {
+    await db.update(confirmations).set({ status: "pending" })
+      .where(and(eq(confirmations.id, id), eq(confirmations.status, "resolving")));
+    throw error;
+  }
 }
 
 /**
  * Reject a pending confirmation. enrichment_match is special: it points at a
  * fact enrichment ALREADY wrote (badged unverified), so rejecting it means
- * deleting that fact — not just hiding the prompt. Every other type proposes
- * rows that were never written, so dismiss is a pure state flip (like
- * dismissEdgeSuggestion).
+ * deleting that fact — not just hiding the prompt. Dismissing follow_up_date
+ * intentionally keeps its already-scheduled Saturday default. Every other type
+ * proposes no prior write, so dismiss is only a state flip.
  */
 export async function dismissConfirmation(id: string): Promise<void> {
   const db = await getDb();

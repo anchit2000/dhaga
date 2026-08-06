@@ -17,6 +17,7 @@ import {
 } from "@/lib/actions/follow-ups";
 import { formatFullDueDate } from "@/utils/format-date";
 import { companyFilteredHref } from "@/utils/company-href";
+import type { FollowUpOutcome } from "./event-map";
 
 /** The subset of a calendar event the details dialog renders and acts on. */
 export type SelectedFollowUp = {
@@ -28,22 +29,29 @@ export type SelectedFollowUp = {
   associationLabel: string;
   action: string;
   dueDate: string | null;
+  status: "open" | "done";
 };
 
-type ActionKind = "done" | "dismiss";
+type ActionKind = FollowUpOutcome["kind"];
 
 /** Parse the date-only string as LOCAL (parseISO), so the label matches the
- *  grid cell the event sits in rather than shifting a day across UTC. */
+ *  grid cell the event sits in rather than shifting a day across UTC.
+ *  "Unscheduled" — not "No due date" — because that is the tray this item is
+ *  sitting in, and it is a state the user can fix by dragging it onto a day. */
 function dueLabel(dueDate: string | null): string {
-  if (!dueDate) return "No due date";
+  if (!dueDate) return "Unscheduled";
   return formatFullDueDate(new Date(dueDate));
 }
 
 /**
- * Details for a clicked follow-up. Open contact links out; Mark done / Dismiss
- * fire the existing server actions (FormData shape, they throw on failure), then
- * hand the result back to the board. One-offs disappear; recurring items move
- * to their next occurrence. Controlled purely by `selected` being non-null.
+ * Details for a clicked follow-up, from the grid or from an Unscheduled tray
+ * chip (whose action text the chip itself truncates). Open contact links out;
+ * Mark done / Dismiss fire the existing server actions (FormData shape, they
+ * throw on failure), then hand the outcome back to the board. Controlled purely
+ * by `selected` being non-null.
+ *
+ * A COMPLETED follow-up is read-only: no Mark done on work already done, and no
+ * Dismiss either — the row is finished, not pending. It gets Close instead.
  */
 export function EventDetailsDialog({
   selected,
@@ -52,13 +60,11 @@ export function EventDetailsDialog({
 }: {
   selected: SelectedFollowUp | null;
   onOpenChange: (open: boolean) => void;
-  onResolved: (id: string, advancedTo: string | null) => void;
+  onResolved: (id: string, outcome: FollowUpOutcome) => void;
 }) {
   const [pending, setPending] = useState<ActionKind | null>(null);
 
-  async function resolve(
-    kind: ActionKind,
-  ): Promise<void> {
+  async function resolve(kind: ActionKind): Promise<void> {
     if (!selected) return;
     setPending(kind);
     try {
@@ -72,7 +78,7 @@ export function EventDetailsDialog({
       } else {
         await dismissFollowUpAction(data);
       }
-      onResolved(selected.id, advancedTo);
+      onResolved(selected.id, { kind, advancedTo });
       onOpenChange(false);
       toast.success(advancedTo
         ? `Next occurrence: ${dueLabel(advancedTo)}`
@@ -90,7 +96,10 @@ export function EventDetailsDialog({
         {selected ? (
           <>
             <DialogTitle>{selected.associationLabel}</DialogTitle>
-            <DialogDescription>{dueLabel(selected.dueDate)}</DialogDescription>
+            <DialogDescription>
+              {selected.status === "done" ? "Done · " : ""}
+              {dueLabel(selected.dueDate)}
+            </DialogDescription>
             <p className="text-sm leading-relaxed text-paper">{selected.action}</p>
             <DialogFooter className="sm:justify-between">
               {selected.contactId ? <Button
@@ -102,27 +111,33 @@ export function EventDetailsDialog({
                 Open contact
               </Button> : selected.companyId && selected.companyName ? <Button variant="ghost" size="sm" className="min-h-11"
                 render={<Link href={companyFilteredHref(selected.companyName)} />}>Open company</Button> : <span />}
-              <div className="flex flex-col-reverse gap-2 sm:flex-row">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="min-h-11"
-                  loading={pending === "dismiss"}
-                  disabled={pending !== null}
-                  onClick={() => resolve("dismiss")}
-                >
-                  Dismiss
+              {selected.status === "done" ? (
+                <Button variant="outline" size="sm" className="min-h-11" onClick={() => onOpenChange(false)}>
+                  Close
                 </Button>
-                <Button
-                  size="sm"
-                  className="min-h-11"
-                  loading={pending === "done"}
-                  disabled={pending !== null}
-                  onClick={() => resolve("done")}
-                >
-                  Mark done
-                </Button>
-              </div>
+              ) : (
+                <div className="flex flex-col-reverse gap-2 sm:flex-row">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="min-h-11"
+                    loading={pending === "dismiss"}
+                    disabled={pending !== null}
+                    onClick={() => resolve("dismiss")}
+                  >
+                    Dismiss
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="min-h-11"
+                    loading={pending === "done"}
+                    disabled={pending !== null}
+                    onClick={() => resolve("done")}
+                  >
+                    Mark done
+                  </Button>
+                </div>
+              )}
             </DialogFooter>
           </>
         ) : null}

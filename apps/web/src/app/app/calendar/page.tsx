@@ -7,8 +7,10 @@ import { CalendarBoard } from "@/components/app/calendar";
 
 export const metadata = { title: "Calendar — Dhaga" };
 
-/** Full-screen calendar of every open follow-up. Dated ones land on the grid;
- *  date-less ones sit in the draggable Unscheduled tray (both in CalendarBoard).
+/** Full-screen calendar of every follow-up — open, plus completed ones rendered
+ *  struck through so a worked-through month doesn't look like an ignored one.
+ *  Dated ones land on the grid; date-less ones sit in the draggable Unscheduled
+ *  tray (both in CalendarBoard, which also owns search and filtering).
  *  Events from an UPGRADED connected calendar ride alongside them as read-only
  *  context (getExternalCalendarEvents returns [] for everyone else), as do the
  *  recurring birthday/anniversary occurrences derived from contacts' important
@@ -28,6 +30,9 @@ export default async function CalendarPage() {
   const to = endOfMonth(addMonths(today, EXTERNAL_EVENT_WINDOW_MONTHS.forward));
   const externalEvents = await getExternalCalendarEvents({ from, to });
   const importantDates = await listImportantDateOccurrences({ from, to });
+  // The count covers done rows too now, so it says so rather than letting
+  // "36 follow-ups" imply 36 things still to do.
+  const done = items.filter((item) => item.status === "done").length;
 
   return (
     <div className="space-y-6">
@@ -36,6 +41,7 @@ export default async function CalendarPage() {
         {items.length > 0 ? (
           <span className="font-mono text-[11px] uppercase tracking-wider text-fog">
             {items.length} {items.length === 1 ? "follow-up" : "follow-ups"}
+            {done > 0 ? ` · ${done} done` : ""}
           </span>
         ) : null}
       </div>

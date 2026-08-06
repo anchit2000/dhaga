@@ -60,6 +60,16 @@ preserved across pagination — surfaced through a shared `BulkActionBar`
 People (`/app/people`) and the new Companies page (`/app/companies`); the
 per-field merge resolver reuses `computeScalarConflicts` from `@dhaga/core`.
 
+**Status — non-grid lists (built).** TanStack Table is no longer confined to
+`DataTable`. Where a collection reads better as cards than as a grid, the row
+models drive the list directly over a single pseudo-column: the AI-credits
+`ActivityCard` (keyset "Load more") and the Tasks board (`/app/tasks`), whose
+card rows carry an inline edit form a `<table>` cell could not host. Those call
+sites share `DataTable/Pagination.tsx` (`TablePagination`) so the footer —
+row summary, rows-per-page, page position, prev/next — exists once. The rule
+stands: `@tanstack/react-table` may only be imported by `DataTable/use-data-table.ts`
+or by a list component that owns its own row models; never by a leaf row.
+
 ### 3. nuqs (URL state)
 
 **Replaces:** the manual `URLSearchParams` + `router.replace` wiring in

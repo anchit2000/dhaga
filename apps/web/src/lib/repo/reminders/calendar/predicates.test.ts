@@ -41,6 +41,7 @@ function makeItem(overrides: Partial<CalendarFollowUp> = {}): CalendarFollowUp {
     action: "Send the deck",
     dueDate: null,
     dueHint: null,
+    status: "open",
     overdue: false,
     ...overrides,
   };

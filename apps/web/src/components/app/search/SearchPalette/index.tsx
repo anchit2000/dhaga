@@ -1,12 +1,12 @@
 "use client";
 
-import { Mic, Search, SlidersHorizontal, Sparkles, Square, X } from "lucide-react";
+import { Search, SlidersHorizontal, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Dialog, DialogClose, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DEFAULT_SEARCH_WEIGHTS, type SearchWeights } from "@/utils/constants/search";
 import { PaletteBody } from "./PaletteBody";
+import { SearchField } from "./SearchField";
 import { SearchTrigger } from "./SearchTrigger";
 import { WeightTuner } from "./WeightTuner";
 import { useSearchPalette, type SearchMode } from "./useSearchPalette";
@@ -42,49 +42,15 @@ export function SearchPalette({
         >
           <DialogTitle className="sr-only">Search</DialogTitle>
 
-          <div className="space-y-2 border-b border-seam p-3">
-            <form
-              id={p.formId}
-              action={p.dispatch}
-              role="search"
-              className="flex items-center gap-2"
-            >
-              <Search className="size-4 shrink-0 text-fog" />
-              <Input
-                type="search"
-                name="q"
-                autoFocus
-                value={p.query}
-                onChange={(event) => p.setQuery(event.target.value)}
-                placeholder={
-                  p.mode === "search"
-                    ? "Filter by name, fact, or note…"
-                    : "Who did I meet in logistics who mentioned an AI budget?"
-                }
-                className="h-9 flex-1 border-none bg-transparent px-0 py-0 shadow-none focus-visible:ring-0"
-              />
-              {p.dictation.supported ? (
-                <button
-                  type="button"
-                  onClick={p.dictation.listening ? p.dictation.stop : p.dictation.start}
-                  disabled={p.dictation.transcribing || p.dictation.loadingProgress !== null}
-                  aria-label={p.dictation.listening ? "Stop dictation" : "Search by voice"}
-                  className={`flex size-11 shrink-0 items-center justify-center rounded-full border transition-colors disabled:opacity-60 ${
-                    p.dictation.listening
-                      ? "border-destructive/50 text-destructive"
-                      : "border-seam text-fog hover:text-paper"
-                  }`}
-                >
-                  {p.dictation.listening ? <Square className="size-4" /> : <Mic className="size-4" />}
-                </button>
-              ) : null}
-              <DialogClose
-                aria-label="Close"
-                className="flex size-11 shrink-0 items-center justify-center rounded-full border border-seam text-fog transition-colors hover:text-paper"
-              >
-                <X className="size-4" />
-              </DialogClose>
-            </form>
+          <div className="space-y-3 border-b border-seam p-4">
+            <SearchField
+              formId={p.formId}
+              dispatch={p.dispatch}
+              query={p.query}
+              onQueryChange={p.setQuery}
+              mode={p.mode}
+              dictation={p.dictation}
+            />
             <DictationProgress
               loadingProgress={p.dictation.loadingProgress}
               transcribing={p.dictation.transcribing}

@@ -1,49 +1,50 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import FullCalendar from "@fullcalendar/react";
-import dayGridPlugin from "@fullcalendar/daygrid";
-import listPlugin from "@fullcalendar/list";
-import interactionPlugin from "@fullcalendar/interaction";
 import type { EventClickArg } from "@fullcalendar/core";
+import { useDebouncedValue } from "@/lib/data";
+import { LIST_SEARCH_DEBOUNCE_MS } from "@/utils/constants/table";
 import type { CalendarFollowUp, UpcomingImportantDate } from "@/lib/repo/reminders";
 import type { ExternalCalendarEvent } from "@/lib/repo/calendar";
 import {
   isFollowUpEventProps,
   isImportantDateEventProps,
-  reconcileResolvedFollowUpEvent,
   toCalendarEvents,
   toExternalCalendarEvents,
   toImportantDateEvents,
+  unscheduledFollowUps,
   type CalendarEventProps,
 } from "./event-map";
-import { renderEventContent } from "./event-content";
+import {
+  filterFollowUps,
+  isCalendarFilterActive,
+  NO_CALENDAR_FILTERS,
+  type CalendarFilterState,
+} from "./filter-follow-ups";
+import { selectedFromEvent, selectedFromFollowUp } from "./to-selected";
 import { CalendarCaption } from "./CalendarCaption";
 import { CalendarEmptyState } from "./CalendarEmptyState";
-import { useCalendarInitialView } from "./use-calendar-view";
+import { CalendarFilters } from "./CalendarFilters";
+import { CalendarGrid } from "./CalendarGrid";
 import { useReschedule } from "./use-reschedule";
 import { UnscheduledTray } from "./UnscheduledTray";
 import { EventDetailsDialog, type SelectedFollowUp } from "./EventDetailsDialog";
 import "./calendar-theme.css";
 
-const HEADER_TOOLBAR = {
-  left: "prev,next today",
-  center: "title",
-  right: "dayGridMonth,listWeek",
-} as const;
-
 /**
- * Full-screen follow-up calendar. FullCalendar mounts client-only. Drag a dated
- * event or a tray chip onto the grid to reschedule it (useReschedule owns
- * both paths and the tray's live list). Clicking opens the details dialog. The
- * events array is a stable useMemo so imperative changes (event.remove(),
- * received events) are never clobbered by a React re-render.
+ * Full-screen follow-up calendar — open work and, struck through, work already
+ * done. Drag a dated event or a tray chip onto the grid to reschedule it;
+ * clicking either opens the details dialog.
+ *
+ * `useReschedule` owns the ONE follow-up list every surface derives from, so the
+ * search box and filters trim the grid and the Unscheduled tray together — a
+ * filter that moved only one of the two would misrepresent what is left.
  * `externalEvents` are read-only context from a CONNECTED calendar, merged onto
- * the same grid: they cannot be dragged (editable:false per event, plus the
- * guard in useReschedule) and clicking one opens nothing, because Dhaga owns no
- * record. `importantDates` are recurring birthday/anniversary occurrences DERIVED
- * from contacts — also read-only, but a click opens the contact for editing.
+ * the same grid: they cannot be dragged and clicking one opens nothing, because
+ * Dhaga owns no record. `importantDates` are recurring birthday/anniversary
+ * occurrences DERIVED from contacts — also read-only, but a click opens the
+ * contact for editing. Neither is filtered: the filters are about follow-ups.
  */
 export function CalendarBoard({
   items,
@@ -54,23 +55,22 @@ export function CalendarBoard({
   externalEvents: ExternalCalendarEvent[];
   importantDates: UpcomingImportantDate[];
 }) {
-  const calendarRef = useRef<FullCalendar>(null);
   const router = useRouter();
+  const { followUps, handleEventDrop, handleEventReceive, handleResolved } = useReschedule(items);
+  const [filters, setFilters] = useState<CalendarFilterState>(NO_CALENDAR_FILTERS);
+  const query = useDebouncedValue(filters.query, LIST_SEARCH_DEBOUNCE_MS);
+  const active = useMemo(() => ({ ...filters, query }), [filters, query]);
+  const visible = useMemo(() => filterFollowUps(followUps, active), [followUps, active]);
+  const trayItems = useMemo(() => unscheduledFollowUps(visible), [visible]);
   const events = useMemo(
     () => [
-      ...toCalendarEvents(items),
+      ...toCalendarEvents(visible),
       ...toImportantDateEvents(importantDates),
       ...toExternalCalendarEvents(externalEvents),
     ],
-    [items, externalEvents, importantDates],
+    [visible, externalEvents, importantDates],
   );
-  const { trayItems, handleEventDrop, handleEventReceive } = useReschedule(items);
   const [selected, setSelected] = useState<SelectedFollowUp | null>(null);
-  const initialView = useCalendarInitialView();
-
-  function resolveEvent(id: string, advancedTo: string | null): void {
-    reconcileResolvedFollowUpEvent(calendarRef.current?.getApi().getEventById(id) ?? null, advancedTo);
-  }
 
   function handleEventClick(arg: EventClickArg): void {
     const props = arg.event.extendedProps as CalendarEventProps;
@@ -84,16 +84,7 @@ export function CalendarBoard({
     // Anything that is not a follow-up has no Dhaga record to complete, dismiss
     // or reschedule — the details dialog would be lying. It stays inert.
     if (!isFollowUpEventProps(props)) return;
-    setSelected({
-      id: arg.event.id,
-      contactId: props.contactId,
-      contactName: props.contactName,
-      companyId: props.companyId,
-      companyName: props.companyName,
-      associationLabel: props.associationLabel,
-      action: props.action,
-      dueDate: props.dueDate,
-    });
+    setSelected(selectedFromEvent(arg.event.id, props));
   }
 
   // Only when there is nothing at all: a connected calendar with events — or a
@@ -105,35 +96,28 @@ export function CalendarBoard({
 
   return (
     <div className="space-y-4">
-      {trayItems.length > 0 ? <UnscheduledTray items={trayItems} /> : null}
-      <div className="dhaga-calendar rounded-2xl border border-seam bg-panel/40 p-2 sm:p-4">
-        {initialView ? (
-          <FullCalendar
-            ref={calendarRef}
-            plugins={[dayGridPlugin, listPlugin, interactionPlugin]}
-            initialView={initialView}
-            headerToolbar={HEADER_TOOLBAR}
-            events={events}
-            height="auto"
-            dayMaxEvents={3}
-            // Follow-ups (rank 0) → important dates (1) → connected-calendar
-            // events (2), so a busy day never buries Dhaga's own work behind
-            // "+N more".
-            eventOrder="rank,start,-duration,allDay,title"
-            longPressDelay={200}
-            editable
-            eventStartEditable
-            eventDurationEditable={false}
-            droppable
-            eventContent={renderEventContent}
-            eventDrop={handleEventDrop}
-            eventReceive={handleEventReceive}
-            eventClick={handleEventClick}
-          />
-        ) : (
-          <div className="h-[60vh] animate-pulse rounded-xl bg-panel/60" aria-hidden />
-        )}
-      </div>
+      {followUps.length > 0 ? (
+        <CalendarFilters items={followUps} value={filters} onChange={setFilters} />
+      ) : null}
+      {trayItems.length > 0 ? (
+        <UnscheduledTray
+          items={trayItems}
+          onSelect={(item) => setSelected(selectedFromFollowUp(item))}
+        />
+      ) : null}
+      {/* Distinct from CalendarEmptyState: there IS work, it is just filtered out
+          — and the grid below still shows unfiltered calendar/birthday context. */}
+      {followUps.length > 0 && visible.length === 0 && isCalendarFilterActive(active) ? (
+        <p className="rounded-2xl border border-seam bg-panel/40 px-4 py-6 text-center text-sm text-fog">
+          No follow-ups match your search or filters.
+        </p>
+      ) : null}
+      <CalendarGrid
+        events={events}
+        onEventDrop={handleEventDrop}
+        onEventReceive={handleEventReceive}
+        onEventClick={handleEventClick}
+      />
       <CalendarCaption
         hasExternal={externalEvents.length > 0}
         hasImportantDates={importantDates.length > 0}
@@ -143,7 +127,7 @@ export function CalendarBoard({
         onOpenChange={(open) => {
           if (!open) setSelected(null);
         }}
-        onResolved={resolveEvent}
+        onResolved={handleResolved}
       />
     </div>
   );

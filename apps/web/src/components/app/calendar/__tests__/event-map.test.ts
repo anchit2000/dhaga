@@ -41,6 +41,7 @@ function followUp(over: Partial<CalendarFollowUp> = {}): CalendarFollowUp {
     action: "Send the deck",
     dueDate: "2026-08-03T00:00:00.000Z",
     dueHint: "next week",
+    status: "open",
     overdue: false,
     ...over,
   };

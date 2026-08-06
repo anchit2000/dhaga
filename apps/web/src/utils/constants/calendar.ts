@@ -27,3 +27,25 @@ export const FREE_BUSY_SNAPSHOT_STALE_MS = 5 * 60_000;
  * renders the calendar tiles as unknown rather than as free.
  */
 export const FREE_BUSY_SNAPSHOT_MAX_AGE_MS = 2 * 60 * 60_000;
+
+/**
+ * How far the pointer may travel between pressing an Unscheduled chip and
+ * releasing it while the press still counts as a CLICK rather than a drag.
+ * The chips are FullCalendar drag sources AND buttons that open the details
+ * dialog, so without a slop threshold every abandoned drag — and every drag that
+ * ends off the grid — would pop the dialog open on release.
+ */
+export const TRAY_CHIP_CLICK_SLOP_PX = 5;
+
+/**
+ * Status axis of the calendar filter bar. Completed follow-ups now render on the
+ * grid struck through, which is the point — but a calendar of finished work is
+ * noise when you are planning, so hiding them has to be one control away.
+ */
+export const CALENDAR_STATUS_FILTERS = [
+  { value: "all", label: "All" },
+  { value: "open", label: "Open" },
+  { value: "done", label: "Done" },
+] as const;
+
+export type CalendarStatusFilter = (typeof CALENDAR_STATUS_FILTERS)[number]["value"];

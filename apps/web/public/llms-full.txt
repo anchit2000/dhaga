@@ -1093,14 +1093,45 @@ want it out of the way.
 
 ## Open a follow-up's details
 
-Click any item — on the grid or in the tray — to open its details. From there
-you can:
+Click any item — on the grid or in the tray — to open its details, including the
+full text a chip had to truncate. Tray chips are still draggable: a click opens
+them, a drag schedules them. From the dialog you can:
 
 - **Open contact** — jump straight to the person's page.
 - **Mark done** — close the follow-up out.
 - **Dismiss** — clear it without marking it done.
 
+A follow-up you've already completed opens read-only — there's nothing left to
+mark done or dismiss — with **Close** in place of those buttons.
+
 ![A follow-up's details dialog opened from the calendar](/docs/guide/calendar-event.png)
+
+## Work you've already done
+
+Completed follow-ups stay on the calendar, struck through and faded, so a month
+you worked through doesn't look like one you ignored. They're never painted as
+overdue — done work can't be late — and they can't be dragged or re-completed.
+
+## Search and filter
+
+Above the calendar sits one row of controls that trims the grid **and** the
+Unscheduled tray together, so a count you can see is a count you can trust:
+
+- **Search** matches the action text as well as the person's and company's
+  names — type *Acme* to find its follow-ups even when none of them says "Acme".
+- **All people** and **All companies** narrow to one owner. Each list is built
+  from the follow-ups on screen, so it never offers a name with nothing behind
+  it, and the whole control is absent when there's nothing to choose.
+- **All items / General / People / Companies** is the same scope split used on
+  [Tasks](/docs/guide/tasks-and-followups). *General* means work attached to
+  nobody — your own admin list.
+- **Any status / Open / Done** hides or restores completed work. Everything shows
+  by default.
+
+Nothing here goes back to the server, so filtering is instant. When your filters
+exclude everything, Dhaga says so rather than showing an empty calendar. Your
+connected calendar's events and saved birthdays aren't filtered — the controls
+are about follow-ups.
 
 ## Birthdays and anniversaries
 
@@ -3209,6 +3240,17 @@ task needs only a title; its due date, person, and company are optional. Use
 **Active** and **Completed** to work the list, edit details, or mark it done. A
 dated task also appears on [Calendar](/docs/guide/calendar); an undated one stays
 in Tasks instead of receiving a made-up date.
+
+## Find one in a long list
+
+Search the list by task text, by the person attached, or by the company —
+typing *"Acme"* finds a task whose wording never mentions Acme but whose company
+does. Narrow further with the **All / General / People / Companies** chips:
+**General** is the work that names nobody, your own admin list.
+
+The list pages rather than scrolling forever; choose how many rows to show at
+the bottom. Changing a search or a filter always returns you to the first page,
+so a narrowed list can never strand you on an empty one.
 
 ![The Tasks list showing general, person-linked, company-linked, dated, and unscheduled work](/docs/guide/scheduling/tasks-light-desktop.webp)
 

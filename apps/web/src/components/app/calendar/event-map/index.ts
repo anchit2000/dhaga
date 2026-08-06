@@ -15,4 +15,8 @@ export {
   toImportantDateEvents,
   unscheduledFollowUps,
 } from "./to-events";
-export { reconcileResolvedFollowUpEvent } from "./resolve-event";
+export {
+  applyFollowUpDueDate,
+  applyFollowUpOutcome,
+  type FollowUpOutcome,
+} from "./resolve-event";

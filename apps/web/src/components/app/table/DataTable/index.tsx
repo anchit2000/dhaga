@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, ChevronsUpDown, Search, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronsUpDown, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { TABLE_PAGE_SIZES } from "@/utils/constants/table";
+import { TablePagination } from "./Pagination";
 import { useDataTableEngine } from "./use-data-table";
 import { useTableUrlState } from "./use-table-url-state";
 import { SelectionBodyCell, SelectionHeadCell, type DataTableSelection } from "./selection";
@@ -97,15 +97,16 @@ export function DataTable<Row>({ rows, columns, rowKey, emptyMessage = "No rows 
           </TableBody>
         </Table>
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-fog">
-        <div className="flex items-center gap-2"><span>{server ? `${rows.length} shown · ${total} total` : `${engine.totalRows} of ${rows.length} rows`}</span>{activeFilters > 0 ? <Button variant="ghost" size="xs" onClick={clearFilters}><X /> Clear {activeFilters}</Button> : null}</div>
-        <div className="flex items-center gap-2">
-          <Select aria-label="Rows per page" value={pageSize} onChange={(event) => { const value = Number(event.target.value); if (server) url.setParams({ pageSize: value, page: 1 }); else engine.setPageSize(value); }} className="h-8 w-20 text-xs">{TABLE_PAGE_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}</Select>
-          <span className="whitespace-nowrap">Page {currentPage} of {pageCount}</span>
-          <Button variant="outline" size="icon-sm" aria-label="Previous page" disabled={currentPage === 1} onClick={() => goToPage(currentPage - 1)}><ChevronLeft /></Button>
-          <Button variant="outline" size="icon-sm" aria-label="Next page" disabled={currentPage === pageCount} onClick={() => goToPage(currentPage + 1)}><ChevronRight /></Button>
-        </div>
-      </div>
+      <TablePagination
+        summary={server ? `${rows.length} shown · ${total} total` : `${engine.totalRows} of ${rows.length} rows`}
+        pageSize={pageSize}
+        currentPage={currentPage}
+        pageCount={pageCount}
+        onPageChange={goToPage}
+        onPageSizeChange={(value) => { if (server) url.setParams({ pageSize: value, page: 1 }); else engine.setPageSize(value); }}
+        activeFilterCount={activeFilters}
+        onClearFilters={clearFilters}
+      />
     </div>
   );
 }

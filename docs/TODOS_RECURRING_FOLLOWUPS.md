@@ -1,6 +1,6 @@
 # TODOs, recurring follow-ups, and scheduling — implementation tracker
 
-Status: in progress  
+Status: complete
 Branch: `codex/todos-recurring-followups`  
 Last updated: 2026-08-06
 
@@ -26,9 +26,9 @@ screenshots, and PR handoff so the work survives context compaction.
 - [x] Fix the production MapLibre worker response policy without a new service.
 - [x] Add root `AGENTS.md`/Codex hooks; reuse already-mirrored project skills.
 - [x] Update product, checklist, testing, and user-facing docs.
-- [ ] Capture documentation screenshots in light/dark themes and at 375px.
-- [ ] Validate local/preview behavior after the completed production baseline.
-- [ ] Deliver one branch, one pushed PR.
+- [x] Capture documentation screenshots in light/dark themes and at 375px.
+- [x] Validate local/preview behavior after the completed production baseline.
+- [x] Deliver one branch, one pushed PR.
 
 ## Acceptance criteria
 
@@ -100,8 +100,8 @@ screenshots, and PR handoff so the work survives context compaction.
   legacy keep-in-touch controls, and Map failure were reproduced without writes.
 - Chrome/CDP isolated the Map failure to the worker's mismatched COEP response;
   owner payload, worker bytes, and style response were otherwise healthy.
-- Web serial suite: 215 files / 1,212 tests passed. Core: 171/171. Mobile:
-  75/75. Codex hooks: 10/10. Focused SEO/Map: 7/7 before later integration tests.
+- Final web serial suite: 218 files / 1,219 tests passed. Core: 171/171.
+  Mobile: 75/75. Codex hooks: 10/10. Focused final SEO: 5/5.
 - Web/core/mobile/EE typechecks pass. EE: 24 pass and 40 live-RLS cases skip
   without a disposable `DATABASE_URL`; its remaining 7 tests pass, 1 skips.
 - Web lint exits 0 with pre-existing vendored warnings. Mobile lint is blocked by
@@ -109,27 +109,28 @@ screenshots, and PR handoff so the work survives context compaction.
 - The default Turbopack production build reproducibly stalls during optimization.
   `next build --webpack` passes all 281 static pages after removing broad core
   imports from the browser graph; only known auth-env/rate-limiter warnings remain.
-- Local authenticated browser QA and committed screenshots remain open because
-  the in-app browser security policy rejected authenticated localhost navigation.
-- Documentation mirrors and screenshot targets are updated; actual screenshots,
-  local/preview browser validation, push, and PR remain open.
+- The approved local Playwright runner completed nine authenticated/public flows
+  with zero unexpected page or console errors. It also asserted Map worker COEP,
+  live canvas rendering, weekend confirmation, Calendar placement, and mobile UI.
+- Nine optimized WebPs document light desktop, dark desktop loading, and 375px
+  light/dark screens; every asset is embedded once in the relevant public guide.
 
 ## Public/app shell quality audit (15 checks)
 
-- [~] 1. View source: server route shells exist; rendered HTML check remains.
+- [x] 1. View source: nine production-built shells return meaningful server HTML.
 - [x] 2. Vite runtime: source audit finds none; the app is Next.js.
 - [x] 3. Page titles: public/auth shells have distinct metadata.
 - [x] 4. Meta descriptions: complete for public/auth shells.
 - [x] 5. `og:image`: file-based image plus shell metadata.
 - [x] 6. Structured data: Organization, WebSite, and blog Article JSON-LD.
-- [~] 7. Multiple H1s: audited shells have one; browser sweep remains.
-- [~] 8. Missing H1s: audited shells have one; browser sweep remains.
+- [x] 7. Multiple H1s: nine rendered public/auth shells each have exactly one.
+- [x] 8. Missing H1s: nine rendered public/auth shells each have exactly one.
 - [x] 9. Canonical: public/auth shells use route-specific canonicals.
 - [x] 10. AI robots: explicit public allow; `/app` and `/api` stay private.
 - [x] 11. Language: root HTML declares `lang="en"`.
-- [x] 12. Alt text: source test covers JSX image tags; browser sweep remains.
+- [x] 12. Alt text: source test and nine rendered shells find no missing `alt`.
 - [x] 13. Source maps: production browser source maps are not enabled.
-- [ ] 14. Console errors: local/preview browser evidence remains.
+- [x] 14. Console errors: nine-flow local QA reports zero unexpected errors.
 - [x] 15. JS bundle: client runtime imports no longer use the server-heavy core
        barrel. Emitted route graphs gzip to 464 KB (Tasks), 461 KB (Map), and
        538 KB (Calendar); the largest individual chunk is 131 KB gzip.

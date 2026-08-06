@@ -40,6 +40,22 @@ function importsCoreRuntime(sourceText: string): boolean {
   });
 }
 
+function metadataProperty(sourceText: string, name: string): string {
+  const parsed = ts.createSourceFile("page.tsx", sourceText, ts.ScriptTarget.Latest, true);
+  for (const statement of parsed.statements) {
+    if (!ts.isVariableStatement(statement)) continue;
+    const declaration = statement.declarationList.declarations.find(
+      (item) => ts.isIdentifier(item.name) && item.name.text === "metadata",
+    );
+    if (!declaration?.initializer || !ts.isObjectLiteralExpression(declaration.initializer)) continue;
+    const property = declaration.initializer.properties.find(
+      (item) => ts.isPropertyAssignment(item) && item.name.getText(parsed) === name,
+    );
+    if (property && ts.isPropertyAssignment(property)) return property.initializer.getText(parsed);
+  }
+  return "";
+}
+
 describe("public shell SEO contract", () => {
   it("gives every auth/legal shell unique complete metadata", () => {
     const pages = Object.entries(PUBLIC_SHELL_PAGES);
@@ -80,15 +96,30 @@ describe("public shell SEO contract", () => {
       "src/app/reset-password/page.tsx",
       "src/app/auth/error/page.tsx",
       "src/app/privacy/page.tsx",
+      "src/app/features/page.tsx",
+      "src/app/pricing/page.tsx",
+      "src/app/open-source/page.tsx",
+      "src/app/product-tour/page.tsx",
     ];
     for (const file of routeFiles) expect(source(file)).not.toMatch(/^\s*["']use client["']/);
     const h1Shells = [
       "src/components/landing/FocusedHome/Hero.tsx",
       "src/components/blog/BlogPageHeader.tsx",
       "src/components/docs/DocsHub.tsx",
-      ...routeFiles.slice(3),
+      "src/components/landing/OpenSource.tsx",
+      ...routeFiles.slice(3).filter((file) => file !== "src/app/open-source/page.tsx"),
     ];
     for (const file of h1Shells) expect(source(file).match(/<h1\b/g)).toHaveLength(1);
+  });
+
+  it("keeps route-level Open Graph overrides attached to the shared image", () => {
+    const routes = ["features", "pricing", "open-source", "product-tour"];
+    for (const route of routes) {
+      const page = source(`src/app/${route}/page.tsx`);
+      expect(metadataProperty(page, "openGraph")).toContain(
+        'images: ["/opengraph-image.png"]',
+      );
+    }
   });
 
   it("ships image alternatives without public source maps or a Vite runtime", () => {

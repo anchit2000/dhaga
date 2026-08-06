@@ -1063,7 +1063,7 @@ work the same follow-ups you already set — nothing new to maintain.
 See [Tasks & recurring follow-ups](/docs/guide/tasks-and-followups) for general
 tasks, recurrence, and keep-in-touch scheduling.
 
-![The follow-ups calendar](/docs/guide/calendar.png)
+![The calendar showing dated person and company tasks alongside an unscheduled personal task](/docs/guide/scheduling/calendar-light-desktop.webp)
 
 ## Month and list views
 
@@ -1071,6 +1071,11 @@ Two views share a toolbar at the top — **month** for the grid and **list** for
 week-at-a-glance agenda — with **prev / next / today** to move around. The
 calendar opens on the month grid on desktop and the list view on a phone,
 whichever reads better on the screen you're on.
+
+While Calendar is fetching its data, a stable skeleton keeps the navigation and
+page layout in place instead of flashing an empty screen.
+
+![The Calendar route's branded loading skeleton in the dark theme](/docs/guide/scheduling/calendar-loading-dark-desktop.webp)
 
 ## Reschedule by dragging
 
@@ -1141,7 +1146,9 @@ change for that calendar and nothing else:
 - **Your follow-ups get written out** to a separate calendar Dhaga creates,
   called **Dhaga**. Never your main calendar — so you can hide it, or delete it
   outright, without touching anything of your own. Reschedule a follow-up and its
-  event moves; mark it **done** or **dismiss** it and the event is removed.
+  event moves; mark it **done** or **dismiss** it and the event is removed. If a
+  note is deleted or reprocessed, follow-ups that note created—and their written
+  calendar events—are removed too.
 
 Both are per-connection and per-account: upgrading one calendar leaves any other
 connection exactly as it was. You can switch the write-out off on its own, from
@@ -1426,6 +1433,8 @@ Most confirmations hold an AI doubt; the fifth records a calendar choice:
 - **Follow-up date** — “next weekend” is scheduled for Saturday immediately.
   Keep it there or move it to Sunday; dismissing leaves Saturday scheduled.
 
+![A weekend date confirmation offering Keep Saturday and Move to Sunday](/docs/guide/scheduling/weekend-confirmation-light-desktop.webp)
+
 ## Confirm or dismiss
 
 Every row shows the question and — where relevant — the candidates to choose from.
@@ -1636,6 +1645,17 @@ Employment and schooling both draw an edge from the person to the organisation:
 
 Non-person nodes like gyms or projects show up here too — see
 [Custom entities](/docs/guide/entities).
+
+## See who is nearby
+
+Open **`/app/map`** to see contacts whose saved locations can be placed on a
+city-grain map. Tap a pin to open the people at that place. The coverage line
+below the map separates contacts that are mapped, still being placed, could not
+be placed, or have no location, so the visible pins never pretend to be your
+whole network. Dhaga uses only locations already in your graph; there is no live
+tracking.
+
+![The contact map loaded with a city pin, zoom controls, attribution, and coverage counts](/docs/guide/scheduling/map-light-desktop.webp)
 
 ---
 
@@ -2518,9 +2538,10 @@ beneath it.
   on a day your calendar is already full of meetings Dhaga shows fewer, and it
   never drops below one person — a busy day is the day you most need the
   reminder. It is also the capacity used by Keep-in-touch **Auto** weekday
-  assignment; choosing a crowded day explicitly still saves and shows a
-  warning. Also here: a **morning follow-up reminder** email that nudges you
-  when you have follow-ups or check-ins waiting, and an opt-in **Confirmations
+  assignment. Choosing a crowded day explicitly warns before anything is
+  written; **Save anyway** preserves that choice, while Cancel restores the
+  previous schedule. Also here: a **morning follow-up reminder** email that
+  nudges you when you have follow-ups or check-ins waiting, and an opt-in **Confirmations
   digest** email (off by default) that summarises the AI confirmations waiting
   for your review. The same tab holds **Birthdays & anniversaries**: how many
   days ahead a saved date counts as upcoming (0–90, default 7), and an opt-in
@@ -3130,12 +3151,16 @@ task needs only a title; its due date, person, and company are optional. Use
 dated task also appears on [Calendar](/docs/guide/calendar); an undated one stays
 in Tasks instead of receiving a made-up date.
 
+![The Tasks list showing general, person-linked, company-linked, dated, and unscheduled work](/docs/guide/scheduling/tasks-light-desktop.webp)
+
 ## Repeat work without duplicating it
 
-Tasks and person follow-ups can repeat weekly, monthly, or yearly. Choose the
-relevant weekday, day of month, or month and day. Completing the current
-occurrence advances the same item exactly once; dismissing it ends the series.
-Short months clamp to their final day.
+Tasks and person follow-ups can repeat daily, weekly, monthly, or yearly. Choose
+the interval and, where relevant, the weekday, day of month, or month and day.
+Completing the current occurrence advances the same item exactly once;
+dismissing it ends the series. Short months clamp to their final day.
+
+![A weekly task editor with an optional company and a chosen weekday](/docs/guide/scheduling/recurring-task-light-desktop.webp)
 
 ## Dates mentioned in notes
 
@@ -3157,10 +3182,23 @@ shows a warning before anything is saved; choose **Save anyway** to keep that
 weekday, or cancel to restore the previous schedule. Due dates follow your
 Settings time zone; older elapsed-day-only contacts continue to work unchanged.
 
+![A mobile Keep in touch card warning that Monday is over capacity before Save anyway](/docs/guide/scheduling/keep-in-touch-warning-dark-mobile.webp)
+
 **One calendar, two kinds of work**
 
 Person follow-ups and general tasks share calendar and completion rules. Linking
 context is optional; Dhaga never invents a placeholder person.
+
+## When a link goes nowhere
+
+If a saved link points to a page that moved or has not been built yet, Dhaga
+shows the cloth-shop search scene instead of a generic error. From there you can
+open the app or return to the homepage. The same recovery actions work inside
+the signed-in app and on public pages, in light and dark themes.
+
+![The signed-in app's cloth-shop 404 page with recovery actions on a phone](/docs/guide/scheduling/app-404-dark-mobile.webp)
+
+![The public cloth-shop 404 page with Open Dhaga and homepage actions on a phone](/docs/guide/scheduling/public-404-light-mobile.webp)
 
 ---
 

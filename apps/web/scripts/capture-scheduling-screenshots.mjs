@@ -8,6 +8,8 @@ const BASE = (process.env.BASE_URL ?? "http://localhost:3010").replace(/\/+$/, "
 const EMAIL = process.env.SCREENSHOT_EMAIL ?? "codex-scheduling@local.test";
 const PASSWORD = process.env.SCREENSHOT_PASSWORD;
 const CONTACT_ID = "docs-scheduling-primary-contact";
+const APP_NOT_FOUND_PATH = "/app/this-page-is-still-being-woven";
+const PUBLIC_NOT_FOUND_PATH = "/this-page-is-still-being-woven";
 const OUT = resolve(process.env.SCREENSHOT_OUT ?? "public/docs/guide/scheduling");
 if (!PASSWORD) throw new Error("Set SCREENSHOT_PASSWORD for the disposable local account.");
 
@@ -23,7 +25,12 @@ async function capture(page, file, options = {}) {
 function watchErrors(page) {
   page.on("pageerror", (error) => browserErrors.push(`pageerror ${page.url()} ${error.message}`));
   page.on("console", (message) => {
-    if (message.type() === "error") browserErrors.push(`console ${page.url()} ${message.text()}`);
+    const isExpectedNotFound =
+      message.text().includes("404 (Not Found)") &&
+      [APP_NOT_FOUND_PATH, PUBLIC_NOT_FOUND_PATH].includes(new URL(page.url()).pathname);
+    if (message.type() === "error" && !isExpectedNotFound) {
+      browserErrors.push(`console ${page.url()} ${message.text()}`);
+    }
   });
 }
 
@@ -83,8 +90,10 @@ await dark.page.route("**/app/calendar**", async (route) => {
   await new Promise((resolveDelay) => setTimeout(resolveDelay, 1_500));
   await route.continue();
 });
-await dark.page.goto(`${BASE}/app/tasks`, { waitUntil: "networkidle" });
-await dark.page.getByRole("link", { name: "Calendar" }).click();
+await dark.page.goto(`${BASE}/app/tasks`, { waitUntil: "domcontentloaded" });
+const calendarLink = dark.page.getByRole("link", { name: "Calendar" });
+await calendarLink.waitFor();
+await calendarLink.click();
 await dark.page.locator('[aria-label="Loading calendar"]').waitFor({ timeout: 3_000 });
 await capture(dark.page, "calendar-loading-dark-desktop.webp", { fullPage: false });
 await dark.page.waitForURL("**/app/calendar");
@@ -96,7 +105,7 @@ await mobile.page.getByLabel("Day of week").selectOption("1");
 await mobile.page.getByText("This change has not been saved yet.").waitFor();
 await mobile.page.getByText("This change has not been saved yet.").scrollIntoViewIfNeeded();
 await capture(mobile.page, "keep-in-touch-warning-dark-mobile.webp", { fullPage: false });
-await mobile.page.goto(`${BASE}/app/this-page-is-still-being-woven`, { waitUntil: "networkidle" });
+await mobile.page.goto(`${BASE}${APP_NOT_FOUND_PATH}`, { waitUntil: "networkidle" });
 await mobile.page.getByText("404 · Loose thread").waitFor();
 await capture(mobile.page, "app-404-dark-mobile.webp");
 await mobile.context.close();
@@ -106,9 +115,10 @@ const publicContext = await browser.newContext({
   viewport: { width: 375, height: 812 },
   reducedMotion: "reduce",
 });
+await publicContext.addInitScript(() => localStorage.setItem("theme", "light"));
 const publicPage = await publicContext.newPage();
 watchErrors(publicPage);
-await publicPage.goto(`${BASE}/this-page-is-still-being-woven`, { waitUntil: "networkidle" });
+await publicPage.goto(`${BASE}${PUBLIC_NOT_FOUND_PATH}`, { waitUntil: "networkidle" });
 await publicPage.getByText("404 · Loose thread").waitFor();
 await capture(publicPage, "public-404-light-mobile.webp");
 await publicContext.close();

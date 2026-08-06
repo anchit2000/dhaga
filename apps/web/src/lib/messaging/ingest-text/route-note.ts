@@ -4,8 +4,8 @@ import { createNoteSubjectConfirmation } from "@/lib/repo/confirmations";
 import { findRelationshipCandidates } from "@/lib/repo/edge-suggestions";
 import type { NoteKind } from "@/lib/repo/notes";
 import { chooseContactQuestion } from "@/utils/constants/messaging";
-import { saveNoteWithFacts } from "../note-write";
 import { focusContact, recordAttribution, type WalkState } from "../walk-state";
+import { attachNote, type IngestedNote } from "./attach";
 
 /**
  * Does `subjectName` refer to `contactName`? Exact, or the subject is that
@@ -20,13 +20,18 @@ export function namesSamePerson(subjectName: string, contactName: string): boole
   return name === subject || name.startsWith(`${subject} `);
 }
 
-/** True when the note was fully handled (attached, asked about, or salvaged). */
+/** `handled` false means the caller falls through to the normal establish.
+ *  When handled, `note` is where the text landed (null when nothing is written
+ *  yet), so a caller can hang the photo it was read off onto that note. */
+export type RouteOutcome = { handled: true; note: IngestedNote | null } | { handled: false };
+
+/** Handled = attached, or raised as a confirmation for the user to answer. */
 export async function routeNote(
   state: WalkState,
   text: string,
   classification: CaptureClassification,
   attachKind: NoteKind,
-): Promise<boolean> {
+): Promise<RouteOutcome> {
   const { userId } = state;
   const subjectName = classification.subjectName?.trim() ?? "";
   const noteBody = classification.noteBody?.trim() || text;
@@ -43,18 +48,11 @@ export async function routeNote(
   if (route === "attach") {
     const target = candidates[0];
     focusContact(state, target.id, target.name);
-    state.noteCount += 1;
     recordAttribution(state, target.name, "named");
-    state.factCount += await saveNoteWithFacts({
-      userId,
-      contactId: target.id,
-      contactName: target.name,
-      kind: attachKind,
-      body: noteBody,
-    });
-    return true;
+    const note = await attachNote(state, target.id, target.name, noteBody, attachKind);
+    return { handled: true, note };
   }
-  if (route !== "confirm_ambiguous") return false; // confirm_create → normal establish
+  if (route !== "confirm_ambiguous") return { handled: false }; // → normal establish
 
   // AMBIGUOUS → the confirmation inbox, never a guess and never a chat
   // interrogation. The note body rides in the confirmation payload, so NOTHING
@@ -76,5 +74,7 @@ export async function routeNote(
     }),
   );
   state.pendingConfirmations += 1;
-  return true;
+  // Nothing is attached to anybody until the user picks in the inbox, so there
+  // is no note yet to hang the photo it was read off onto.
+  return { handled: true, note: null };
 }

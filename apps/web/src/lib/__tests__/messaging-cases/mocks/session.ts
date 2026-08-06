@@ -1,15 +1,17 @@
 import { randomUUID } from "node:crypto";
-import type { ExtractedContact } from "@dhaga/core";
 import type { MessagingSessionItemRow } from "@/lib/db/schema";
 import type { ConfirmationOption } from "@dhaga/core";
-import { store } from "./harness";
+import { store } from "../harness";
 
 /**
- * Module doubles for everything the inbound path writes through. Each is a
- * plain in-memory implementation over `store` — enough for the assertions to be
- * about BEHAVIOUR (who was created, what was replied) rather than call spying.
- * Kept apart from harness.ts so the fixture and the doubles stay separate
- * concerns (and both stay inside the 150-line rule).
+ * The doubles for the webhook/batch PLUMBING — sessions, items, pending
+ * questions, and the AI gateways a batch calls. What a batch writes into the
+ * graph is doubled in ./graph.
+ *
+ * Each is a plain in-memory implementation over `store` — enough for the
+ * assertions to be about BEHAVIOUR (who was created, what was replied) rather
+ * than call spying. Kept apart from harness.ts so the fixture and the doubles
+ * stay separate concerns (and both stay inside the 150-line rule).
  */
 
 export function itemRow(kind: string, payload: unknown): MessagingSessionItemRow {
@@ -84,31 +86,6 @@ export function confirmationsMock() {
   };
 }
 
-export function contactsMock() {
-  const create = (name: string): string => {
-    const id = randomUUID();
-    store.contacts.set(id, name);
-    return id;
-  };
-  return {
-    createContact: async (input: ExtractedContact) => create(input.name),
-    createContactProfile: async (input: { name: string }) => create(input.name),
-  };
-}
-
-export function notesMock() {
-  return {
-    addNote: async (contactId: string, kind: string, body: string) => {
-      store.notes.push({ contactId, kind, body });
-      return randomUUID();
-    },
-  };
-}
-
-export function embeddingsMock() {
-  return { upsertEmbedding: async () => undefined };
-}
-
 export function noteExtractionMock() {
   return {
     extractAndApplyNote: async (
@@ -128,9 +105,13 @@ export function contactExtractionMock() {
   return {
     extractContactFromText: async () => {
       store.contactParseCalls += 1;
-      const { contact, isNoteAboutPerson, subjectName, noteBody } =
+      const { contact, isNoteAboutPerson, subjectName, noteBody, isInstruction } =
         store.extractionQueue.shift() ?? store.extraction;
-      return { contact, classification: { isNoteAboutPerson, subjectName, noteBody }, via: "ai" };
+      return {
+        contact,
+        classification: { isNoteAboutPerson, subjectName, noteBody, isInstruction: isInstruction ?? false },
+        via: "ai",
+      };
     },
   };
 }

@@ -21,6 +21,7 @@ export {
   MESSAGING_SESSION_IDLE_MINUTES,
   MESSAGING_SESSION_STATUSES,
   NOTE_ATTRIBUTION_BASES,
+  UNNAMED_CONTACT_NAME,
   extractLinkToken,
   idleWindowLabel,
   isDoneDelimiter,

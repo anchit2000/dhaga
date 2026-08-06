@@ -61,9 +61,13 @@ before wiring up per-user linking.
 - **Text** — a message you type or forward becomes a note, and Dhaga
   auto-extracts facts from it, each with a receipt back to the message.
 - **Photo** — a business card or badge is scanned into a contact; a photo that
-  *isn't* a card (a whiteboard, a poster, a conference schedule) is read as text
-  and kept as a note. Send a caption with it and the caption becomes a note on
-  that person.
+  *isn't* a card (a whiteboard, a poster, a conference schedule, a society
+  noticeboard) is read as text and kept as a note. Send a caption with it and
+  the caption becomes a note on that person. **The photo itself is kept too**,
+  alongside the text read off it, so you can always check the reading against
+  the original — unless you've turned photo storage off in
+  [Settings](/docs/guide/settings), which governs forwarded photos exactly as it
+  governs a card scan. Delete the note and its photo goes with it.
 - **Location** — kept as a note on the current contact.
 
 Anything else — a **voice note** (see below), a video, a document, a sticker, an
@@ -85,6 +89,25 @@ Order matters, but **naming a person beats order**:
 - A leading **text with no card** establishes the contact on its own, the same
   way pasted text does in [quick-add](/docs/guide/capturing-people).
 - Forward **several cards** in one batch and you get several contacts.
+
+**Telling the bot what to do is not a note.** A message like *"create a new
+contact"* or *"save this under Acme"* is read as an instruction, so it isn't
+stored in anyone's timeline and no follow-ups are invented from it. If it names
+who the capture is about and nothing has been saved yet, that name is what the
+new contact is called. Anything carrying real information stays a note, even
+when it reads like a command to yourself — *"call Priya on Tuesday"* is a note,
+and still becomes a follow-up.
+
+**A capture that names no person still gets a usable name.** A noticeboard or
+an office directory has an organisation on it but nobody in particular, so the
+contact is named after the organisation rather than saved blank — a nameless
+contact can't be found by search later. If there's no organisation either, it's
+saved as *"Unnamed contact"* for you to rename.
+
+Where the source says **whose** number or address each one is — *"Society office
+– 7507626215"*, *"MNGL – 9764648750 (Navnath)"*, *"admin@…"* — those labels are
+kept on the contact's phone and email entries instead of arriving as an
+anonymous list.
 
 ## When Dhaga isn't sure who you mean
 

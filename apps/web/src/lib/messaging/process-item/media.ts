@@ -1,11 +1,15 @@
 import type { LLMImage } from "@dhaga/core";
 import type { InboundMediaRef } from "@dhaga/core/src/messaging";
 import { hasTranscription, getTranscriptionClient } from "@dhaga/core/src/transcription";
+import { logActionError } from "@/lib/actions/resilience";
 import { scanCardImages } from "@/lib/ai/card-scan";
 import { AiBudgetError } from "@/lib/ai/metering";
 import { transcribePhotoNote } from "@/lib/ai/photo-note";
+import { withUserDb } from "@/lib/db/request-scope";
+import { saveCardImages } from "@/lib/repo/card-images";
+import { shouldStoreCardPhotos } from "@/lib/repo/settings";
 import { photoUnreadableNotice, voiceSkippedNotice } from "@/utils/constants/messaging";
-import { ingestText } from "../ingest-text";
+import { ingestText, type IngestedNote } from "../ingest-text";
 import { createContactWithNote } from "../note-write";
 import { addNotice, setCurrentContact, type WalkState } from "../walk-state";
 import { resolveImageMediaType } from "./image-type";
@@ -43,13 +47,14 @@ export async function handleImage(
   if (contact) {
     // The receipt is the card's own fields (already stored structurally), so it
     // gets no fact extraction — the caption, a human sentence, does.
-    const { contactId } = await createContactWithNote(
+    const { contactId, noteId } = await createContactWithNote(
       state.userId,
       contact,
       "capture_source",
       scan.rawText ?? "",
     );
     setCurrentContact(state, contactId, contact.name);
+    await keepPhoto(state, { contactId, noteId }, image);
     if (caption?.trim()) await ingestText(state, caption, "capture_source", "text");
     return;
   }
@@ -70,7 +75,41 @@ export async function handleImage(
   // Kind "photo": the body was read OFF a photo, so the contact timeline (and
   // the re-run-extraction affordance) shows it for what it is.
   const body = caption?.trim() ? `${transcript}\n\n${caption.trim()}` : transcript;
-  await ingestText(state, body, "photo", "photo");
+  const ingested = await ingestText(state, body, "photo", "photo");
+  await keepPhoto(state, ingested, image);
+}
+
+/**
+ * Keep the photo itself, not just what was read off it. The web capture surfaces
+ * have always done this (../../actions/photo-note.ts, api/capture/handlers.ts);
+ * forwarding the same photo over WhatsApp/Telegram silently kept only the
+ * transcription, so a noticeboard or handwritten page arrived with no way to
+ * check the reading against the original.
+ *
+ * Governed by the SAME per-user privacy switch as a card scan — one setting
+ * decides whether any captured photo is kept — and hung off the note where one
+ * exists, so deleting that note hard-deletes the photo with it.
+ *
+ * Best-effort on purpose: the note is already written and the sender already
+ * charged for the vision call, so a failure to keep the receipt must not throw
+ * that away. A photo that lands on no note at all (an unanswered "which person
+ * did you mean?") is simply not stored — there is nothing yet to attach it to.
+ */
+async function keepPhoto(
+  state: WalkState,
+  ingested: IngestedNote | null,
+  image: LLMImage,
+): Promise<void> {
+  if (!ingested) return;
+  try {
+    await withUserDb(state.userId, async () => {
+      if (!(await shouldStoreCardPhotos())) return;
+      await saveCardImages(ingested.contactId, ingested.noteId, [image]);
+    });
+  } catch (error) {
+    // No PII: the id and the failure, never the image or what was read off it.
+    logActionError("messaging.keepPhoto", error);
+  }
 }
 
 /**

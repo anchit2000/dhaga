@@ -4,8 +4,10 @@ import {
   addressSchema,
   contactMethodSchema,
   customFieldSchema,
+  extractedMethodSchema,
   importantDateSchema,
   positionSchema,
+  type ExtractedMethod,
   type Position,
 } from "./contact-fields";
 
@@ -14,12 +16,18 @@ import {
  * card OCR text, LinkedIn page text). All capture surfaces converge on this
  * shape before the user reviews and saves it.
  *
- * Deliberately kept lean and string-valued: extraction/OCR sees one primary
- * role and bare emails/phones, and every capture handler, CSV importer, and
- * test constructs this. The richer, editable shape people actually curate is
+ * Deliberately kept lean: extraction/OCR sees one primary role, and every
+ * capture handler, CSV importer, and test constructs this. Emails and phones
+ * are the one exception to "lean" — they carry the label written beside them
+ * ({@link extractedMethodSchema}), because a source that bothers to say which
+ * number is the society office and which is the gas connection is stating a
+ * fact the user would otherwise have to re-enter by hand.
+ *
+ * The richer, editable shape people actually curate is
  * {@link contactProfileSchema} below; `profileFromExtracted` lifts one into
- * the other (a single current position, unlabeled methods) at the write
- * boundary, so capture output becomes editable without duplicating logic.
+ * the other (a single current position, methods widened with a free-form note)
+ * at the write boundary, so capture output becomes editable without
+ * duplicating logic.
  *
  * Structured-outputs note: every field is required (nullable, not optional)
  * so the Zod-derived JSON schema stays strict-mode compatible.
@@ -28,8 +36,8 @@ export const extractedContactSchema = z.object({
   name: z.string().describe("Full name of the person"),
   title: z.string().nullable().describe("Job title, or null if absent"),
   company: z.string().nullable().describe("Company or organisation name, or null"),
-  emails: z.array(z.string()).describe("Email addresses found, empty if none"),
-  phones: z.array(z.string()).describe("Phone numbers found, empty if none"),
+  emails: z.array(extractedMethodSchema).describe("Email addresses found, empty if none"),
+  phones: z.array(extractedMethodSchema).describe("Phone numbers found, empty if none"),
   links: z
     .array(z.string())
     .describe("Websites / LinkedIn / social URLs found, empty if none"),
@@ -84,12 +92,13 @@ export function emptyContactProfile(): ContactProfile {
 
 /**
  * Lift a capture-time ExtractedContact into the editable profile: its single
- * title/company becomes one current position, and bare method strings become
- * unlabeled ContactMethods the user can label later.
+ * title/company becomes one current position, and each extracted method keeps
+ * the label the source gave it (null where it gave none) plus an empty note the
+ * user can fill in later.
  */
 export function profileFromExtracted(extracted: ExtractedContact): ContactProfile {
-  const toMethods = (values: string[]) =>
-    values.map((value) => ({ value, label: null, note: null }));
+  const toMethods = (methods: ExtractedMethod[]) =>
+    methods.map((method) => ({ value: method.value, label: method.label, note: null }));
   // Links get a scheme here: capture reads a card's `pune.stpi.in` verbatim,
   // and the form's url input rejects it on submit (see withUrlScheme).
   const toLinks = (values: string[]) =>

@@ -1,16 +1,22 @@
+import type { ExtractedContact } from "@dhaga/core";
 import { extractContactFromText } from "@/lib/ai/contact-extraction";
 import type { NoteKind } from "@/lib/repo/notes";
-import { createContactWithNote, extractNoteFacts, saveNoteWithFacts } from "../note-write";
+import { UNNAMED_CONTACT_NAME } from "@/utils/constants/messaging";
+import { createContactWithNote, extractNoteFacts } from "../note-write";
 import { recordAttribution, setCurrentContact, type WalkState } from "../walk-state";
+import { attachNote, isSenderAuthored, type IngestedNote } from "./attach";
 import { namesSamePerson, routeNote } from "./route-note";
+
+export type { IngestedNote } from "./attach";
 
 /**
  * Establish-or-attach for a piece of free text (a forwarded note, a signature
- * block, a transcribed voice note), using exactly the router the web quick-add
- * uses (routeNoteCapture) so both surfaces behave the same:
+ * block, a transcribed voice note, the text read off a photo), using exactly
+ * the router the web quick-add uses (routeNoteCapture) so both surfaces behave
+ * the same:
  *
  * - one confident match  → attach silently to that person (no duplicate contact)
- * - several plausible people → ASK IN THE CHAT (a pending question, ../answer)
+ * - several plausible people → the confirmation inbox (./route-note)
  * - nobody matches / not a note → create the contact, text as its receipt
  *
  * EVERY note is classified, including one arriving mid-batch with a cursor
@@ -20,56 +26,62 @@ import { namesSamePerson, routeNote } from "./route-note";
  * and silently filing a note about Bob onto Alice, whose card merely happened to
  * come first, is the one failure this walk must not have.
  *
- * Only ONE question is asked per batch: a second ambiguous note is saved under a
- * new person and reported in the summary, which keeps this a single short-lived
- * record instead of a conversational state machine.
+ * Returns where the text landed, so a caller holding the artifact it was read
+ * off (../process-item/media: the photo) can hang that onto the same note.
  */
 export async function ingestText(
   state: WalkState,
   text: string,
   establishKind: NoteKind,
   attachKind: NoteKind,
-): Promise<void> {
-  if (text.trim().length === 0) return;
+): Promise<IngestedNote | null> {
+  if (text.trim().length === 0) return null;
   const { userId } = state;
 
   // The parse runs with no DB connection held; it also classifies whether this
-  // is a note ABOUT someone, and who.
+  // is a note ABOUT someone, who, and whether it is aimed at US rather than the
+  // graph.
   const extracted = await extractContactFromText(userId, text);
   const { classification } = extracted;
   const subject = classification.subjectName?.trim() ?? "";
+  const establishing = state.currentContactId == null;
 
-  if (classification.isNoteAboutPerson && !aboutCurrentContact(state, subject)) {
+  // An instruction says what to DO with the capture; it is not content. Stored
+  // as a note it lands in someone's timeline as noise AND hands fact extraction
+  // an imperative, which duly reads it back as a follow-up the sender never
+  // asked for. With a contact already on the cursor the details it refers to
+  // are saved, so the instruction can simply be dropped.
+  //
+  // With NOTHING on the cursor it is all we have, so it falls through to
+  // ESTABLISH and creates the contact it names — nothing may be dropped
+  // silently. It is kept off ./route-note for the same reason: an imperative
+  // must never raise a "who is this about?" confirmation.
+  const instructing = isSenderAuthored(attachKind) && classification.isInstruction;
+  if (instructing && !establishing) return null;
+
+  if (!instructing && classification.isNoteAboutPerson && !aboutCurrentContact(state, subject)) {
     // Names somebody other than whoever the cursor is on: let the router decide.
-    // A `false` here means "names a person we don't know yet" — fall through and
-    // establish THEM, rather than filing their note onto the cursor.
-    const handled = await routeNote(state, text, classification, attachKind);
-    if (handled) return;
+    // An unhandled result means "names a person we don't know yet" — fall
+    // through and establish THEM, rather than filing their note onto the cursor.
+    const routed = await routeNote(state, text, classification, attachKind);
+    if (routed.handled) return routed.note;
   } else if (state.currentContactId != null) {
     // The weakest attribution in the flow: this note named nobody, so it lands
     // on whoever the batch was already on. Recorded as `assumed` so the summary
     // says so out loud instead of passing a guess off as a fact.
-    state.noteCount += 1;
-    recordAttribution(state, state.currentContactName ?? "", "assumed");
-    state.factCount += await saveNoteWithFacts({
-      userId,
-      contactId: state.currentContactId,
-      contactName: state.currentContactName ?? "",
-      kind: attachKind,
-      body: text,
-    });
-    return;
+    const contactName = state.currentContactName ?? "";
+    recordAttribution(state, contactName, "assumed");
+    return attachNote(state, state.currentContactId, contactName, text, attachKind);
   }
 
-  // ESTABLISH. A note-shaped capture can parse to a nameless contact; the
-  // classifier's subject is the better name then, and an unnamed contact helps
-  // nobody.
-  const parsed = extracted.contact;
-  const contact = parsed.name.trim() ? parsed : { ...parsed, name: subject };
+  // ESTABLISH.
+  const contact = namedContact(extracted.contact, subject);
   const { contactId, noteId } = await createContactWithNote(userId, contact, establishKind, text);
   setCurrentContact(state, contactId, contact.name);
   recordAttribution(state, contact.name, "new");
-  if (noteId) {
+  // An instruction has no facts in it — only a verb aimed at us — so it is kept
+  // as the receipt of what arrived but never mined.
+  if (noteId && !instructing) {
     state.factCount += await extractNoteFacts({
       userId,
       contactId,
@@ -78,6 +90,25 @@ export async function ingestText(
       body: text,
     });
   }
+  return { contactId, noteId };
+}
+
+/**
+ * Give the capture a name it can be found by. Extraction returns an empty name
+ * for anything that isn't a person — an office directory, a society
+ * noticeboard, a badge printed with only a company — and a contact saved with
+ * an empty name renders as a blank row that no search will ever surface again.
+ *
+ * The classifier's subject is the best fallback, then the organisation itself,
+ * then a visible placeholder the user can rename. Promoting the organisation
+ * CLEARS `company`, or the profile would show it employing itself.
+ */
+function namedContact(parsed: ExtractedContact, subject: string): ExtractedContact {
+  if (parsed.name.trim()) return parsed;
+  if (subject) return { ...parsed, name: subject };
+  const org = parsed.company?.trim();
+  if (org) return { ...parsed, name: org, company: null };
+  return { ...parsed, name: UNNAMED_CONTACT_NAME };
 }
 
 /**

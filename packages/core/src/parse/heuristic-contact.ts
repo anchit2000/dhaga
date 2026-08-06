@@ -1,5 +1,6 @@
 import type { ExtractedContact } from "../schemas/contact";
 import { emptyExtractedContact } from "../schemas/contact";
+import { bareMethods } from "../schemas/contact-fields";
 
 /**
  * No-LLM contact parser (BRD cost layer 1: don't call an LLM when code can
@@ -30,7 +31,9 @@ export function heuristicContactParse(rawText: string): ExtractedContact {
   // otherwise-valid accented name unless it's composed first.
   const text = rawText.normalize("NFC");
 
-  contact.emails = [...new Set(text.match(EMAIL_RE) ?? [])];
+  // Unlabeled: matching a value against a regex says nothing about whose it is.
+  // Only the AI path reads the label written beside a method.
+  contact.emails = bareMethods([...new Set(text.match(EMAIL_RE) ?? [])]);
   // Dedupe after stripping trailing punctuation, not before — otherwise the
   // same link seen once mid-sentence and once at a sentence's end (with a
   // trailing period the URL regex swallows) survives as two Set entries and
@@ -40,8 +43,8 @@ export function heuristicContactParse(rawText: string): ExtractedContact {
   ];
   // Strip emails/URLs before phone matching so "+1 555..." doesn't collide.
   const withoutInline = text.replace(EMAIL_RE, " ").replace(URL_RE, " ");
-  contact.phones = [...new Set(withoutInline.match(PHONE_RE) ?? [])].map((p) =>
-    p.trim(),
+  contact.phones = bareMethods(
+    [...new Set(withoutInline.match(PHONE_RE) ?? [])].map((p) => p.trim()),
   );
 
   const lines = text
@@ -67,7 +70,7 @@ export function heuristicContactParse(rawText: string): ExtractedContact {
     const candidate = lines.find(
       (line) => line !== nameLine && line !== titleLine && isNameLike(line),
     );
-    contact.company = candidate ?? companyFromEmailDomain(contact.emails[0]);
+    contact.company = candidate ?? companyFromEmailDomain(contact.emails[0]?.value);
   }
 
   return contact;

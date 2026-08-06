@@ -17,6 +17,10 @@ export interface AsyncDataOptions<T> {
   /** How long a result stays fresh (no auto refetch on remount);
    *  "forever" = only polling or an explicit refetch() updates it. */
   staleMs?: number | "forever";
+  /** Automatic retries after a failed fetch (default 0 — no implicit retries).
+   *  Opt in per query where a transient blip would otherwise strand the user
+   *  on an empty result they have no way to re-trigger. */
+  retries?: number;
   /** Poll cadence in ms. A function decides from the latest data and the
    *  consecutive-failure count; return false to stop polling. */
   refetchIntervalMs?:

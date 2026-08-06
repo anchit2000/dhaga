@@ -3,14 +3,16 @@ import { eq } from "drizzle-orm";
 import { emptyExtractedContact, relationshipRole } from "@dhaga/core";
 import type { NoteExtraction } from "@dhaga/core";
 import { getDb } from "@/lib/db/request-scope";
-import { contacts } from "@/lib/db/schema";
+import { contacts, edges } from "@/lib/db/schema";
 import { createContact, findOrCreateCompany } from "@/lib/repo/contacts";
 import { createEvent } from "@/lib/repo/events";
 import { addNote } from "@/lib/repo/notes";
 import { applyExtraction } from "@/lib/repo/graph";
 import {
   createRelationshipEdge,
+  deleteRelationshipEdge,
   listContactRelationships,
+  updateRelationshipEdge,
 } from "@/lib/repo/relationships";
 
 function personRelationship(objectName: string): NoteExtraction {
@@ -66,6 +68,157 @@ describe("listContactRelationships reads one stored edge from both ends", () => 
     // WHY: the SAME stored row must invert here — no second edge is written.
     expect(fromPriya[0].role).toBe("parent");
     expect(fromPriya[0].mentioned).toBe(false);
+  });
+});
+
+describe("updateRelationshipEdge corrects an edge without recreating it", () => {
+  it("re-labels and reverses the one stored row, keeping its id and receipt", async () => {
+    const arjun = await createContact(
+      { ...emptyExtractedContact(), name: "Arjun Edit Test" },
+      "manual",
+    );
+    const note = await addNote(arjun, "text", "Meera is my son");
+    // Stored as Arjun --parent_of--> Meera, with the note as its receipt.
+    await applyExtraction(arjun, note, personRelationship("Meera Edit Test"));
+    const [before] = await listContactRelationships(arjun);
+    expect(before.role).toBe("child");
+    expect(before.viewerIsSource).toBe(true);
+
+    // The extraction had it backwards: Meera is the parent. Correcting the
+    // direction rewrites the SAME row, not a delete plus a new edge.
+    const wasPointingAt = await updateRelationshipEdge(before.edgeId, {
+      srcId: before.contactId,
+      srcKind: "contact",
+      dstId: arjun,
+      dstKind: "contact",
+      predicate: "parent_of",
+    });
+    // WHY: the caller revalidates the pages this edge LEFT as well as the ones
+    // it joins, so the pre-edit endpoints have to come back out.
+    expect(wasPointingAt).toEqual({
+      srcKind: "contact",
+      srcId: arjun,
+      dstKind: "contact",
+      dstId: before.contactId,
+    });
+
+    const after = await listContactRelationships(arjun);
+    // WHY: an edit that recreated the edge would issue a new id and orphan the
+    // note receipt — the fix must not cost the user the edge's provenance.
+    expect(after).toHaveLength(1);
+    expect(after[0].edgeId).toBe(before.edgeId);
+    expect(after[0].role).toBe("parent");
+    expect(after[0].viewerIsSource).toBe(false);
+    const db = await getDb();
+    const [row] = await db
+      .select({ sourceNoteId: edges.sourceNoteId })
+      .from(edges)
+      .where(eq(edges.id, before.edgeId));
+    expect(row.sourceNoteId).toBe(note);
+
+    // WHY: one row still has to read correctly from both ends after the edit.
+    const fromMeera = await listContactRelationships(before.contactId);
+    expect(fromMeera[0].role).toBe("child");
+  });
+
+  it("changes only the label when the direction is left alone", async () => {
+    const dev = await createContact(
+      { ...emptyExtractedContact(), name: "Dev Label Test" },
+      "manual",
+    );
+    const lab = await createContact(
+      { ...emptyExtractedContact(), name: "Lata Label Test" },
+      "manual",
+    );
+    await createRelationshipEdge({
+      srcId: dev,
+      srcKind: "contact",
+      dstId: lab,
+      dstKind: "contact",
+      predicate: "parent_of",
+    });
+    const [before] = await listContactRelationships(dev);
+    await updateRelationshipEdge(before.edgeId, {
+      srcId: dev,
+      srcKind: "contact",
+      dstId: lab,
+      dstKind: "contact",
+      predicate: "mentor_of",
+    });
+    const [after] = await listContactRelationships(dev);
+    expect(after.predicate).toBe("mentor_of");
+    expect(after.viewerIsSource).toBe(true);
+  });
+
+  it("repoints the edge at a different person, leaving the old one alone", async () => {
+    const host = await createContact(
+      { ...emptyExtractedContact(), name: "Nina Repoint Host" },
+      "manual",
+    );
+    const wrong = await createContact(
+      { ...emptyExtractedContact(), name: "Kabir Repoint Wrong" },
+      "manual",
+    );
+    const right = await createContact(
+      { ...emptyExtractedContact(), name: "Kabir Repoint Right" },
+      "manual",
+    );
+    const edgeId = await createRelationshipEdge({
+      srcId: host,
+      srcKind: "contact",
+      dstId: wrong,
+      dstKind: "contact",
+      predicate: "mentor_of",
+    });
+
+    // WHY (the reported case): two people share a name and the search picked
+    // the wrong one. Correcting that must move the edge, not duplicate it.
+    await updateRelationshipEdge(edgeId, {
+      srcId: host,
+      srcKind: "contact",
+      dstId: right,
+      dstKind: "contact",
+      predicate: "mentor_of",
+    });
+
+    const fromHost = await listContactRelationships(host);
+    expect(fromHost).toHaveLength(1);
+    expect(fromHost[0].edgeId).toBe(edgeId);
+    expect(fromHost[0].contactId).toBe(right);
+    // WHY: the person it used to point at must be left with nothing — a stale
+    // row on their page is exactly the bug the correction was fixing.
+    expect(await listContactRelationships(wrong)).toHaveLength(0);
+    expect(await listContactRelationships(right)).toHaveLength(1);
+  });
+
+  it("reports a deleted edge instead of silently succeeding", async () => {
+    const gone = await createContact(
+      { ...emptyExtractedContact(), name: "Gone Edge Source" },
+      "manual",
+    );
+    const other = await createContact(
+      { ...emptyExtractedContact(), name: "Gone Edge Target" },
+      "manual",
+    );
+    const edgeId = await createRelationshipEdge({
+      srcId: gone,
+      srcKind: "contact",
+      dstId: other,
+      dstKind: "contact",
+      predicate: "sibling_of",
+    });
+    await deleteRelationshipEdge(edgeId);
+    // WHY: the dialog can outlive the row (deleted in another tab). Returning
+    // null lets the action say so rather than report a save that never landed.
+    expect(
+      await updateRelationshipEdge(edgeId, {
+        srcId: other,
+        srcKind: "contact",
+        dstId: gone,
+        dstKind: "contact",
+        predicate: "sibling_of",
+      }),
+    ).toBeNull();
   });
 });
 

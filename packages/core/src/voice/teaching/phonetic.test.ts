@@ -15,7 +15,7 @@ function makeTerm(term: string, aliases: string[] = []): VocabTerm {
   return { term, aliases, keys, boost: 8, createdAt: 0, updatedAt: 0 };
 }
 
-const ANCHIT = makeTerm("Anchit", ["An chit", "Ankit", "Aunchit"]);
+const RANCHIT = makeTerm("Ranchit", ["Rran chit", "Rrankit", "Rahnchit"]);
 
 function dictWith(...terms: VocabTerm[]): DoubleMetaphoneDictionary {
   const dict = new DoubleMetaphoneDictionary();
@@ -25,18 +25,18 @@ function dictWith(...terms: VocabTerm[]): DoubleMetaphoneDictionary {
 
 describe("phoneticKeys", () => {
   it("gives a multi-word alias the SAME primary key as the one-word canonical", () => {
-    // The whole feature rests on this: "an chit" (two words) must collapse onto
+    // The whole feature rests on this: "ran chit" (two words) must collapse onto
     // "anchit" (one word). Joining per-word codes with no separator is what makes
     // that true — join with a space and this equality breaks, killing correction.
-    expect(phoneticKeys("An chit")).toContain("ANXT");
-    expect(phoneticKeys("Anchit")).toContain("ANXT");
+    expect(phoneticKeys("Rran chit")).toContain("RNXT");
+    expect(phoneticKeys("Ranchit")).toContain("RNXT");
   });
 
-  it("captures the secondary code so near-spellings still index (Ankit → Anchit)", () => {
-    // "Ankit"'s primary equals "Anchit"'s SECONDARY code; without indexing the
+  it("captures the secondary code so near-spellings still index (Rrankit → Ranchit)", () => {
+    // "Rrankit"'s primary equals "Ranchit"'s SECONDARY code; without indexing the
     // secondary key the most common mis-spelling would slip through uncorrected.
-    expect(phoneticKeys("Ankit")).toContain("ANKT");
-    expect(phoneticKeys("Anchit")).toContain("ANKT");
+    expect(phoneticKeys("Rrankit")).toContain("RNKT");
+    expect(phoneticKeys("Ranchit")).toContain("RNKT");
   });
 
   it("is case- and punctuation-insensitive", () => {
@@ -46,35 +46,35 @@ describe("phoneticKeys", () => {
 
 describe("DoubleMetaphoneDictionary.correct", () => {
   it("recovers a taught name from a two-token mis-transcription, once", () => {
-    const { text, edits } = dictWith(ANCHIT).correct("hi my name is an chit");
-    expect(text).toBe("hi my name is Anchit");
+    const { text, edits } = dictWith(RANCHIT).correct("hi my name is ran chit");
+    expect(text).toBe("hi my name is Ranchit");
     expect(edits).toHaveLength(1);
-    expect(edits[0]).toEqual({ before: "an chit", after: "Anchit", reason: "taught spelling" });
+    expect(edits[0]).toEqual({ before: "ran chit", after: "Ranchit", reason: "taught spelling" });
   });
 
   it("recovers a taught name from a single-token alias mis-spelling", () => {
-    const { text, edits } = dictWith(ANCHIT).correct("hi my name is ankit");
-    expect(text).toBe("hi my name is Anchit");
-    expect(edits.map((e) => e.after)).toEqual(["Anchit"]);
+    const { text, edits } = dictWith(RANCHIT).correct("hi my name is rankit");
+    expect(text).toBe("hi my name is Ranchit");
+    expect(edits.map((e) => e.after)).toEqual(["Ranchit"]);
   });
 
   it("preserves surrounding punctuation and casing outside the match", () => {
-    const { text, edits } = dictWith(ANCHIT).correct("Hi, an chit!");
-    expect(text).toBe("Hi, Anchit!");
-    expect(edits[0].before).toBe("an chit");
+    const { text, edits } = dictWith(RANCHIT).correct("Hi, ran chit!");
+    expect(text).toBe("Hi, Ranchit!");
+    expect(edits[0].before).toBe("ran chit");
   });
 
   it("does NOT re-correct text already spelled canonically (no edit loop)", () => {
     // If the guard compared phonetics without checking the surface, a correct
     // transcript would keep emitting spurious edits every utterance. It must not.
-    const { text, edits } = dictWith(ANCHIT).correct("hi my name is Anchit");
-    expect(text).toBe("hi my name is Anchit");
+    const { text, edits } = dictWith(RANCHIT).correct("hi my name is Ranchit");
+    expect(text).toBe("hi my name is Ranchit");
     expect(edits).toHaveLength(0);
   });
 
   it("leaves ordinary prose with no taught terms completely untouched", () => {
     const sentence = "the quick brown fox jumps over the lazy dog";
-    const { text, edits } = dictWith(ANCHIT).correct(sentence);
+    const { text, edits } = dictWith(RANCHIT).correct(sentence);
     expect(text).toBe(sentence);
     expect(edits).toHaveLength(0);
   });
@@ -82,14 +82,14 @@ describe("DoubleMetaphoneDictionary.correct", () => {
   it("leaves an untaught homophone alone (only taught vocab is rewritten)", () => {
     // "flour"/"flower" are homophones but neither is taught — the dictionary must
     // not invent corrections for words it was never asked to learn.
-    const { text, edits } = dictWith(ANCHIT).correct("we need flour and flowers");
+    const { text, edits } = dictWith(RANCHIT).correct("we need flour and flowers");
     expect(text).toBe("we need flour and flowers");
     expect(edits).toHaveLength(0);
   });
 
   it("is a no-op when nothing has been taught", () => {
-    const { text, edits } = dictWith().correct("hi my name is an chit");
-    expect(text).toBe("hi my name is an chit");
+    const { text, edits } = dictWith().correct("hi my name is ran chit");
+    expect(text).toBe("hi my name is ran chit");
     expect(edits).toHaveLength(0);
   });
 });

@@ -10,8 +10,8 @@ import { listContactRelationships } from "@/lib/repo/relationships";
  * A relative/role reference with no proper name ("his son", "her manager") is a
  * bare reference: it names nobody, so the graph keeps it as a mentioned
  * placeholder RELABELLED off the note's subject ("Prashant's son") rather than
- * minting a phantom contact literally called "his son". A NAMED object ("Ajay")
- * is untouched. Isolated file: a fresh PGlite means "Ajay" has no colliding
+ * minting a phantom contact literally called "his son". A NAMED object ("Rohan")
+ * is untouched. Isolated file: a fresh PGlite means "Rohan" has no colliding
  * namesake, so the named-path assertion is deterministic.
  */
 function personRel(
@@ -65,20 +65,20 @@ describe("bare relative/role references relabel off the note's subject", () => {
     expect(people.some((p) => p.name === "his son")).toBe(false);
   });
 
-  it("leaves a NAMED object (object_is_named:true) untouched — 'Ajay' stays 'Ajay'", async () => {
+  it("leaves a NAMED object (object_is_named:true) untouched — 'Rohan' stays 'Rohan'", async () => {
     const meera = await createContact(
       { ...emptyExtractedContact(), name: "Meera Owner" },
       "manual",
     );
-    const note = await addNote(meera, "text", "knows Ajay from college");
-    await applyExtraction(meera, note, personRel("Ajay", true, "knows"));
+    const note = await addNote(meera, "text", "knows Rohan from college");
+    await applyExtraction(meera, note, personRel("Rohan", true, "knows"));
 
     const rels = await listContactRelationships(meera);
     expect(rels).toHaveLength(1);
     // WHY: a real name is not the subject's to own — relabelling it "Meera's
-    // Ajay" would be flat wrong. The named path (a fresh "Ajay" stub) is
+    // Rohan" would be flat wrong. The named path (a fresh "Rohan" stub) is
     // exactly the pre-change behavior.
-    expect(rels[0].name).toBe("Ajay");
+    expect(rels[0].name).toBe("Rohan");
     expect(rels[0].mentioned).toBe(true);
   });
 

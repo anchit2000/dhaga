@@ -2,7 +2,7 @@ import { normalizeForMatch } from "@/lib/text-match";
 
 /**
  * Confirm-only clustering over saved contact names (docs/ideas.md #4).
- * People encode context in names ("Anchit JOGET") and surnames cluster into
+ * People encode context in names ("Priya JOGET") and surnames cluster into
  * communities ("all Jains"). Pure token-frequency code — deterministic, so
  * no LLM (CLAUDE.md Rule 5). Nothing here writes anything: a cluster becomes
  * a tag or a company link only when the user confirms it, because an
@@ -58,9 +58,9 @@ export function computeNameClusters(
     for (const word of words) {
       if (isEmailOrUrlLike(word)) continue;
       // A common part can be joined by punctuation, not just a space
-      // ("Anchit-Joget", "Anchit_Joget") — split on any run of non-letter/
+      // ("Priya-Joget", "Priya_Joget") — split on any run of non-letter/
       // non-digit characters so "Joget" still clusters with "Raveesh Joget".
-      // Splitting (not substring search) keeps "Anchit" from ever matching
+      // Splitting (not substring search) keeps "Priya" from ever matching
       // inside "Sanchit" — only a whole token can be a common part.
       for (const raw of word.split(/[^\p{L}\p{N}]+/u).filter(Boolean)) {
         const key = normalizeToken(raw);

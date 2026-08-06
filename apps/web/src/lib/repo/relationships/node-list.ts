@@ -24,8 +24,8 @@ export interface NodeRelationship {
 /**
  * A node's explicit relationship edges, both directions, each labelled from
  * the viewed node's perspective: an edge stored once as
- * `Ajay --parent_of--> Anchit` reads as "child" on Ajay's page and "parent"
- * on Anchit's, without persisting an inverse row (user-defined predicates
+ * `Rohan --parent_of--> Priya` reads as "child" on Rohan's page and "parent"
+ * on Priya's, without persisting an inverse row (user-defined predicates
  * label the same way via the custom map). One query strategy for every root
  * kind: a single or() scan over edges, then one batched name lookup per
  * endpoint kind — never per-edge work.

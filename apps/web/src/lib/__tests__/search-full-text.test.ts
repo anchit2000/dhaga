@@ -153,7 +153,7 @@ describe("hybridSearch covers every searchable field, not just name/title/facts/
 
 /**
  * Prefix tsquery matching (above) requires the query to be a literal prefix
- * of a lexeme in the name — a misspelling like "Amchit" for "Anchit" isn't a
+ * of a lexeme in the name — a misspelling like "Priua" for "Priya" isn't a
  * prefix of anything and would previously return nothing. This proves the
  * word_similarity fuzzy pass in keyword/identity.ts closes that gap.
  */
@@ -161,11 +161,11 @@ describe("hybridSearch tolerates a name typo", () => {
   let typoContact: string;
 
   beforeAll(async () => {
-    typoContact = await createContact(contact({ name: "Anchit Shrivastava" }), "manual");
+    typoContact = await createContact(contact({ name: "Priya Nair" }), "manual");
   });
 
   it("finds the contact when a name letter is substituted", async () => {
-    const hits = await hybridSearch("Amchit");
+    const hits = await hybridSearch("Priua");
     expect(hits.map((h) => h.contactId)).toContain(typoContact);
   });
 });

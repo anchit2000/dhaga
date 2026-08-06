@@ -45,27 +45,27 @@ describe("relationshipRole — direction-aware inverse labels", () => {
 describe("listContactRelationships reads one stored edge from both ends", () => {
   it("shows the child on the parent's page and the parent on the child's page", async () => {
     const ajay = await createContact(
-      { ...emptyExtractedContact(), name: "Ajay Rel Test" },
+      { ...emptyExtractedContact(), name: "Rohan Rel Test" },
       "manual",
     );
-    const note = await addNote(ajay, "text", "Anchit is my son");
-    // parent_of edge: Ajay (source) --parent_of--> Anchit (a new mentioned person)
-    await applyExtraction(ajay, note, personRelationship("Anchit Rel Test"));
+    const note = await addNote(ajay, "text", "Priya is my son");
+    // parent_of edge: Rohan (source) --parent_of--> Priya (a new mentioned person)
+    await applyExtraction(ajay, note, personRelationship("Priya Rel Test"));
 
-    const fromAjay = await listContactRelationships(ajay);
-    expect(fromAjay).toHaveLength(1);
-    expect(fromAjay[0].name).toBe("Anchit Rel Test");
+    const fromRohan = await listContactRelationships(ajay);
+    expect(fromRohan).toHaveLength(1);
+    expect(fromRohan[0].name).toBe("Priya Rel Test");
     // WHY: the reported bug was the edge reading "parent of" on BOTH pages.
-    // From Ajay (the parent/source), the other person must read as his child.
-    expect(fromAjay[0].role).toBe("child");
-    expect(fromAjay[0].mentioned).toBe(true);
+    // From Rohan (the parent/source), the other person must read as his child.
+    expect(fromRohan[0].role).toBe("child");
+    expect(fromRohan[0].mentioned).toBe(true);
 
-    const fromAnchit = await listContactRelationships(fromAjay[0].contactId);
-    expect(fromAnchit).toHaveLength(1);
-    expect(fromAnchit[0].name).toBe("Ajay Rel Test");
+    const fromPriya = await listContactRelationships(fromRohan[0].contactId);
+    expect(fromPriya).toHaveLength(1);
+    expect(fromPriya[0].name).toBe("Rohan Rel Test");
     // WHY: the SAME stored row must invert here — no second edge is written.
-    expect(fromAnchit[0].role).toBe("parent");
-    expect(fromAnchit[0].mentioned).toBe(false);
+    expect(fromPriya[0].role).toBe("parent");
+    expect(fromPriya[0].mentioned).toBe(false);
   });
 });
 

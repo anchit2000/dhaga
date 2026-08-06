@@ -15,12 +15,12 @@ import { addNote, listNotes, replaceNoteBody } from "@/lib/repo/notes";
  * receipts for one scan. These pin that.
  */
 describe("card receipt note, replaced by the background transcription", () => {
-  const FIELD_RECEIPT = "Scanned from a card:\nAjay Prasad Shrivastava\nDirector · STPI";
-  const VERBATIM = "Ajay Prasad Shrivastava\nDirector\nSoftware Technology Parks of India\nP-1, Rajiv Gandhi Infotech Park, Pune - 411057\nFax : +91-20-22981010";
+  const FIELD_RECEIPT = "Scanned from a card:\nRohan Prasad Shrivastava\nDirector · STPI";
+  const VERBATIM = "Rohan Prasad Shrivastava\nDirector\nSoftware Technology Parks of India\nP-1, Rajiv Gandhi Infotech Park, Pune - 411057\nFax : +91-20-22981010";
 
   async function seedScan() {
     const contactId = await createContact(
-      { ...emptyExtractedContact(), name: "Ajay Receipt" },
+      { ...emptyExtractedContact(), name: "Rohan Receipt" },
       "quick_add",
     );
     const noteId = await addNote(contactId, "capture_source", FIELD_RECEIPT);

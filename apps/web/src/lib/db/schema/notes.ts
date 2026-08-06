@@ -48,7 +48,7 @@ export const edges = pgTable("edges", {
 
 /**
  * A pending relationship the extractor found but could not link unambiguously
- * (e.g. the note says "Ajay" and two contacts are named Ajay, or it names a
+ * (e.g. the note says "Rohan" and two contacts are named Rohan, or it names a
  * custom entity that doesn't exist yet). Held for the user to confirm which
  * contact/entity it means — or to create one — before an edge is written.
  * Receipt-linked.

@@ -16,7 +16,7 @@ function daysFrom(d: Date, n: number): Date {
 }
 
 describe("computeExtendedExpiry", () => {
-  it("preserves null (a never-expiring lifetime/comp is not downgraded)", () => {
+  it("preserves null (a never-expiring comp is not downgraded)", () => {
     expect(computeExtendedExpiry(null, now, DAYS)).toBeNull();
   });
 

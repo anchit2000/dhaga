@@ -26,7 +26,7 @@ export function EnforcementCard({ enabled }: { enabled: boolean }): ReactElement
         <p className="text-sm text-fog">
           <span className="text-paper">Limits are being enforced</span> — the shipped
           default. Every user is held to the monthly allowance for their plan, below:
-          Free and Pro have a number, Lifetime / Annual has no cap. This is what the
+          Free, Pro and Power each have a number. This is what the
           pricing page states, so leave it on unless you have a reason not to.
         </p>
       ) : (

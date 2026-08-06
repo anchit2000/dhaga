@@ -34,8 +34,8 @@ async function db() {
 /**
  * PURE (now-injectable, no I/O) so it's unit-testable. Additive extension of a
  * comp expiry:
- *  - existing === null → keep null: a never-expiring plan (lifetime, or an
- *    unbounded comp). Setting a dated expiry would DOWNGRADE it.
+ *  - existing === null → keep null: a never-expiring plan (an unbounded admin
+ *    comp). Setting a dated expiry would DOWNGRADE it.
  *  - otherwise → max(now, existing) + days, so a still-valid month stacks on
  *    top and an already-lapsed one restarts cleanly from now.
  */
@@ -98,8 +98,9 @@ export async function grantReferralReward(userId: string): Promise<RewardKind> {
     const existingExpiry = existing ? existing.currentPeriodEnd : now;
     const newEnd = computeExtendedExpiry(existingExpiry, now, REWARD_DAYS);
     const values = {
-      // Never downgrade a lifetime plan to pro.
-      plan: existing?.plan === "lifetime" ? "lifetime" : "pro",
+      // Never downgrade a higher tier: a Power subscriber earning a referral
+      // month keeps Power. Only a free/absent row becomes Pro.
+      plan: existing?.plan === "power" ? "power" : "pro",
       status: "active" as const,
       currentPeriodEnd: newEnd,
       cancelAtPeriodEnd: false,

@@ -69,23 +69,22 @@ account once it's live.
   on signup (see Self-hosting's "Creating the first admin user").
 - `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and one price id per
   (tier, cadence): `STRIPE_PRICE_PRO_MONTHLY`, `STRIPE_PRICE_PRO_ANNUAL`,
-  `STRIPE_PRICE_POWER_MONTHLY`, `STRIPE_PRICE_POWER_ANNUAL`, plus the one-time
-  `STRIPE_PRICE_LIFETIME`. Any left blank is simply not offered — the picker
+  `STRIPE_PRICE_POWER_MONTHLY`, `STRIPE_PRICE_POWER_ANNUAL`. Any left blank is
+  simply not offered — the picker
   renders only combinations that have a price. Omit `STRIPE_SECRET_KEY`
   entirely to run hosted mode without billing (e.g. a free beta).
-  Reference prices, BRD §8.3: Pro $10/mo or $96/yr, Power $30/mo or $288/yr,
-  Lifetime $299.
+  Reference prices, BRD §8.3: Pro $10/mo or $96/yr, Power $30/mo or $288/yr.
+  Every tier is recurring — there is no one-time purchase.
 - **Local currency is Stripe Adaptive Pricing**, a Dashboard setting on
   Checkout — not code and not extra env vars. Turn it on there and a visitor in
   the UAE is quoted dirhams off the same price id.
 - `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, one
   **Plan id** per (tier, cadence) — `RAZORPAY_PLAN_PRO_MONTHLY`,
   `RAZORPAY_PLAN_PRO_YEARLY`, `RAZORPAY_PLAN_POWER_MONTHLY`,
-  `RAZORPAY_PLAN_POWER_YEARLY` — and `RAZORPAY_PRICE_LIFETIME_INR` in **paise**
-  (₹1 = 100 paise). Optional and independent of Stripe: either processor alone
-  is enough for the billing UI to render. Reference prices: Pro ₹899/mo or
-  ₹8,499/yr, Power ₹2,599/mo or ₹24,999/yr, Lifetime ₹25,999 — roughly parity
-  with the USD figures, so BRD §8.3's margins carry over.
+  `RAZORPAY_PLAN_POWER_YEARLY`. Optional and independent of Stripe: either
+  processor alone is enough for the billing UI to render. Reference prices: Pro
+  ₹899/mo or ₹8,499/yr, Power ₹2,599/mo or ₹24,999/yr — roughly parity with the
+  USD figures, so BRD §8.3's margins carry over.
 - **Processor routing** is by `x-vercel-ip-country`: India leads with Razorpay,
   everywhere else with Stripe (`RAZORPAY_COUNTRIES`,
   `apps/web/src/lib/billing/processor.ts`). It only reorders the buttons —
@@ -94,7 +93,7 @@ account once it's live.
 - Register the Razorpay webhook at
   `https://your-domain/api/razorpay/webhook`, subscribed to at least
   `subscription.activated`, `subscription.charged`, `subscription.halted`,
-  `subscription.cancelled` and `payment.captured`. Its secret is **per-endpoint
+  `subscription.cancelled`. Its secret is **per-endpoint
   and not the API key secret**. Without it, a customer who closes the tab
   mid-redirect is charged and never upgraded, and renewals never update the
   stored status. Razorpay-paid customers also have no billing portal —

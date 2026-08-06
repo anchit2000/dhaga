@@ -60,7 +60,6 @@ CREATE TABLE IF NOT EXISTS subscriptions (
 -- instance created before Razorpay existed self-heals on the next DDL replay:
 -- the columns are added, and stripe_customer_id stops being mandatory because a
 -- Razorpay row has no Stripe customer to name.
-ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS razorpay_order_id text;
 ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS razorpay_subscription_id text;
 ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS razorpay_payment_id text;
 ALTER TABLE subscriptions ALTER COLUMN stripe_customer_id DROP NOT NULL;

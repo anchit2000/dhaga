@@ -79,7 +79,7 @@ export class AiBudgetError extends Error {
  *
  * Costs one config read plus one aggregate over `ai_actions`, both sequential
  * on the request-scoped connection. `hasUnlimitedAiCredits` is NOT consulted:
- * an unlimited-CREDIT plan (Lifetime) is exactly the account this gate has to
+ * an unlimited-CREDIT plan (an admin-uncapped one) is exactly the account this gate has to
  * bound, since nothing else does.
  */
 async function withinDollarCeiling(userId?: string): Promise<boolean> {
@@ -111,7 +111,7 @@ async function withinDollarCeiling(userId?: string): Promise<boolean> {
  * bound different things and a user can hit either first: credits bound what a
  * user may DO (and three metered features cost 0 credits on purpose, so credits
  * alone no longer bound spend), while the dollar ceiling bounds what their month
- * may COST us. Neither subsumes the other — a Lifetime account has no credit
+ * may COST us. Neither subsumes the other — an uncapped account has no credit
  * ceiling at all but still has a dollar one, and a free account can exhaust ten
  * credits while costing six cents.
  *

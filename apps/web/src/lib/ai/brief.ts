@@ -98,7 +98,7 @@ async function runBrief(userId: string, contactId: string): Promise<BriefResult>
   } catch (error) {
     if (error instanceof AiBudgetError) return { error: error.message };
     if (error instanceof FeatureNotEntitledError) {
-      return { error: "Pre-meeting briefs require a Pro or Lifetime plan." };
+      return { error: "Pre-meeting briefs require a Pro or Power plan." };
     }
     return { error: "The AI call failed." };
   }

@@ -15,7 +15,6 @@ function subRow(overrides: Partial<SubscriptionRow>): SubscriptionRow {
     userId: "user_1",
     stripeCustomerId: "admin-granted:user_1",
     stripeSubscriptionId: null,
-    razorpayOrderId: null,
     razorpaySubscriptionId: null,
     razorpayPaymentId: null,
     plan: "pro",
@@ -33,7 +32,7 @@ const now = new Date("2026-07-24T00:00:00Z");
 describe("isUnlimitedAiSub", () => {
   it("grants unlimited AI for an active paid plan with no expiry", () => {
     expect(isUnlimitedAiSub(subRow({ currentPeriodEnd: null }), now)).toBe(true);
-    expect(isUnlimitedAiSub(subRow({ plan: "lifetime", currentPeriodEnd: null }), now)).toBe(true);
+    expect(isUnlimitedAiSub(subRow({ plan: "power", currentPeriodEnd: null }), now)).toBe(true);
   });
 
   it("grants unlimited AI when the expiry is in the future", () => {

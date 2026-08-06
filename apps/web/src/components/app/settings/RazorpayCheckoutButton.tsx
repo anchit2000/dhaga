@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { RAZORPAY_CHECKOUT_NAME, RAZORPAY_PLAN_DESCRIPTION } from "@/utils/constants/razorpay";
 import {
-  handoffOptions,
   loadCheckoutScript,
   type CheckoutHandoff,
   type RazorpayHandlerResponse,
@@ -14,10 +13,10 @@ import {
 import type { PlanOffer } from "@/lib/hosted/gate";
 
 /**
- * INR checkout. Recurring tiers open a Razorpay Subscription (re-charged by
- * Razorpay); Lifetime opens a one-time Order. Either way the signed response
- * goes to /api/razorpay/verify, and the plan is granted only once the server
- * has re-read the object from Razorpay — nothing here is trusted.
+ * INR checkout. Opens a Razorpay Subscription, which Razorpay re-charges on its
+ * own. The signed response goes to /api/razorpay/verify, and the plan is
+ * granted only once the server has re-read the subscription from Razorpay —
+ * nothing here is trusted.
  *
  * Only the SELECTION is sent to the order endpoint; the price lives on the
  * server. Sending an amount from the browser would make the price negotiable.
@@ -84,7 +83,7 @@ export function RazorpayCheckoutButton({
         key: handoff.keyId,
         name: RAZORPAY_CHECKOUT_NAME,
         description: RAZORPAY_PLAN_DESCRIPTION[selection.plan],
-        ...handoffOptions(handoff),
+        subscription_id: handoff.subscriptionId,
         handler: (response) => void verify(response),
         // Dismissing the modal is a cancel, not an error — no toast, just
         // release the button so they can try again.

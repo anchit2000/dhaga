@@ -4,15 +4,13 @@ import { createRazorpayCheckout, parsePlanSelection, razorpayEnabled } from "@dh
 import { requireUserIdFromRequest } from "@/lib/auth/guard";
 
 /**
- * Creates the Razorpay object the browser then opens the checkout modal
- * against: a Subscription for Pro (recurring) or an Order for Lifetime
- * (one-time).
+ * Creates the Razorpay Subscription the browser then opens the checkout modal
+ * against.
  *
- * The request body carries a PLAN, never an amount. Razorpay is happy to
- * create a 100-paise order, so accepting a client-supplied amount here — as
- * the generic integration snippets do — would let anyone buy Pro for one
- * rupee. Pro's price and cadence live in the Razorpay Plan; Lifetime's amount
- * comes from env.
+ * The request body carries a PLAN and CADENCE, never an amount. Razorpay is
+ * happy to create a 100-paise charge, so accepting a client-supplied amount
+ * here — as the generic integration snippets do — would let anyone buy Pro for
+ * one rupee. Price and cadence both live in the Razorpay Plan.
  */
 export async function POST(request: Request): Promise<Response> {
   // Same belt-and-suspenders as api/stripe — inert unless hosted mode is
@@ -32,7 +30,7 @@ export async function POST(request: Request): Promise<Response> {
   const selection = parsePlanSelection(body);
   if (!selection) {
     return Response.json(
-      { error: "Body must be { plan: 'pro'|'power', cadence: 'monthly'|'yearly' } or { plan: 'lifetime' }." },
+      { error: "Body must be { plan: 'pro'|'power', cadence: 'monthly'|'yearly' }." },
       { status: 400 },
     );
   }

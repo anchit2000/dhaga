@@ -14,7 +14,7 @@
 export type PlanFeature = "enrichment" | "pre_meeting_brief" | "multi_device_sync";
 
 /** `self_hosted` = billing isn't running on this instance (no EE / no Stripe). */
-export type EntitlementPlan = "free" | "pro" | "power" | "lifetime" | "self_hosted";
+export type EntitlementPlan = "free" | "pro" | "power" | "self_hosted";
 
 export const PLAN_FEATURES: Record<EntitlementPlan, readonly PlanFeature[]> = {
   free: [],
@@ -22,7 +22,6 @@ export const PLAN_FEATURES: Record<EntitlementPlan, readonly PlanFeature[]> = {
   // Power is Pro's feature set with a bigger credit allowance — the tiers are
   // separated by volume, not by capability, so nothing is gated away from Pro.
   power: ["enrichment", "pre_meeting_brief", "multi_device_sync"],
-  lifetime: ["enrichment", "pre_meeting_brief", "multi_device_sync"],
   // Nothing is for sale on a self-hosted instance — the owner gets everything.
   self_hosted: ["enrichment", "pre_meeting_brief", "multi_device_sync"],
 };
@@ -56,7 +55,6 @@ export const PLAN_AI_CREDITS_PER_MONTH: Record<EntitlementPlan, number | null> =
   free: 10,
   pro: 300,
   power: POWER_PLAN_AI_CREDITS_PER_MONTH,
-  lifetime: null,
   self_hosted: null,
 };
 

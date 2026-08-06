@@ -31,21 +31,11 @@ function note(notes: Record<string, string | number | null> | null | undefined, 
 }
 
 /**
- * The subsets of Razorpay's objects this integration relies on. Declared
- * locally rather than re-exporting the SDK's types so the SDK stays swappable
+ * The subset of Razorpay's subscription this integration relies on. Declared
+ * locally rather than re-exporting the SDK's type so the SDK stays swappable
  * for plain fetch against api.razorpay.com — same reason billing/index.ts owns
  * its own PlanSummary rather than leaking Stripe types.
  */
-export interface RazorpayOrder {
-  id: string;
-  amountPaise: number;
-  currency: string;
-  /** 'created' | 'attempted' | 'paid' — only 'paid' may grant an entitlement. */
-  status: string;
-  userId: string | null;
-  plan: string | null;
-}
-
 export interface RazorpaySubscription {
   id: string;
   /** created | authenticated | active | pending | halted | cancelled | completed | expired */
@@ -54,23 +44,6 @@ export interface RazorpaySubscription {
   /** End of the paid period, or null before the first charge lands. */
   currentEnd: Date | null;
   userId: string | null;
-}
-
-function toOrder(raw: {
-  id: string;
-  amount: number | string;
-  currency: string;
-  status: string;
-  notes?: Record<string, string | number | null> | null;
-}): RazorpayOrder {
-  return {
-    id: raw.id,
-    amountPaise: Number(raw.amount),
-    currency: raw.currency,
-    status: raw.status,
-    userId: note(raw.notes, "userId"),
-    plan: note(raw.notes, "plan"),
-  };
 }
 
 function toSubscription(raw: {
@@ -95,25 +68,6 @@ function toSubscription(raw: {
  * the object from Razorpay to learn who it belonged to, instead of believing a
  * client-supplied user.
  */
-export async function createOrder(input: {
-  amountPaise: number;
-  receipt: string;
-  userId: string;
-  plan: string;
-}): Promise<RazorpayOrder> {
-  const order = await getClient().orders.create({
-    amount: input.amountPaise,
-    currency: "INR",
-    receipt: input.receipt,
-    notes: { userId: input.userId, plan: input.plan },
-  });
-  return toOrder(order);
-}
-
-export async function fetchOrder(orderId: string): Promise<RazorpayOrder> {
-  return toOrder(await getClient().orders.fetch(orderId));
-}
-
 export async function createSubscription(input: {
   planId: string;
   userId: string;

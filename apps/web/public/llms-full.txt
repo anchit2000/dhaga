@@ -2162,15 +2162,18 @@ summary lists what it skipped and why.
 
 ## How a batch works
 
-Forwarding is **positional**, so the order you send things in is what Dhaga
-acts on — no guessing:
+Order matters, but **naming a person beats order**:
 
 - A **contact card or photo** sets the *current contact*.
-- **Text that follows** attaches to that contact as notes and facts.
+- **Text that names someone** is filed on that person — matched to whoever is
+  already in your graph, or created if nobody matches — even when a different
+  card came first. A note about Bob never lands on Alice just because Alice's
+  card arrived earlier.
+- **Text that names nobody** ("wants intros to fintech founders") falls back to
+  the current contact. That one is a guess, and the summary labels it as such.
 - A leading **text with no card** establishes the contact on its own, the same
   way pasted text does in [quick-add](/docs/guide/capturing-people).
-- Forward **several cards** in one batch and you get several contacts — each one
-  collects the messages sent after it.
+- Forward **several cards** in one batch and you get several contacts.
 
 ## When Dhaga isn't sure who you mean
 
@@ -2198,11 +2201,19 @@ is ever lost:
 
 1. **Reply `DONE`** (or `finish`, `end`, `/done`) to save immediately.
 2. **Start a new forward** and any earlier open batch is saved first.
-3. **Walk away** — an idle batch auto-saves after about 15 minutes of quiet
-   (self-hosters can tune this with `DHAGA_MESSAGING_IDLE_MINUTES`).
+3. **Walk away** — an idle batch auto-saves after 24 hours of quiet (self-hosters
+   can tune this with `DHAGA_MESSAGING_IDLE_MINUTES`).
 
-When a batch is saved, the bot replies with a summary of who and what it stored
-so you can open Dhaga and review.
+A batch also stops accepting forwards once it holds 10 unsaved items
+(`DHAGA_MESSAGING_MAX_OPEN_ITEMS`). The bot says so rather than swallowing the
+message: the longer a batch runs, the more notes it has to file by assumption, so
+it asks you to close it while you still remember who each one was about.
+
+When a batch is saved, the bot replies with a summary of who and what it stored —
+including **where each note went and why**: whether the note named that person,
+whether it created them because nobody matched, or whether it was *assumed* to be
+about them because the note named nobody at all. Assumptions are the ones worth
+skimming; fix any of them in Dhaga.
 
 **Voice notes aren't supported yet**
 
@@ -3816,7 +3827,7 @@ In hosted mode the reward is delivered Stripe-safely. An advocate who already
 has a live Stripe subscription is given a Stripe coupon — set
 `STRIPE_REFERRAL_COUPON_ID` to a `duration: once`, 100%-off coupon you create in
 the Stripe dashboard — while free/comp users get an additive comp Pro month
-(their `current_period_end` is extended, never downgrading a lifetime grant). If
+(their `current_period_end` is extended, never downgrading a higher tier). If
 `STRIPE_REFERRAL_COUPON_ID` is unset when a paying advocate qualifies, the grant
 fails loud and the referral stays `pending` for retry rather than silently
 half-rewarding.
@@ -3851,10 +3862,10 @@ controls it.
 From a user's detail page (`/app/admin/users/[id]`) an admin can, without
 Stripe, comp that user's access:
 
-- **Plan** — set `free`, `pro`, or `lifetime`. `free` removes the subscription
+- **Plan** — set `free`, `pro`, or `power`. `free` removes the subscription
   row (the account falls back to the instance default allowance); `pro` and
-  `lifetime` move it onto that plan's monthly allowance — 300 credits a month
-  for Pro, no ceiling at all for Lifetime.
+  `power` move it onto that plan's monthly allowance — 300 credits a month for
+  Pro, 1,000 for Power.
 - **Expiry** — an optional date on a paid plan. Once it passes the plan stops
   being in play and the account drops back to the instance default allowance
   (leave it blank for no expiry).
@@ -3880,8 +3891,8 @@ behind it:
 
 - **Plan-cap enforcement** — a master switch that is **on by default**
   (`AI_PLAN_CAP_ENFORCEMENT_DEFAULT = true`). In the shipped state every user is
-  held to the monthly allowance for their plan: Free and Pro have a number,
-  Lifetime / Annual has no cap. That is what the pricing page states — it sells
+  held to the monthly allowance for their plan: Free, Pro and Power each have a
+  number. That is what the pricing page states — it sells
   Pro and Annual as **300 credits a month** and says what runs out when they do
   — so leave it on unless you have a reason not to. Turning it **off** is an
   escape hatch (a migration, an incident), not a resting state: the allowances
@@ -4476,23 +4487,22 @@ account once it's live.
   on signup (see Self-hosting's "Creating the first admin user").
 - `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and one price id per
   (tier, cadence): `STRIPE_PRICE_PRO_MONTHLY`, `STRIPE_PRICE_PRO_ANNUAL`,
-  `STRIPE_PRICE_POWER_MONTHLY`, `STRIPE_PRICE_POWER_ANNUAL`, plus the one-time
-  `STRIPE_PRICE_LIFETIME`. Any left blank is simply not offered — the picker
+  `STRIPE_PRICE_POWER_MONTHLY`, `STRIPE_PRICE_POWER_ANNUAL`. Any left blank is
+  simply not offered — the picker
   renders only combinations that have a price. Omit `STRIPE_SECRET_KEY`
   entirely to run hosted mode without billing (e.g. a free beta).
-  Reference prices, BRD §8.3: Pro $10/mo or $96/yr, Power $30/mo or $288/yr,
-  Lifetime $299.
+  Reference prices, BRD §8.3: Pro $10/mo or $96/yr, Power $30/mo or $288/yr.
+  Every tier is recurring — there is no one-time purchase.
 - **Local currency is Stripe Adaptive Pricing**, a Dashboard setting on
   Checkout — not code and not extra env vars. Turn it on there and a visitor in
   the UAE is quoted dirhams off the same price id.
 - `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, one
   **Plan id** per (tier, cadence) — `RAZORPAY_PLAN_PRO_MONTHLY`,
   `RAZORPAY_PLAN_PRO_YEARLY`, `RAZORPAY_PLAN_POWER_MONTHLY`,
-  `RAZORPAY_PLAN_POWER_YEARLY` — and `RAZORPAY_PRICE_LIFETIME_INR` in **paise**
-  (₹1 = 100 paise). Optional and independent of Stripe: either processor alone
-  is enough for the billing UI to render. Reference prices: Pro ₹899/mo or
-  ₹8,499/yr, Power ₹2,599/mo or ₹24,999/yr, Lifetime ₹25,999 — roughly parity
-  with the USD figures, so BRD §8.3's margins carry over.
+  `RAZORPAY_PLAN_POWER_YEARLY`. Optional and independent of Stripe: either
+  processor alone is enough for the billing UI to render. Reference prices: Pro
+  ₹899/mo or ₹8,499/yr, Power ₹2,599/mo or ₹24,999/yr — roughly parity with the
+  USD figures, so BRD §8.3's margins carry over.
 - **Processor routing** is by `x-vercel-ip-country`: India leads with Razorpay,
   everywhere else with Stripe (`RAZORPAY_COUNTRIES`,
   `apps/web/src/lib/billing/processor.ts`). It only reorders the buttons —
@@ -4501,7 +4511,7 @@ account once it's live.
 - Register the Razorpay webhook at
   `https://your-domain/api/razorpay/webhook`, subscribed to at least
   `subscription.activated`, `subscription.charged`, `subscription.halted`,
-  `subscription.cancelled` and `payment.captured`. Its secret is **per-endpoint
+  `subscription.cancelled`. Its secret is **per-endpoint
   and not the API key secret**. Without it, a customer who closes the tab
   mid-redirect is charged and never upgraded, and renewals never update the
   stored status. Razorpay-paid customers also have no billing portal —

@@ -1,16 +1,16 @@
 import type { SubscriptionPlan } from "../db/schema";
 
-/** Recurring tiers. Lifetime is handled separately — it has no cadence. */
 export type BillingTier = "pro" | "power";
 export type BillingCadence = "monthly" | "yearly";
 
 /**
- * What the buyer picked. Lifetime carries no cadence because there is nothing
- * to renew, which is why it can't just be a third tier.
+ * What the buyer picked. Every plan is recurring, so a cadence is always
+ * required — there is no one-time purchase to special-case.
  */
-export type PlanSelection =
-  | { plan: BillingTier; cadence: BillingCadence }
-  | { plan: "lifetime" };
+export interface PlanSelection {
+  plan: BillingTier;
+  cadence: BillingCadence;
+}
 
 export const BILLING_TIERS: readonly BillingTier[] = ["pro", "power"];
 export const BILLING_CADENCES: readonly BillingCadence[] = ["monthly", "yearly"];
@@ -53,6 +53,7 @@ export function razorpayPlanId(tier: BillingTier, cadence: BillingCadence): stri
  * Which (tier, cadence) combinations this instance can actually sell, per
  * processor. Drives the UI so a cadence with no configured price is never
  * offered — a button that always errors is worse than no button.
+ *
  */
 export function availableCombinations(processor: "stripe" | "razorpay"): PlanSelection[] {
   const table = processor === "stripe" ? STRIPE_PRICE_ENV : RAZORPAY_PLAN_ENV;
@@ -62,8 +63,6 @@ export function availableCombinations(processor: "stripe" | "razorpay"): PlanSel
       if (process.env[table[tier][cadence]]) out.push({ plan: tier, cadence });
     }
   }
-  const lifetimeEnv = processor === "stripe" ? "STRIPE_PRICE_LIFETIME" : "RAZORPAY_PRICE_LIFETIME_INR";
-  if (process.env[lifetimeEnv]) out.push({ plan: "lifetime" });
   return out;
 }
 
@@ -92,13 +91,12 @@ export function storedPlanFor(selection: PlanSelection): SubscriptionPlan {
 
 /**
  * Parses an untrusted `{ plan, cadence }` body. Returns null rather than
- * throwing so routes answer 400, and refuses a cadence on lifetime instead of
- * quietly ignoring it.
+ * throwing so routes answer 400, and requires an explicit cadence rather than
+ * defaulting to one the buyer never chose.
  */
 export function parsePlanSelection(input: unknown): PlanSelection | null {
   const body = input as { plan?: unknown; cadence?: unknown } | null;
   const plan = body?.plan;
-  if (plan === "lifetime") return { plan: "lifetime" };
   if (plan !== "pro" && plan !== "power") return null;
   const cadence = body?.cadence;
   if (cadence !== "monthly" && cadence !== "yearly") return null;

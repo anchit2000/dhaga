@@ -290,8 +290,8 @@ first number an admin saves here retires it for good.
       (`AI_PLAN_CAP_ENFORCEMENT_DEFAULT = true`,
       `apps/web/src/utils/constants/ai-budget.ts`), with the copy: *"Limits are
       being enforced — the shipped default. Every user is held to the monthly
-      allowance for their plan, below: Free and Pro have a number, Lifetime /
-      Annual has no cap. This is what the pricing page states, so leave it on
+      allowance for their plan, below: Free, Pro and Power each have a number.
+      This is what the pricing page states, so leave it on
       unless you have a reason not to."* Toggle it off and the copy flips
       to *"Limits are not being enforced. You have turned off the shipped
       default… every plan resolves through its raw billing entitlement instead,
@@ -299,10 +299,10 @@ first number an admin saves here retires it for good.
       escape hatch — a migration or an incident — not a setting to leave here."*
       Turn it back **on** when you're done poking at it.
 - [ ] **Monthly allowance per plan** — the editable ladder (`Free`, `Pro`,
-      `Lifetime / Annual`, and `Power (sized, not sold)`), each with **Use
+      `Power`), each with **Use
       default** / **Custom monthly credits** / **No cap**. Defaults come from
       `PLAN_AI_CREDITS_PER_MONTH` in `apps/web/src/utils/constants/plans.ts`
-      (free 10, pro 300, Lifetime / Annual no cap), so "Use default" is not a
+      (free 10, pro 300, power 1000), so "Use default" is not a
       stored number. **Free is editable exactly like the paid rows**, and it
       doubles as the instance default — the card's closing line names the live
       number and where it came from: *"Effective default: 10 credits / month —
@@ -404,9 +404,10 @@ Two independent entry points converge on the same `access_requests` table
 ## 6. Stripe test-mode checkout (needs §3 + Stripe test-mode keys)
 
 Env vars, all from the Stripe Dashboard in **test mode**:
-`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_PRO_ANNUAL`,
-`STRIPE_PRICE_LIFETIME` (Price IDs from Products you create yourself in test
-mode). Register a webhook pointing at `<url>/api/stripe/webhook`, subscribed
+`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and one Price id per (tier,
+cadence): `STRIPE_PRICE_PRO_MONTHLY`, `STRIPE_PRICE_PRO_ANNUAL`,
+`STRIPE_PRICE_POWER_MONTHLY`, `STRIPE_PRICE_POWER_ANNUAL` (Price IDs from
+Products you create yourself in test mode). Register a webhook pointing at `<url>/api/stripe/webhook`, subscribed
 to at least `checkout.session.completed`, `customer.subscription.updated`,
 `customer.subscription.deleted`, `invoice.payment_failed`.
 
@@ -416,19 +417,18 @@ to at least `checkout.session.completed`, `customer.subscription.updated`,
       `null` if the key is missing, and the settings page
       (`apps/web/src/app/app/settings/page.tsx:33`) renders nothing at all
       when that's `null` — not a broken "Upgrade" button, no section.
-- [ ] With the key set: `/app/settings` shows a billing section; **Upgrade
-      to Pro** / **Lifetime** → Stripe-hosted checkout
+- [ ] With the key set: `/app/settings` shows a billing section; **Go Pro** /
+      **Go Power**, at the selected cadence → Stripe-hosted checkout
       (`createCheckoutUrl`, `packages/ee/src/billing/checkout.ts:8-25`).
 - [ ] **Unverified (needs a live run):** complete a test-mode purchase with
       Stripe's [test card `4242 4242 4242 4242`](https://docs.stripe.com/testing)
       → redirected to `/app/settings?checkout=success` → webhook fires →
       subscription row created → that user's AI cap becomes their plan's
-      allowance: **300 credits a month** on Pro, no ceiling at all on Lifetime /
-      Annual (`PLAN_AI_CREDITS_PER_MONTH`, applied because plan-cap enforcement
-      is on by default — §4a). Only with that switch off does it fall back to
-      the raw billing entitlement and read "unlimited" for both
-      (`hasUnlimitedAi`, same file, checked against `active` status and
-      `pro`/`lifetime` plan). Nobody has run an actual Stripe test purchase
+      allowance: **300 credits a month** on Pro, **1,000** on Power
+      (`PLAN_AI_CREDITS_PER_MONTH`, applied because plan-cap enforcement is on
+      by default — §4a). Only with that switch off does it fall back to the raw
+      billing entitlement and read "unlimited" for both (`hasUnlimitedAi`, same
+      file, checked against `active` status and `pro`/`power` plan). Nobody has run an actual Stripe test purchase
       against this code yet — the webhook handler is typechecked/tested but
       not click-verified end to end.
 - [ ] **Manage billing** → Stripe billing portal
@@ -445,17 +445,13 @@ INR checkout, independent of Stripe: an instance can run either processor or
 both. Env vars (`packages/ee/.env.example`): `RAZORPAY_KEY_ID`,
 `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, a Plan id per (tier, cadence)
 — `RAZORPAY_PLAN_PRO_MONTHLY`, `RAZORPAY_PLAN_PRO_YEARLY`,
-`RAZORPAY_PLAN_POWER_MONTHLY`, `RAZORPAY_PLAN_POWER_YEARLY` — and
-`RAZORPAY_PRICE_LIFETIME_INR`.
+`RAZORPAY_PLAN_POWER_MONTHLY`, `RAZORPAY_PLAN_POWER_YEARLY`.
 
-**Pro is a Razorpay Plan; Lifetime is an Order.** Pro rides the Subscriptions
-API, so Razorpay re-charges on its own and the plan owns both price and cadence
-— moving Pro between monthly and yearly is a dashboard change, no deploy.
-Lifetime is a single payment with nothing to renew, which the Subscriptions API
-cannot express, so it stays an Order with an amount in **paise**. There is no
-INR price anywhere in the repo (every constant is USD), so both are set
-per-instance and the `.env.local` Lifetime value is a test placeholder, **not**
-a price.
+**Every tier is a Razorpay Plan.** They ride the Subscriptions API, so Razorpay
+re-charges on its own and the plan owns both price and cadence — moving a tier
+between monthly and yearly is a dashboard change, no deploy. There is no INR
+price anywhere in the repo (every constant is USD), so the plans are created
+per-instance.
 
 The webhook secret is a **different secret** from the API key secret (Dashboard
 › Settings › Webhooks). Using the API secret rejects every event — there is a
@@ -492,7 +488,7 @@ either a deployed preview or a tunnel (`cloudflared`, `ngrok`) pointed at
 
 - [ ] **Closing the tab still upgrades.** Complete a payment, then kill the tab
       before the modal finishes returning. `subscription.charged` (or
-      `payment.captured` for Lifetime) grants the plan anyway. This is the
+      grants the plan anyway. This is the
       whole reason the webhook exists.
 - [ ] **Wrong secret fails closed.** Point `RAZORPAY_WEBHOOK_SECRET` at the API
       key secret instead → every event 400s, no rows written.
@@ -513,10 +509,10 @@ either a deployed preview or a tunnel (`cloudflared`, `ngrok`) pointed at
 
 ## 6b. Plan matrix, processor routing, local currency
 
-Tiers are **Pro** and **Power**, each sold **monthly** or **yearly**, plus a
-one-time **Lifetime**. Prices per BRD §8.3 — Pro $10/mo or $96/yr, Power $30/mo
-or $288/yr, Lifetime $299 (INR at rough parity: ₹899 / ₹8,499 / ₹2,599 /
-₹24,999 / ₹25,999).
+Tiers are **Pro** and **Power**, each sold **monthly** or **yearly**. Prices
+per BRD §8.3 — Pro $10/mo or $96/yr, Power $30/mo
+or $288/yr (INR at rough parity: ₹899 / ₹8,499 / ₹2,599 / ₹24,999). Every tier
+is recurring — there is no one-time purchase.
 
 Cadence is **not stored**. The subscription row keeps the tier only; the
 interval lives in the Stripe Price / Razorpay Plan, and the renewal boundary it

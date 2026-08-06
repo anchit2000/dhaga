@@ -13,9 +13,6 @@ export {
   type ConfirmInput,
   type ConfirmResult,
 } from "./confirm";
-export {
-  isValidPaymentSignature,
-  isValidSubscriptionSignature,
-  isValidWebhookSignature,
-} from "./verify";
+export type { RazorpaySubscription } from "./client";
+export { isValidSubscriptionSignature, isValidWebhookSignature } from "./verify";
 export { handleRazorpayWebhook, RAZORPAY_STATUS_TO_STORED } from "./webhook";

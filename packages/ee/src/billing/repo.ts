@@ -46,7 +46,6 @@ interface UpsertInput {
   /** Null on the Razorpay path — that processor has no Stripe customer. */
   stripeCustomerId: string | null;
   stripeSubscriptionId: string | null;
-  razorpayOrderId?: string | null;
   razorpaySubscriptionId?: string | null;
   razorpayPaymentId?: string | null;
   plan: SubscriptionPlan;
@@ -71,7 +70,6 @@ export async function upsertSubscription(input: UpsertInput): Promise<void> {
   const values = {
     stripeCustomerId: input.stripeCustomerId,
     stripeSubscriptionId: input.stripeSubscriptionId,
-    razorpayOrderId: input.razorpayOrderId ?? null,
     razorpaySubscriptionId: input.razorpaySubscriptionId ?? null,
     razorpayPaymentId: input.razorpayPaymentId ?? null,
     plan: input.plan,

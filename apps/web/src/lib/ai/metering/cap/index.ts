@@ -122,7 +122,7 @@ export async function effectiveMonthlyAiCap(userId?: string): Promise<number> {
  * Whether this user bypasses the monthly cap entirely.
  *
  * WITH THE MASTER SWITCH ON (the default) the credit ladder decides: a plan
- * whose allowance is `null` — Lifetime/Annual — still has no ceiling, but Free
+ * whose allowance an admin set to `null` still has no ceiling, but Free
  * (10) and Pro (300) do. A per-user override or a running promotion is an
  * explicit number, so it beats both. WITH IT OFF this falls back to
  * `hasUnlimitedAi`, i.e. the raw billing entitlement, which is the escape hatch

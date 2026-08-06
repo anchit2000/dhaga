@@ -33,17 +33,16 @@ export async function POST(request: Request): Promise<Response> {
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
   const paymentId = body?.razorpay_payment_id;
   const signature = body?.razorpay_signature;
-  // Exactly one of these is present: a Subscription for Pro, an Order for
-  // Lifetime. They sign DIFFERENT payloads, so which one arrived decides which
-  // signature check runs.
-  const orderId = typeof body?.razorpay_order_id === "string" ? body.razorpay_order_id : undefined;
-  const subscriptionId =
-    typeof body?.razorpay_subscription_id === "string" ? body.razorpay_subscription_id : undefined;
-  if (typeof paymentId !== "string" || typeof signature !== "string" || (!orderId && !subscriptionId)) {
+  const subscriptionId = body?.razorpay_subscription_id;
+  if (
+    typeof paymentId !== "string" ||
+    typeof signature !== "string" ||
+    typeof subscriptionId !== "string"
+  ) {
     return Response.json(
       {
         error:
-          "razorpay_payment_id, razorpay_signature and one of razorpay_order_id / razorpay_subscription_id are required.",
+          "razorpay_payment_id, razorpay_subscription_id and razorpay_signature are required.",
       },
       { status: 400 },
     );
@@ -51,7 +50,7 @@ export async function POST(request: Request): Promise<Response> {
 
   let result: Awaited<ReturnType<typeof confirmRazorpayPayment>>;
   try {
-    result = await confirmRazorpayPayment(userId, { orderId, subscriptionId, paymentId, signature });
+    result = await confirmRazorpayPayment(userId, { subscriptionId, paymentId, signature });
   } catch (error) {
     console.error("[razorpay] payment confirmation failed", error);
     return Response.json({ error: "Couldn't confirm payment." }, { status: 500 });

@@ -13,12 +13,10 @@ const ENV_KEYS = [
   "RAZORPAY_PLAN_PRO_YEARLY",
   "RAZORPAY_PLAN_POWER_MONTHLY",
   "RAZORPAY_PLAN_POWER_YEARLY",
-  "RAZORPAY_PRICE_LIFETIME_INR",
   "STRIPE_PRICE_PRO_MONTHLY",
   "STRIPE_PRICE_PRO_ANNUAL",
   "STRIPE_PRICE_POWER_MONTHLY",
   "STRIPE_PRICE_POWER_ANNUAL",
-  "STRIPE_PRICE_LIFETIME",
 ];
 
 const saved: Record<string, string | undefined> = {};
@@ -60,8 +58,11 @@ describe("parsePlanSelection", () => {
     expect(parsePlanSelection(null)).toBeNull();
   });
 
-  it("accepts lifetime without a cadence", () => {
-    expect(parsePlanSelection({ plan: "lifetime" })).toEqual({ plan: "lifetime" });
+  it("rejects a plan that is no longer sold", () => {
+    // `lifetime` used to be a tier. A stale client (or a curious user) posting
+    // it must get a 400, not a free never-expiring plan.
+    expect(parsePlanSelection({ plan: "lifetime" })).toBeNull();
+    expect(parsePlanSelection({ plan: "lifetime", cadence: "yearly" })).toBeNull();
   });
 });
 
@@ -92,11 +93,7 @@ describe("availableCombinations", () => {
     // The UI renders from this. A combination without a price id would give a
     // button that always errors, which is worse than no button.
     process.env.STRIPE_PRICE_PRO_ANNUAL = "price_pro_yr";
-    process.env.STRIPE_PRICE_LIFETIME = "price_lifetime";
-    expect(availableCombinations("stripe")).toEqual([
-      { plan: "pro", cadence: "yearly" },
-      { plan: "lifetime" },
-    ]);
+    expect(availableCombinations("stripe")).toEqual([{ plan: "pro", cadence: "yearly" }]);
   });
 
   it("is empty when nothing is configured", () => {

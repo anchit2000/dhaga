@@ -16,31 +16,17 @@ function hmacHex(payload: string, secret: string): string {
 }
 
 /**
- * Checkout-handler signature for a ONE-TIME payment (Orders API, i.e.
- * Lifetime): HMAC-SHA256 of `order_id|payment_id` keyed by the API secret.
+ * Checkout-handler signature for a subscription payment.
  *
  * Pure (secret passed in, no env, no network, no DB) so the security-critical
  * comparison is unit-testable without credentials — same split as
  * billing/index.ts's isUnlimitedAiSub.
- */
-export function isValidPaymentSignature(input: {
-  orderId: string;
-  paymentId: string;
-  signature: string;
-  keySecret: string;
-}): boolean {
-  return matches(hmacHex(`${input.orderId}|${input.paymentId}`, input.keySecret), input.signature);
-}
-
-/**
- * Checkout-handler signature for a RECURRING payment (Subscriptions API, i.e.
- * Pro).
  *
- * The payload order is REVERSED relative to the one-time case above:
- * `payment_id|subscription_id`, not `subscription_id|payment_id`. Reusing the
- * Orders helper here would reject every genuine subscription payment while
- * looking perfectly reasonable, so the two are deliberately separate functions
- * rather than one with a swappable argument.
+ * NOTE the payload order: `payment_id|subscription_id`. Razorpay's one-time
+ * Orders API signs the reverse (`order_id|payment_id`); if a one-time flow is
+ * ever added back, it needs its own function rather than a swapped argument
+ * here — getting it backwards rejects every genuine payment while looking
+ * entirely reasonable.
  */
 export function isValidSubscriptionSignature(input: {
   subscriptionId: string;

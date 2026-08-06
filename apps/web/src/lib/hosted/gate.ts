@@ -61,13 +61,14 @@ export interface SignupGate {
   requestAccess(email: string): Promise<boolean>;
 }
 
-/** A buyable combination. Lifetime has no cadence — nothing renews. */
-export type PlanOffer =
-  | { plan: "pro" | "power"; cadence: "monthly" | "yearly" }
-  | { plan: "lifetime" };
+/** A buyable combination. Every plan is recurring, so a cadence is required. */
+export interface PlanOffer {
+  plan: "pro" | "power";
+  cadence: "monthly" | "yearly";
+}
 
 export interface PlanSummary {
-  plan: "free" | "pro" | "power" | "lifetime";
+  plan: "free" | "pro" | "power";
   status: string | null;
   hasStripeCustomer: boolean;
   /** Which processors this instance actually has keys for. An instance may

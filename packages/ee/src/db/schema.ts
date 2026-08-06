@@ -51,18 +51,17 @@ export const subscriptions = pgTable("subscriptions", {
   // processor's ids it carries. Stripe rows always set stripeCustomerId;
   // Razorpay rows always set razorpayPaymentId and leave the Stripe ids null.
   stripeCustomerId: text("stripe_customer_id"),
-  stripeSubscriptionId: text("stripe_subscription_id"), // null for Lifetime (one-time payment)
-  // Set on the Lifetime path only — a one-time Order.
-  razorpayOrderId: text("razorpay_order_id"),
-  // Set on the Pro path — a recurring Razorpay Subscription that re-charges on
-  // its own. Mirrors stripeSubscriptionId, and is what webhook events key on.
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  // The recurring Razorpay Subscription that re-charges on its own. Mirrors
+  // stripeSubscriptionId, and is what webhook events key on. Every plan is
+  // recurring — there is no one-time purchase, so no order id to store.
   razorpaySubscriptionId: text("razorpay_subscription_id"),
   /** Most recent captured payment, on either path. */
   razorpayPaymentId: text("razorpay_payment_id"),
-  // 'lifetime' | 'pro' | 'power'. The TIER only — billing cadence is NOT
-  // stored: it lives in the processor's price/plan object, and the renewal
-  // boundary it implies is already carried by currentPeriodEnd. Persisting it
-  // would be a second copy that can drift from the thing actually charging.
+  // 'pro' | 'power'. The TIER only — billing cadence is NOT stored: it lives
+  // in the processor's price/plan object, and the renewal boundary it implies
+  // is already carried by currentPeriodEnd. Persisting it would be a second
+  // copy that can drift from the thing actually charging.
   plan: text("plan").notNull(),
   status: text("status").notNull(), // 'active' | 'past_due' | 'canceled' | 'incomplete'
   currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
@@ -72,5 +71,5 @@ export const subscriptions = pgTable("subscriptions", {
 });
 
 export type SubscriptionRow = typeof subscriptions.$inferSelect;
-export type SubscriptionPlan = "lifetime" | "pro" | "power";
+export type SubscriptionPlan = "pro" | "power";
 export type SubscriptionStatus = "active" | "past_due" | "canceled" | "incomplete";

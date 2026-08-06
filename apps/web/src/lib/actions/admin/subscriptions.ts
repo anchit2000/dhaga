@@ -6,10 +6,10 @@ import { getSubscription, getUser, setSubscriptionForUser, setAiCapOverrideFor }
 import { notifyPlanChanged } from "@/lib/admin/notify";
 import { assertAdmin } from "./guard";
 
-type AdminPlan = "free" | "pro" | "power" | "lifetime";
+type AdminPlan = "free" | "pro" | "power";
 
 function isAdminPlan(value: string): value is AdminPlan {
-  return value === "free" || value === "pro" || value === "power" || value === "lifetime";
+  return value === "free" || value === "pro" || value === "power";
 }
 
 export async function setSubscriptionAction(formData: FormData): Promise<void> {

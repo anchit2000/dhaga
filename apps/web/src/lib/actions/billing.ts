@@ -12,9 +12,7 @@ import { getBillingGate, type PlanOffer } from "@/lib/hosted/gate";
  * rather than a crashed settings screen.
  */
 function selectionFrom(formData: FormData): PlanOffer {
-  const plan = formData.get("plan");
-  if (plan === "lifetime") return { plan: "lifetime" };
-  const tier = plan === "power" ? "power" : "pro";
+  const tier = formData.get("plan") === "power" ? "power" : "pro";
   const cadence = formData.get("cadence") === "monthly" ? "monthly" : "yearly";
   return { plan: tier, cadence };
 }

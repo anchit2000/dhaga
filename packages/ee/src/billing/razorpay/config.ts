@@ -1,6 +1,3 @@
-/** Razorpay rejects anything under 1 rupee. */
-export const MIN_AMOUNT_PAISE = 100;
-
 export interface RazorpayCredentials {
   keyId: string;
   keySecret: string;
@@ -33,20 +30,3 @@ export function getRazorpayWebhookSecret(): string {
   return secret;
 }
 
-/**
- * Lifetime stays an Order, not a Plan: it is a single payment with nothing to
- * renew, which is precisely what the Subscriptions API cannot express. So this
- * one is still an amount — in PAISE, minimum 100.
- *
- * Env-configured rather than hardcoded because the repo has no INR price for
- * anything: every price in utils/constants is USD.
- */
-export function lifetimeAmountPaise(): number {
-  const raw = process.env.RAZORPAY_PRICE_LIFETIME_INR;
-  if (!raw) throw new Error("RAZORPAY_PRICE_LIFETIME_INR is required to sell Lifetime through Razorpay.");
-  const paise = Number(raw);
-  if (!Number.isInteger(paise) || paise < MIN_AMOUNT_PAISE) {
-    throw new Error(`RAZORPAY_PRICE_LIFETIME_INR must be a whole number of paise >= ${MIN_AMOUNT_PAISE}.`);
-  }
-  return paise;
-}

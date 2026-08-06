@@ -7,7 +7,6 @@ import { RazorpayCheckoutButton } from "@/components/app/settings/RazorpayChecko
 import { createCheckoutSessionAction } from "@/lib/actions/billing";
 import {
   CADENCE_LABEL,
-  LIFETIME_PRICE,
   PRICES,
   TIER_LABEL,
   formatPrice,
@@ -21,11 +20,7 @@ const TIERS: BillingTier[] = ["pro", "power"];
 const CADENCES: BillingCadence[] = ["monthly", "yearly"];
 
 function offers(list: PlanOffer[], selection: PlanOffer): boolean {
-  return list.some((o) =>
-    o.plan === "lifetime" || selection.plan === "lifetime"
-      ? o.plan === selection.plan
-      : o.plan === selection.plan && o.cadence === selection.cadence,
-  );
+  return list.some((o) => o.plan === selection.plan && o.cadence === selection.cadence);
 }
 
 /**
@@ -69,9 +64,7 @@ export function PlanPicker({
           errorMessage="Couldn't start checkout — please try again."
         >
           <input type="hidden" name="plan" value={selection.plan} />
-          {selection.plan !== "lifetime" ? (
-            <input type="hidden" name="cadence" value={selection.cadence} />
-          ) : null}
+          <input type="hidden" name="cadence" value={selection.cadence} />
           <Button type="submit" size="sm">
             {label}
           </Button>
@@ -79,8 +72,6 @@ export function PlanPicker({
       ];
     });
   }
-
-  const lifetimeButtons = buttons({ plan: "lifetime" }, "Buy Lifetime");
 
   return (
     <div className="space-y-5 border-t border-seam pt-4">
@@ -132,15 +123,6 @@ export function PlanPicker({
           );
         })}
       </div>
-
-      {lifetimeButtons.length ? (
-        <div className="flex flex-wrap items-center gap-3 border-t border-seam pt-4">
-          <span className="text-sm text-fog">
-            Lifetime — {formatPrice(currency, LIFETIME_PRICE[currency].amount)} once
-          </span>
-          {lifetimeButtons}
-        </div>
-      ) : null}
     </div>
   );
 }

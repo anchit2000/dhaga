@@ -17,7 +17,7 @@ import type { SubscriptionRow } from "../db/schema";
 export function isUnlimitedAiSub(sub: SubscriptionRow | null, now: Date = new Date()): boolean {
   if (!sub) return false;
   if (sub.status !== "active") return false;
-  if (sub.plan !== "pro" && sub.plan !== "power" && sub.plan !== "lifetime") return false;
+  if (sub.plan !== "pro" && sub.plan !== "power") return false;
   return sub.currentPeriodEnd === null || sub.currentPeriodEnd > now;
 }
 

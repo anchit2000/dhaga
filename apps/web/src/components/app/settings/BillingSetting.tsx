@@ -9,7 +9,6 @@ const PLAN_LABEL: Record<PlanSummary["plan"], string> = {
   free: "Free",
   pro: "Pro",
   power: "Power",
-  lifetime: "Lifetime",
 };
 
 /** Monthly AI-action allowance for the acting user, as counted by the metering

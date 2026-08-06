@@ -11,7 +11,7 @@ import { Select } from "@/components/ui/select";
 
 interface SubscriptionControlsProps {
   userId: string;
-  currentPlan: "free" | "pro" | "power" | "lifetime";
+  currentPlan: "free" | "pro" | "power";
   currentExpiry: Date | null;
   currentCredits: number | null;
 }
@@ -50,7 +50,6 @@ export function SubscriptionControls({
               <option value="free">Free</option>
               <option value="pro">Pro</option>
               <option value="power">Power</option>
-              <option value="lifetime">Lifetime</option>
             </Select>
           </div>
           <div className="space-y-1.5">

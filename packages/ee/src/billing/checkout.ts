@@ -12,7 +12,8 @@ export async function createCheckoutUrl(userId: string, selection: PlanSelection
   const email = existing ? undefined : ((await getUserEmail(userId)) ?? undefined);
 
   const session = await stripe.checkout.sessions.create({
-    mode: selection.plan === "lifetime" ? "payment" : "subscription",
+    // Always recurring — every plan renews.
+    mode: "subscription",
     line_items: [{ price: priceIdFor(selection), quantity: 1 }],
     client_reference_id: userId,
     // `plan` is the TIER the webhook will store. Carried in metadata rather

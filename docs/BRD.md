@@ -15,7 +15,7 @@ NetworkPro is an AI-native personal CRM that turns fleeting professional encount
 
 **One-line pitch:** *Your professional memory, augmented.*
 
-**Business model:** Open-core. The client apps and self-hostable core are open source (community trust, zero-cost adoption, contributor leverage); revenue comes from a hosted cloud tier (sync, enrichment, team graph) and a one-time "lifetime" purchase echoing the incumbent card scanner's pricing model that validated this market.
+**Business model:** Open-core. The client apps and self-hostable core are open source (community trust, zero-cost adoption, contributor leverage); revenue comes from a hosted cloud tier (sync, enrichment, team graph) sold as recurring Pro and Power subscriptions.
 
 ---
 
@@ -43,7 +43,7 @@ The market splits into five camps. Nobody occupies the intersection NetworkPro t
 
 | Product | Pricing | Strengths | Weaknesses vs NetworkPro |
 |---|---|---|---|
-| **The incumbent card scanner** | AUD $99.99 one-time | Best-in-class OCR (25 languages), Salesforce export, proven lifetime-price model | Frozen product; zero intelligence, no context, no notes, no search |
+| **The incumbent card scanner** | AUD $99.99 one-time | Best-in-class OCR (25 languages), Salesforce export, proven one-time-purchase model | Frozen product; zero intelligence, no context, no notes, no search |
 | **A digital business-card app** | Free / paid tiers | Top-rated digital card on G2 (8,800+ reviews); simple shareable profile; card + badge scanning | Their graph is *outbound* (share my card), not *inbound* (remember who I met); no notes/knowledge layer |
 | **An enterprise digital-card app** | Free / team tiers | Polished; enterprise-grade (SOC 2, SSO/SAML/SCIM); card + badge scanner, email signatures | Same — digital-identity tool, not memory tool |
 | **An NFC badge-scanner / lead-capture tool** | Free / paid + NFC hardware | NFC tap-to-share; universal badge scanner with ~90% AI enrichment success; strong at events | Lead-capture for exhibitors, priced/designed for sales teams at booths, not attendees building a personal network |
@@ -92,7 +92,7 @@ One-click LinkedIn→CRM enrichment extensions — Chrome extensions with enrich
 **Strategic implications adopted into scope:**
 1. **Badge scanning moves up** to v1.1 (the digital-card and badge-scanner apps made it table stakes).
 2. **Browser extension is a first-class capture surface** (validated by adoption of the one-click LinkedIn-capture pattern) — promoted into v1.1.
-3. **Lifetime pricing stays** (the incumbent card scanner's anchor) alongside subscription — an explicit counter to Camp B's subscription fatigue.
+3. **Subscription only.** A one-time tier was considered as a counter to Camp B's subscription fatigue and rejected: an unbounded AI allowance sold for a single payment has no defensible unit economics (see §8.3).
 4. **Privacy/open source is the marketing spearhead** against the auto-enrichment / sync CRMs and the sales-tooling camp.
 
 ---
@@ -148,7 +148,7 @@ The MVP must prove one loop end-to-end:
 | Graph | Per-user, on-device, basic edges | Rich ontology, article-to-contact links, team-shared graph, cross-user dedup |
 | Platform | iOS + Android (one RN codebase) | + web app + browser extension + watch/widgets |
 | Sync | Optional encrypted backup | Full multi-device sync (mobile ↔ web ↔ extension), team workspaces |
-| Monetization | Free beta | Free tier + Pro (lifetime or annual) + Teams (per-seat) |
+| Monetization | Free beta | Free tier + Pro (monthly or annual) + Power + Teams (per-seat) |
 
 ### 5.4 Considered features backlog (2026-07 review)
 
@@ -477,20 +477,17 @@ billing.)
 
 (**Power is now wired for sale**, not just sized — it has an `EntitlementPlan`
 member, a stored `plan` value and price-id slots for both processors, so it goes
-live the moment those prices exist in the dashboards. **Lifetime is priced at
-$299**, ~3.1× the annual price; that figure is a judgement call, not a measured
-one, and it is the plan whose economics are least defensible — an uncapped
-allowance means its true cost is bounded only by the ~$16/month dollar ceiling,
-so a buyer who stays five years can consume far more inference than they paid
-for. Revisit before promoting it. INR pricing is approximate parity at ~₹87/USD
-— ₹899 / ₹8,499 monthly-yearly Pro, ₹2,599 / ₹24,999 Power, ₹25,999 Lifetime —
-not a PPP discount, so the margins in the table above carry over unchanged.)
+live the moment those prices exist in the dashboards. There is **no one-time
+tier**: an unbounded AI allowance sold for a single payment cannot be bounded by
+anything except the dollar ceiling, so every plan is recurring. INR pricing is
+approximate parity at ~₹87/USD — ₹899 / ₹8,499 monthly-yearly Pro, ₹2,599 /
+₹24,999 Power — not a PPP discount, so the margins above carry over unchanged.)
 
 (Margins are after Stripe's 2.9% + $0.30; hosting is not included.) A 100-credit
 Pro tier would clear ~94% margin but ration the product to a sixth of the heavy
 user profile above — 300 is the number that keeps >70% margin *and* covers a
 conference month. 1,000 credits for Power only works at ~$24/mo; at $12 it would
-be a 42% worst-case margin. Lifetime and self-hosted stay uncapped. The free
+be a 42% worst-case margin. Self-hosted stays uncapped. The free
 tier gets **10 credits** — 10 card scans, or 5 scans plus 5 notes, or 5
 Ask-Dhaga questions — which costs at most $0.06 per free user per month (10 ×
 the all-notes credit, ~$0.05 on the typical mix). Deep research can never be
@@ -574,16 +571,14 @@ deliberately mirroring the credit ladder rung for rung:
 |---|---:|---|---:|
 | Free | $0 | floor | **$0.50** |
 | Pro | $8 | revenue × 2.0 | **$16** |
-| Lifetime / Annual | $8 (assumed) | revenue × 2.0 | **$16** |
-| Power (sized, not sold) | $24 | revenue × 2.0 | **$48** |
+| Power | $24 | revenue × 2.0 | **$48** |
 | No plan in play (self-host, billing not running) | — | none | **no ceiling** |
 
 Revenue, not list price: Pro is $8/month of revenue (sold annually at $96), the
 same number the credit allowance is sized against — the $10 month-to-month
 marketing price is deliberately not used, because a ceiling must be built on
-money received. `lifetime` is one-off and has no price constant anywhere in the
-repo; amortising it at Pro's $8 is a **stated assumption**, conservative because
-a lifetime buyer paid at least a year of Pro up front. Free is the case that
+money received. Every plan is recurring, so each has a real monthly figure and
+nothing here rests on an amortised assumption. Free is the case that
 breaks a pure percentage model on day one — 0 × 2.0 = $0 would refuse every AI
 action a free user takes, including the ten their credit allowance is meant to
 buy — which is why the floor exists. Rung 4 is the other deliberate asymmetry
@@ -607,7 +602,7 @@ second**: the credit message is the one a user can act on ("you've used your 300
 credits" → upgrade), while the dollar gate is the operator's backstop and should
 only speak when the credit ladder did not already stop it. The dollar check sits
 *outside* the `hasUnlimitedAiCredits` early return on purpose — an
-unlimited-credit plan (Lifetime) is exactly the account nothing else bounds.
+unlimited-credit plan (one an admin has uncapped) is exactly the account nothing else bounds.
 Failure matches the credit cap: `AiBudgetError` with `kind: "dollar_cap"` (the
 kinds are now `"cap" | "dollar_cap" | "burst"`), message "This account has
 reached its monthly AI spending limit. It resets at the start of next month."
@@ -625,7 +620,7 @@ with each one's ceiling, the rung that set it, and **utilisation %**, so "is
 
 ### 8.4 Revenue streams
 
-1. **Pro (individual):** hosted sync + a monthly AI-credit allowance (§8.3 — 300 credits, sold as such on /pricing since 2026-07-31 and enforced by default since the same date) + enrichment + alerts. Monthly, yearly, and a **lifetime tier** — deliberately echoing the incumbent card scanner's proven one-time-purchase psychology.
+1. **Pro (individual):** hosted sync + a monthly AI-credit allowance (§8.3 — 300 credits, sold as such on /pricing since 2026-07-31 and enforced by default since the same date) + enrichment + alerts. Monthly or yearly; **no one-time tier** (see §8.3 — the economics do not hold).
 2. **Teams:** per-seat, shared graph, SSO, admin. The defensible, expanding revenue line.
 3. **Self-host support** (later): paid support/SLA for companies running the AGPL stack internally.
 
@@ -689,7 +684,7 @@ in `docs/checklist.md` §21):
 
 ## 11. Open Questions
 
-1. Lifetime-tier pricing: $79 vs $99 vs $129? Needs willingness-to-pay testing against the incumbent card scanner's AUD $99.99 anchor and the ~$10/mo enrichment-CRM anchor.
+1. Does dropping a one-time tier cost conversions against the incumbent card scanner's AUD $99.99 anchor? Needs willingness-to-pay testing of recurring-only pricing against that anchor and the ~$10/mo enrichment-CRM anchor.
 2. Sync build-vs-adopt: PowerSync/ElectricSQL licensing fit with AGPL? Lead candidate as of 2026-07: **TanStack DB 0.6 + ElectricSQL** — SQLite-backed persistence incl. React Native/Expo, incremental Postgres sync, and we already ship Electric's PGlite (`docs/LIBRARIES.md` §5). Before any M8 sync code, run an evaluation covering: sync model vs the planned field-level LWW, offline semantics, RN/Expo maturity, AGPL/licensing fit, and lock-in vs the decided op-sqlite + sqlite-vec store. Ends in a decision doc + sign-off — not silent adoption.
 3. ~~Enrichment data sources: which are ToS-safe?~~ **Resolved 2026-07 — see §6.7.** LinkedIn API is partner-gated and closed to CRMs; X API reads are pay-per-use and uneconomical. Channels: user-triggered web search, LinkedIn Connections CSV import + re-import diff, opt-in news watchlist, extension DOM capture. Remaining sub-question: is this enrichment quality enough vs the NFC badge-scanner's claimed 90%?
 4. ~~Browser extension and LinkedIn: confirm legal posture.~~ **Resolved 2026-07 — see §6.7.** User-initiated, single-profile DOM read of a page the user is viewing (the one-click LinkedIn-capture pattern) is the posture; shipped in the extension. No automation, no bulk collection.

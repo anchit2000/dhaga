@@ -7,10 +7,9 @@ export const RAZORPAY_CHECKOUT_SCRIPT_SRC = "https://checkout.razorpay.com/v1/ch
 export const RAZORPAY_CHECKOUT_NAME = "Dhaga";
 
 /** Cadence lives in the Razorpay Plan, so labels can't claim a term. */
-export const RAZORPAY_PLAN_DESCRIPTION: Record<"pro" | "power" | "lifetime", string> = {
+export const RAZORPAY_PLAN_DESCRIPTION: Record<"pro" | "power", string> = {
   pro: "Dhaga Pro",
   power: "Dhaga Power",
-  lifetime: "Dhaga Lifetime",
 };
 
 /**

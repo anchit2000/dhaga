@@ -1,6 +1,5 @@
 import type { SubscriptionStatus } from "../../db/schema";
 import { upsertSubscription } from "../repo";
-import { fetchOrder } from "./client";
 import { getRazorpayWebhookSecret } from "./config";
 import { isValidWebhookSignature } from "./verify";
 
@@ -37,17 +36,9 @@ interface SubscriptionEntity {
   notes?: Record<string, string | number | null> | null;
 }
 
-interface PaymentEntity {
-  id: string;
-  order_id?: string | null;
-}
-
 interface RazorpayEvent {
   event?: string;
-  payload?: {
-    subscription?: { entity?: SubscriptionEntity };
-    payment?: { entity?: PaymentEntity };
-  };
+  payload?: { subscription?: { entity?: SubscriptionEntity } };
 }
 
 function userIdFrom(notes: Record<string, string | number | null> | null | undefined): string | null {
@@ -96,25 +87,6 @@ export async function handleRazorpayWebhook(rawBody: string, signature: string):
         plan: tier,
         status,
         currentPeriodEnd: entity.current_end ? new Date(entity.current_end * 1000) : null,
-      });
-      break;
-    }
-    case "payment.captured": {
-      // One-time payments (Lifetime). The payment entity carries no notes of
-      // ours, so the order it belongs to is re-fetched for the userId/plan
-      // binding — the same object /api/razorpay/verify trusts.
-      const payment = event.payload?.payment?.entity;
-      if (!payment?.order_id) break;
-      const order = await fetchOrder(payment.order_id);
-      if (order.plan !== "lifetime" || !order.userId || order.status !== "paid") break;
-      await upsertSubscription({
-        userId: order.userId,
-        stripeCustomerId: null,
-        stripeSubscriptionId: null,
-        razorpayOrderId: order.id,
-        razorpayPaymentId: payment.id,
-        plan: "lifetime",
-        status: "active",
       });
       break;
     }

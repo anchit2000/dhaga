@@ -49,15 +49,7 @@ export async function handleStripeWebhook(rawBody: string, signature: string): P
       const customerId = typeof session.customer === "string" ? session.customer : session.customer?.id;
       if (!userId || !customerId) break;
 
-      if (session.mode === "payment") {
-        await upsertSubscription({
-          userId,
-          stripeCustomerId: customerId,
-          stripeSubscriptionId: null,
-          plan: "lifetime",
-          status: "active",
-        });
-      } else if (session.mode === "subscription" && session.subscription) {
+      if (session.mode === "subscription" && session.subscription) {
         const subId =
           typeof session.subscription === "string" ? session.subscription : session.subscription.id;
         const sub = await stripe.subscriptions.retrieve(subId);

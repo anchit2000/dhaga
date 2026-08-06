@@ -13,7 +13,7 @@ async function db() {
 }
 
 export interface SetSubscriptionInput {
-  plan: "free" | "pro" | "power" | "lifetime";
+  plan: "free" | "pro" | "power";
   expiry: Date | null;
 }
 
@@ -21,7 +21,7 @@ export interface SetSubscriptionInput {
  * Admin-managed subscription writer (no Stripe involved).
  *  - `free` → delete the row so entitlement (hasUnlimitedAi / getPlanSummary)
  *    falls back to free tier.
- *  - `pro` | `lifetime` → upsert an active comp subscription with the given
+ *  - `pro` | `power` → upsert an active comp subscription with the given
  *    expiry. An existing row keeps its id/stripeCustomerId/stripeSubscriptionId
  *    (the `set` values omit those columns); a brand-new comp row uses an
  *    `admin-granted:<userId>` sentinel to satisfy the NOT NULL stripeCustomerId

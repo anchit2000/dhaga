@@ -10,9 +10,8 @@
  * Sources, all from BRD §8.3 (measured 2026-07-30, margins 71–77%):
  *   Pro    $10/mo  |  $96/yr  ($8/mo effective)
  *   Power  $30/mo  |  $288/yr ($24/mo effective)
- * Lifetime is NOT in the BRD — $299 is set here, ~3.1× the annual price. It
- * carries an uncapped credit allowance, so its true cost is unbounded and only
- * the dollar ceiling (~$16/mo, ai-budget.ts) limits it. Revisit before volume.
+ *
+ * Every plan is recurring. There is no one-time purchase.
  *
  * INR is approximate parity at ~₹87/USD rounded to clean figures, NOT a PPP
  * discount — so the BRD's margin arithmetic carries over unchanged. If you want
@@ -54,11 +53,6 @@ export const PRICES: Record<Currency, Record<BillingTier, Record<BillingCadence,
       yearly: { amount: 24999, perMonth: 2083, originalAmount: 31188 },
     },
   },
-};
-
-export const LIFETIME_PRICE: Record<Currency, DisplayPrice> = {
-  USD: { amount: 299, perMonth: 0 },
-  INR: { amount: 25999, perMonth: 0 },
 };
 
 /**

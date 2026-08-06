@@ -40,7 +40,7 @@ export async function toggleWatch(
     } catch {
       return {
         ok: false,
-        error: "Watching for job changes and news requires a Pro or Lifetime plan.",
+        error: "Watching for job changes and news requires a Pro or Power plan.",
       };
     }
     const cap = await watchlistCap(userId);

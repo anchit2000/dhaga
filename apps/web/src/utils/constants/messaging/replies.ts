@@ -14,6 +14,12 @@ export function linkedReply(): string {
   return "✅ Connected! Forward contact cards, notes, or photos here and I'll turn them into people in your graph. Reply DONE when you're finished.";
 }
 
+/** `/start` from a chat that is already linked — scanning the QR twice, or just
+ *  reopening the bot. Confirms rather than silently ignoring. */
+export function alreadyLinkedReply(): string {
+  return "✅ This chat is already connected. Forward a contact card, note, or photo — then reply DONE to save.";
+}
+
 export function invalidTokenReply(): string {
   return "⚠️ That link token isn't valid or has expired. Generate a fresh one in Dhaga → Settings → Messaging and send it here.";
 }

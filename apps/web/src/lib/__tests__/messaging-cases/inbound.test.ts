@@ -3,6 +3,7 @@ import { registerTranscriptionProvider } from "@dhaga/core/src/transcription";
 import type { InboundMessageContent } from "@dhaga/core/src/messaging";
 import {
   ackFirstItemReply,
+  alreadyLinkedReply,
   emptyMessageReply,
   emptySessionReply,
   linkedReply,
@@ -65,6 +66,35 @@ describe("an unlinked chat", () => {
     store.linkToken = "ABCD2345";
     await deliver({ type: "text", text: "ABCD2345" });
     expect(store.sent).toEqual([linkedReply()]);
+  });
+
+  it("links from a scanned QR, where Telegram sends the token as /start", async () => {
+    // WHY: the QR's whole value is that nobody retypes the code. Telegram
+    // delivers ?start=TOKEN as the literal message "/start TOKEN" — if the door
+    // doesn't recognise that, scanning silently fails and the person is told
+    // their chat isn't recognised while holding a valid code.
+    store.userId = null;
+    store.linkToken = "ABCD2345";
+    await deliver({ type: "text", text: "/start ABCD2345" });
+    expect(store.sent).toEqual([linkedReply()]);
+  });
+
+  it("does not read a bare /start as a bad token", async () => {
+    // Telegram sends this on every first open, before any code exists.
+    store.userId = null;
+    await deliver({ type: "text", text: "/start" });
+    expect(store.sent).toEqual([notRecognizedReply()]);
+  });
+});
+
+describe("a /start from a chat that is already linked", () => {
+  it("is answered, never stored as a note", async () => {
+    // WHY: reopening the bot (or scanning the QR twice) sends /start again.
+    // Treating it as content would file "/start ABCD2345" into the batch as a
+    // note about somebody — capture noise the user never typed.
+    await deliver({ type: "text", text: "/start ABCD2345" });
+    expect(store.sent).toEqual([alreadyLinkedReply()]);
+    expect(store.items).toHaveLength(0);
   });
 });
 

@@ -2,12 +2,17 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Check, Copy, Loader2, Unlink } from "lucide-react";
+import { Check, Copy, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  generateMessagingLinkTokenAction,
-  unlinkMessagingIdentityAction,
-} from "@/lib/actions/messaging";
+import { generateMessagingLinkTokenAction } from "@/lib/actions/messaging";
+import { messagingLinkUrl, MESSAGING_PROVIDER_LABELS } from "@/utils/constants/messaging";
+import { MessagingLinkQr } from "../MessagingLinkQr";
+
+/** How each channel's scan is described — what tapping/scanning will actually do. */
+const SCAN_HINTS: Record<string, string> = {
+  telegram: "Scan to open the bot — tap Start and you're linked.",
+  whatsapp: "Scan to open a chat with the code ready — just hit send.",
+};
 
 interface ActiveToken {
   token: string;
@@ -25,15 +30,39 @@ interface ActiveToken {
 export function MessagingLinkPanel({
   activeToken,
   ttlMinutes,
+  telegramBotUsername,
+  whatsappNumber,
 }: {
   activeToken: ActiveToken | null;
   ttlMinutes: number;
+  telegramBotUsername: string | null;
+  whatsappNumber: string | null;
 }) {
   const [pending, startTransition] = useTransition();
   const [generated, setGenerated] = useState<ActiveToken | null>(null);
   const [copied, setCopied] = useState(false);
   const [minutesLeft, setMinutesLeft] = useState(ttlMinutes);
   const token = generated ?? activeToken;
+
+  // Derived from the token in state, so a regenerate updates the codes in the
+  // same render that updates the printed one — they can never disagree. A
+  // channel with no configured handle yields no link and is simply not offered.
+  const scanTargets = token
+    ? (["telegram", "whatsapp"] as const)
+        .map((provider) => ({
+          label: MESSAGING_PROVIDER_LABELS[provider],
+          hint: SCAN_HINTS[provider],
+          url: messagingLinkUrl({
+            provider,
+            token: token.token,
+            telegramBotUsername,
+            whatsappNumber,
+          }),
+        }))
+        .filter((target): target is { label: string; hint: string; url: string } =>
+          Boolean(target.url),
+        )
+    : [];
 
   // Show the real time remaining, not the full TTL, for a token minted earlier.
   // First render uses `ttlMinutes` so SSR and client agree (no hydration #418);
@@ -96,6 +125,18 @@ export function MessagingLinkPanel({
           <p className="text-xs text-fog">
             Send this token to the bot to link this chat. Expires in {minutesLeft} min.
           </p>
+          {scanTargets.length > 0 ? (
+            <div className="flex flex-col gap-2 pt-1 sm:flex-row">
+              {scanTargets.map((target) => (
+                <MessagingLinkQr
+                  key={target.label}
+                  label={target.label}
+                  url={target.url}
+                  hint={target.hint}
+                />
+              ))}
+            </div>
+          ) : null}
         </div>
       ) : null}
       <Button
@@ -109,39 +150,5 @@ export function MessagingLinkPanel({
         {token ? "Regenerate token" : "Generate link token"}
       </Button>
     </div>
-  );
-}
-
-/** Unlink one linked chat: confirm first (destructive, reversible only by
- *  re-linking), then run the action with a spinner and toast-on-failure. */
-export function UnlinkButton({ identityId }: { identityId: string }) {
-  const [pending, startTransition] = useTransition();
-
-  function handleUnlink(): void {
-    if (
-      !confirm(
-        "Unlink this chat? Messages from it won't be captured until you link it again.",
-      )
-    ) {
-      return;
-    }
-    startTransition(async () => {
-      const result = await unlinkMessagingIdentityAction(identityId);
-      if (!result.ok) toast.error(result.error);
-    });
-  }
-
-  return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      className="min-h-11 shrink-0 text-destructive/90 hover:bg-destructive/10 hover:text-destructive"
-      disabled={pending}
-      onClick={handleUnlink}
-    >
-      {pending ? <Loader2 className="size-3.5 animate-spin" /> : <Unlink className="size-3.5" />}
-      Unlink
-    </Button>
   );
 }

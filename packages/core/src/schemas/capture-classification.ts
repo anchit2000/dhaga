@@ -5,7 +5,7 @@ import { extractedContactSchema } from "./contact";
  * Note-capture classification, folded into the ONE quick-add extraction call
  * (see apps/web/src/lib/ai/contact-extraction.ts). The same structured output
  * that parses contact fields ALSO reports whether the captured text is really a
- * NOTE ABOUT A PERSON — so a note like "Met Anchit, discussed the round" is
+ * NOTE ABOUT A PERSON — so a note like "Met Priya, discussed the round" is
  * detected without a second AI round-trip or a second metered action.
  *
  * Structured-outputs note: required-but-nullable (never .optional()) so the
@@ -15,13 +15,13 @@ const captureClassificationShape = {
   isNoteAboutPerson: z
     .boolean()
     .describe(
-      'true only when the text reads as an observation/log about a specific named person (e.g. "Met Anchit, discussed the Series A"), NOT an email signature, business card, or badge.',
+      'true only when the text reads as an observation/log about a specific named person (e.g. "Met Priya, discussed the Series A"), NOT an email signature, business card, or badge.',
     ),
   subjectName: z
     .string()
     .nullable()
     .describe(
-      'The person the note is about, as written (e.g. "Anchit"); null when isNoteAboutPerson is false or no name is present.',
+      'The person the note is about, as written (e.g. "Priya"); null when isNoteAboutPerson is false or no name is present.',
     ),
   noteBody: z
     .string()

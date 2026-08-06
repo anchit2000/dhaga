@@ -129,12 +129,12 @@ describe("confirmed cluster suggestions", () => {
   it("links only members without a company — never overwrites existing data", async () => {
     await importContacts(
       [
-        candidate("Anchit JOGET", null),
+        candidate("Priya JOGET", null),
         candidate("Arjit JOGET", "Existing Employer"),
       ],
       "google",
     );
-    const anchit = await findByName("Anchit JOGET");
+    const anchit = await findByName("Priya JOGET");
     const arjit = await findByName("Arjit JOGET");
 
     const linked = await linkClusterToCompany("Joget", [anchit.id, arjit.id]);

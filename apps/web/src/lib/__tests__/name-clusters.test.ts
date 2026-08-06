@@ -14,9 +14,9 @@ const person = (
  * annotated — otherwise confirmed clusters nag forever.
  */
 describe("name clustering suggestions", () => {
-  it("clusters company-in-name saves like 'Anchit JOGET' and keeps the casing", () => {
+  it("clusters company-in-name saves like 'Priya JOGET' and keeps the casing", () => {
     const clusters = computeNameClusters([
-      person("1", "Anchit JOGET"),
+      person("1", "Priya JOGET"),
       person("2", "Arjit JOGET"),
     ]);
     expect(clusters).toHaveLength(1);
@@ -44,7 +44,7 @@ describe("name clustering suggestions", () => {
 
     // Company already linked for one of two — cluster falls under minSize.
     const gone = computeNameClusters([
-      person("1", "Anchit JOGET", [], "Joget"),
+      person("1", "Priya JOGET", [], "Joget"),
       person("2", "Arjit JOGET"),
     ]);
     expect(gone).toHaveLength(0);
@@ -76,7 +76,7 @@ describe("name clustering suggestions", () => {
     // "Kumar_Joget" has no space between the two words, but "Joget" is
     // still a valid common part shared with "Raveesh Joget".
     const clusters = computeNameClusters([
-      person("1", "Anchit Kumar_Joget"),
+      person("1", "Priya Kumar_Joget"),
       person("2", "Raveesh Joget"),
     ]);
     expect(clusters).toHaveLength(1);
@@ -85,10 +85,10 @@ describe("name clustering suggestions", () => {
   });
 
   it("never matches a token as a substring of a longer one", () => {
-    // "Anchit" must not cluster with "Sanchit" just because the letters
+    // "Priya" must not cluster with "Sanchit" just because the letters
     // overlap — clustering is on whole delimiter-bounded tokens only.
     const clusters = computeNameClusters([
-      person("1", "Ravi Anchit"),
+      person("1", "Ravi Priya"),
       person("2", "Ravi Sanchit"),
     ]);
     expect(clusters).toHaveLength(0);

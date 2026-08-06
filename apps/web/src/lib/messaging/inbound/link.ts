@@ -1,9 +1,9 @@
 import type { MessagingClient, NormalizedInboundMessage } from "@dhaga/core/src/messaging";
 import { consumeLinkToken, linkIdentity } from "@/lib/repo/messaging";
 import {
+  extractLinkToken,
   invalidTokenReply,
   linkedReply,
-  looksLikeLinkToken,
   notRecognizedReply,
 } from "@/utils/constants/messaging";
 
@@ -17,8 +17,11 @@ export async function handleUnlinked(
   msg: NormalizedInboundMessage,
 ): Promise<void> {
   const { externalUserId } = msg;
-  if (msg.content.type === "text" && looksLikeLinkToken(msg.content.text)) {
-    const consumed = await consumeLinkToken(msg.content.text.trim());
+  // Typed bare, or delivered as a `/start` payload by a scanned link — the
+  // sender shouldn't have to know which one their client sent.
+  const token = msg.content.type === "text" ? extractLinkToken(msg.content.text) : null;
+  if (token) {
+    const consumed = await consumeLinkToken(token);
     if (consumed) {
       await linkIdentity({
         provider: msg.provider,

@@ -1,10 +1,8 @@
 import type { MessagingClient, NormalizedInboundMessage } from "@dhaga/core/src/messaging";
-import { withUserDb } from "@/lib/db/request-scope";
 import { logActionError } from "@/lib/actions/resilience";
 import { resolveOwnerUserId } from "@/app/api/telegram/route";
-import { getPendingQuestion, resolveUserIdByIdentity } from "@/lib/repo/messaging";
-import { isDoneDelimiter } from "@/utils/constants/messaging";
-import { resolvePendingQuestion } from "../answer";
+import { resolveUserIdByIdentity } from "@/lib/repo/messaging";
+import { alreadyLinkedReply, isDoneDelimiter, parseStartCommand } from "@/utils/constants/messaging";
 import { handleContent, handleDone } from "./content";
 import { handleUnlinked } from "./link";
 
@@ -13,10 +11,13 @@ import { handleUnlinked } from "./link";
  *
  *   1. resolve the sender to a Dhaga user (self-host owner fallback when not
  *      hosted) — an unknown chat gets the link prompt, never silence;
- *   2. if a disambiguation question is open for this chat, let the message try
- *      to answer it (../answer) — an answer ends here, anything else releases
- *      the question and falls through;
- *   3. DONE closes the batch; everything else is content.
+ *   2. DONE closes the batch; everything else is content.
+ *
+ * There is deliberately NO conversational state here. "Which person did you
+ * mean?" is raised as a confirmation in the app's inbox instead of asked in
+ * chat, because chat could only ever carry one open question per chat — which
+ * capped a batch at one resolvable ambiguity and silently turned every other one
+ * into a duplicate person.
  *
  * Swallows every error (the webhook always returns 200) and logs only PII-free
  * metadata.
@@ -35,16 +36,19 @@ export async function handleInboundMessage(
       return;
     }
 
-    const chat = { provider: msg.provider, externalId: msg.externalUserId };
-    const pending = await withUserDb(userId, () => getPendingQuestion(chat));
-    if (pending) {
-      const outcome = await resolvePendingQuestion({ client, msg, userId, pending });
-      if (outcome === "answered") return;
-    }
-
-    if (msg.content.type === "text" && isDoneDelimiter(msg.content.text)) {
-      await handleDone(client, msg, userId);
-      return;
+    if (msg.content.type === "text") {
+      // `/start` is a greeting, not content — Telegram sends it on every open,
+      // and a scanned link sends it with the token attached. Either way this
+      // chat is ALREADY linked, so storing it would put "/start ABCD2345" in
+      // the batch as if it were a note about somebody.
+      if (parseStartCommand(msg.content.text)) {
+        await client.sendText({ externalUserId: msg.externalUserId, text: alreadyLinkedReply() });
+        return;
+      }
+      if (isDoneDelimiter(msg.content.text)) {
+        await handleDone(client, msg, userId);
+        return;
+      }
     }
     await handleContent(client, msg, userId);
   } catch (error) {

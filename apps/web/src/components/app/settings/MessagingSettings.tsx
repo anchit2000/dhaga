@@ -83,10 +83,16 @@ export function MessagingSettings({
         <div>
           <p className="text-sm font-medium text-paper">Connect this chat</p>
           <p className="mt-1 text-sm text-fog">
-            Generate a token, then send it to the bot from the chat you want to link.
+            Generate a token, then scan the code with your phone — or send the token to
+            the bot yourself from the chat you want to link.
           </p>
         </div>
-        <MessagingLinkPanel activeToken={activeToken} ttlMinutes={LINK_TOKEN_TTL_MINUTES} />
+        <MessagingLinkPanel
+          activeToken={activeToken}
+          ttlMinutes={LINK_TOKEN_TTL_MINUTES}
+          telegramBotUsername={telegramBotUsername}
+          whatsappNumber={whatsappNumber}
+        />
       </div>
 
       <div className="space-y-3 border-t border-seam pt-4">

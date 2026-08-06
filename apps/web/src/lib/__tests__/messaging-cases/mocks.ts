@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import type { ExtractedContact } from "@dhaga/core";
 import type { MessagingSessionItemRow } from "@/lib/db/schema";
-import type { MessagingQuestionOption } from "@/utils/constants/messaging";
-import { store, type StoredQuestion } from "./harness";
+import type { ConfirmationOption } from "@dhaga/core";
+import { store } from "./harness";
 
 /**
  * Module doubles for everything the inbound path writes through. Each is a
@@ -21,6 +21,7 @@ export function itemRow(kind: string, payload: unknown): MessagingSessionItemRow
     payload,
     providerMessageId: randomUUID(),
     createdAt: new Date(),
+    processedAt: null,
   } as MessagingSessionItemRow;
 }
 
@@ -57,25 +58,28 @@ export function repoMessagingMock() {
       return { id: "item", duplicate: false };
     },
     listSessionItems: async () => store.items,
-    setSessionStatus: async () => undefined,
-    getPendingQuestion: async () => store.questions.at(-1) ?? null,
-    createPendingQuestion: async (input: {
-      provider: string;
-      externalId: string;
-      subjectName: string | null;
-      noteBody: string;
-      options: MessagingQuestionOption[];
-    }) => {
-      const question: StoredQuestion = {
-        id: randomUUID(),
-        expiresAt: new Date(Date.now() + 3_600_000),
-        ...input,
-      };
-      store.questions.push(question);
-      return question.id;
+    // The walk consumes UNPROCESSED items and stamps each as it finishes, so a
+    // killed run resumes instead of duplicating. The double models that stamp,
+    // which is what makes the resume test able to fail.
+    listUnprocessedSessionItems: async () => store.items.filter((item) => !item.processedAt),
+    markSessionItemProcessed: async (itemId: string) => {
+      const item = store.items.find((candidate) => candidate.id === itemId);
+      if (item) (item as { processedAt: Date | null }).processedAt = new Date();
     },
-    clearPendingQuestions: async () => {
-      store.questions.length = 0;
+    setSessionStatus: async () => undefined,
+  };
+}
+
+export function confirmationsMock() {
+  return {
+    createNoteSubjectConfirmation: async (input: {
+      noteBody: string;
+      subjectName: string | null;
+      question: string;
+      options?: ConfirmationOption[];
+    }) => {
+      store.confirmations.push({ ...input, options: input.options ?? [] });
+      return { id: randomUUID() };
     },
   };
 }
@@ -124,7 +128,8 @@ export function contactExtractionMock() {
   return {
     extractContactFromText: async () => {
       store.contactParseCalls += 1;
-      const { contact, isNoteAboutPerson, subjectName, noteBody } = store.extraction;
+      const { contact, isNoteAboutPerson, subjectName, noteBody } =
+        store.extractionQueue.shift() ?? store.extraction;
       return { contact, classification: { isNoteAboutPerson, subjectName, noteBody }, via: "ai" };
     },
   };

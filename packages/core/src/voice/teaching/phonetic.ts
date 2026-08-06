@@ -1,8 +1,8 @@
 /**
  * Deterministic phonetic teaching (Rule 5: code answers deterministic
  * transforms). Double Metaphone maps sound-alike spellings to the same code, so
- * a name the user taught ("Anchit") is recovered no matter how the ASR spelled
- * it ("An chit", "Ankit", "Aunchit") — instantly, with zero tokens.
+ * a name the user taught ("Ranchit") is recovered no matter how the ASR spelled
+ * it ("Rran chit", "Rrankit", "Rahnchit") — instantly, with zero tokens.
  *
  * Key idea for multi-word aliases: compute the code *per word* and concatenate
  * with no separator. "an" + "chit" → "AN"+"XT" = "ANXT", the same code Double

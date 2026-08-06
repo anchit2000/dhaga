@@ -11,9 +11,9 @@ const watcher = new HeuristicEditWatcher();
 
 describe("HeuristicEditWatcher.candidates", () => {
   it("learns the proper noun the user added, not the wrong word they removed", () => {
-    // Fixing "ankit" → "Anchit" must teach the RIGHT spelling. Returning the
+    // Fixing "rankit" → "Ranchit" must teach the RIGHT spelling. Returning the
     // removed token would re-teach the very mistake we are trying to fix.
-    expect(watcher.candidates("my name is ankit", "my name is Anchit")).toEqual(["Anchit"]);
+    expect(watcher.candidates("my name is rankit", "my name is Ranchit")).toEqual(["Ranchit"]);
   });
 
   it("returns nothing when the only edit is a common word", () => {
@@ -31,7 +31,7 @@ describe("HeuristicEditWatcher.candidates", () => {
   });
 
   it("deduplicates repeated additions of the same term", () => {
-    expect(watcher.candidates("meet ankit", "meet Anchit and Anchit")).toEqual(["Anchit"]);
+    expect(watcher.candidates("meet rankit", "meet Ranchit and Ranchit")).toEqual(["Ranchit"]);
   });
 
   it("returns nothing when text is unchanged", () => {

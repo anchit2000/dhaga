@@ -55,7 +55,7 @@ describe("routeNoteCapture", () => {
 
   it("confirms rather than guessing when the ONE candidate is only a fuzzy match", () => {
     // A single first-name/prefix hit is NOT confident: attaching to the wrong
-    // "Anchit" is worse than a one-tap confirmation. This is the load-bearing
+    // "Priya" is worse than a one-tap confirmation. This is the load-bearing
     // case that a plain candidateCount===1 heuristic would get wrong.
     expect(
       routeNoteCapture({

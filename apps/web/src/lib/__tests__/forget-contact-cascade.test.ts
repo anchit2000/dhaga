@@ -58,7 +58,7 @@ async function insertEdgeSuggestion(contactId: string, sourceNoteId: string): Pr
     id,
     srcContactId: contactId,
     predicate: "knows",
-    objectName: "Ajay",
+    objectName: "Rohan",
     objectType: "person",
     sourceNoteId,
   });
@@ -76,7 +76,7 @@ async function insertEdgeSuggestion(contactId: string, sourceNoteId: string): Pr
 describe("forgetContact cascades to edge_suggestions", () => {
   it("forgets a contact that has a pending edge suggestion, and the suggestion is gone too", async () => {
     const id = await createContact({ ...contactInput, name: "Suggested Person" }, "manual");
-    const noteId = await addNote(id, "text", "Met Ajay through them");
+    const noteId = await addNote(id, "text", "Met Rohan through them");
     const suggestionId = await insertEdgeSuggestion(id, noteId);
 
     await expect(forgetContact(id)).resolves.toBeUndefined();

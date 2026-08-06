@@ -40,7 +40,8 @@ With it unset:
   (`TenantGate`, `SignupGate`, `BillingGate`, `AdminGate`) short-circuits to
   its permissive default *before* it ever tries to load `@dhaga/ee` — so it
   doesn't matter whether the package is physically present.
-- The two EE-only routes (`/api/access-requests`, `/api/stripe/webhook`)
+- The EE-only routes (`/api/access-requests`, `/api/stripe/webhook`,
+  `/api/razorpay/order`, `/api/razorpay/verify`, `/api/razorpay/webhook`)
   additionally check the flag themselves and return `404` if it's off, so an
   unrelated visitor can't accidentally trigger EE's schema setup against your
   database even if `packages/ee` happens to be installed and `DATABASE_URL`
@@ -62,6 +63,7 @@ packages/ee/
 apps/web/src/app/app/admin/
 apps/web/src/app/api/access-requests/
 apps/web/src/app/api/stripe/
+apps/web/src/app/api/razorpay/
 apps/web/src/lib/actions/admin/
 apps/web/src/components/app/admin/
 apps/web/src/components/app/table/AdminTables.tsx
@@ -153,7 +155,7 @@ In hosted mode the reward is delivered Stripe-safely. An advocate who already
 has a live Stripe subscription is given a Stripe coupon — set
 `STRIPE_REFERRAL_COUPON_ID` to a `duration: once`, 100%-off coupon you create in
 the Stripe dashboard — while free/comp users get an additive comp Pro month
-(their `current_period_end` is extended, never downgrading a lifetime grant). If
+(their `current_period_end` is extended, never downgrading a higher tier). If
 `STRIPE_REFERRAL_COUPON_ID` is unset when a paying advocate qualifies, the grant
 fails loud and the referral stays `pending` for retry rather than silently
 half-rewarding.
@@ -188,10 +190,10 @@ controls it.
 From a user's detail page (`/app/admin/users/[id]`) an admin can, without
 Stripe, comp that user's access:
 
-- **Plan** — set `free`, `pro`, or `lifetime`. `free` removes the subscription
+- **Plan** — set `free`, `pro`, or `power`. `free` removes the subscription
   row (the account falls back to the instance default allowance); `pro` and
-  `lifetime` move it onto that plan's monthly allowance — 300 credits a month
-  for Pro, no ceiling at all for Lifetime.
+  `power` move it onto that plan's monthly allowance — 300 credits a month for
+  Pro, 1,000 for Power.
 - **Expiry** — an optional date on a paid plan. Once it passes the plan stops
   being in play and the account drops back to the instance default allowance
   (leave it blank for no expiry).
@@ -217,8 +219,8 @@ behind it:
 
 - **Plan-cap enforcement** — a master switch that is **on by default**
   (`AI_PLAN_CAP_ENFORCEMENT_DEFAULT = true`). In the shipped state every user is
-  held to the monthly allowance for their plan: Free and Pro have a number,
-  Lifetime / Annual has no cap. That is what the pricing page states — it sells
+  held to the monthly allowance for their plan: Free, Pro and Power each have a
+  number. That is what the pricing page states — it sells
   Pro and Annual as **300 credits a month** and says what runs out when they do
   — so leave it on unless you have a reason not to. Turning it **off** is an
   escape hatch (a migration, an incident), not a resting state: the allowances
@@ -539,15 +541,19 @@ then register the webhook URL with the provider:
 
 - **WhatsApp** (Meta Cloud API) — set `WHATSAPP_ACCESS_TOKEN`,
   `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_VERIFY_TOKEN`, and `WHATSAPP_APP_SECRET`
-  (optionally `WHATSAPP_GRAPH_VERSION`; `WHATSAPP_BUSINESS_NUMBER` is display
-  only). Register the callback URL
+  (optionally `WHATSAPP_GRAPH_VERSION`; `WHATSAPP_BUSINESS_NUMBER` is not used
+  for auth, but set it — it is what builds the scan-to-link QR in Settings, and
+  without it users are back to retyping the token). Register the callback URL
   `https://your-domain/api/messaging/whatsapp/webhook`. Meta's GET verification
   handshake is answered with `WHATSAPP_VERIFY_TOKEN`; inbound POSTs are verified
   by the `WHATSAPP_APP_SECRET` request signature and rejected when it's unset
   (fails closed).
 - **Telegram** (@BotFather) — set `TELEGRAM_BOT_TOKEN` and
-  `TELEGRAM_WEBHOOK_SECRET` (both reused from the existing Telegram integration;
-  `TELEGRAM_BOT_USERNAME` is display only). Register the webhook:
+  `TELEGRAM_WEBHOOK_SECRET` (both reused from the existing Telegram integration).
+  Set `TELEGRAM_BOT_USERNAME` too: it builds the `t.me/<bot>?start=<token>`
+  scan-to-link QR, which is the one-tap path — Telegram delivers that payload
+  back as `/start <token>` and the chat links with nothing typed. Register the
+  webhook:
 
   ```
   curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
@@ -558,7 +564,9 @@ then register the webhook URL with the provider:
   Inbound POSTs are verified against `TELEGRAM_WEBHOOK_SECRET` and rejected when
   it's unset (fails closed).
 
-Tune the idle window with `DHAGA_MESSAGING_IDLE_MINUTES` (default 15).
+Tune the idle window with `DHAGA_MESSAGING_IDLE_MINUTES` (default 1440 — 24h, see
+"Idle auto-flush" below) and how large an unclosed batch may grow with
+`DHAGA_MESSAGING_MAX_OPEN_ITEMS` (default 10).
 
 ### Linking a chat to an account
 
@@ -577,11 +585,25 @@ provider is all it takes for voice notes to start being transcribed and attached
 — no change to the messaging code. (This is separate from Dhaga Voice, the
 on-device browser dictation used in web quick-add.)
 
-### Idle auto-flush
+### Idle auto-flush, and finishing what a run started
 
 A session with no DONE is saved once it goes quiet. This runs on the daily cron
-(`/api/jobs/daily`) everywhere — the guaranteed floor. For ~15-min flushing,
-point a Vercel-Pro cron OR any system scheduler at the standalone worker route:
+(`/api/jobs/daily`) everywhere — the guaranteed floor, and the reason the default
+idle window is **24h**: on a once-a-day scheduler, promising a shorter one tells
+the sender their capture is saved when it isn't.
+
+The same sweep also **recovers batches stuck in `processing`** (older than
+`MESSAGING_PROCESSING_STALL_MINUTES`, 60). A flush runs in a background `after()`
+on a function with a hard time ceiling, so a large batch can be killed mid-walk;
+nothing else would ever retry it, and the sender would have been told
+"Processing…" and never heard back. Re-driving is safe because each item carries
+a `processed_at` stamp — the walk resumes from unprocessed items only, so a retry
+can never duplicate the contacts and notes an earlier pass wrote. That stamp is
+also what lets one run cap itself at `MAX_SESSION_ITEMS` (50) without truncating:
+the overflow stays unprocessed and the next sweep drains it.
+
+If you shorten the idle window, point a Vercel-Pro cron OR any system scheduler
+at the standalone worker route so the promise matches reality:
 
 ```
 */15 * * * * curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" \
@@ -668,7 +690,8 @@ None of the `packages/ee/.env.example` vars (`DHAGA_HOSTED_MODE`,
 | `MORNING_REMINDER_HOURLY` | No | Deprecated alias for `EMAIL_JOBS_HOURLY`, still honoured for one release. Despite the name it now gates all three of those jobs, not just the morning reminder — prefer the new name |
 | `TELEGRAM_*` | No | Owner-only bot capture; `TELEGRAM_BOT_TOKEN`/`TELEGRAM_WEBHOOK_SECRET` are reused by WhatsApp/Telegram messaging capture (see "Messaging capture" above) |
 | `WHATSAPP_*` | No | WhatsApp inbound messaging capture (Meta Cloud API) — see "Messaging capture" above |
-| `DHAGA_MESSAGING_IDLE_MINUTES` | No | Idle auto-flush window for messaging capture (default 15) |
+| `DHAGA_MESSAGING_IDLE_MINUTES` | No | Idle auto-flush window for messaging capture (default 1440 = 24h, matching the daily cron) |
+| `DHAGA_MESSAGING_MAX_OPEN_ITEMS` | No | How many items an unsaved batch may hold before the bot refuses more and asks for DONE (default 10) |
 | `TRANSCRIPTION_PROVIDER` | No | STT gateway for forwarded voice notes — no provider ships yet, so voice notes are refused with a "coming soon" reply |
 | `DHAGA_WEBHOOK_URL` | No | Outbound automation |
 | `SEARCH_PROVIDER`, `FIRECRAWL_API_KEY` | No | Job-change detection + news watchlist |

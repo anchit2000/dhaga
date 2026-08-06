@@ -11,7 +11,7 @@ import { emptyExtractedContact } from "../../schemas/contact";
 describe("cardReceiptText", () => {
   const scanned = {
     ...emptyExtractedContact(),
-    name: "Ajay Prasad Shrivastava",
+    name: "Rohan Prasad Shrivastava",
     title: "Director",
     company: "Software Technology Parks of India",
     emails: ["ajay.shrivastava@stpi.in"],
@@ -23,7 +23,7 @@ describe("cardReceiptText", () => {
   it("carries every extracted detail into the note, so nothing captured is unsearchable", () => {
     const receipt = cardReceiptText(scanned);
     for (const detail of [
-      "Ajay Prasad Shrivastava",
+      "Rohan Prasad Shrivastava",
       "Director",
       "Software Technology Parks of India",
       "ajay.shrivastava@stpi.in",

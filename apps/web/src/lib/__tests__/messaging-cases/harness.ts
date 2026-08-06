@@ -7,7 +7,7 @@ import type {
   OutboundMessage,
 } from "@dhaga/core/src/messaging";
 import type { MessagingSessionItemRow } from "@/lib/db/schema";
-import type { MessagingQuestionOption } from "@/utils/constants/messaging";
+import type { ConfirmationOption } from "@dhaga/core";
 
 /**
  * Shared fixture for the inbound-messaging case matrix. A FAKE provider (a real
@@ -26,14 +26,11 @@ export interface StoredNote {
   body: string;
 }
 
-export interface StoredQuestion {
-  id: string;
-  provider: string;
-  externalId: string;
-  subjectName: string | null;
+export interface StoredConfirmation {
   noteBody: string;
-  options: MessagingQuestionOption[];
-  expiresAt: Date;
+  subjectName: string | null;
+  question: string;
+  options: ConfirmationOption[];
 }
 
 export interface FakeStore {
@@ -43,7 +40,8 @@ export interface FakeStore {
   items: MessagingSessionItemRow[];
   contacts: Map<string, string>;
   notes: StoredNote[];
-  questions: StoredQuestion[];
+  /** note_subject confirmations raised for the user to resolve in the app. */
+  confirmations: StoredConfirmation[];
   extractionCalls: Array<{ contactId: string; body: string }>;
   /** Callbacks handed to next/server's after(); tests run them explicitly. */
   deferred: Array<() => unknown>;
@@ -51,6 +49,9 @@ export interface FakeStore {
   linkToken: string | null;
   candidates: Array<{ id: string; name: string; title: string | null }>;
   extraction: { contact: ExtractedContact; isNoteAboutPerson: boolean; subjectName: string; noteBody: string };
+  /** Per-call extraction results, consumed in order. A batch that spans several
+   *  people needs a different parse per note; when empty, `extraction` stands. */
+  extractionQueue: FakeStore["extraction"][];
   contactParseCalls: number;
   scan: { contact?: ExtractedContact; rawText?: string; error?: string };
   photoText: string | null;
@@ -65,13 +66,14 @@ function emptyStore(): FakeStore {
     items: [],
     contacts: new Map(),
     notes: [],
-    questions: [],
+    confirmations: [],
     extractionCalls: [],
     deferred: [],
     userId: "user-1",
     linkToken: null,
     candidates: [],
     extraction: { contact: contact("Nobody"), isNoteAboutPerson: false, subjectName: "", noteBody: "" },
+    extractionQueue: [],
     contactParseCalls: 0,
     scan: {},
     photoText: null,

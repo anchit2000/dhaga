@@ -20,7 +20,7 @@ const CONTACT_KINDS = ["contact"] as const satisfies readonly GraphTargetKind[];
  * "Who is this note about?" — a captured note the classifier couldn't pin to
  * one person. Attach it to an existing contact (a surfaced candidate or any
  * searched person) OR create a brand-new contact from the typed name ("no, this
- * is a NEW Anchit") — only then is the note written and fact-extracted. When
+ * is a NEW Priya") — only then is the note written and fact-extracted. When
  * there are no candidates the card leads with the create-new input.
  */
 export function NoteSubjectCard({

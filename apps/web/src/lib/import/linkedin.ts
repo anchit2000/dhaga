@@ -1,3 +1,4 @@
+import { bareMethods } from "@dhaga/core/src/schemas/contact-fields";
 import { profileFromExtracted } from "@dhaga/core/src/schemas/contact";
 import { LINKEDIN_IMPORT_RECEIPT_PREFIX } from "@/utils/constants/linkedin";
 import { rowToRecord } from "./types";
@@ -31,7 +32,7 @@ export function linkedInRowsToCandidates(
         name,
         title: record["Position"] || null,
         company: record["Company"] || null,
-        emails: record["Email Address"] ? [record["Email Address"]] : [],
+        emails: bareMethods(record["Email Address"] ? [record["Email Address"]] : []),
         phones: [],
         links: record["URL"] ? [record["URL"]] : [],
         location: null,

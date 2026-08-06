@@ -87,7 +87,7 @@ export function VoiceTeaching({ terms }: { terms: VocabTerm[] }) {
       >
         <label className="block text-xs text-fog">
           Term
-          <Input className="mt-1 h-9" name="term" placeholder="Anchit" required />
+          <Input className="mt-1 h-9" name="term" placeholder="Priya" required />
         </label>
         <label className="block text-xs text-fog">
           Heard as (optional)

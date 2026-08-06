@@ -1,6 +1,6 @@
 import { Sparkline } from "@/components/app/home/Sparkline";
 import { MOCK_HOME_STATS } from "@/utils/constants/landing";
-import { HOME_STAT_TONE_CLASSES } from "@/utils/constants/home";
+import { HOME_STAT_TONES, HOME_STAT_TONE_FALLBACK } from "@/utils/constants/home";
 
 export function StatStripPreview() {
   return (
@@ -11,7 +11,7 @@ export function StatStripPreview() {
           <span className="ml-1 font-mono text-[6px] uppercase tracking-wider text-fog">{stat.label}</span>
           <Sparkline
             data={[...stat.activity]}
-            className={`mt-1 h-2 w-full ${HOME_STAT_TONE_CLASSES[stat.label] ?? "text-trust"}`}
+            className={`mt-1 h-2 w-full ${(HOME_STAT_TONES[stat.label] ?? HOME_STAT_TONE_FALLBACK).spark}`}
           />
         </div>
       ))}

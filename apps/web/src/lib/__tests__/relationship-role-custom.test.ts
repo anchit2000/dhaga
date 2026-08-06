@@ -15,8 +15,8 @@ const custom: RelationshipLabelMap = {
  */
 describe("relationshipRole with a custom label map", () => {
   it("labels a custom predicate from both ends of one stored edge", async () => {
-    // Edge: Ajay --father_of--> Anchit. From Ajay's seat (source), the OTHER
-    // person is his child; from Anchit's seat, the other person is the father.
+    // Edge: Rohan --father_of--> Priya. From Rohan's seat (source), the OTHER
+    // person is his child; from Priya's seat, the other person is the father.
     expect(relationshipRole("father_of", true, custom)).toBe("child of");
     expect(relationshipRole("father_of", false, custom)).toBe("father of");
   });

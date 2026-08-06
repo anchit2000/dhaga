@@ -89,7 +89,7 @@ export function filterPredicateOptions(
   );
 }
 
-/** "Ajay — father of → Anchit"; flipping swaps the endpoints, never the phrase. */
+/** "Rohan — father of → Priya"; flipping swaps the endpoints, never the phrase. */
 export function previewSentence(
   sourceName: string,
   forward: string,

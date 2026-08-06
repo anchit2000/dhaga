@@ -1,6 +1,6 @@
 /**
  * Learns vocabulary from the corrections the user makes to committed text
- * (Wispr-style auto-learn). When someone fixes "ankit" → "Anchit" by hand, the
+ * (Wispr-style auto-learn). When someone fixes "rankit" → "Ranchit" by hand, the
  * word they *added* is almost always a proper noun the ASR keeps missing — worth
  * teaching. The heuristic is deliberately conservative: a false positive
  * pollutes the dictionary and causes future over-corrections, so we bias hard

@@ -1,15 +1,17 @@
 import { randomUUID } from "node:crypto";
-import type { ExtractedContact } from "@dhaga/core";
 import type { MessagingSessionItemRow } from "@/lib/db/schema";
-import type { MessagingQuestionOption } from "@/utils/constants/messaging";
-import { store, type StoredQuestion } from "./harness";
+import type { ConfirmationOption } from "@dhaga/core";
+import { store } from "../harness";
 
 /**
- * Module doubles for everything the inbound path writes through. Each is a
- * plain in-memory implementation over `store` — enough for the assertions to be
- * about BEHAVIOUR (who was created, what was replied) rather than call spying.
- * Kept apart from harness.ts so the fixture and the doubles stay separate
- * concerns (and both stay inside the 150-line rule).
+ * The doubles for the webhook/batch PLUMBING — sessions, items, pending
+ * questions, and the AI gateways a batch calls. What a batch writes into the
+ * graph is doubled in ./graph.
+ *
+ * Each is a plain in-memory implementation over `store` — enough for the
+ * assertions to be about BEHAVIOUR (who was created, what was replied) rather
+ * than call spying. Kept apart from harness.ts so the fixture and the doubles
+ * stay separate concerns (and both stay inside the 150-line rule).
  */
 
 export function itemRow(kind: string, payload: unknown): MessagingSessionItemRow {
@@ -21,6 +23,7 @@ export function itemRow(kind: string, payload: unknown): MessagingSessionItemRow
     payload,
     providerMessageId: randomUUID(),
     createdAt: new Date(),
+    processedAt: null,
   } as MessagingSessionItemRow;
 }
 
@@ -57,52 +60,30 @@ export function repoMessagingMock() {
       return { id: "item", duplicate: false };
     },
     listSessionItems: async () => store.items,
+    // The walk consumes UNPROCESSED items and stamps each as it finishes, so a
+    // killed run resumes instead of duplicating. The double models that stamp,
+    // which is what makes the resume test able to fail.
+    listUnprocessedSessionItems: async () => store.items.filter((item) => !item.processedAt),
+    markSessionItemProcessed: async (itemId: string) => {
+      const item = store.items.find((candidate) => candidate.id === itemId);
+      if (item) (item as { processedAt: Date | null }).processedAt = new Date();
+    },
     setSessionStatus: async () => undefined,
-    getPendingQuestion: async () => store.questions.at(-1) ?? null,
-    createPendingQuestion: async (input: {
-      provider: string;
-      externalId: string;
-      subjectName: string | null;
+  };
+}
+
+export function confirmationsMock() {
+  return {
+    createNoteSubjectConfirmation: async (input: {
       noteBody: string;
-      options: MessagingQuestionOption[];
+      subjectName: string | null;
+      question: string;
+      options?: ConfirmationOption[];
     }) => {
-      const question: StoredQuestion = {
-        id: randomUUID(),
-        expiresAt: new Date(Date.now() + 3_600_000),
-        ...input,
-      };
-      store.questions.push(question);
-      return question.id;
-    },
-    clearPendingQuestions: async () => {
-      store.questions.length = 0;
+      store.confirmations.push({ ...input, options: input.options ?? [] });
+      return { id: randomUUID() };
     },
   };
-}
-
-export function contactsMock() {
-  const create = (name: string): string => {
-    const id = randomUUID();
-    store.contacts.set(id, name);
-    return id;
-  };
-  return {
-    createContact: async (input: ExtractedContact) => create(input.name),
-    createContactProfile: async (input: { name: string }) => create(input.name),
-  };
-}
-
-export function notesMock() {
-  return {
-    addNote: async (contactId: string, kind: string, body: string) => {
-      store.notes.push({ contactId, kind, body });
-      return randomUUID();
-    },
-  };
-}
-
-export function embeddingsMock() {
-  return { upsertEmbedding: async () => undefined };
 }
 
 export function noteExtractionMock() {
@@ -124,8 +105,13 @@ export function contactExtractionMock() {
   return {
     extractContactFromText: async () => {
       store.contactParseCalls += 1;
-      const { contact, isNoteAboutPerson, subjectName, noteBody } = store.extraction;
-      return { contact, classification: { isNoteAboutPerson, subjectName, noteBody }, via: "ai" };
+      const { contact, isNoteAboutPerson, subjectName, noteBody, isInstruction } =
+        store.extractionQueue.shift() ?? store.extraction;
+      return {
+        contact,
+        classification: { isNoteAboutPerson, subjectName, noteBody, isInstruction: isInstruction ?? false },
+        via: "ai",
+      };
     },
   };
 }

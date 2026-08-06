@@ -12,14 +12,17 @@ export {
 } from "./schemas/contact";
 export {
   contactMethodSchema,
+  extractedMethodSchema,
   positionSchema,
   addressSchema,
   importantDateSchema,
   customFieldSchema,
+  bareMethods,
   normalizeContactMethod,
   normalizeContactMethods,
   methodValues,
   type ContactMethod,
+  type ExtractedMethod,
   type Position,
   type Address,
   type ImportantDate,

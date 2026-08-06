@@ -1,45 +1,16 @@
 import { randomUUID } from "node:crypto";
-import { and, asc, desc, eq, lt, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
-import { messagingSessions, messagingSessionItems, type MessagingSessionItemRow } from "@/lib/db/schema";
+import { messagingSessions, messagingSessionItems } from "@/lib/db/schema";
 import type { MessagingItemKind, MessagingSessionStatus } from "@/utils/constants/messaging";
+import { getOpenSession } from "./read";
 
 /**
- * TENANT-scoped access (messaging_sessions / messaging_session_items). Every
- * function here is only ever called INSIDE a withUserDb(userId) scope, so it
- * relies on EE's RLS (or the self-host single-user default) for ownership and
- * takes NO userId param — mirroring extraction-jobs/mutations.ts. The session's
- * user_id column is added + defaulted by packages/ee's RLS DDL, so inserts here
- * never mention tenancy. NEVER log the forwarded payload (third-party PII).
+ * Writes over the capture batches. Same tenancy contract as ./read: called only
+ * inside a withUserDb(userId) scope, so the `user_id` column packages/ee's RLS
+ * DDL adds is populated by its session-variable DEFAULT — inserts here never
+ * mention tenancy. NEVER log the forwarded payload (third-party PII).
  */
-
-/** The open batch for a sender (with its item count + last activity), or null. */
-export async function getOpenSession(input: {
-  provider: string;
-  externalId: string;
-}): Promise<{ id: string; itemCount: number; lastItemAt: Date } | null> {
-  const db = await getDb();
-  const [row] = await db
-    .select({
-      id: messagingSessions.id,
-      lastItemAt: messagingSessions.lastItemAt,
-      itemCount: sql<number>`(
-        select count(*)::int from messaging_session_items
-        where messaging_session_items.session_id = ${messagingSessions.id}
-      )`,
-    })
-    .from(messagingSessions)
-    .where(
-      and(
-        eq(messagingSessions.provider, input.provider),
-        eq(messagingSessions.externalId, input.externalId),
-        eq(messagingSessions.status, "open"),
-      ),
-    )
-    .orderBy(desc(messagingSessions.createdAt))
-    .limit(1);
-  return row ?? null;
-}
 
 /** The sender's open batch, creating a fresh empty one when none is open. */
 export async function getOrCreateOpenSession(input: {
@@ -104,14 +75,13 @@ export async function appendSessionItem(input: {
   return { id, duplicate };
 }
 
-/** All items in a batch, in arrival order. */
-export async function listSessionItems(sessionId: string): Promise<MessagingSessionItemRow[]> {
+/** Stamp one item done. Called after the item's writes land, never before. */
+export async function markSessionItemProcessed(itemId: string): Promise<void> {
   const db = await getDb();
-  return db
-    .select()
-    .from(messagingSessionItems)
-    .where(eq(messagingSessionItems.sessionId, sessionId))
-    .orderBy(asc(messagingSessionItems.seq));
+  await db
+    .update(messagingSessionItems)
+    .set({ processedAt: new Date() })
+    .where(eq(messagingSessionItems.id, itemId));
 }
 
 /** Move a batch through its lifecycle (open → processing → done|failed). */
@@ -124,19 +94,4 @@ export async function setSessionStatus(input: {
     .update(messagingSessions)
     .set({ status: input.status, updatedAt: new Date() })
     .where(eq(messagingSessions.id, input.sessionId));
-}
-
-/** Open batches with no activity since `idleBefore` — the idle sweeper's input. */
-export async function findIdleOpenSessions(
-  idleBefore: Date,
-): Promise<Array<{ id: string; provider: string; externalId: string }>> {
-  const db = await getDb();
-  return db
-    .select({
-      id: messagingSessions.id,
-      provider: messagingSessions.provider,
-      externalId: messagingSessions.externalId,
-    })
-    .from(messagingSessions)
-    .where(and(eq(messagingSessions.status, "open"), lt(messagingSessions.lastItemAt, idleBefore)));
 }

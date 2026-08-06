@@ -27,9 +27,9 @@ export interface Edit {
  * `keys` are precomputed phonetic codes (double-metaphone) for fuzzy matching.
  */
 export interface VocabTerm {
-  /** Canonical spelling, e.g. "Anchit". */
+  /** Canonical spelling, e.g. "Ranchit". */
   term: string;
-  /** Extra surface forms the user has seen it mis-transcribed as, e.g. ["An chit", "Ankit"]. */
+  /** Extra surface forms the user has seen it mis-transcribed as, e.g. ["Rran chit", "Rrankit"]. */
   aliases: string[];
   /** Phonetic codes for `term` + each alias; the lookup index. */
   keys: string[];

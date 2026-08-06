@@ -2,7 +2,7 @@ import type { ReactElement } from "react";
 
 import { getGraphActivity, getGraphStats } from "@/lib/repo/stats";
 import { Sparkline } from "@/components/app/home/Sparkline";
-import { HOME_STAT_TONE_CLASSES } from "@/utils/constants/home";
+import { HOME_STAT_TONES, HOME_STAT_TONE_FALLBACK } from "@/utils/constants/home";
 
 /**
  * Home's "graph at a glance" metric strip: a mobile-first row of number+label
@@ -37,17 +37,26 @@ export async function StatStrip(): Promise<ReactElement | null> {
 
   return (
     <section aria-label="Your graph at a glance" className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      {tiles.map((tile) => (
-        <div key={tile.label} className="flex min-w-0 flex-col gap-1 rounded-2xl border border-seam bg-panel p-4">
-          <span className="font-display text-3xl tabular-nums text-paper">{tile.value.toLocaleString()}</span>
-          <span className="font-mono text-[10px] uppercase tracking-widest text-fog">{tile.label}</span>
-          {tile.sub ? <span className="text-[11px] text-fog">{tile.sub}</span> : null}
-          <Sparkline
-            data={tile.series}
-            className={`mt-2 h-6 w-full ${HOME_STAT_TONE_CLASSES[tile.label] ?? "text-trust"}`}
-          />
-        </div>
-      ))}
+      {tiles.map((tile) => {
+        const tone = HOME_STAT_TONES[tile.label] ?? HOME_STAT_TONE_FALLBACK;
+        const Icon = tone.icon;
+        return (
+          <div key={tile.label} className="flex min-w-0 flex-col gap-1 rounded-2xl border border-seam bg-panel p-4">
+            <div className="flex items-start justify-between gap-2">
+              <span className="font-display text-3xl tabular-nums text-paper">{tile.value.toLocaleString()}</span>
+              <span
+                aria-hidden="true"
+                className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${tone.badge}`}
+              >
+                <Icon className="size-4" strokeWidth={1.75} />
+              </span>
+            </div>
+            <span className="font-mono text-[10px] uppercase tracking-widest text-fog">{tile.label}</span>
+            {tile.sub ? <span className="text-[11px] text-fog">{tile.sub}</span> : null}
+            <Sparkline data={tile.series} className={`mt-2 h-6 w-full ${tone.spark}`} />
+          </div>
+        );
+      })}
     </section>
   );
 }

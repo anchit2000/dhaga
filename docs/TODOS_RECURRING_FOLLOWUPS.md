@@ -100,7 +100,7 @@ screenshots, and PR handoff so the work survives context compaction.
   legacy keep-in-touch controls, and Map failure were reproduced without writes.
 - Chrome/CDP isolated the Map failure to the worker's mismatched COEP response;
   owner payload, worker bytes, and style response were otherwise healthy.
-- Final web serial suite: 218 files / 1,219 tests passed. Core: 171/171.
+- Post-merge web serial suite: 222 files / 1,248 tests passed. Core: 173/173.
   Mobile: 75/75. Codex hooks: 10/10. Focused final SEO: 5/5.
 - Web/core/mobile/EE typechecks pass. EE: 24 pass and 40 live-RLS cases skip
   without a disposable `DATABASE_URL`; its remaining 7 tests pass, 1 skips.

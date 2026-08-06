@@ -7,7 +7,7 @@ import type {
   OutboundMessage,
 } from "@dhaga/core/src/messaging";
 import type { MessagingSessionItemRow } from "@/lib/db/schema";
-import type { MessagingQuestionOption } from "@/utils/constants/messaging";
+import type { ConfirmationOption } from "@dhaga/core";
 
 /**
  * Shared fixture for the inbound-messaging case matrix. A FAKE provider (a real
@@ -21,19 +21,17 @@ import type { MessagingQuestionOption } from "@/utils/constants/messaging";
  */
 
 export interface StoredNote {
+  id: string;
   contactId: string;
   kind: string;
   body: string;
 }
 
-export interface StoredQuestion {
-  id: string;
-  provider: string;
-  externalId: string;
-  subjectName: string | null;
+export interface StoredConfirmation {
   noteBody: string;
-  options: MessagingQuestionOption[];
-  expiresAt: Date;
+  subjectName: string | null;
+  question: string;
+  options: ConfirmationOption[];
 }
 
 export interface FakeStore {
@@ -43,18 +41,28 @@ export interface FakeStore {
   items: MessagingSessionItemRow[];
   contacts: Map<string, string>;
   notes: StoredNote[];
-  questions: StoredQuestion[];
+  /** note_subject confirmations raised for the user to resolve in the app. */
+  confirmations: StoredConfirmation[];
   extractionCalls: Array<{ contactId: string; body: string }>;
   /** Callbacks handed to next/server's after(); tests run them explicitly. */
   deferred: Array<() => unknown>;
   userId: string | null;
   linkToken: string | null;
   candidates: Array<{ id: string; name: string; title: string | null }>;
-  extraction: { contact: ExtractedContact; isNoteAboutPerson: boolean; subjectName: string; noteBody: string };
+  /** `isInstruction` is optional: only the cases ABOUT instructions set it, and
+   *  the default — "this is content" — is the safe reading everywhere else. */
+  extraction: { contact: ExtractedContact; isNoteAboutPerson: boolean; subjectName: string; noteBody: string; isInstruction?: boolean };
+  /** Per-call extraction results, consumed in order. A batch that spans several
+   *  people needs a different parse per note; when empty, `extraction` stands. */
+  extractionQueue: FakeStore["extraction"][];
   contactParseCalls: number;
   scan: { contact?: ExtractedContact; rawText?: string; error?: string };
   photoText: string | null;
   media: DownloadedMedia | null;
+  /** Photos kept as visual receipts, with the note each hangs off. */
+  cardImages: Array<{ contactId: string; noteId: string | null; count: number }>;
+  /** The per-user "keep captured photos" privacy switch. */
+  storePhotos: boolean;
 }
 
 export const store: FakeStore = emptyStore();
@@ -65,17 +73,20 @@ function emptyStore(): FakeStore {
     items: [],
     contacts: new Map(),
     notes: [],
-    questions: [],
+    confirmations: [],
     extractionCalls: [],
     deferred: [],
     userId: "user-1",
     linkToken: null,
     candidates: [],
-    extraction: { contact: contact("Nobody"), isNoteAboutPerson: false, subjectName: "", noteBody: "" },
+    extraction: { contact: contact("Nobody"), isNoteAboutPerson: false, subjectName: "", noteBody: "", isInstruction: false },
+    extractionQueue: [],
     contactParseCalls: 0,
     scan: {},
     photoText: null,
     media: null,
+    cardImages: [],
+    storePhotos: true,
   };
 }
 

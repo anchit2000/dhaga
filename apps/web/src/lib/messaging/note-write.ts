@@ -48,16 +48,19 @@ export async function extractNoteFacts(input: {
   return outcome.factCount;
 }
 
-/** saveNote, then fact extraction outside the scope. Returns the fact count. */
+/** saveNote, then fact extraction outside the scope. Returns the stored note's
+ *  id alongside the fact count — the id is what lets a caller hang the photo
+ *  the note was read off onto the note itself, so deleting the note takes the
+ *  photo with it (../repo/card-images: photo deletes are always hard). */
 export async function saveNoteWithFacts(input: {
   userId: string;
   contactId: string;
   contactName: string;
   kind: NoteKind;
   body: string;
-}): Promise<number> {
+}): Promise<{ noteId: string; factCount: number }> {
   const noteId = await saveNote(input.userId, input.contactId, input.kind, input.body);
-  return extractNoteFacts({ ...input, noteId });
+  return { noteId, factCount: await extractNoteFacts({ ...input, noteId }) };
 }
 
 /** Create a contact and give it its first receipt note (the item's receipt). */

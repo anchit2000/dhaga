@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   AddRelationshipDialog,
@@ -9,36 +8,22 @@ import {
 } from "@/components/app/relationships/AddRelationshipDialog";
 import { createRelationshipAction, deleteRelationshipAction } from "@/lib/actions/relationships";
 import { useOptimisticList } from "@/lib/hooks/useOptimisticList";
-import { RELATIONSHIP_KIND_LABELS } from "@/utils/constants/graph";
-import { RelationshipDeleteButton } from "./RelationshipDeleteButton";
+import { RelationshipRow } from "./RelationshipRow";
+import type { RelationshipRowView } from "./types";
 
-export interface RelationshipRowView {
-  edgeId: string;
-  targetId: string;
-  kind: RelationshipSourceKind;
-  name: string;
-  /** Direction-corrected: how the row's node relates to the viewed node. */
-  role: string;
-  mentioned?: boolean;
-}
-
-/** Companies have no detail page yet — send them to the graph instead. */
-function hrefFor(row: RelationshipRowView): string {
-  if (row.kind === "contact") return `/app/people/${row.targetId}`;
-  if (row.kind === "entity") return `/app/entities/${row.targetId}`;
-  if (row.kind === "event") return `/app/events/${row.targetId}`;
-  return `/app/graph?focus=${row.targetId}`;
-}
+export type { RelationshipRowView };
 
 /**
  * The Relationships block shared by contact and entity pages: rows link to
- * the other endpoint (kind-aware), each is deletable, and new edges start
- * from the AddRelationshipDialog. Shown by default (not behind a click) so an
- * extracted edge like "son of" is immediately visible.
+ * the other endpoint (kind-aware), each is editable and deletable, and new
+ * edges start from the AddRelationshipDialog. Shown by default (not behind a
+ * click) so an extracted edge like "son of" is immediately visible.
  *
  * Adds are optimistic: the new row appears the instant the dialog confirms,
  * then the server write + revalidation reconcile it. A failed write rolls the
- * row back and offers Retry (useOptimisticList).
+ * row back and offers Retry (useOptimisticList). Edits are NOT optimistic —
+ * they are a correction, so the dialog holds its spinner until the server
+ * confirms rather than showing a label that might not have saved.
  */
 export function RelationshipSection({
   sourceId,
@@ -76,6 +61,8 @@ export function RelationshipSection({
       kind: target.kind,
       name: target.label,
       role: predicate.forward,
+      predicate: predicate.slug,
+      viewerIsSource: !flipped,
       mentioned: false,
     };
     add(optimisticRow, async () => {
@@ -113,39 +100,14 @@ export function RelationshipSection({
       ) : (
         <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {items.map((row) => (
-            <li
+            <RelationshipRow
               key={row.edgeId}
-              className="flex h-full items-center gap-1 rounded-xl border border-seam bg-panel py-2.5 pl-3 pr-2 transition-colors hover:bg-wash/[0.03]"
-            >
-              <Link href={hrefFor(row)} className="flex min-w-0 flex-1 items-center gap-2.5">
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-amber/15 font-display text-xs text-ember">
-                  {row.name.charAt(0).toUpperCase()}
-                </span>
-                <span className="min-w-0">
-                  <span className="block truncate text-sm font-medium text-paper">
-                    {row.name}
-                  </span>
-                  <span className="block truncate text-xs capitalize text-ember">
-                    {row.role}
-                  </span>
-                  {row.mentioned ? (
-                    <span className="mt-1 inline-flex rounded-full border border-seam px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-fog">
-                      Mentioned person
-                    </span>
-                  ) : null}
-                </span>
-                {row.kind !== "contact" ? (
-                  <span className="ml-auto shrink-0 font-mono text-[9px] uppercase tracking-wider text-fog">
-                    {RELATIONSHIP_KIND_LABELS[row.kind]}
-                  </span>
-                ) : null}
-              </Link>
-              <RelationshipDeleteButton
-                name={row.name}
-                role={row.role}
-                onDelete={() => handleDelete(row)}
-              />
-            </li>
+              row={row}
+              sourceId={sourceId}
+              sourceKind={sourceKind}
+              sourceLabel={sourceLabel}
+              onDelete={() => handleDelete(row)}
+            />
           ))}
         </ul>
       )}

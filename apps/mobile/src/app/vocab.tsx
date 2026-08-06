@@ -80,7 +80,7 @@ export default function VocabScreen() {
                 style={styles.input}
                 value={term}
                 onChangeText={setTerm}
-                placeholder="Anchit"
+                placeholder="Ranchit"
                 placeholderTextColor={COLORS.fog}
                 autoCorrect={false}
                 editable={!saving}
@@ -92,7 +92,7 @@ export default function VocabScreen() {
                 style={styles.input}
                 value={aliases}
                 onChangeText={setAliases}
-                placeholder="Ankit, An chit"
+                placeholder="Rrankit, Rran chit"
                 placeholderTextColor={COLORS.fog}
                 autoCorrect={false}
                 editable={!saving}

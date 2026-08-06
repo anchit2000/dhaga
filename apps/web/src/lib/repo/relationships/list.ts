@@ -14,6 +14,9 @@ export interface ContactRelationship {
   title: string | null;
   mentioned: boolean;
   predicate: string;
+  /** True when the edge is stored viewed-contact → other (seeds the edit
+   *  dialog's direction toggle — see node-list.ts). */
+  viewerIsSource: boolean;
   /** How the other endpoint relates to the viewed contact, direction-corrected. */
   role: string;
 }
@@ -49,6 +52,7 @@ export async function listContactRelationships(
       title: row.kind === "contact" ? row.sublabel : null,
       mentioned: row.mentioned,
       predicate: row.predicate,
+      viewerIsSource: row.viewerIsSource,
       role: row.role,
     }));
 }

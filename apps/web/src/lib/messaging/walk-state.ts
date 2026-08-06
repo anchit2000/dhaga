@@ -1,4 +1,5 @@
 import type { MessagingClient } from "@dhaga/core/src/messaging";
+import { UNNAMED_CONTACT_NAME, type NoteAttributionBasis } from "@/utils/constants/messaging";
 
 /**
  * Mutable state threaded through the positional walk of a session's items.
@@ -23,9 +24,13 @@ export interface WalkState {
   contactCount: number;
   noteCount: number;
   factCount: number;
-  /** One disambiguation question per batch — see ./ingest-text. */
-  askedQuestion: boolean;
+  /** Ambiguous notes parked in the confirmation inbox for the user to resolve.
+   *  No cap: every ambiguity gets its own row (see ./ingest-text/route-note). */
+  pendingConfirmations: number;
   notices: string[];
+  /** Every note this walk filed, and why it went where it went. Rendered into
+   *  the closing summary so no attribution guess is ever left unstated. */
+  attributions: Array<{ contactName: string; basis: NoteAttributionBasis }>;
 }
 
 export function createWalkState(
@@ -44,9 +49,23 @@ export function createWalkState(
     contactCount: 0,
     noteCount: 0,
     factCount: 0,
-    askedQuestion: false,
+    pendingConfirmations: 0,
     notices: [],
+    attributions: [],
   };
+}
+
+/**
+ * Record that a note was filed on `contactName`, and on what basis. Called at
+ * every point the walk commits a note to a person — the ledger is only honest if
+ * it has no gaps, so a new filing path must add a call here.
+ */
+export function recordAttribution(
+  state: WalkState,
+  contactName: string,
+  basis: NoteAttributionBasis,
+): void {
+  state.attributions.push({ contactName: contactName || UNNAMED_CONTACT_NAME, basis });
 }
 
 /**

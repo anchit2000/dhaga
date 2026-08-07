@@ -6,6 +6,23 @@
  * `TENANT_TABLE_RLS_DDL` (see rls-ddl/index.ts), since several of these blocks
  * depend on the `user_id` column it adds.
  */
+/**
+ * The tables this file gives a `tenant_isolation` policy to — tenant-scoped,
+ * but deliberately NOT in TENANT_TABLES because the generic loop's policy shape
+ * is wrong for them:
+ *   settings         — needs a retrofitted compound (user_id, key) PK first, so
+ *                      it can't ride the generic loop that only ADDs a column.
+ *   ai_credit_grants — its policy must also match `user_id IS NULL` (an
+ *                      instance-wide grant); the generic `user_id = <tenant>`
+ *                      would hide those from everybody. See the block below.
+ *
+ * Exported so coverage checks can say "every tenant_isolation policy in the DB
+ * == TENANT_TABLES + these" without hardcoding a second list that silently
+ * drifts from the DDL below. Keep in lockstep with the CREATE POLICY statements
+ * in BESPOKE_POLICIES_DDL.
+ */
+export const BESPOKE_TENANT_TABLES = ["settings", "ai_credit_grants"] as const;
+
 export const BESPOKE_POLICIES_DDL = `
 -- ai_actions specifically also gets a composite (user_id, created_at, id) index:
 -- the generic per-table index just above is (user_id) alone, which is enough for
@@ -15,6 +32,15 @@ export const BESPOKE_POLICIES_DDL = `
 -- of every one of a tenant's rows on each page.
 CREATE INDEX IF NOT EXISTS ai_actions_user_created_idx
   ON ai_actions (user_id, created_at DESC, id DESC);
+
+-- messaging_sessions gets the same treatment, and for the same reason: the
+-- capture log (settings -> messaging) pages every batch a sender ever forwarded
+-- with the identical keyset shape. The core DDL creates a (created_at, id)
+-- index, which is the right one for a self-host where no user_id column exists;
+-- here the tenant filter leads, or Postgres reads every tenant's batches and
+-- sorts them in memory to return one user's page.
+CREATE INDEX IF NOT EXISTS messaging_sessions_user_created_idx
+  ON messaging_sessions (user_id, created_at DESC, id DESC);
 
 -- positions joined the tenant list after rows already existed (it shipped
 -- with the rich-contact work without RLS registration). The generic loop

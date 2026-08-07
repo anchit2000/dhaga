@@ -36,9 +36,12 @@ export async function GET(request: Request): Promise<Response> {
       id: followUp.id,
       contactId: followUp.contactId,
       contactName: followUp.contactName,
+      companyId: followUp.companyId,
+      companyName: followUp.companyName,
       action: followUp.action,
       dueDate: followUp.dueDate,
       dueHint: followUp.dueHint,
+      recurrence: followUp.recurrence,
       // getCalendarFollowUps reads listAllOpenFollowUps, so every row here is
       // open by construction. `overdue` is deliberately dropped: it is a
       // derived view concern, and the client re-derives it against the device's

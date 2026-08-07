@@ -1,4 +1,5 @@
-import { profileFromExtracted } from "@dhaga/core";
+import { bareMethods } from "@dhaga/core/src/schemas/contact-fields";
+import { profileFromExtracted } from "@dhaga/core/src/schemas/contact";
 import { rowToRecord } from "./types";
 import type { ImportCandidate } from "./types";
 
@@ -69,8 +70,10 @@ export function googleRowsToCandidates(
         name,
         title: first(record, "Organization Title", "Organization 1 - Title") || null,
         company: first(record, "Organization Name", "Organization 1 - Name") || null,
-        emails: multiValues(record, EMAIL_HEADER),
-        phones: multiValues(record, PHONE_HEADER),
+        // Unlabeled: the export's "E-mail 1 - Type" columns aren't read yet, so
+        // claiming a label here would be inventing one.
+        emails: bareMethods(multiValues(record, EMAIL_HEADER)),
+        phones: bareMethods(multiValues(record, PHONE_HEADER)),
         links: multiValues(record, WEBSITE_HEADER),
         location: multiValues(record, ADDRESS_HEADER)[0] ?? null,
       }),

@@ -3,8 +3,9 @@ import { getCurrentUser } from "@/lib/auth/guard";
 import { ResetPasswordForm } from "@/components/app/auth/ResetPasswordForm";
 import { ModeToggle } from "@/components/brand/ModeToggle";
 import { ThreadMark } from "@/components/brand/ThreadMark";
+import { publicPageMetadata } from "@/utils/public-page-metadata";
 
-export const metadata = { title: "Choose a new password — Dhaga" };
+export const metadata = publicPageMetadata("resetPassword");
 
 interface ResetPasswordPageProps {
   searchParams: Promise<{ token?: string }>;

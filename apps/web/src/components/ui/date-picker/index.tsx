@@ -3,6 +3,12 @@
 import * as React from "react";
 import { DayPicker, type DayPickerProps } from "react-day-picker";
 import { CalendarIcon, XIcon } from "lucide-react";
+import {
+  calendarDayFromUtcDate,
+  calendarDayToUtcDate,
+  formatCalendarDate,
+  toCalendarDay,
+} from "@dhaga/core/src/dates";
 
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/utils/format-date";
@@ -36,13 +42,15 @@ interface DatePickerProps {
   captionLayout?: DayPickerProps["captionLayout"];
   /** Month to open on. Defaults to the selected day's — see {@link calendarStartMonth}. */
   defaultMonth?: Date;
+  /** Submit a semantic YYYY-MM-DD instead of an instant. */
+  submissionMode?: "instant" | "date";
 }
 
 /**
  * Single-date picker: an outline trigger showing the formatted date (or
  * placeholder) that opens a Base UI popover holding a react-day-picker calendar.
- * When `name` is set it also emits a hidden ISO input, so it submits inside a
- * plain server-action `<form>` as well as a controlled client form.
+ * When `name` is set it emits either an instant or a semantic YYYY-MM-DD input,
+ * so it submits inside a plain server-action form as well as a controlled form.
  */
 export function DatePicker({
   value,
@@ -56,8 +64,11 @@ export function DatePicker({
   toDate,
   captionLayout,
   defaultMonth,
+  submissionMode = "instant",
 }: DatePickerProps): React.JSX.Element {
   const [open, setOpen] = React.useState(false);
+  const day = value && submissionMode === "date" ? calendarDayFromUtcDate(value) : null;
+  const pickerValue = day ? new Date(day.year, day.month - 1, day.day) : value;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -75,7 +86,7 @@ export function DatePicker({
           >
             <CalendarIcon className="size-4 shrink-0 text-fog" />
             <span className="truncate">
-              {value ? formatDate(value) : placeholder}
+              {pickerValue ? formatDate(pickerValue) : placeholder}
             </span>
           </Button>
         }
@@ -84,17 +95,21 @@ export function DatePicker({
         <input
           type="hidden"
           name={name}
-          value={value ? value.toISOString() : ""}
+          value={value
+            ? submissionMode === "date"
+              ? formatCalendarDate(calendarDayFromUtcDate(value)) : value.toISOString()
+            : ""}
         />
       ) : null}
       <PopoverContent align="start">
         <DayPicker
           mode="single"
           captionLayout={captionLayout}
-          defaultMonth={calendarStartMonth(value, defaultMonth)}
-          selected={value ?? undefined}
+          defaultMonth={calendarStartMonth(pickerValue, defaultMonth)}
+          selected={pickerValue ?? undefined}
           onSelect={(day: Date | undefined) => {
-            onChange(day ?? null);
+            onChange(day && submissionMode === "date"
+              ? calendarDayToUtcDate(toCalendarDay(day)) : day ?? null);
             setOpen(false);
           }}
           disabled={
@@ -114,7 +129,7 @@ export function DatePicker({
             type="button"
             variant="ghost"
             size="sm"
-            className="mt-2 w-full justify-center gap-1.5 text-fog"
+            className="mt-2 min-h-11 w-full justify-center gap-1.5 text-fog"
             onClick={() => {
               onChange(null);
               setOpen(false);

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FollowUpDueChip } from "@/components/app/FollowUpDueChip";
+import { companyFilteredHref } from "@/utils/company-href";
 import type { OpenFollowUpItem } from "@/lib/repo/reminders";
 
 /** One open-follow-up row. The complete/dismiss buttons call back into
@@ -26,19 +27,22 @@ export function OpenFollowUpRow({
         variant="ghost"
         size="icon-sm"
         aria-label="Mark done"
-        className="shrink-0"
+        className="min-h-11 min-w-11 shrink-0"
       >
         <Check />
       </Button>
       <div className="min-w-0 flex-1">
         <p className="text-sm leading-snug text-paper">{item.action}</p>
         <div className="mt-0.5 flex flex-wrap items-center gap-x-2">
-          <Link
+          {item.contactId && item.contactName ? <Link
             href={`/app/people/${item.contactId}`}
-            className="text-xs text-ember hover:underline"
+            className="inline-flex min-h-11 items-center text-xs text-ember hover:underline"
           >
             {item.contactName}
-          </Link>
+          </Link> : item.companyId && item.companyName ? <Link
+            href={companyFilteredHref(item.companyName)}
+            className="inline-flex min-h-11 items-center text-xs text-ember hover:underline"
+          >{item.companyName}</Link> : <span className="text-xs text-fog">Personal task</span>}
           <FollowUpDueChip item={item} />
         </div>
       </div>
@@ -48,7 +52,7 @@ export function OpenFollowUpRow({
         variant="ghost"
         size="icon-sm"
         aria-label="Dismiss follow-up"
-        className="shrink-0 text-fog hover:text-paper"
+        className="min-h-11 min-w-11 shrink-0 text-fog hover:text-paper"
       >
         <X />
       </Button>

@@ -6,53 +6,74 @@ import type { EventDropArg } from "@fullcalendar/core";
 import type { EventReceiveArg } from "@fullcalendar/interaction";
 import { rescheduleFollowUpAction } from "@/lib/actions/follow-ups";
 import type { CalendarFollowUp } from "@/lib/repo/reminders";
-import { isFollowUpEventProps, unscheduledFollowUps, type CalendarEventProps } from "./event-map";
+import {
+  applyFollowUpDueDate,
+  applyFollowUpOutcome,
+  isFollowUpEventProps,
+  type CalendarEventProps,
+  type FollowUpOutcome,
+} from "./event-map";
 
 export type Reschedule = {
-  /** The date-less follow-ups still awaiting a date, for the Unscheduled tray. */
-  trayItems: CalendarFollowUp[];
+  /** THE board's follow-up list: the grid, the tray and the filters all read it. */
+  followUps: CalendarFollowUp[];
   handleEventDrop: (arg: EventDropArg) => Promise<void>;
   handleEventReceive: (arg: EventReceiveArg) => Promise<void>;
+  handleResolved: (id: string, outcome: FollowUpOutcome) => void;
 };
 
 /**
- * Drag-to-reschedule, plus the live list behind the Unscheduled tray — one
- * concern, because dropping a tray chip on the grid (eventReceive) both persists
- * a due date and empties that chip out of the tray, while dragging an already
- * dated event to a new cell (eventDrop) persists the same way. FullCalendar has
- * already moved the event optimistically by the time either fires, so every
- * failure path calls arg.revert().
+ * The board's live follow-up list plus every mutation that moves an item within
+ * it — drag-to-reschedule, drag-out-of-the-tray, and mark-done/dismiss.
+ *
+ * It owns REACT STATE rather than poking FullCalendar's event store imperatively,
+ * which the board did before filters existed. Once `events` is derived from a
+ * filtered list, any imperative `event.remove()` is undone by the next keystroke;
+ * and the Unscheduled tray has no grid event to poke at all. One list, one truth,
+ * and the tray falls out of it (`unscheduledFollowUps`).
+ *
+ * FullCalendar has already moved the event optimistically by the time either drag
+ * handler fires, so every failure path calls arg.revert().
  */
 export function useReschedule(items: CalendarFollowUp[]): Reschedule {
-  const [trayItems, setTrayItems] = useState<CalendarFollowUp[]>(() => unscheduledFollowUps(items));
+  const [followUps, setFollowUps] = useState<CalendarFollowUp[]>(items);
 
   async function handleEventDrop(arg: EventDropArg): Promise<void> {
-    // Belt and braces: connected-calendar events and derived important dates
-    // already ship editable:false, so no drag can start on either — if that ever
-    // regresses, this must not write. The gate is POSITIVE (follow-up or bail)
-    // rather than a blacklist, because `arg.event.id` is only a follow-up id for
-    // that one kind: an important date's id is a synthetic occurrence key built
-    // around a CONTACT id, and handing that to rescheduleFollowUpAction would at
-    // best fail and at worst re-date an unrelated row.
-    if (!isFollowUpEventProps(arg.event.extendedProps as CalendarEventProps)) {
+    // Belt and braces: connected-calendar events, derived important dates and
+    // completed follow-ups all ship editable:false, so no drag can start on any
+    // of them — if that ever regresses, this must not write. The gate is POSITIVE
+    // (follow-up or bail) rather than a blacklist, because `arg.event.id` is only
+    // a follow-up id for that one kind: an important date's id is a synthetic
+    // occurrence key built around a CONTACT id, and handing that to
+    // rescheduleFollowUpAction would at best fail and at worst re-date an
+    // unrelated row.
+    const props = arg.event.extendedProps as CalendarEventProps;
+    if (!isFollowUpEventProps(props) || props.status !== "open") {
       arg.revert();
       return;
     }
-    const r = await rescheduleFollowUpAction({ id: arg.event.id, dueDate: arg.event.startStr });
-    if (r.ok) toast.success("Follow-up rescheduled.");
-    else {
+    const dueDate = arg.event.startStr;
+    const r = await rescheduleFollowUpAction({ id: arg.event.id, dueDate });
+    if (r.ok) {
+      setFollowUps((prev) => applyFollowUpDueDate(prev, arg.event.id, dueDate));
+      toast.success("Follow-up rescheduled.");
+    } else {
       arg.revert();
       toast.error(r.error);
     }
   }
 
   // Only the tray's own chips can be received: it is the sole external Draggable
-  // on the page, and it carries follow-up ids exclusively.
+  // on the page, and it carries follow-up ids exclusively. On success the
+  // externally-created event is removed and the SAME item re-enters through the
+  // state-derived `events` array, so there is exactly one event per id.
   async function handleEventReceive(arg: EventReceiveArg): Promise<void> {
     const id = arg.event.id;
-    const r = await rescheduleFollowUpAction({ id, dueDate: arg.event.startStr });
+    const dueDate = arg.event.startStr;
+    const r = await rescheduleFollowUpAction({ id, dueDate });
     if (r.ok) {
-      setTrayItems((prev) => prev.filter((t) => t.id !== id));
+      arg.event.remove();
+      setFollowUps((prev) => applyFollowUpDueDate(prev, id, dueDate));
       toast.success("Follow-up scheduled.");
     } else {
       arg.revert();
@@ -60,5 +81,9 @@ export function useReschedule(items: CalendarFollowUp[]): Reschedule {
     }
   }
 
-  return { trayItems, handleEventDrop, handleEventReceive };
+  function handleResolved(id: string, outcome: FollowUpOutcome): void {
+    setFollowUps((prev) => applyFollowUpOutcome(prev, id, outcome));
+  }
+
+  return { followUps, handleEventDrop, handleEventReceive, handleResolved };
 }

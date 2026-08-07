@@ -1,6 +1,6 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
-import { companies, companyAliases, contacts, edges, positions } from "@/lib/db/schema";
+import { companies, companyAliases, contacts, edges, followUps, positions } from "@/lib/db/schema";
 import { addAliasesInTx } from "@/lib/repo/company-aliases";
 import { PreconditionError } from "@/lib/repo/errors";
 import type { CompanyMergeResolution } from "@dhaga/core";
@@ -36,6 +36,7 @@ export async function mergeCompanies(
     // Re-point every reference from the losing companies onto the survivor.
     await tx.update(contacts).set({ companyId: targetId }).where(inArray(contacts.companyId, sourceIds));
     await tx.update(positions).set({ companyId: targetId }).where(inArray(positions.companyId, sourceIds));
+    await tx.update(followUps).set({ companyId: targetId }).where(inArray(followUps.companyId, sourceIds));
     await tx
       .update(edges)
       .set({ srcId: targetId })

@@ -1,0 +1,133 @@
+"use client";
+
+import { useState } from "react";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Combobox,
+  ComboboxInput,
+  ComboboxTrigger,
+  type ComboboxChangeEventDetails,
+} from "@/components/ui/combobox";
+import { useTargetSearch } from "@/components/app/graph/use-target-search";
+import { EntityComboboxOptions } from "./EntityComboboxOptions";
+import type { GraphTarget, GraphTargetKind } from "@/lib/repo/graph-data";
+
+/**
+ * Lazy-loaded searchable dropdown over graph nodes — the shared replacement for
+ * the hand-rolled entity-reference text boxes. Results stream in from
+ * GET /api/graph/targets (debounced via the shared `useTargetSearch` hook), so
+ * the list is server-filtered and Base UI's own filtering is disabled.
+ *
+ * Two presentations from one component:
+ * - inline (default): the search input is the field itself (e.g. the company
+ *   field, where the typed text is also the value — pass `inputValue`).
+ * - `triggerLabel`: a compact button opens a popup that holds the search input
+ *   (e.g. the contact-page "Add to group" control).
+ */
+export function EntityCombobox({
+  kinds,
+  onSelect,
+  placeholder,
+  disabled = false,
+  excludeIds,
+  triggerLabel,
+  clearOnSelect = false,
+  inputValue,
+  onInputValueChange,
+  onCreate,
+  createLabel = "Create",
+  inputClassName,
+  preloadOnOpen = false,
+}: {
+  kinds: readonly GraphTargetKind[];
+  onSelect: (target: GraphTarget) => void;
+  placeholder: string;
+  disabled?: boolean;
+  excludeIds?: ReadonlySet<string>;
+  triggerLabel?: string;
+  clearOnSelect?: boolean;
+  inputValue?: string;
+  onInputValueChange?: (value: string) => void;
+  onCreate?: (name: string) => void;
+  createLabel?: string;
+  inputClassName?: string;
+  preloadOnOpen?: boolean;
+}): React.ReactElement {
+  const [open, setOpen] = useState(false);
+  const [internalQuery, setInternalQuery] = useState("");
+  const query = inputValue ?? internalQuery;
+  const setQuery = (value: string, details?: ComboboxChangeEventDetails): void => {
+    // Inline free-text mode (input *is* the value: no trigger, no clear-on-select) drops
+    // Base UI's empty close-sync `input-clear` (close without a selection) that would wipe
+    // the just-typed/created name; real edits/clears arrive as `input-change`/`clear-press`.
+    if (!triggerLabel && !clearOnSelect && onInputValueChange && details?.reason === "input-clear") return;
+    return onInputValueChange ? onInputValueChange(value) : setInternalQuery(value);
+  };
+
+  const results = useTargetSearch(query, { kinds, enabled: open, preload: preloadOnOpen }).filter(
+    (target) => !excludeIds?.has(target.id),
+  );
+  const trimmed = query.trim();
+  const showCreate =
+    !!onCreate &&
+    trimmed.length > 0 &&
+    !results.some((target) => target.label.toLowerCase() === trimmed.toLowerCase());
+
+  function reset(): void {
+    if (!clearOnSelect) return;
+    setQuery("");
+    setOpen(false);
+  }
+
+  function handleValueChange(target: GraphTarget | null): void {
+    if (!target) return;
+    onSelect(target);
+    reset();
+  }
+
+  return (
+    <Combobox<GraphTarget>
+      items={results}
+      filter={null}
+      inputValue={query}
+      onInputValueChange={setQuery}
+      onValueChange={handleValueChange}
+      itemToStringLabel={(target) => target.label}
+      open={open}
+      onOpenChange={setOpen}
+      disabled={disabled}
+    >
+      {triggerLabel ? (
+        <ComboboxTrigger
+          render={<Button type="button" variant="outline" size="sm" className="h-11" />}
+          disabled={disabled}
+        >
+          <Plus aria-hidden />
+          {triggerLabel}
+        </ComboboxTrigger>
+      ) : (
+        <ComboboxInput
+          placeholder={placeholder}
+          aria-label={placeholder}
+          className={inputClassName}
+        />
+      )}
+
+      <EntityComboboxOptions
+        triggerLabel={triggerLabel}
+        placeholder={placeholder}
+        results={results}
+        trimmed={trimmed}
+        showCreate={showCreate}
+        preloadOnOpen={preloadOnOpen}
+        createLabel={createLabel}
+        onCreateClick={() => {
+          onCreate?.(trimmed);
+          setOpen(false);
+          reset();
+        }}
+      />
+    </Combobox>
+  );
+}

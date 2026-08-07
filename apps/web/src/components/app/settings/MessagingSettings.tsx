@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/utils/format-date";
 import { LINK_TOKEN_TTL_MINUTES } from "@/utils/constants/messaging";
+import { CaptureLogCard } from "./CaptureLog";
 import { MessagingLinkPanel, UnlinkButton } from "./MessagingSettingsClient";
 
 interface ProviderStatus {
@@ -26,12 +27,17 @@ export function MessagingSettings({
   providers,
   activeToken,
   identities,
+  unfinishedCount,
+  unfinishedLimit,
   telegramBotUsername,
   whatsappNumber,
 }: {
   providers: ProviderStatus[];
   activeToken: { token: string; expiresAt: string } | null;
   identities: LinkedIdentity[];
+  /** Batches that never reached a terminal state, capped at `unfinishedLimit`. */
+  unfinishedCount: number;
+  unfinishedLimit: number;
   telegramBotUsername: string | null;
   whatsappNumber: string | null;
 }) {
@@ -83,11 +89,19 @@ export function MessagingSettings({
         <div>
           <p className="text-sm font-medium text-paper">Connect this chat</p>
           <p className="mt-1 text-sm text-fog">
-            Generate a token, then send it to the bot from the chat you want to link.
+            Generate a token, then scan the code with your phone — or send the token to
+            the bot yourself from the chat you want to link.
           </p>
         </div>
-        <MessagingLinkPanel activeToken={activeToken} ttlMinutes={LINK_TOKEN_TTL_MINUTES} />
+        <MessagingLinkPanel
+          activeToken={activeToken}
+          ttlMinutes={LINK_TOKEN_TTL_MINUTES}
+          telegramBotUsername={telegramBotUsername}
+          whatsappNumber={whatsappNumber}
+        />
       </div>
+
+      <CaptureLogCard unfinishedCount={unfinishedCount} unfinishedLimit={unfinishedLimit} />
 
       <div className="space-y-3 border-t border-seam pt-4">
         <p className="text-sm font-medium text-paper">Linked chats</p>

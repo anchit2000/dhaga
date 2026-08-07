@@ -73,6 +73,8 @@
   --color-amber: var(--brand-amber);
   --color-amber-lift: var(--brand-amber-lift);
   --color-amber-sink: var(--brand-amber-sink);
+  --color-qr-plate: var(--brand-qr-plate);
+  --color-qr-ink: var(--brand-qr-ink);
   --color-ember: var(--brand-ember);
   --color-trust: var(--brand-trust);
   --color-calm: var(--brand-calm);
@@ -111,6 +113,12 @@
      but they belong here rather than inline in four components — this is the
      most prominent colour in the product and it needs one home. */
   --brand-amber-lift: #f7c96f;
+  /* QR plate. DELIBERATELY identical in both themes and NOT derived from
+     ink/paper: those swap between light and dark, which would invert the code,
+     and a light-on-dark QR is unreadable to a good share of scanners. A QR is a
+     machine target, not a surface — it gets the contrast the machine needs. */
+  --brand-qr-plate: #ffffff;
+  --brand-qr-ink: #101a20;
   --brand-amber-sink: #da9631;
   --brand-ember: #88500a;
   --brand-trust: #286f91;
@@ -355,6 +363,27 @@ html {
   .dhaga-stitch > span {
     animation: none;
     transform: translateX(-50%);
+  }
+}
+
+@keyframes dhaga-search-peek {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-0.2deg);
+  }
+  50% {
+    transform: translateY(-0.35rem) rotate(0.2deg);
+  }
+}
+
+.dhaga-search-scene {
+  animation: dhaga-search-peek 4s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dhaga-search-scene {
+    animation: none;
   }
 }
 

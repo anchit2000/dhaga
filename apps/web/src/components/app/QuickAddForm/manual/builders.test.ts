@@ -50,12 +50,27 @@ describe("fact & follow-up form-data builders", () => {
     expect(fd.get("text")).toBe("Loves Babbage's engine");
   });
 
-  it("serializes a follow-up due date as ISO and omits it when unset", () => {
-    const due = new Date("2026-08-01T09:00:00.000Z");
+  it("serializes a follow-up as a calendar day and omits it when unset", () => {
+    const due = new Date(2026, 7, 1);
     const withDate = buildFollowUpFormData("c-ada", "Send notes", due);
     expect(withDate.get("contactId")).toBe("c-ada");
     expect(withDate.get("action")).toBe("Send notes");
-    expect(withDate.get("dueDate")).toBe("2026-08-01T09:00:00.000Z");
+    expect(withDate.get("dueDate")).toBe("2026-08-01");
     expect(buildFollowUpFormData("c-ada", "Send notes", null).get("dueDate")).toBeNull();
   });
+
+  it.each(["Asia/Kolkata", "America/Los_Angeles"])(
+    "keeps a picked manual due day stable in %s",
+    (timeZone) => {
+      const original = process.env.TZ;
+      process.env.TZ = timeZone;
+      try {
+        const picked = new Date(2026, 7, 1);
+        expect(buildFollowUpFormData("c-ada", "Send notes", picked).get("dueDate"))
+          .toBe("2026-08-01");
+      } finally {
+        process.env.TZ = original;
+      }
+    },
+  );
 });

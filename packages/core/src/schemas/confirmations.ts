@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { storedNoteExtractionSchema } from "./extraction";
+import { followUpDatePayloadSchema } from "./confirmation-date";
 
 /**
  * The unified "confirmations / doubts" contract (generalizes edge_suggestions).
@@ -17,6 +18,7 @@ export const CONFIRMATION_TYPES = [
   "supplement", // add a batch of newly-extracted facts/edges to a contact?
   "subject_resolution", // whose relationship is this — which subject contact?
   "note_subject", // which person is this captured note about (or create anew)?
+  "follow_up_date", // a date is scheduled; should an ambiguous weekend move?
 ] as const;
 export type ConfirmationType = (typeof CONFIRMATION_TYPES)[number];
 
@@ -131,6 +133,7 @@ export const confirmationPayloadSchema = z.discriminatedUnion("type", [
   supplementPayloadSchema,
   subjectResolutionPayloadSchema,
   noteSubjectPayloadSchema,
+  followUpDatePayloadSchema,
 ]);
 
 export type InsertEdgeApply = z.infer<typeof insertEdgeApplySchema>;

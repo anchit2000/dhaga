@@ -27,6 +27,36 @@ export const contactMethodSchema = z.object({
 export type ContactMethod = z.infer<typeof contactMethodSchema>;
 
 /**
+ * A capture-time email or phone: the value plus whatever label was written NEXT
+ * TO it in the source. Extraction always saw those labels — a noticeboard
+ * listing "Society office – 9999900102 / MNGL – 9999900103 (Ravi)" states
+ * plainly whose number is whose — but the capture shape carried bare strings,
+ * so four numbers arrived as four anonymous numbers and the user had to relabel
+ * them by hand from the note.
+ *
+ * Deliberately narrower than {@link contactMethodSchema}: no free-form `note`.
+ * Extraction has nothing to put in one, and every extra field costs output
+ * tokens on the critical path of a card scan (see parse/card-receipt.ts on why
+ * that path is guarded so jealously). `profileFromExtracted` widens these into
+ * full ContactMethods at the write boundary.
+ */
+export const extractedMethodSchema = z.object({
+  value: z.string().describe("The email address or phone number, exactly as written"),
+  label: z
+    .string()
+    .nullable()
+    .describe(
+      'Who or what it belongs to, copied from the text beside it ("Work", "Society office", "MNGL (Ravi)"); null when the text gives none',
+    ),
+});
+export type ExtractedMethod = z.infer<typeof extractedMethodSchema>;
+
+/** Bare values → unlabeled ExtractedMethods, for parsers that see no labels. */
+export function bareMethods(values: string[]): ExtractedMethod[] {
+  return values.map((value) => ({ value, label: null }));
+}
+
+/**
  * One job/role. Positions are the source of truth for employment; the first
  * current one (else the first) mirrors into the denormalised
  * `contacts.title` / `company_id` columns so existing list/detail/search/graph

@@ -16,9 +16,11 @@ import { AiBudgetError, assertAiBudget, recordAiAction, withAiAction } from "./m
 export interface ContactExtractionResult {
   contact: ExtractedContact;
   /** Folded into the SAME extraction call (one AI action, metered as
-   *  `contact_parse`): whether the capture reads as a note about a person, plus
-   *  the subject name + note body the note-capture router needs. Neutral (not a
-   *  note) on the offline/no-AI paths, which cannot classify. */
+   *  `contact_parse`): whether the capture reads as a note about a person, the
+   *  subject name + note body the note-capture router needs, and whether the
+   *  text is an instruction to the assistant rather than content. Neutral
+   *  (not a note, not an instruction) on the offline/no-AI paths, which
+   *  cannot classify. */
   classification: CaptureClassification;
   via: "ai" | "heuristic";
   notice?: string;
@@ -78,10 +80,10 @@ async function parseWithAi(
     await withUserDb(userId, () =>
       recordAiAction("contact_parse", result.model, result.usage),
     );
-    const { isNoteAboutPerson, subjectName, noteBody, ...contact } = result.data;
+    const { isNoteAboutPerson, subjectName, noteBody, isInstruction, ...contact } = result.data;
     return {
       contact,
-      classification: { isNoteAboutPerson, subjectName, noteBody },
+      classification: { isNoteAboutPerson, subjectName, noteBody, isInstruction },
       via: "ai",
     };
   } catch (error) {

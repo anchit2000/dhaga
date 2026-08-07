@@ -4,12 +4,13 @@ import { useState, type ReactElement } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { toastError } from "@/components/app/feedback";
-import { addFactAction, createFollowUpAction } from "@/lib/actions/manual-entries";
+import { addFactAction } from "@/lib/actions/manual-entries";
+import { createTaskAction } from "@/lib/actions/tasks";
 import { AddFactForm } from "@/components/app/contact/AddFactForm";
 import { AddFollowUpForm } from "@/components/app/contact/AddFollowUpForm";
 import { FACT_TYPES } from "@/utils/constants/facts";
 import { ContactPickerField } from "./ContactPickerField";
-import { buildFactFormData, buildFollowUpFormData } from "./builders";
+import { buildFactFormData } from "./builders";
 import type { GraphTarget } from "@/lib/repo/graph-data";
 
 type Entry = "fact" | "followup";
@@ -29,10 +30,11 @@ export function ManualFactFollowUp(): ReactElement {
     toast.success("Fact added.");
   }
 
-  async function addFollowUp(action: string, dueDate: Date | null): Promise<void> {
+  async function addFollowUp(data: FormData): Promise<void> {
     if (!contact) return;
-    const result = await createFollowUpAction({}, buildFollowUpFormData(contact.id, action, dueDate));
-    if (result.error) return toastError(result.error);
+    data.set("contactId", contact.id);
+    const result = await createTaskAction(data);
+    if (!result.ok) return toastError(result.error);
     toast.success("Follow-up added.");
   }
 

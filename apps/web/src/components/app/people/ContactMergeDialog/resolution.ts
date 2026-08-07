@@ -1,8 +1,8 @@
-import {
-  computeScalarConflicts,
-  type ContactMergeResolution,
-  type ContactMethod,
-  type MergeConflict,
+import { computeScalarConflicts } from "@dhaga/core/src/schemas/merge";
+import type {
+  ContactMergeResolution,
+  ContactMethod,
+  MergeConflict,
 } from "@dhaga/core";
 import type { ContactMergeRecord } from "@/lib/repo/contacts";
 

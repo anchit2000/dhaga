@@ -25,7 +25,7 @@ function AgendaRow({ item }: { item: AgendaItem }): React.JSX.Element {
   if (item.kind === "followUp") {
     return (
       <View style={[styles.row, styles.followUpRow]}>
-        <Text style={styles.rowTitle}>{item.contactName}</Text>
+        <Text style={styles.rowTitle}>{item.associationLabel}</Text>
         <Text style={styles.rowDetail}>{item.action}</Text>
         {item.overdue ? <Text style={styles.overdue}>Overdue</Text> : null}
       </View>

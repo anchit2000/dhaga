@@ -20,26 +20,40 @@ const EXTERNAL_RANK = 2;
  * real due date land on the grid; date-less ones belong in the Unscheduled tray
  * (see `unscheduledFollowUps`). Overdue items get the `.fc-overdue` class so the
  * scoped theme can tint them amber; the rest render as neutral panel chips.
+ *
+ * COMPLETED rows ride along as history (`.fc-done`, struck through) — the
+ * calendar used to hide them, which read as if the work had never happened. They
+ * are read-only by construction: `editable`/`startEditable` are false per event,
+ * so no drag can start and `handleEventDrop` can never re-date finished work.
+ * `.fc-done` also replaces `.fc-overdue` rather than joining it — a done row is
+ * never late (see repo/reminders/calendar/predicates.ts `isOverdue`).
  */
 export function toCalendarEvents(items: CalendarFollowUp[]): EventInput[] {
   return items
     .filter((item): item is CalendarFollowUp & { dueDate: string } => item.dueDate !== null)
     .map((item) => ({
       id: item.id,
-      title: item.contactName,
+      title: item.associationLabel,
       allDay: true,
       // Date-only portion (YYYY-MM-DD): the ISO dueDate is a UTC timestamp, and
       // feeding a UTC-midnight stamp to an allDay event shifts the day back one
       // in negative-offset timezones. The date part pins it to the right cell.
       start: item.dueDate.slice(0, 10),
-      classNames: item.overdue ? ["fc-overdue"] : [],
+      classNames: item.status === "done" ? ["fc-done"] : item.overdue ? ["fc-overdue"] : [],
+      editable: item.status === "open",
+      startEditable: item.status === "open",
       rank: FOLLOW_UP_RANK,
       extendedProps: {
         kind: "follow-up",
         contactId: item.contactId,
         contactName: item.contactName,
+        companyId: item.companyId,
+        companyName: item.companyName,
+        associationLabel: item.associationLabel,
         action: item.action,
+        dueDate: item.dueDate,
         dueHint: item.dueHint,
+        status: item.status,
         overdue: item.overdue,
       } satisfies FollowUpEventProps,
     }));

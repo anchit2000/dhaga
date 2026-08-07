@@ -40,8 +40,34 @@ export function isDoneDelimiter(text: string): boolean {
   return (DONE_DELIMITERS as readonly string[]).includes(normalized);
 }
 
-/** Hard cap on items in one batch — bounds a single processing run's cost. */
+/** Cap on items processed in ONE RUN — bounds a single run's cost. Not a cap on
+ *  the batch: the overflow stays unprocessed and the next sweep resumes it. */
 export const MAX_SESSION_ITEMS = 50;
+
+/**
+ * The last-resort name for a contact a capture could not name at all. A saved
+ * contact with an EMPTY name is the real failure this guards: it renders as a
+ * blank row, cannot be found by search, and gives the user nothing to recognise
+ * it by. A visible placeholder is at least something they can rename — and it
+ * is the same string `recordAttribution` shows for a nameless contact, so the
+ * batch summary and the contact row agree.
+ */
+export const UNNAMED_CONTACT_NAME = "Unnamed contact";
+
+/**
+ * WHY a note ended up on the person it ended up on. Every note the walk files
+ * carries one, because filing is guesswork and the sender is the only one who
+ * can catch a wrong guess:
+ *
+ * - `named`   — the note named someone and that name matched a person already
+ *               in the graph;
+ * - `new`     — the note named someone nobody matched, so they were created;
+ * - `assumed` — the note named NOBODY, so it was filed on whoever the batch was
+ *               already on. This is the weakest link in the whole flow and the
+ *               one the summary must never leave unsaid.
+ */
+export const NOTE_ATTRIBUTION_BASES = ["named", "new", "assumed"] as const;
+export type NoteAttributionBasis = (typeof NOTE_ATTRIBUTION_BASES)[number];
 
 /** Account-linking token: short-lived, single-use, sent from Settings and echoed to the bot. */
 export const LINK_TOKEN_TTL_MINUTES = 30;
@@ -62,67 +88,80 @@ export function looksLikeLinkToken(text: string): boolean {
 }
 
 /**
+ * A `/start` command, with its payload if it carried one. Telegram sends this
+ * when someone opens the bot — bare on a normal open, and with the token as a
+ * payload when they arrive via a QR/deep link (see ./links). Also matches the
+ * `/start@botname` form Telegram uses in groups.
+ *
+ * Returned as a shape rather than a bare string so callers can tell the two
+ * cases apart: a bare `/start` is somebody saying hello and must never be
+ * stored as a note, while `/start <token>` is a link attempt.
+ */
+export function parseStartCommand(text: string): { payload: string | null } | null {
+  const match = /^\/start(?:@[A-Za-z0-9_]+)?(?:\s+(\S+))?\s*$/.exec(text.trim());
+  if (!match) return null;
+  return { payload: match[1] ?? null };
+}
+
+/**
+ * The link token a message carries — typed bare, or delivered as a `/start`
+ * payload by a scanned deep link. Null when the message isn't a link attempt,
+ * so the caller can treat it as ordinary content.
+ */
+export function extractLinkToken(text: string): string | null {
+  const start = parseStartCommand(text);
+  const candidate = start ? (start.payload ?? "") : text;
+  return looksLikeLinkToken(candidate) ? candidate.trim().toUpperCase() : null;
+}
+
+/**
  * Idle auto-flush window — a batch with no DONE is saved after this many
  * minutes of no activity. Env-overridable for self-hosters; floored at 1 so a
  * bad value can never disable the flush entirely.
+ *
+ * The default is 24h because that is what the deployment can actually deliver:
+ * the only guaranteed scheduler is the once-a-day cron (api/jobs/daily), so a
+ * shorter promise ("saved after 15 min of quiet") is one the bot cannot keep —
+ * and telling a sender their capture is saved when it isn't is the worst
+ * failure this flow has. An instance that drives api/jobs/messaging/flush more
+ * often can set DHAGA_MESSAGING_IDLE_MINUTES lower to match its real cadence.
  */
 function readIdleMinutes(): number {
   const parsed = Number.parseInt(process.env.DHAGA_MESSAGING_IDLE_MINUTES ?? "", 10);
-  return Number.isFinite(parsed) ? Math.max(1, parsed) : 15;
+  return Number.isFinite(parsed) ? Math.max(1, parsed) : 24 * 60;
 }
 export const MESSAGING_SESSION_IDLE_MINUTES = readIdleMinutes();
 
-/**
- * How long a "which person did you mean?" question stays answerable. Short on
- * purpose: a stale "1" typed an hour later must not attach a note to whoever
- * happened to be option 1 in a forgotten question.
- */
-export const MESSAGING_QUESTION_TTL_MINUTES = 60;
-
-/** One candidate person offered by a pending question, in the order shown in chat. */
-export interface MessagingQuestionOption {
-  contactId: string;
-  label: string;
-  sublabel: string | null;
+/** The idle window as chat copy — "24 hours", never "1440 min". */
+export function idleWindowLabel(): string {
+  const minutes = MESSAGING_SESSION_IDLE_MINUTES;
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours} ${hours === 1 ? "hour" : "hours"}`;
+  const days = Math.round(hours / 24);
+  return days === 1 ? "24 hours" : `${days} days`;
 }
 
-/** What the sender's reply resolved to: a listed person, or "make a new one". */
-export type MessagingQuestionAnswer =
-  | { kind: "option"; contactId: string; label: string }
-  | { kind: "new" };
-
-/** Replies that mean "none of these — save it under a new person". */
-const NEW_PERSON_ANSWERS = new Set(["new", "none", "neither", "0"]);
+/**
+ * How long a batch may sit in `processing` before the daily sweep treats it as
+ * STALLED and re-drives it. A flush runs in a background `after()` on a function
+ * with a hard ceiling, so a big batch can be killed mid-walk; without this the
+ * batch is stranded forever (the sweeper only ever looked for `open`). Generous
+ * enough that a genuinely-running batch is never stolen from itself.
+ */
+export const MESSAGING_PROCESSING_STALL_MINUTES = 60;
 
 /**
- * Interpret a reply to a pending disambiguation question. Accepts the shown
- * number, a name (exact, or an unambiguous partial), or an explicit "new".
- * Returns null when the reply is not an answer at all — the caller then treats
- * the message as ordinary content instead of guessing a person (attaching a note
- * to the wrong contact is the failure this whole flow exists to prevent).
+ * How many items an OPEN batch may hold before the bot stops accepting more and
+ * asks for a DONE. Backpressure, not a limit for its own sake: at a 24h idle
+ * window an unclosed batch could otherwise swallow a whole day of forwards, and
+ * the longer it runs the more notes get filed by assumption onto whoever the
+ * batch happened to be on. Refusing loudly at a small number keeps every batch
+ * short enough for the sender to still remember who each note was about.
+ * Env-overridable (DHAGA_MESSAGING_MAX_OPEN_ITEMS); floored at 1.
  */
-export function parseQuestionAnswer(
-  options: readonly MessagingQuestionOption[],
-  text: string,
-): MessagingQuestionAnswer | null {
-  const normalized = text.trim().toLowerCase();
-  if (normalized.length === 0) return null;
-  if (NEW_PERSON_ANSWERS.has(normalized)) return { kind: "new" };
-
-  const asNumber = Number.parseInt(normalized, 10);
-  if (String(asNumber) === normalized && asNumber >= 1 && asNumber <= options.length) {
-    const chosen = options[asNumber - 1];
-    return { kind: "option", contactId: chosen.contactId, label: chosen.label };
-  }
-
-  const exact = options.filter((option) => option.label.toLowerCase() === normalized);
-  const matches = exact.length > 0
-    ? exact
-    : options.filter((option) => option.label.toLowerCase().includes(normalized));
-  // Ambiguous partials ("ajay" when both are Ajays) are NOT an answer — asking
-  // again beats picking one of two people at random.
-  if (matches.length === 1) {
-    return { kind: "option", contactId: matches[0].contactId, label: matches[0].label };
-  }
-  return null;
+function readMaxOpenItems(): number {
+  const parsed = Number.parseInt(process.env.DHAGA_MESSAGING_MAX_OPEN_ITEMS ?? "", 10);
+  return Number.isFinite(parsed) ? Math.max(1, parsed) : 10;
 }
+export const MESSAGING_MAX_OPEN_ITEMS = readMaxOpenItems();

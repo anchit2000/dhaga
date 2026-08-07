@@ -41,9 +41,16 @@ function makeItem(overrides: Partial<CalendarFollowUp>): CalendarFollowUp {
     id: "f1",
     contactId: "c1",
     contactName: "Ada Lovelace",
+    companyId: null,
+    companyName: null,
+    associationLabel: "Ada Lovelace",
+    recurrence: null,
     action: "Send the deck",
     dueDate: dueIn(0),
     dueHint: null,
+    // Open by design: the reminder email is the OUTSTANDING set. Done rows now
+    // reach the calendar, and must never reach this.
+    status: "open",
     overdue: false,
     ...overrides,
   };

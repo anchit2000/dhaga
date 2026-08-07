@@ -1,0 +1,26 @@
+{
+  "skills": [
+    {
+      "name": "dhaga-capture",
+      "description": "Use when writing something back into the user's Dhaga personal CRM. Triggers include \"log this meeting\", \"log that call\", \"save this person to Dhaga\", \"add a note about <person>\", \"capture this conversation\", \"remind me to follow up with <person>\", \"set a reminder to email <person> on Friday\", \"mark that follow-up done\", \"that one no longer applies\", and any pasted email signature, business-card text, LinkedIn blurb or list of people met at a conference that the user wants kept.",
+      "files": [
+        "SKILL.md"
+      ]
+    },
+    {
+      "name": "dhaga-network",
+      "description": "Use when answering a question about the people the user knows, from their Dhaga personal CRM. Triggers include \"who do I know at <company>\", \"who do I know in <city or field>\", \"who did I meet at <event>\", \"how do I get an intro to <person>\", \"can anyone introduce me to <company>\", \"who should I reach out to this week\", \"what am I on the hook for\", \"who never got back to me\", \"what do I know about <person>\", \"when did I last talk to <person>\", \"any birthdays or work anniversaries coming up\", \"what follow-ups are due\", and any request to prepare for a meeting with someone the user has met before.",
+      "files": [
+        "SKILL.md"
+      ]
+    },
+    {
+      "name": "dhaga-setup",
+      "description": "Use when connecting a client to a user's Dhaga personal CRM over MCP, or when an existing Dhaga connection is not working. Triggers include \"connect Dhaga\", \"set up the Dhaga MCP server\", \"add Dhaga to Claude Code\", \"add Dhaga to Cursor\", \"add Dhaga as a custom connector in claude.ai or ChatGPT\", \"where do I get a Dhaga API key\", \"my dhaga_* tools aren't showing up\", \"Dhaga MCP returns 401\", \"Dhaga stopped working after I revoked a token\", and wiring a self-hosted Dhaga instance URL into a client config.",
+      "files": [
+        "SKILL.md",
+        "references/clients.md"
+      ]
+    }
+  ]
+}

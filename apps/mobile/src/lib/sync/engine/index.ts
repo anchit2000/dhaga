@@ -6,13 +6,13 @@ import { ackContactSync, pushContactSync } from "@/lib/api-sync";
 import { DEVICE_SYNC_PROVIDER } from "@/utils/constants/sync";
 
 import { containerNotice, contactsInContainer, pickWriteContainer } from "../containers";
-import { createPayload, isCreate, toObserved } from "../writes";
+import { toObserved } from "../writes";
 import { syncPlatform } from "../device-target";
+import { applyWrites } from "./apply-writes";
 import { buildPushChunks, mergePushResponses } from "./chunks";
 
-import type { SyncAckRequest, SyncPushResponse } from "@dhaga/core/src/api/sync";
+import type { SyncPushResponse } from "@dhaga/core/src/api/sync";
 import type { MobileSettings } from "@/types";
-import type { SyncWriteFailure } from "../writes";
 import type { SyncOutcome, SyncPhaseHandler, SyncRunResult } from "./types";
 
 /**
@@ -102,34 +102,7 @@ async function sync(
   const response = mergePushResponses(responses);
 
   onPhase("writing");
-  const results: SyncAckRequest["results"] = [];
-  const failures: SyncWriteFailure[] = [];
-  let created = 0;
-  let updated = 0;
-  for (const write of response.writes) {
-    try {
-      if (isCreate(write)) {
-        const payload = createPayload(write.fields);
-        if (!payload) {
-          failures.push({ contactId: write.contactId, message: "No name to file it under." });
-          continue;
-        }
-        const ref = await target.create(payload, containerId);
-        results.push({ contactId: write.contactId, ...ref });
-        created += 1;
-      } else if (write.externalId) {
-        const ref = await target.patch(write.externalId, write.fields, write.etag);
-        results.push({ contactId: write.contactId, ...ref });
-        updated += 1;
-      }
-    } catch (error) {
-      // One rejected write must not abandon the rest — and must not vanish.
-      failures.push({
-        contactId: write.contactId,
-        message: error instanceof Error ? error.message : "The device rejected the write.",
-      });
-    }
-  }
+  const { results, failures, created, updated } = await applyWrites(target, response.writes, containerId);
 
   if (results.length > 0) {
     onPhase("confirming");

@@ -1,12 +1,14 @@
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
-import { getDb } from "@/lib/db/request-scope";
+import { calendarDayToUtcDate, resolveDatePhrase } from "@dhaga/core";
+import { getDb, withTransactionDb } from "@/lib/db/request-scope";
 import { contacts, edges, edgeSuggestions, facts, followUps } from "@/lib/db/schema";
 import { upsertEmbedding } from "../embeddings";
 import { emitWebhook } from "@/lib/webhooks";
 import { insertPositionRows } from "./position-rows";
 import { buildRelationshipRows } from "./relationship-rows";
-import type { NoteExtraction } from "@dhaga/core";
+import { createFollowUpDateConfirmation } from "@/lib/repo/confirmations/follow-up-date";
+import type { CalendarDay, DatePhraseResolution, NoteExtraction } from "@dhaga/core";
 
 /**
  * Write one note's extraction into the graph. Every row carries
@@ -33,7 +35,7 @@ export async function applyExtraction(
   contactId: string,
   noteId: string,
   extraction: NoteExtraction,
-  opts: { unverified?: boolean } = {},
+  opts: { unverified?: boolean; today?: CalendarDay } = {},
 ): Promise<{ factIds: string[] }> {
   const db = await getDb();
   const unverified = opts.unverified ?? false;
@@ -73,27 +75,52 @@ export async function applyExtraction(
   // that employer (the user's or an earlier note's) is left exactly as it is.
   await insertPositionRows(positionRows);
 
-  const followUpRows: (typeof followUps.$inferInsert)[] = extraction.follow_ups.map(
-    (followUp) => ({
-      id: randomUUID(),
-      contactId,
-      action: followUp.action,
-      dueHint: followUp.due_hint,
-      status: "open",
-      sourceNoteId: noteId,
-    }),
-  );
+  const datedFollowUps = extraction.follow_ups.map((followUp) => {
+    const resolution: DatePhraseResolution = opts.today
+      ? resolveDatePhrase(followUp.due_hint, opts.today)
+      : { kind: "unresolved" };
+    return {
+      resolution,
+      row: {
+        id: randomUUID(),
+        contactId,
+        action: followUp.action,
+        dueHint: followUp.due_hint,
+        dueDate: resolution.kind === "unresolved" ? null : calendarDayToUtcDate(resolution.date),
+        status: "open",
+        sourceNoteId: noteId,
+      } satisfies typeof followUps.$inferInsert,
+    };
+  });
+  const followUpRows = datedFollowUps.map(({ row }) => row);
 
   if (followUpRows.length > 0) {
-    await db.insert(followUps).values(followUpRows);
-    for (const row of followUpRows) {
-      await emitWebhook("followup.created", {
-        id: row.id,
-        contactId,
-        action: row.action,
-        dueHint: row.dueHint,
-      });
+    const ambiguous = datedFollowUps.filter(({ resolution }) => resolution.kind === "ambiguous");
+    if (ambiguous.length === 0) {
+      await db.insert(followUps).values(followUpRows);
+    } else {
+      await db.transaction((tx) => withTransactionDb(tx, async () => {
+        await tx.insert(followUps).values(followUpRows);
+        for (const { row, resolution } of ambiguous) {
+          if (resolution.kind !== "ambiguous") continue;
+          const alternative = resolution.alternatives.at(-1) ?? resolution.date;
+          await createFollowUpDateConfirmation({
+            followUpId: row.id,
+            action: row.action,
+            scheduledDate: calendarDayToUtcDate(resolution.date).toISOString().slice(0, 10),
+            alternativeDate: calendarDayToUtcDate(alternative).toISOString().slice(0, 10),
+            sourceNoteId: noteId,
+            contactId,
+          });
+        }
+      }));
     }
+    for (const { row } of datedFollowUps) await emitWebhook("followup.created", {
+      id: row.id,
+      contactId,
+      action: row.action,
+      dueHint: row.dueHint,
+    });
   }
 
   if (extraction.tags.length > 0) {

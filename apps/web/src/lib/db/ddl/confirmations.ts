@@ -16,6 +16,13 @@ CREATE TABLE IF NOT EXISTS confirmations (
   resolved_at timestamptz
 );
 
+-- Where the confirmation was raised: 'inline' (answered synchronously during
+-- web quick-add) or 'messaging' (raised by a background batch, whose ONLY
+-- surface is the inbox). NULL means inline — every row written before this
+-- column existed came from quick-add, so readers coalesce NULL to inline and
+-- current behaviour is preserved.
+ALTER TABLE confirmations ADD COLUMN IF NOT EXISTS origin text;
+
 CREATE INDEX IF NOT EXISTS confirmations_pending_idx ON confirmations (created_at DESC) WHERE status = 'pending';
 CREATE INDEX IF NOT EXISTS confirmations_status_idx ON confirmations (status);
 CREATE INDEX IF NOT EXISTS confirmations_sourceNoteId_idx ON confirmations (source_note_id);

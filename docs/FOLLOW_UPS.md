@@ -7,6 +7,23 @@ hardening, and correctness items. Grouped by area.
 
 ## Follow-up calendar, notifications & reminders (2026-07-27)
 
+**Extended 2026-08-06:** `/app/tasks` supports general tasks with optional
+person/company links. Follow-ups and tasks can recur daily, weekly, monthly, or
+yearly and advance one occurrence on completion. Note hints such as “next
+Monday”, “in 10 days”, and “next weekend” resolve through deterministic
+calendar-day maths in the user's time
+zone; the weekend case schedules Saturday immediately and offers Sunday in
+Confirmations. Keep-in-touch now accepts weekday/day/month selectors. Auto
+persists a capacity-aware weekday. An explicit crowded day warns before any
+write; **Save anyway** preserves that choice, while Cancel restores the
+previous schedule. Calendar-aware records avoid 30/365-day approximations; legacy
+cadence-only records retain elapsed-day behavior.
+Deleting or reprocessing a note now removes every follow-up derived from that
+receipt in the same DB transaction. Existing `calendar_event_links` remain as
+durable deletion receipts until a post-commit DB → provider → DB reconciliation
+removes the old external event; provider I/O never runs inside the note
+transaction, and a later note sync retries any orphaned receipt.
+
 Shipped on `feat/followups-calendar` (not an open item — recorded here because it
 resolves part of the hosted email-job fan-out gap below):
 
@@ -224,8 +241,8 @@ gaps and the correctness/doc items below.
   copy** (its self-host branch resolves the batch owner from the routing table
   rather than sweeping globally); fold it onto `tenant-sweep` next so there is
   exactly one tenant-enumeration path.
-- **Residual: `getFreeBusy` is held inside its tenant scope — SPLIT (2026-08-03),
-  one caller left to convert.** `getFreeBusy` no longer interleaves its DB work
+- **Residual: `getFreeBusy` is held inside its tenant scope — RESOLVED
+  (2026-08-03), both callers converted.** `getFreeBusy` no longer interleaves its DB work
   with the provider call: it now runs in three phases (read the connection rows →
   call the providers holding nothing → flush the `needs_reconnect` /
   refreshed-token writes), and takes an optional `runScoped` so each DB phase gets
@@ -233,13 +250,18 @@ gaps and the correctness/doc items below.
   already used. `lib/repo/calendar/free-busy-snapshot.ts` passes `withUserDb` per
   phase, so nothing is held across the provider on Home's refresh path;
   `src/lib/__tests__/calendar-free-busy-scope/` fails if that regresses.
-  **Still open:** `runDailyDigest` calls it as `runScoped(() => getFreeBusy(range))`,
-  i.e. the *caller* wraps all three phases in one scope, so the digest sweep still
-  holds a connection across the provider call. It is one connection at a time in a
-  sequential loop (never a fan-out) and is skipped for tenants with no calendar;
-  converting it is a two-line change — pass its `runScoped` as `getFreeBusy`'s
-  second argument instead of wrapping the call — deliberately left to the next
-  change that touches that job.
+  `lib/jobs/daily-digest.ts` was the last caller still calling it as
+  `runScoped(() => getFreeBusy(range))` — the *caller* wrapping all three phases in
+  one scope, which cancelled the split from the outside and left the digest sweep
+  holding a connection across the provider call for every tenant with a calendar.
+  It now passes `runScoped` as `getFreeBusy`'s second argument instead of wrapping
+  the call; in self-host that argument is `runOnGlobal` (a passthrough), so that
+  path is unchanged. **The lesson the fix owed a test:** the existing spec only
+  ever called `getFreeBusy(WEEK, runScoped)` itself, so it proved the unit was
+  *capable* of holding nothing and never that a caller did — which is why this
+  survived. `calendar-free-busy-scope/daily-digest-no-held-connection.test.ts`
+  now drives `runDailyDigest` itself through the same scope-depth trace (real
+  `withUserDb`, real PGlite, fake provider) and fails on the old call shape.
 - **Doc/comment updates the above change owed — DONE (2026-07-30 consolidated doc
   pass).** All four are closed: `lib/jobs/follow-up-reminders.ts`'s header no
   longer calls the other three jobs single-owner; `app/api/jobs/daily/route.ts`'s

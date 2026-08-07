@@ -87,11 +87,11 @@ describe("previewSentence", () => {
   it("flipping swaps the endpoints but never rewords the predicate", () => {
     // WHY: the stored edge is directional; the toggle must show the user
     // exactly which row becomes src before they commit.
-    expect(previewSentence("Ajay", "father of", "Anchit", false)).toBe(
-      "Ajay — father of → Anchit",
+    expect(previewSentence("Rohan", "father of", "Priya", false)).toBe(
+      "Rohan — father of → Priya",
     );
-    expect(previewSentence("Ajay", "father of", "Anchit", true)).toBe(
-      "Anchit — father of → Ajay",
+    expect(previewSentence("Rohan", "father of", "Priya", true)).toBe(
+      "Priya — father of → Rohan",
     );
   });
 });

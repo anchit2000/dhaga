@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { and, asc, eq, inArray, isNull, or } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import {
+  confirmations,
   edgeSuggestions,
   edges,
   entities,
@@ -103,6 +104,7 @@ export async function deleteEntity(id: string): Promise<void> {
       await tx.select({ id: notes.id }).from(notes).where(eq(notes.entityId, id))
     ).map((row) => row.id);
     if (noteIds.length > 0) {
+      await tx.delete(confirmations).where(inArray(confirmations.sourceNoteId, noteIds));
       // Hard-delete note derivations (edges included — their receipt note is
       // about to go, and a tombstone may not keep a dangling FK).
       await tx.delete(edges).where(inArray(edges.sourceNoteId, noteIds));

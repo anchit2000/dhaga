@@ -41,6 +41,13 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        // /app is cross-origin isolated for on-device voice. A dedicated
+        // worker must opt into the same COEP policy or Chrome blocks its 200
+        // response before MapLibre can execute it (ERR_BLOCKED_BY_RESPONSE).
+        source: "/maplibre/:path*",
+        headers: [{ key: "Cross-Origin-Embedder-Policy", value: "credentialless" }],
+      },
+      {
         source: "/app/:path*",
         headers: [
           { key: "Cross-Origin-Opener-Policy", value: "same-origin" },

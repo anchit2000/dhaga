@@ -1,6 +1,7 @@
 import Link from "next/link";
+import { publicPageMetadata } from "@/utils/public-page-metadata";
 
-export const metadata = { title: "Privacy — Dhaga" };
+export const metadata = publicPageMetadata("privacy");
 
 const SECTIONS: { heading: string; body: string }[] = [
   {
@@ -29,7 +30,7 @@ const SECTIONS: { heading: string; body: string }[] = [
   },
 ];
 
-export default function PrivacyPage() {
+export default function PrivacyPage(): React.ReactElement {
   return (
     <main className="mx-auto max-w-2xl px-6 py-16">
       <Link href="/" className="font-display text-lg text-paper">

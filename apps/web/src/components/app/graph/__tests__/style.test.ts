@@ -10,9 +10,9 @@ import { edge, node } from "./helpers";
 describe("relationship labels", () => {
   it("reads an explicit edge from either seat — one stored row, both directions correct", () => {
     const parentEdge = edge("e", "ajay", "anchit", "explicit", "parent_of");
-    // Viewing Ajay (source): the OTHER person is his child.
+    // Viewing Rohan (source): the OTHER person is his child.
     expect(panelEdgeLabel(parentEdge, true, {})).toBe("child");
-    // Viewing Anchit (target): the other person is the parent.
+    // Viewing Priya (target): the other person is the parent.
     expect(panelEdgeLabel(parentEdge, false, {})).toBe("parent");
   });
 

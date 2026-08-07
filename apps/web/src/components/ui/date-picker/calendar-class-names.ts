@@ -19,9 +19,9 @@ export const CALENDAR_CLASS_NAMES: Partial<ClassNames> = {
     "relative z-[1] inline-flex items-center gap-1 whitespace-nowrap text-sm font-medium text-paper",
   nav: "absolute inset-x-0 top-0 flex h-11 items-center justify-between",
   button_previous:
-    "inline-flex size-9 items-center justify-center rounded-lg text-fog outline-none hover:bg-wash/[0.08] hover:text-paper focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
+    "inline-flex size-11 items-center justify-center rounded-lg text-fog outline-none hover:bg-wash/[0.08] hover:text-paper focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
   button_next:
-    "inline-flex size-9 items-center justify-center rounded-lg text-fog outline-none hover:bg-wash/[0.08] hover:text-paper focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
+    "inline-flex size-11 items-center justify-center rounded-lg text-fog outline-none hover:bg-wash/[0.08] hover:text-paper focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
   chevron: "size-4 fill-current",
   month_grid: "w-full border-collapse",
   weekdays: "flex",

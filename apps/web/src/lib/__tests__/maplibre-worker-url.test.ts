@@ -41,4 +41,12 @@ describe("MapLibre worker asset", () => {
       expect(existsSync(join(served, "..", sibling))).toBe(true);
     }
   });
+
+  it("opts the worker into the app shell's cross-origin isolation", () => {
+    // A 200 module worker is still blocked by Chrome when the isolated /app
+    // document uses COEP but the worker response omits it.
+    const config = readFileSync(join(webRoot, "next.config.ts"), "utf8");
+    expect(config).toContain('source: "/maplibre/:path*"');
+    expect(config).toContain('key: "Cross-Origin-Embedder-Policy", value: "credentialless"');
+  });
 });

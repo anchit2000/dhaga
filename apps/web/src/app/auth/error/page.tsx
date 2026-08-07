@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { ModeToggle } from "@/components/brand/ModeToggle";
 import { ThreadMark } from "@/components/brand/ThreadMark";
+import { publicPageMetadata } from "@/utils/public-page-metadata";
+
+export const metadata = {
+  ...publicPageMetadata("authError"),
+  robots: { index: false, follow: false },
+};
 
 interface AuthErrorPageProps {
   searchParams: Promise<{ error?: string }>;

@@ -1,11 +1,9 @@
-import { randomUUID } from "node:crypto";
 import type {
   ConfirmationOption,
   ConfirmationPayload,
   NoteExtraction,
 } from "@dhaga/core";
-import { getDb } from "@/lib/db/request-scope";
-import { confirmations } from "@/lib/db/schema";
+import { insertConfirmation, type ConfirmationOrigin } from "./insert";
 import type { ConfirmationView } from "./queue";
 
 /**
@@ -14,17 +12,6 @@ import type { ConfirmationView } from "./queue";
  * `contactId` is the contact the row is "about" so the inbox can group/filter
  * and EE can scope it; it is nullable for rows with no single subject yet.
  */
-async function insertConfirmation(
-  payload: ConfirmationPayload,
-  sourceNoteId: string | null,
-  contactId: string | null,
-): Promise<string> {
-  const db = await getDb();
-  const id = randomUUID();
-  await db.insert(confirmations).values({ id, type: payload.type, payload, sourceNoteId, contactId });
-  return id;
-}
-
 export async function createEntityLinkConfirmation(input: {
   srcContactId: string;
   predicate: string;
@@ -94,12 +81,18 @@ export async function createSupplementConfirmation(input: {
  * Returns the full {@link ConfirmationView} (not just the id) so the inline
  * quick-add flow can render it through <ConfirmationCard> immediately, with no
  * re-read and no duplicated payload construction.
+ *
+ * `origin` says which surface has to answer it and defaults to "inline" (the
+ * quick-add case). Pass "messaging" when a background batch raises it: that row
+ * has no synchronous card to be answered in, so the inbox is its only surface
+ * and the queue must show it.
  */
 export async function createNoteSubjectConfirmation(input: {
   noteBody: string;
   subjectName: string | null;
   question: string;
   options?: ConfirmationOption[];
+  origin?: ConfirmationOrigin;
 }): Promise<ConfirmationView> {
   const payload: ConfirmationPayload = {
     type: "note_subject",
@@ -111,7 +104,7 @@ export async function createNoteSubjectConfirmation(input: {
       subjectName: input.subjectName,
     },
   };
-  const id = await insertConfirmation(payload, null, null);
+  const id = await insertConfirmation(payload, null, null, input.origin ?? "inline");
   return {
     id,
     type: "note_subject",

@@ -19,7 +19,7 @@ export interface BlogPost {
 
 // Byline used when a post omits `author` frontmatter. Exported so the route and
 // SEO helpers share one source of truth rather than re-typing the string.
-export const BLOG_DEFAULT_AUTHOR = "Anchit Shrivastava";
+export const BLOG_DEFAULT_AUTHOR = "Priya Nair";
 
 // A route is a hub/index (not a leaf post) when it's the /blog root or a
 // category landing (/blog/<category>). Everything else — including any future

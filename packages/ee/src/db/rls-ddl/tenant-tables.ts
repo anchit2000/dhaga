@@ -86,6 +86,17 @@ BEGIN
       'ALTER TABLE %I ALTER COLUMN user_id SET DEFAULT current_setting(''app.current_user_id'', true)',
       tbl
     );
+    IF tbl = 'follow_ups' THEN
+      UPDATE follow_ups fu
+      SET user_id = COALESCE(
+        (SELECT c.user_id FROM contacts c WHERE c.id = fu.contact_id),
+        (SELECT co.user_id FROM companies co WHERE co.id = fu.company_id)
+      )
+      WHERE fu.user_id IS NULL;
+      IF NOT EXISTS (SELECT 1 FROM follow_ups WHERE user_id IS NULL) THEN
+        ALTER TABLE follow_ups ALTER COLUMN user_id SET NOT NULL;
+      END IF;
+    END IF;
     EXECUTE format('CREATE INDEX IF NOT EXISTS %I ON %I (user_id)', tbl || '_user_id_idx', tbl);
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', tbl);
     EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', tbl);
@@ -101,4 +112,27 @@ BEGIN
     END IF;
   END LOOP;
 END $$;
+
+-- A task is owned directly. Optional links must point into that same tenant;
+-- foreign keys alone do not enforce this because their checks bypass RLS.
+DROP POLICY IF EXISTS tenant_isolation ON follow_ups;
+CREATE POLICY tenant_isolation ON follow_ups
+  USING (
+    current_setting('app.bypass_rls', true) = 'true'
+    OR user_id = current_setting('app.current_user_id', true)
+  )
+  WITH CHECK (
+    current_setting('app.bypass_rls', true) = 'true'
+    OR (
+      user_id = current_setting('app.current_user_id', true)
+      AND (follow_ups.contact_id IS NULL OR EXISTS (
+        SELECT 1 FROM contacts c
+        WHERE c.id = follow_ups.contact_id AND c.user_id = follow_ups.user_id
+      ))
+      AND (follow_ups.company_id IS NULL OR EXISTS (
+        SELECT 1 FROM companies co
+        WHERE co.id = follow_ups.company_id AND co.user_id = follow_ups.user_id
+      ))
+    )
+  );
 `;

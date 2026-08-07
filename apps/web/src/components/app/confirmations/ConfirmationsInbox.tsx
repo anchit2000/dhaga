@@ -4,8 +4,24 @@ import { getCachedNodeTypes } from "@/lib/cache/node-types";
 import { ConfirmationCard } from "./ConfirmationCard";
 import type { ConfirmationType } from "@dhaga/core";
 
-/** Group order + copy for the inbox; each type gets its own section. */
+/**
+ * Group order + copy for the inbox; each type gets its own section. A type
+ * missing from this list is a row the queue returns and the badge counts but
+ * NOTHING renders — so every type listPendingConfirmations can return needs an
+ * entry here. note_subject leads: until it is answered the note body exists
+ * nowhere but that pending row.
+ */
 const GROUPS: { type: ConfirmationType; title: string; blurb: string }[] = [
+  {
+    type: "note_subject",
+    title: "Notes to place",
+    blurb: "A note arrived without a clear subject — pick who it's about to file it.",
+  },
+  {
+    type: "follow_up_date",
+    title: "Dates to confirm",
+    blurb: "A date is already scheduled — keep Saturday or move the follow-up to Sunday.",
+  },
   {
     type: "entity_link",
     title: "Links to confirm",

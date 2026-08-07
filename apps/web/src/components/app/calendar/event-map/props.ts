@@ -11,10 +11,16 @@
 /** A Dhaga follow-up: the only kind on the grid that has a row to mutate. */
 export type FollowUpEventProps = {
   kind: "follow-up";
-  contactId: string;
-  contactName: string;
+  contactId: string | null;
+  contactName: string | null;
+  companyId: string | null;
+  companyName: string | null;
+  associationLabel: string;
   action: string;
+  dueDate: string;
   dueHint: string | null;
+  /** Done rows ride the grid as history: read-only, never "Mark done" again. */
+  status: "open" | "done";
   overdue: boolean;
 };
 

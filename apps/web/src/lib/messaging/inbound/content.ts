@@ -6,12 +6,15 @@ import {
   appendSessionItem,
   getOpenSession,
   getOrCreateOpenSession,
+  getRetriableSession,
   setSessionStatus,
 } from "@/lib/repo/messaging";
 import {
   ackFirstItemReply,
+  batchFullReply,
   emptyMessageReply,
   emptySessionReply,
+  MESSAGING_MAX_OPEN_ITEMS,
   MESSAGING_SESSION_IDLE_MINUTES,
   processingReply,
   unsupportedAttachmentReply,
@@ -32,7 +35,15 @@ function rejectionReply(item: Extract<NormalizedItem, { accepted: false }>): str
   }
 }
 
-/** DONE: flush the open batch for processing, or say there's nothing to save. */
+/**
+ * DONE: flush the sender's batch for processing, or say there's nothing to save.
+ *
+ * Uses getRetriableSession, not getOpenSession, so a batch that FAILED can be
+ * re-driven — which is what the failure reply has always told the sender to do.
+ * It was a lie: a failed batch matched neither the open-session lookup nor the
+ * sweeper (idle-`open` and stalled-`processing` only), so its items sat intact
+ * and permanently unreachable.
+ */
 export async function handleDone(
   client: MessagingClient,
   msg: NormalizedInboundMessage,
@@ -40,7 +51,7 @@ export async function handleDone(
 ): Promise<void> {
   const { provider, externalUserId: externalId } = msg;
   const flushed = await withUserDb(userId, async () => {
-    const session = await getOpenSession({ provider, externalId });
+    const session = await getRetriableSession({ provider, externalId });
     if (!session || session.itemCount === 0) return null;
     await setSessionStatus({ sessionId: session.id, status: "processing" });
     return { id: session.id, itemCount: session.itemCount };
@@ -90,14 +101,27 @@ export async function handleContent(
 
   const appended = await withUserDb(userId, async () => {
     const session = await getOrCreateOpenSession({ provider, externalId });
+    // BACKPRESSURE: a full batch is refused, not silently swallowed. Checked
+    // before the insert so the refusal is honest — nothing is stored that the
+    // sender was just told wasn't accepted.
+    if (session.itemCount >= MESSAGING_MAX_OPEN_ITEMS) {
+      return { full: true, duplicate: false, wasFirst: false };
+    }
     const result = await appendSessionItem({
       sessionId: session.id,
       kind: normalized.kind,
       payload: normalized.payload,
       providerMessageId: msg.messageId,
     });
-    return { duplicate: result.duplicate, wasFirst: session.itemCount === 0 };
+    return { full: false, duplicate: result.duplicate, wasFirst: session.itemCount === 0 };
   });
+  if (appended.full) {
+    await client.sendText({
+      externalUserId: externalId,
+      text: batchFullReply(MESSAGING_MAX_OPEN_ITEMS),
+    });
+    return;
+  }
   if (appended.duplicate) return; // idempotent provider retry
   // Ack only the first item — subsequent ones stay silent to avoid spam.
   if (appended.wasFirst) await client.sendText({ externalUserId: externalId, text: ackFirstItemReply() });

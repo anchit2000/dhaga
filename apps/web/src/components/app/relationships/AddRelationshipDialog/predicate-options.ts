@@ -1,4 +1,4 @@
-import { RELATIONSHIP_ROLES, humanizePredicate } from "@dhaga/core";
+import { RELATIONSHIP_ROLES, humanizePredicate } from "@dhaga/core/src/relationships/roles";
 import type { RelationshipEndpointKind } from "@/lib/repo/relationships";
 
 export interface PredicateOption {
@@ -89,7 +89,7 @@ export function filterPredicateOptions(
   );
 }
 
-/** "Ajay — father of → Anchit"; flipping swaps the endpoints, never the phrase. */
+/** "Rohan — father of → Priya"; flipping swaps the endpoints, never the phrase. */
 export function previewSentence(
   sourceName: string,
   forward: string,

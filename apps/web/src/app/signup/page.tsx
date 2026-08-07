@@ -5,8 +5,9 @@ import { enabledSocialProviders } from "@/lib/auth/config/social";
 import { SignupForm } from "@/components/app/SignupForm";
 import { ModeToggle } from "@/components/brand/ModeToggle";
 import { ThreadMark } from "@/components/brand/ThreadMark";
+import { publicPageMetadata } from "@/utils/public-page-metadata";
 
-export const metadata = { title: "Create account — Dhaga" };
+export const metadata = publicPageMetadata("signup");
 
 interface SignupPageProps {
   searchParams: Promise<{ email?: string }>;

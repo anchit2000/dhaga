@@ -1,6 +1,11 @@
 import { withUserDb } from "@/lib/db/request-scope";
 import { applyWritePlan } from "./apply";
-import { loadWritePlan, openFollowUpIdsForNote, persistWriteOutcomes } from "./db";
+import {
+  loadWritePlan,
+  openFollowUpIdsForNote,
+  persistWriteOutcomes,
+} from "./db";
+import { orphanedCalendarFollowUpIds } from "./orphans";
 
 export type { WriteOutcome, WritePlan, WriteTarget } from "./types";
 
@@ -30,6 +35,20 @@ export async function syncFollowUpToCalendars(
 }
 
 /**
+ * Reconcile hard-deleted tasks from their durable calendar link receipts.
+ * The caller has already committed its DB transaction; each sync keeps the
+ * existing DB -> network -> DB phase separation intact.
+ */
+export async function syncDeletedFollowUpsToCalendars(
+  userId: string,
+  followUpIds: string[] = [],
+): Promise<void> {
+  const orphaned = await withUserDb(userId, orphanedCalendarFollowUpIds);
+  const ids = [...new Set([...followUpIds, ...orphaned])];
+  for (const followUpId of ids) await syncFollowUpToCalendars(userId, followUpId);
+}
+
+/**
  * Mirror the follow-ups a note's extraction just created. Most follow-ups are
  * born here rather than typed by hand, so without this the calendar would only
  * ever show the manual ones. Sequential — each follow-up opens and closes its
@@ -39,6 +58,7 @@ export async function syncNoteFollowUpsToCalendars(
   userId: string,
   noteId: string,
 ): Promise<void> {
+  await syncDeletedFollowUpsToCalendars(userId);
   const followUpIds = await withUserDb(userId, () => openFollowUpIdsForNote(noteId));
   for (const followUpId of followUpIds) {
     await syncFollowUpToCalendars(userId, followUpId);

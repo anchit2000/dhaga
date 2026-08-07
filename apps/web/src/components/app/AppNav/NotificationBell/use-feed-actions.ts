@@ -72,7 +72,8 @@ export function useFeedActions(initial: FeedItem[]): FeedActions {
     if (!complete) return; // Only a follow-up carries these ids.
     const formData = new FormData();
     formData.set("followUpId", complete.followUpId);
-    formData.set("contactId", complete.contactId);
+    formData.set("contactId", complete.contactId ?? "");
+    formData.set("expectedDueDate", complete.expectedDueDate ?? "");
     startTransition(async () => {
       patch({ type: "hide", key: feedKey(item) });
       const ok = await runAction(

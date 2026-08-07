@@ -13,8 +13,10 @@ describe("heuristicContactParse", () => {
     expect(result.name).toBe("Nisha Shah");
     expect(result.title).toBe("Principal");
     expect(result.company).toBe("Meridian Capital");
-    expect(result.emails).toEqual(["nisha@meridian.vc"]);
-    expect(result.phones).toEqual(["+65 9123 4567"]);
+    // Unlabeled by design: a regex match says what a value IS, never whose it
+    // is. Only the AI path reads the label written beside a method.
+    expect(result.emails).toEqual([{ value: "nisha@meridian.vc", label: null }]);
+    expect(result.phones).toEqual([{ value: "+65 9123 4567", label: null }]);
   });
 
   it('parses "at"-separated title lines', () => {

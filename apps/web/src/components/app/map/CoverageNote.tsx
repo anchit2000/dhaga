@@ -25,7 +25,7 @@ export function CoverageNote({ payload }: { payload: MapPayload }): React.ReactE
           {plural(payload.places.length, "place")} · {plural(mapped, "contact")} mapped
         </span>
         {payload.pendingCount > 0 ? (
-          <span className="text-amber"> · {payload.pendingCount} still being placed</span>
+          <span className="text-ember"> · {payload.pendingCount} still being placed</span>
         ) : null}
         {payload.unresolvedCount > 0 ? (
           <span> · {payload.unresolvedCount} couldn&apos;t be placed</span>

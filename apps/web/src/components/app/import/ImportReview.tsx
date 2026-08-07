@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import { primaryPosition } from "@dhaga/core";
+import { primaryPosition } from "@dhaga/core/src/schemas/contact";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ReviewTable } from "./ReviewTable";

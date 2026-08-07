@@ -10,9 +10,15 @@ export function followUp(id: string, dueDate: string, overdue: boolean): Calenda
     id,
     contactId: `c-${id}`,
     contactName: `Contact ${id}`,
+    companyId: null,
+    companyName: null,
+    associationLabel: `Contact ${id}`,
+    recurrence: null,
     action: "Send the deck",
     dueDate,
     dueHint: null,
+    // The bell only ever previews OPEN follow-ups.
+    status: "open",
     overdue,
   };
 }

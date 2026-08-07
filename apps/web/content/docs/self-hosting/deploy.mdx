@@ -142,6 +142,12 @@ everywhere):
    bypasses RLS unconditionally even while `rolbypassrls` reads false). Don't
    rely on this alone for a fresh setup, though — check via the script's own
    verification query *before* traffic hits it, not after.
+4. To prove the isolation itself rather than just the role's attributes,
+   run `packages/ee/src/db/__tests__/rls-isolation.integration.test.ts` —
+   it asserts, per tenant table, that a second tenant's scoped read sees
+   nothing of the first's. Its file header carries the run instructions.
+   It writes and then deletes rows, so point it at a disposable Postgres
+   (the `compose.yml` database is one) and **never** at production.
 
 ### Migrating off Supabase (or any hosted Postgres) later
 
@@ -155,10 +161,11 @@ migration, not a code change:
 
 1. On the new Postgres target: install the `pgvector` and `pg_trgm`
    extensions, then run `packages/ee/scripts/create-app-role.sql` against
-   it to create `dhaga_app` there too (self-hosted Postgres usually keeps
-   extensions in the `public` schema rather than Supabase's separate
-   `extensions` schema — skip that one `GRANT USAGE ON SCHEMA extensions`
-   line if so).
+   it to create `dhaga_app` there too — it runs unmodified on both, no
+   editing step: the one Supabase-specific statement
+   (`GRANT USAGE ON SCHEMA extensions`) is guarded and no-ops on a
+   self-hosted Postgres, which keeps extensions in `public` rather than
+   Supabase's separate `extensions` schema.
 2. `pg_dump --no-owner --no-acl <source> | psql <target>` (or
    `pg_restore --no-owner --no-acl` if using the custom format) — `--no-owner`
    matters because the dump would otherwise try to assign ownership to a

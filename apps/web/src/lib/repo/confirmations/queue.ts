@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql, type SQL } from "drizzle-orm";
 import {
   confirmationPayloadSchema,
   type ConfirmationOption,
@@ -21,6 +21,22 @@ export interface ConfirmationView {
   createdAt: Date;
 }
 
+/**
+ * Hide a note_subject ONLY when it was raised inline. An inline one is a
+ * synchronous quick-add card: it is answered where it was raised, so an
+ * abandoned row would be a phantom the inbox can't clear. A note_subject raised
+ * by a background batch (origin 'messaging') has NO other surface — hiding it
+ * strands the user's note where nothing can reach it, so it must appear here
+ * and in the badge. NULL origin predates the column and is therefore inline.
+ *
+ * Kept as one SQL predicate, shared by both queries below: the badge is a
+ * COUNT and must stay a COUNT — never filter these in JS after the fetch.
+ */
+const VISIBLE_IN_INBOX: SQL = sql`not (
+  ${confirmations.type} = 'note_subject'
+  and coalesce(${confirmations.origin}, 'inline') = 'inline'
+)`;
+
 /** Pending confirmations, newest first, with the subject contact hydrated. */
 export async function listPendingConfirmations(): Promise<ConfirmationView[]> {
   const db = await getDb();
@@ -35,11 +51,7 @@ export async function listPendingConfirmations(): Promise<ConfirmationView[]> {
     })
     .from(confirmations)
     .leftJoin(contacts, eq(contacts.id, confirmations.contactId))
-    // Exclude note_subject: it's a synchronous, capture-time card resolved
-    // inline in quick-add (never rendered in the inbox, home tile, or digest),
-    // so it must not surface here. A row abandoned unresolved stays pending but
-    // stops inflating these surfaces. See countPendingConfirmations below.
-    .where(and(eq(confirmations.status, "pending"), ne(confirmations.type, "note_subject")))
+    .where(and(eq(confirmations.status, "pending"), VISIBLE_IN_INBOX))
     .orderBy(desc(confirmations.createdAt));
 
   // safeParse, not parse: this runs over EVERY pending row, so one payload the
@@ -123,8 +135,8 @@ export async function countPendingConfirmations(): Promise<number> {
   const [row] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(confirmations)
-    // Same note_subject exclusion as listPendingConfirmations — the nav badge
-    // must not count inline capture-time cards the inbox can't show.
-    .where(and(eq(confirmations.status, "pending"), ne(confirmations.type, "note_subject")));
+    // Same visibility rule as listPendingConfirmations — the badge must count
+    // exactly what the inbox can show.
+    .where(and(eq(confirmations.status, "pending"), VISIBLE_IN_INBOX));
   return row?.count ?? 0;
 }

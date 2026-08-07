@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { openTenantConnection } from "../../tenant/scoped-db";
 import { openAdminConnection } from "../admin-db";
 import { getPool } from "../pool";
+import { BESPOKE_TENANT_TABLES, TENANT_TABLES } from "../rls-ddl";
 import type { SQL } from "drizzle-orm";
 
 /**
@@ -11,19 +12,42 @@ import type { SQL } from "drizzle-orm";
  * the property the PGlite unit suite structurally can't reach (PGlite has no
  * row-level security). DDL "looking right" is not the policy denying a second
  * tenant's read; this asserts the deny, per table. For each TENANT_TABLES member
- * (rls-ddl.ts): admin (bypass) confirms A's row exists (so a failed insert can't
- * pass vacuously — Rule 9); B's scoped read sees 0 of it; A still sees its own
- * row with `user_id` auto-stamped from `current_setting('app.current_user_id')`,
- * never supplied by the INSERT — the whole point of the column DEFAULT. A runtime
- * guard cross-checks coverage against the live `tenant_isolation` policies, so a
- * new TENANT_TABLES entry fails this suite until a spec is added.
+ * (rls-ddl/tenant-tables.ts): admin (bypass) confirms A's row exists (so a failed
+ * insert can't pass vacuously — Rule 9); B's scoped read sees 0 of it; A still
+ * sees its own row with `user_id` auto-stamped from
+ * `current_setting('app.current_user_id')`, never supplied by the INSERT — the
+ * whole point of the column DEFAULT.
+ *
+ * Coverage is guarded TWICE, on purpose. The database-free unit test at the
+ * bottom of this file (SPECS ∪ bespoke == TENANT_TABLES) runs on every plain
+ * `vitest run`, because the runtime guard below only fires when DATABASE_URL is
+ * set — which is how eleven tenant tables once accumulated with no spec at all
+ * and nothing went red. The live-DB guard is still worth keeping: it proves the
+ * DDL actually took effect, which a list-vs-list check cannot.
+ *
+ * ⚠ THIS SUITE WRITES AND THEN DELETES ROWS THROUGH AN RLS-BYPASSING ADMIN
+ * CONNECTION (see cleanup()). Point DATABASE_URL ONLY at a local, disposable
+ * Postgres you are willing to lose. NEVER at production/Supabase — not via
+ * apps/web/.env.vercel, not via any other hosted URL.
  *
  * Skipped unless DATABASE_URL is set — same harness as
  * tenant-reuse.integration.test.ts (openTenantConnection / openAdminConnection
- * both ensure the EE schema; the shared pool is closed in afterAll). Run:
+ * both ensure the EE schema; the shared pool is closed in afterAll). Run against
+ * the throwaway Docker Postgres from compose.yml (`docker compose up db`, host
+ * port 54329):
  *   cd packages/ee
- *   node --env-file=../../apps/web/.env.vercel \
+ *   DATABASE_URL=postgres://dhaga_app:<pw>@localhost:54329/dhaga \
  *     ../../node_modules/vitest/vitest.mjs run src/db/__tests__/rls-isolation.integration.test.ts
+ *
+ * Two prerequisites the connection string alone doesn't give you:
+ *  1. CORE TABLES MUST ALREADY EXIST. The EE RLS DDL only ALTERs (adds user_id,
+ *     enables RLS) — it never CREATEs a core table. Boot apps/web once against
+ *     this same DATABASE_URL first so its boot-time DDL creates the schema.
+ *  2. THE CONNECTING ROLE MUST NOT BYPASS RLS. ensureEeSchema's guard
+ *     (db/bootstrap.ts) throws on a BYPASSRLS *or* SUPERUSER role — and
+ *     compose.yml's POSTGRES_USER `dhaga` IS a superuser. So run
+ *     scripts/create-app-role.sql against the database once and connect as
+ *     `dhaga_app`, not as `dhaga`.
  */
 const RUN = Boolean(process.env.DATABASE_URL);
 
@@ -42,6 +66,10 @@ const CONTACT = rid("contacts");
 const EVENT = rid("events");
 const NOTE = rid("notes");
 const NODE_TYPE = rid("node_types");
+const COMPANY = rid("companies");
+const CALENDAR_CONNECTION = rid("calendar_connections");
+const MESSAGING_SESSION = rid("messaging_sessions");
+const GOAL = rid("goals");
 // embeddings has no id column (PK is owner_type/owner_id) — identify by owner_id.
 const EMB_OWNER = rid("embeddings-owner");
 // A minimal valid pgvector(384) literal for the embeddings NOT NULL column.
@@ -60,15 +88,23 @@ interface TableSpec {
  * One insertable row per tenant table, in FK-dependency order (parents first) so
  * the whole set inserts inside one tenant transaction and deletes in reverse.
  * Tables with hard FKs are driven through their natural parent (the contact /
- * event / node-type / note created earlier in this same list). No table is
- * skipped — every TENANT_TABLES member is reachable with a bare parent-satisfied
- * insert.
+ * company / event / node-type / calendar-connection / messaging-session / goal
+ * created earlier in this same list). No TENANT_TABLES member is skipped — every
+ * one is reachable with a bare parent-satisfied insert, and the database-free
+ * test at the bottom of this file keeps that true. The two tables policied by
+ * bespoke-policies.ts (BESPOKE_TENANT_TABLES) are absent on purpose; that same
+ * test documents why.
  */
 const SPECS: readonly TableSpec[] = [
   {
     table: "companies",
-    insert: sql`INSERT INTO companies (id, name) VALUES (${rid("companies")}, 'rls-test')`,
-    where: sql`id = ${rid("companies")}`,
+    insert: sql`INSERT INTO companies (id, name) VALUES (${COMPANY}, 'rls-test')`,
+    where: sql`id = ${COMPANY}`,
+  },
+  {
+    table: "company_aliases",
+    insert: sql`INSERT INTO company_aliases (id, company_id, alias) VALUES (${rid("company_aliases")}, ${COMPANY}, 'rls-test')`,
+    where: sql`id = ${rid("company_aliases")}`,
   },
   {
     table: "node_types",
@@ -122,7 +158,9 @@ const SPECS: readonly TableSpec[] = [
   },
   {
     table: "follow_ups",
-    insert: sql`INSERT INTO follow_ups (id, contact_id, action) VALUES (${rid("follow_ups")}, ${CONTACT}, 'rls-test')`,
+    // A general TODO has no contact/company association but is still tenant
+    // data: user_id/default RLS, not a foreign key, is its ownership boundary.
+    insert: sql`INSERT INTO follow_ups (id, action) VALUES (${rid("follow_ups")}, 'rls-test')`,
     where: sql`id = ${rid("follow_ups")}`,
   },
   {
@@ -151,9 +189,37 @@ const SPECS: readonly TableSpec[] = [
     where: sql`id = ${rid("extraction_jobs")}`,
   },
   {
+    // Both FKs (contacts, extraction_jobs) are nullable — omitted, like
+    // confirmations above, to keep the insert minimal.
+    table: "notifications",
+    insert: sql`INSERT INTO notifications (id, type, title) VALUES (${rid("notifications")}, 'rls_test', 'rls-test')`,
+    where: sql`id = ${rid("notifications")}`,
+  },
+  {
     table: "calendar_connections",
-    insert: sql`INSERT INTO calendar_connections (id, provider, access_token) VALUES (${rid("calendar_connections")}, 'google', 'rls-test')`,
-    where: sql`id = ${rid("calendar_connections")}`,
+    insert: sql`INSERT INTO calendar_connections (id, provider, access_token) VALUES (${CALENDAR_CONNECTION}, 'google', 'rls-test')`,
+    where: sql`id = ${CALENDAR_CONNECTION}`,
+  },
+  {
+    // follow_up_id is a plain text column, not an FK (see ddl/calendar.ts).
+    table: "calendar_event_links",
+    insert: sql`INSERT INTO calendar_event_links (id, connection_id, follow_up_id, external_event_id) VALUES (${rid("calendar_event_links")}, ${CALENDAR_CONNECTION}, ${rid("follow_ups")}, 'rls-test')`,
+    where: sql`id = ${rid("calendar_event_links")}`,
+  },
+  {
+    table: "contact_connections",
+    insert: sql`INSERT INTO contact_connections (id, provider, access_token) VALUES (${rid("contact_connections")}, 'google', 'rls-test')`,
+    where: sql`id = ${rid("contact_connections")}`,
+  },
+  {
+    table: "contact_links",
+    insert: sql`INSERT INTO contact_links (id, contact_id, provider, external_id) VALUES (${rid("contact_links")}, ${CONTACT}, 'google', 'rls-test')`,
+    where: sql`id = ${rid("contact_links")}`,
+  },
+  {
+    table: "contact_sync_tombstones",
+    insert: sql`INSERT INTO contact_sync_tombstones (id, provider, external_id) VALUES (${rid("contact_sync_tombstones")}, 'google', 'rls-test')`,
+    where: sql`id = ${rid("contact_sync_tombstones")}`,
   },
   {
     table: "positions",
@@ -174,6 +240,31 @@ const SPECS: readonly TableSpec[] = [
     table: "voice_vocab",
     insert: sql`INSERT INTO voice_vocab (id, term, term_lc) VALUES (${rid("voice_vocab")}, 'rls-test', 'rls-test')`,
     where: sql`id = ${rid("voice_vocab")}`,
+  },
+  {
+    table: "messaging_sessions",
+    insert: sql`INSERT INTO messaging_sessions (id, provider, external_id) VALUES (${MESSAGING_SESSION}, 'whatsapp', 'rls-test')`,
+    where: sql`id = ${MESSAGING_SESSION}`,
+  },
+  {
+    table: "messaging_session_items",
+    insert: sql`INSERT INTO messaging_session_items (id, session_id, seq, kind, payload) VALUES (${rid("messaging_session_items")}, ${MESSAGING_SESSION}, 1, 'text', '{}'::jsonb)`,
+    where: sql`id = ${rid("messaging_session_items")}`,
+  },
+  {
+    table: "messaging_pending_questions",
+    insert: sql`INSERT INTO messaging_pending_questions (id, provider, external_id, note_body, options, expires_at) VALUES (${rid("messaging_pending_questions")}, 'whatsapp', 'rls-test', 'rls-test', '[]'::jsonb, now() + interval '1 hour')`,
+    where: sql`id = ${rid("messaging_pending_questions")}`,
+  },
+  {
+    table: "goals",
+    insert: sql`INSERT INTO goals (id, objective) VALUES (${GOAL}, 'rls-test')`,
+    where: sql`id = ${GOAL}`,
+  },
+  {
+    table: "goal_members",
+    insert: sql`INSERT INTO goal_members (id, goal_id, contact_id) VALUES (${rid("goal_members")}, ${GOAL}, ${CONTACT})`,
+    where: sql`id = ${rid("goal_members")}`,
   },
   {
     table: "feedback",
@@ -279,14 +370,19 @@ describe.skipIf(!RUN)("RLS isolates every tenant table (integration)", () => {
   });
 
   it("covers exactly the tables the live DB actually protects with tenant_isolation", async () => {
-    // The authoritative TENANT_TABLES const isn't exported from rls-ddl.ts, so
-    // cross-check against the live policies its DDL created instead — a stronger
-    // check anyway (it proves the DDL took effect, not just that a list matches).
-    // Every `tenant_isolation` policy in this DB comes from rls-ddl.ts, which
-    // policies exactly TENANT_TABLES plus `settings` (RLS'd there separately, with
-    // its own compound (user_id, key) PK — intentionally not in the SPECS loop).
-    // So a new TENANT_TABLES entry mints a policy that lands here and fails this
-    // test until a spec is added — coverage can't silently drift.
+    // The list-vs-list check lives in the database-free test below; this one is
+    // the stronger runtime claim — that the DDL actually TOOK EFFECT on this
+    // database, which no static comparison can prove.
+    //
+    // Every `tenant_isolation` policy in this DB comes from rls-ddl/: the
+    // generic loop policies exactly TENANT_TABLES, and bespoke-policies.ts
+    // policies BESPOKE_TENANT_TABLES (`settings` and `ai_credit_grants`) with
+    // hand-written policies that happen to carry the same policy NAME — which is
+    // why they show up in this query and must be added to the expected set.
+    // Neither is in the SPECS loop: settings has a compound (user_id, key) PK,
+    // and ai_credit_grants has no user_id DEFAULT at all (its writes always go
+    // through the admin bypass), so neither can prove the auto-stamp property
+    // the per-table cases below assert.
     const admin = await openAdminConnection();
     try {
       const policies = await admin.db.execute(
@@ -303,9 +399,7 @@ describe.skipIf(!RUN)("RLS isolates every tenant table (integration)", () => {
       const forced = new Set(rowsec.rows.map((r) => (r as unknown as { relname: string }).relname));
 
       const covered = new Set(SPECS.map((s) => s.table));
-      // settings is tenant-scoped too but handled outside the SPECS loop; include
-      // it so the two sets line up exactly.
-      expect(new Set([...covered, "settings"])).toEqual(new Set(policied));
+      expect(new Set([...covered, ...BESPOKE_TENANT_TABLES])).toEqual(new Set(policied));
       for (const table of covered) {
         expect(forced.has(table), `${table}: RLS is not FORCE-enabled at runtime`).toBe(true);
       }
@@ -333,4 +427,60 @@ describe.skipIf(!RUN)("RLS isolates every tenant table (integration)", () => {
       );
     },
   );
+
+  it("rejects linking a task to another tenant's contact", async () => {
+    const b = await openTenantConnection(TENANT_B);
+    try {
+      await expect(b.run((db) => db.execute(sql`
+        INSERT INTO follow_ups (id, contact_id, action)
+        VALUES (${rid("cross-tenant-follow-up")}, ${CONTACT}, 'must fail')
+      `))).rejects.toThrow();
+    } finally {
+      await b.release();
+    }
+  });
+});
+
+/**
+ * Deliberately OUTSIDE the describe.skipIf above: no database, no env vars, so
+ * it runs on every `vitest run` and in CI. It lives in THIS file rather than a
+ * sibling because SPECS is the thing that drifts, and a check that can be moved
+ * away from the list it guards is a check that gets forgotten — the same failure
+ * mode being fixed here.
+ *
+ * WHY THIS EXISTS (Rule 9): the live-DB guard above is the only thing that used
+ * to catch a tenant table with no isolation spec, and it only runs when
+ * DATABASE_URL is set. It is therefore skipped in CI and in every normal test
+ * run — which is exactly how ELEVEN entries were added to TENANT_TABLES over
+ * time with no spec and nothing ever went red. An unspecced table is not a
+ * cosmetic gap: it means NOBODY is proving that table's rows are actually
+ * invisible to another tenant, on a table we have already declared holds
+ * per-tenant data. That is a silent tenant-isolation regression waiting to ship.
+ */
+describe("tenant-table coverage (no database required)", () => {
+  it("has an isolation spec for every TENANT_TABLES entry", () => {
+    const specced = new Set<string>(SPECS.map((s) => s.table));
+    const missing = TENANT_TABLES.filter((t) => !specced.has(t));
+    expect(
+      missing,
+      `These tenant tables have NO row-isolation spec in SPECS, so nothing proves ` +
+        `their rows are hidden from other tenants. Add a { table, insert, where } ` +
+        `entry for each (in FK-dependency order) in this file:\n  ${missing.join("\n  ")}`,
+    ).toEqual([]);
+  });
+
+  it("has no spec for a table that isn't tenant-scoped", () => {
+    // The other direction: a spec for a table nobody policies would pass
+    // vacuously forever (no RLS ⇒ no deny to observe). BESPOKE_TENANT_TABLES is
+    // excluded because those two are policied by bespoke-policies.ts and
+    // intentionally have no SPEC — see the live-DB test above.
+    const tenant = new Set<string>([...TENANT_TABLES, ...BESPOKE_TENANT_TABLES]);
+    const stray = SPECS.map((s) => s.table).filter((t) => !tenant.has(t));
+    expect(
+      stray,
+      `These SPECS entries name tables that are in neither TENANT_TABLES nor ` +
+        `BESPOKE_TENANT_TABLES, so no tenant_isolation policy exists for them and ` +
+        `their isolation assertions can only pass vacuously:\n  ${stray.join("\n  ")}`,
+    ).toEqual([]);
+  });
 });

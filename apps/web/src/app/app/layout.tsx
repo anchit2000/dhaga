@@ -11,8 +11,14 @@ import { buildNotificationFeed } from "@/components/app/AppNav/NotificationBell"
 import { DEFAULT_UI_THEME } from "@/utils/constants/theme";
 import { BusyOverlayProvider } from "@/components/app/BusyOverlay";
 import { NavigationFeedback } from "@/components/app/NavigationFeedback";
+import type { Metadata } from "next";
 
-export const metadata = { title: "Dhaga" };
+export const metadata: Metadata = {
+  title: "Dhaga",
+  description: "Your private Dhaga workspace.",
+  alternates: { canonical: "/app" },
+  robots: { index: false, follow: false, nocache: true },
+};
 export const dynamic = "force-dynamic";
 
 export default async function AppLayout({

@@ -55,8 +55,11 @@ beneath it.
   your Home briefing. The people-per-day number is a **ceiling, not a quota**:
   on a day your calendar is already full of meetings Dhaga shows fewer, and it
   never drops below one person — a busy day is the day you most need the
-  reminder. Also here: a **morning follow-up reminder** email that nudges you
-  when you have follow-ups or check-ins waiting, and an opt-in **Confirmations
+  reminder. It is also the capacity used by Keep-in-touch **Auto** weekday
+  assignment. Choosing a crowded day explicitly warns before anything is
+  written; **Save anyway** preserves that choice, while Cancel restores the
+  previous schedule. Also here: a **morning follow-up reminder** email that
+  nudges you when you have follow-ups or check-ins waiting, and an opt-in **Confirmations
   digest** email (off by default) that summarises the AI confirmations waiting
   for your review. The same tab holds **Birthdays & anniversaries**: how many
   days ahead a saved date counts as upcoming (0–90, default 7), and an opt-in
@@ -133,6 +136,16 @@ would mean rendering them fresh on every visit and giving up their page speed.
 
 **Reset to default** puts both back: the Dhaga theme and Geist Pixel. It's
 greyed out when you're already on both.
+
+## Connect your AI assistant
+
+**Account → Connect your AI assistant** sits directly above the **API keys**
+card. It shows two things, each copyable in one click: this instance's **MCP
+endpoint**, and the **`npx skills add`** command that teaches an assistant how
+to use Dhaga. A token from the card below it is what a client running on your
+own machine — Claude Code, Cursor — signs in with; claude.ai and ChatGPT connect
+as a connector instead and need no token at all. Which route is yours, and what
+to paste where, is in [Connect your AI assistant](/docs/guide/mcp).
 
 ## Your time zone
 

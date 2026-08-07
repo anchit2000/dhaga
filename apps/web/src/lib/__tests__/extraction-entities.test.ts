@@ -37,7 +37,7 @@ describe("extraction schema carries custom-entity objects", () => {
     const parsed = relationshipSchema.parse({
       subject: "contact",
       predicate: "knows",
-      object: "Ajay",
+      object: "Rohan",
       object_type: "person",
       object_is_named: true,
       entity_type_hint: null,

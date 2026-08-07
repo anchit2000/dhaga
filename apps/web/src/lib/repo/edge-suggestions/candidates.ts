@@ -80,7 +80,7 @@ export async function createMentionedContact(
  * How to handle a person object in an extracted relationship: link it now when
  * there's no ambiguity (nobody by that name yet → create a mentioned contact;
  * or exactly one exact match → use it), otherwise defer to a confirmation so
- * the user picks which "Ajay" is meant.
+ * the user picks which "Rohan" is meant.
  */
 export async function resolvePersonObject(objectName: string): Promise<PersonResolution> {
   const candidates = await findRelationshipCandidates(objectName);

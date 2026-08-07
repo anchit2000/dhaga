@@ -50,7 +50,7 @@ export type AgendaItem =
   | {
       kind: "followUp";
       id: string;
-      contactName: string;
+      associationLabel: string;
       action: string;
       dueHint: string | null;
       overdue: boolean;

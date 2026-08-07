@@ -29,12 +29,12 @@ async function makeContact(name: string): Promise<string> {
 describe("ambiguous person relationships defer to a confirmation", () => {
   it("creates a pending confirmation (no edge) when the name matches two contacts", async () => {
     const me = await makeContact("Meera Suggest");
-    const ajayA = await makeContact("Ajay Kumar Suggest");
-    const ajayB = await makeContact("Ajay Singh Suggest");
-    const note = await addNote(me, "text", "I know Ajay");
-    await applyExtraction(me, note, knows("Ajay"));
+    const ajayA = await makeContact("Rohan Iyer Suggest");
+    const ajayB = await makeContact("Rohan Singh Suggest");
+    const note = await addNote(me, "text", "I know Rohan");
+    await applyExtraction(me, note, knows("Rohan"));
 
-    // WHY: with two "Ajay"s, guessing risks linking the wrong person — so no
+    // WHY: with two "Rohan"s, guessing risks linking the wrong person — so no
     // edge is written until the user confirms which one.
     expect(await listContactRelationships(me)).toHaveLength(0);
 
@@ -44,7 +44,7 @@ describe("ambiguous person relationships defer to a confirmation", () => {
     expect(mine).toBeTruthy();
     const payload = mine!.payload;
     if (payload.type !== "entity_link") throw new Error("expected an entity_link confirmation");
-    expect(payload.apply.objectName).toBe("Ajay");
+    expect(payload.apply.objectName).toBe("Rohan");
     const candidateIds = payload.options.map((o) => o.id);
     expect(candidateIds).toContain(ajayA);
     expect(candidateIds).toContain(ajayB);
@@ -52,10 +52,10 @@ describe("ambiguous person relationships defer to a confirmation", () => {
 
   it("confirming links the edge to the chosen contact and clears the confirmation", async () => {
     const me = await makeContact("Nina Confirm");
-    await makeContact("Ajay Alpha Confirm");
-    const ajayB = await makeContact("Ajay Beta Confirm");
-    const note = await addNote(me, "text", "I know Ajay");
-    await applyExtraction(me, note, knows("Ajay"));
+    await makeContact("Rohan Alpha Confirm");
+    const ajayB = await makeContact("Rohan Beta Confirm");
+    const note = await addNote(me, "text", "I know Rohan");
+    await applyExtraction(me, note, knows("Rohan"));
     const confirmation = (await listPendingConfirmations()).find(
       (c) => c.payload.type === "entity_link" && c.payload.apply.srcContactId === me,
     );
@@ -73,10 +73,10 @@ describe("ambiguous person relationships defer to a confirmation", () => {
 
   it("dismissing drops the confirmation without ever writing an edge", async () => {
     const me = await makeContact("Omar Dismiss");
-    await makeContact("Ajay Gamma Dismiss");
-    await makeContact("Ajay Delta Dismiss");
-    const note = await addNote(me, "text", "I know Ajay");
-    await applyExtraction(me, note, knows("Ajay"));
+    await makeContact("Rohan Gamma Dismiss");
+    await makeContact("Rohan Delta Dismiss");
+    const note = await addNote(me, "text", "I know Rohan");
+    await applyExtraction(me, note, knows("Rohan"));
     const confirmation = (await listPendingConfirmations()).find(
       (c) => c.payload.type === "entity_link" && c.payload.apply.srcContactId === me,
     );

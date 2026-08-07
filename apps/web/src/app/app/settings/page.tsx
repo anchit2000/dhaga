@@ -4,6 +4,7 @@ import { ListSkeleton } from "@/components/app/skeletons";
 import { ImportPanel } from "@/components/app/import/ImportPanel";
 import { OnboardingTour } from "@/components/app/onboarding";
 import { SettingsTabs } from "@/components/app/settings/SettingsTabs";
+import { ConnectAssistantSetting } from "@/components/app/settings/ConnectAssistantSetting";
 import {
   ApiKeysSection,
   AppearanceSection,
@@ -63,6 +64,9 @@ export default async function SettingsPage({
             <Suspense fallback={<ListSkeleton rows={4} />}>
               <SecuritySection />
             </Suspense>
+            {/* No query behind it, so no Suspense boundary — it sits above the
+                tokens card because a local client needs a token from there. */}
+            <ConnectAssistantSetting />
             <Suspense fallback={<ListSkeleton rows={2} />}>
               <ApiKeysSection />
             </Suspense>

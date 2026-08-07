@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { requireUserIdForPage } from "@/lib/auth/guard";
 import { aiGateReason } from "@/lib/ai/gate";
 import { getContact } from "@/lib/repo/contacts";
-import { isReachOutDue } from "@/lib/repo/reminders";
+import { currentWeekdayWarning, isReachOutDue, reachOutRule } from "@/lib/repo/reminders";
+import { userTimeZone } from "@/lib/repo/reminders/local-today";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ListSkeleton } from "@/components/app/skeletons";
 import { BriefSection } from "@/components/app/contact/BriefSection";
@@ -48,7 +49,12 @@ export default async function PersonPage({
   const aiGate = await aiGateReason(userId);
   // Shared last-touch definition (notes + event scans count), so this badge
   // agrees with Home's due feed rather than nagging about someone Home dropped.
-  const isDue = isReachOutDue(contact.reachOutEveryDays, lastTouch);
+  const schedule = reachOutRule(contact);
+  const timeZone = schedule ? await userTimeZone() : "UTC";
+  const isDue = isReachOutDue(contact.reachOutEveryDays, lastTouch, contact, timeZone);
+  const cadenceWarning = schedule?.frequency === "weekly" && schedule.weekday !== null
+    ? await currentWeekdayWarning(id, schedule.weekday)
+    : null;
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
@@ -98,6 +104,8 @@ export default async function PersonPage({
           <KeepInTouch
             contactId={id}
             everyDays={contact.reachOutEveryDays}
+            schedule={schedule}
+            initialWarning={cadenceWarning}
             lastTouch={lastTouch.toLocaleDateString()}
             due={isDue}
           />

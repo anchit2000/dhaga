@@ -20,6 +20,7 @@ export const AI_ACTION_LABELS: Record<AiActionFeature, { one: string; many: stri
   person_classification: { one: "Contact check", many: "Contact checks" },
   goal_matching: { one: "Goal match", many: "Goal matches" },
   goal_match_now: { one: "Goal match (requested)", many: "Goal matches (requested)" },
+  batch_plan: { one: "Forwarded batch", many: "Forwarded batches" },
 };
 
 /** How many users the admin cost screen lists. Bounded because the point is

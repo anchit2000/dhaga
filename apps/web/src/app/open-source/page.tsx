@@ -23,6 +23,7 @@ export const metadata: Metadata = {
     siteName: "Dhaga",
     url: `${SITE_URL}/open-source`,
     locale: "en_US",
+    images: ["/opengraph-image.png"],
   },
   twitter: {
     card: "summary_large_image",

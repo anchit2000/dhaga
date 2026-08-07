@@ -61,7 +61,7 @@ export const relationshipSchema = z.object({
     .boolean()
     .nullable()
     .describe(
-      'true when `object` is a specific person\'s name (e.g. "Ajay Kumar"); false when it is a bare relative or role reference with no name, like "his son" or "her manager".',
+      'true when `object` is a specific person\'s name (e.g. "Rohan Iyer"); false when it is a bare relative or role reference with no name, like "his son" or "her manager".',
     ),
   // Required-but-nullable, same reason as above. Structured detail for an
   // employment/education affiliation, so the edge can also become a position

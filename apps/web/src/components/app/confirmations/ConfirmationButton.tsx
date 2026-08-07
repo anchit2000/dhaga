@@ -15,10 +15,12 @@ export function ConfirmationButton({
   children,
   onRun,
   variant = "outline",
+  className,
 }: {
   children: ReactNode;
   onRun: () => Promise<void>;
   variant?: "outline" | "ghost";
+  className?: string;
 }): React.ReactElement {
   const [pending, startTransition] = useTransition();
   function run(): void {
@@ -35,6 +37,7 @@ export function ConfirmationButton({
       type="button"
       size="sm"
       variant={variant}
+      className={className}
       loading={pending}
       onClick={run}
     >

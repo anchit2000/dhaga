@@ -25,7 +25,7 @@ function expectTotal(input: Record<string, unknown>, output: Record<string, unkn
 }
 
 function nodeAttrs(): NodeRenderAttributes {
-  return { x: 12, y: -7, label: "Anchit", size: 6, color: "#e2a44c", dimColor: "#5a4526" };
+  return { x: 12, y: -7, label: "Priya", size: 6, color: "#e2a44c", dimColor: "#5a4526" };
 }
 
 function edgeAttrs(): EdgeRenderAttributes {
@@ -93,7 +93,7 @@ describe("node reducer keeps sigma's total-object contract", () => {
     const out = makeNodeReducer(state)("a", nodeAttrs());
     expectTotal(nodeAttrs(), out);
     expect(out.size).toBe(nodeAttrs().size * GRAPH_COLLAPSED_GROUP_SCALE);
-    expect(out).toMatchObject({ x: 12, y: -7, color: "#e2a44c", label: "Anchit · 4" });
+    expect(out).toMatchObject({ x: 12, y: -7, color: "#e2a44c", label: "Priya · 4" });
   });
 });
 

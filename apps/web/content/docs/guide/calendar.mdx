@@ -3,12 +3,15 @@ title: Calendar & reminders
 description: See every follow-up and upcoming birthday on a full-screen calendar — drag to reschedule, schedule date-less ones from the tray, and stay nudged by the notification bell and opt-in reminder emails.
 ---
 
-**`/app/calendar`** lays every open follow-up out on a full-screen calendar, so
+**`/app/calendar`** lays every dated follow-up or task out on a full-screen calendar, so
 you can see what's coming instead of scrolling a list. Dated follow-ups land on
 the grid; date-less ones wait in a tray you drag onto it. It's an extra way to
 work the same follow-ups you already set — nothing new to maintain.
 
-![The follow-ups calendar](/docs/guide/calendar.png)
+See [Tasks & recurring follow-ups](/docs/guide/tasks-and-followups) for general
+tasks, recurrence, and keep-in-touch scheduling.
+
+![The calendar showing dated person and company tasks alongside an unscheduled personal task](/docs/guide/scheduling/calendar-light-desktop.webp)
 
 ## Month and list views
 
@@ -16,6 +19,11 @@ Two views share a toolbar at the top — **month** for the grid and **list** for
 week-at-a-glance agenda — with **prev / next / today** to move around. The
 calendar opens on the month grid on desktop and the list view on a phone,
 whichever reads better on the screen you're on.
+
+While Calendar is fetching its data, a stable skeleton keeps the navigation and
+page layout in place instead of flashing an empty screen.
+
+![The Calendar route's branded loading skeleton in the dark theme](/docs/guide/scheduling/calendar-loading-dark-desktop.webp)
 
 ## Reschedule by dragging
 
@@ -33,14 +41,45 @@ want it out of the way.
 
 ## Open a follow-up's details
 
-Click any item — on the grid or in the tray — to open its details. From there
-you can:
+Click any item — on the grid or in the tray — to open its details, including the
+full text a chip had to truncate. Tray chips are still draggable: a click opens
+them, a drag schedules them. From the dialog you can:
 
 - **Open contact** — jump straight to the person's page.
 - **Mark done** — close the follow-up out.
 - **Dismiss** — clear it without marking it done.
 
+A follow-up you've already completed opens read-only — there's nothing left to
+mark done or dismiss — with **Close** in place of those buttons.
+
 ![A follow-up's details dialog opened from the calendar](/docs/guide/calendar-event.png)
+
+## Work you've already done
+
+Completed follow-ups stay on the calendar, struck through and faded, so a month
+you worked through doesn't look like one you ignored. They're never painted as
+overdue — done work can't be late — and they can't be dragged or re-completed.
+
+## Search and filter
+
+Above the calendar sits one row of controls that trims the grid **and** the
+Unscheduled tray together, so a count you can see is a count you can trust:
+
+- **Search** matches the action text as well as the person's and company's
+  names — type *Acme* to find its follow-ups even when none of them says "Acme".
+- **All people** and **All companies** narrow to one owner. Each list is built
+  from the follow-ups on screen, so it never offers a name with nothing behind
+  it, and the whole control is absent when there's nothing to choose.
+- **All items / General / People / Companies** is the same scope split used on
+  [Tasks](/docs/guide/tasks-and-followups). *General* means work attached to
+  nobody — your own admin list.
+- **Any status / Open / Done** hides or restores completed work. Everything shows
+  by default.
+
+Nothing here goes back to the server, so filtering is instant. When your filters
+exclude everything, Dhaga says so rather than showing an empty calendar. Your
+connected calendar's events and saved birthdays aren't filtered — the controls
+are about follow-ups.
 
 ## Birthdays and anniversaries
 
@@ -86,7 +125,9 @@ change for that calendar and nothing else:
 - **Your follow-ups get written out** to a separate calendar Dhaga creates,
   called **Dhaga**. Never your main calendar — so you can hide it, or delete it
   outright, without touching anything of your own. Reschedule a follow-up and its
-  event moves; mark it **done** or **dismiss** it and the event is removed.
+  event moves; mark it **done** or **dismiss** it and the event is removed. If a
+  note is deleted or reprocessed, follow-ups that note created—and their written
+  calendar events—are removed too.
 
 Both are per-connection and per-account: upgrading one calendar leaves any other
 connection exactly as it was. You can switch the write-out off on its own, from

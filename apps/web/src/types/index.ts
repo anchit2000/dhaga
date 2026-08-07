@@ -23,6 +23,15 @@ export type {
 } from "./ai-usage";
 
 export type {
+  CaptureLogCursorDto,
+  CaptureLogEntryDto,
+  CaptureLogItemDto,
+  CaptureLogPageDto,
+  CaptureOutcomeLink,
+  CapturePayloadPreview,
+} from "./capture-log";
+
+export type {
   AskExample,
   ComparisonRow,
   FaqItem,
@@ -30,6 +39,13 @@ export type {
   PlanComparisonRow,
   PricingPlan,
 } from "./landing";
+
+export type {
+  CadenceFormSelection,
+  CadenceSelectors,
+  CadenceUpdateResult,
+  ReachOutScheduleFields,
+} from "./keep-in-touch";
 
 /** Background extraction job, as the person page server-renders it (the
  *  extraction stream then updates the active label live — see useExtractionStream). */

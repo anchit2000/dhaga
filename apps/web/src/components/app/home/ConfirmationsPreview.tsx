@@ -35,7 +35,7 @@ export function ConfirmationsPreview({
           // The web-sourced claim lives in `options` (label = the fact/claim,
           // sublabel = its type); show it so the user can actually judge it.
           // Legacy rows with no options fall back to the generic question.
-          const claim = item.payload.options[0];
+          const claim = "options" in item.payload ? item.payload.options[0] : undefined;
           return (
             <li key={item.id} className="flex flex-col gap-0.5">
               {item.contactName ? (

@@ -107,6 +107,31 @@
   border-color: var(--brand-amber);
   color: var(--brand-on-accent);
 }
+/* COMPLETED follow-ups. The calendar used to drop them entirely, so a month you
+   had worked through looked identical to one you had ignored. They stay as
+   history: struck through and faded, no fill, and explicitly NOT the amber
+   overdue treatment — done work is never late. Still a pointer, because a click
+   opens the (read-only) details dialog. */
+.dhaga-calendar .fc .fc-done {
+  background: transparent;
+  border-color: var(--brand-seam);
+  color: var(--brand-fog);
+  opacity: 0.7;
+  cursor: pointer;
+}
+.dhaga-calendar .fc .fc-done .fc-followup-name,
+.dhaga-calendar .fc .fc-done .fc-followup-action {
+  text-decoration: line-through;
+}
+/* Same in the list view, where the row is a <tr> rather than a chip. */
+.dhaga-calendar .fc .fc-list-event.fc-done .fc-list-event-title,
+.dhaga-calendar .fc .fc-list-event.fc-done .fc-list-event-time {
+  color: var(--brand-fog);
+  text-decoration: line-through;
+}
+.dhaga-calendar .fc .fc-list-event.fc-done .fc-list-event-dot {
+  border-color: var(--brand-fog);
+}
 /* Connected-calendar events: context, not Dhaga's own work, so they are muted
    on purpose — no fill, a dashed fog outline and secondary text, which keeps
    follow-ups the loudest thing on the grid. Fog (not amber) carries the text:

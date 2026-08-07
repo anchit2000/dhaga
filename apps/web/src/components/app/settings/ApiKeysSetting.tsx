@@ -47,9 +47,9 @@ export function ApiKeysSetting({ keys }: { keys: ApiKeySummary[] }) {
       <div>
         <p className="text-sm font-medium text-paper">Personal access tokens</p>
         <p className="mt-1 text-sm text-fog">
-          Used by the browser extension and scripts to call Dhaga&apos;s API
-          as you. Each token is shown once — copy it before you leave this
-          page.
+          Used by the browser extension, scripts, and local MCP clients to call
+          Dhaga&apos;s API as you. Each token is shown once — copy it before you
+          leave this page.
         </p>
       </div>
 

@@ -12,7 +12,7 @@ export function DeleteButton({ label }: { label: string }) {
       disabled={pending}
       aria-label={label}
       title={label}
-      className="rounded-full p-1 text-fog transition-colors hover:bg-wash/[0.06] hover:text-paper disabled:pointer-events-none"
+      className="flex size-11 items-center justify-center rounded-full text-fog transition-colors hover:bg-wash/[0.06] hover:text-paper disabled:pointer-events-none"
     >
       {pending ? (
         <Loader2 className="size-3.5 animate-spin" />

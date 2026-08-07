@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { profileFromExtracted } from "@dhaga/core";
+import { profileFromExtracted } from "@dhaga/core/src/schemas/contact";
 import type { ExtractedContact } from "@dhaga/core";
 import type { CaptureImage } from "@dhaga/core/src/api/capture";
 import { ContactForm } from "../ContactForm";

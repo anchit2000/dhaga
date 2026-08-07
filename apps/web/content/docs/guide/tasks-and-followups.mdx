@@ -1,0 +1,70 @@
+---
+title: Tasks & recurring follow-ups
+description: Track work with or without a person, add optional company context, repeat follow-ups on a calendar cadence, and turn clear note dates into calendar items.
+---
+
+Open **Tasks** at **`/app/tasks`** for work that may not belong to a person. A
+task needs only a title; its due date, person, and company are optional. Use
+**Active** and **Completed** to work the list, edit details, or mark it done. A
+dated task also appears on [Calendar](/docs/guide/calendar); an undated one stays
+in Tasks instead of receiving a made-up date.
+
+## Find one in a long list
+
+Search the list by task text, by the person attached, or by the company —
+typing *"Acme"* finds a task whose wording never mentions Acme but whose company
+does. Narrow further with the **All / General / People / Companies** chips:
+**General** is the work that names nobody, your own admin list.
+
+The list pages rather than scrolling forever; choose how many rows to show at
+the bottom. Changing a search or a filter always returns you to the first page,
+so a narrowed list can never strand you on an empty one.
+
+![The Tasks list showing general, person-linked, company-linked, dated, and unscheduled work](/docs/guide/scheduling/tasks-light-desktop.webp)
+
+## Repeat work without duplicating it
+
+Tasks and person follow-ups can repeat daily, weekly, monthly, or yearly. Choose
+the interval and, where relevant, the weekday, day of month, or month and day.
+Completing the current occurrence advances the same item exactly once;
+dismissing it ends the series. Short months clamp to their final day.
+
+![A weekly task editor with an optional company and a chosen weekday](/docs/guide/scheduling/recurring-task-light-desktop.webp)
+
+## Dates mentioned in notes
+
+When a note says *“reach out by Saturday”*, *“next Monday”*, or *“10 days from
+now”*, Dhaga resolves it with calendar code rather than asking an LLM to do date
+arithmetic. *“Next weekend”* schedules Saturday immediately, then adds a
+[Confirmation](/docs/guide/confirmations) where you can keep Saturday or move it
+to Sunday.
+
+## Keep-in-touch schedules
+
+- Weekly and fortnightly: optional weekday.
+- Monthly and quarterly: optional day of month.
+- Twice yearly and yearly: optional month and day.
+
+Choose **Auto** for a weekly cadence and Dhaga spreads people across the week
+using **People/day**, then saves the assigned weekday. An explicit crowded day
+shows a warning before anything is saved; choose **Save anyway** to keep that
+weekday, or cancel to restore the previous schedule. Due dates follow your
+Settings time zone; older elapsed-day-only contacts continue to work unchanged.
+
+![A mobile Keep in touch card warning that Monday is over capacity before Save anyway](/docs/guide/scheduling/keep-in-touch-warning-dark-mobile.webp)
+
+<Callout title="One calendar, two kinds of work">
+Person follow-ups and general tasks share calendar and completion rules. Linking
+context is optional; Dhaga never invents a placeholder person.
+</Callout>
+
+## When a link goes nowhere
+
+If a saved link points to a page that moved or has not been built yet, Dhaga
+shows the cloth-shop search scene instead of a generic error. From there you can
+open the app or return to the homepage. The same recovery actions work inside
+the signed-in app and on public pages, in light and dark themes.
+
+![The signed-in app's cloth-shop 404 page with recovery actions on a phone](/docs/guide/scheduling/app-404-dark-mobile.webp)
+
+![The public cloth-shop 404 page with Open Dhaga and homepage actions on a phone](/docs/guide/scheduling/public-404-light-mobile.webp)

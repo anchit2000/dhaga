@@ -32,6 +32,8 @@ export async function RelationshipsSection({
         kind: relationship.kind,
         name: relationship.name,
         role: relationship.role,
+        predicate: relationship.predicate,
+        viewerIsSource: relationship.viewerIsSource,
         mentioned: relationship.mentioned,
       }))}
     />

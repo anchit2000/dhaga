@@ -95,6 +95,38 @@ process and forwards to the endpoint:
 That's a community bridge, not something Dhaga ships — prefer a direct HTTP
 connection wherever the client offers one.
 
+## Installing the skills
+
+MCP hands your client the tools. A **skill** hands it the judgement about when
+and how to use them — search before you need a contact id, quote the receipt a
+fact came from, don't invent a connector that isn't there. Dhaga publishes
+three, and one command installs them:
+
+```bash
+npx skills add https://www.dhaga.app
+```
+
+- **`dhaga-setup`** — connecting a client: connector or personal access token,
+  the config each one wants, and what a 401 usually means.
+- **`dhaga-network`** — the reading half: search first, cite the note a fact
+  came from, work out a warm intro path, run a weekly review, and say *"not in
+  your network"* rather than answering from what the model happens to know
+  about a similarly-named public figure.
+- **`dhaga-capture`** — the writing half: look for the person before creating
+  them, keep to what you actually said, set a due date only when you gave one,
+  and leave a follow-up open unless you confirmed it's done.
+
+Self-hosters install from their own instance — `npx skills add
+https://your-dhaga-host` — because the skills are plain static files served
+from `/.well-known/skills/`, like any other asset.
+
+Installing them is optional. The tools behave the same either way; the skills
+only change how well a client uses them.
+
+Both the command and your endpoint are copyable from **Settings › Account ›
+Connect your AI assistant**, which already knows the URL of the instance you're
+signed in to.
+
 ## What the assistant can read
 
 Six read tools, and none of them spend AI credits:

@@ -33,7 +33,7 @@ describe("withUrlScheme", () => {
 describe("profileFromExtracted", () => {
   it("normalises scanned links so the review form can actually be saved", () => {
     const profile = profileFromExtracted({
-      name: "Ajay",
+      name: "Rohan",
       title: null,
       company: null,
       emails: [],

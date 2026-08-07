@@ -17,6 +17,9 @@ export interface NodeRelationship {
   /** Contact endpoints only: the row is a hidden "mentioned" person. */
   mentioned: boolean;
   predicate: string;
+  /** True when the edge is stored viewed-node → other. Needed to seed the edit
+   *  dialog's direction toggle, since `role` has already corrected for it. */
+  viewerIsSource: boolean;
   /** How the other endpoint relates to the viewed node, direction-corrected. */
   role: string;
 }
@@ -24,8 +27,8 @@ export interface NodeRelationship {
 /**
  * A node's explicit relationship edges, both directions, each labelled from
  * the viewed node's perspective: an edge stored once as
- * `Ajay --parent_of--> Anchit` reads as "child" on Ajay's page and "parent"
- * on Anchit's, without persisting an inverse row (user-defined predicates
+ * `Rohan --parent_of--> Priya` reads as "child" on Rohan's page and "parent"
+ * on Priya's, without persisting an inverse row (user-defined predicates
  * label the same way via the custom map). One query strategy for every root
  * kind: a single or() scan over edges, then one batched name lookup per
  * endpoint kind — never per-edge work.
@@ -103,6 +106,7 @@ export async function listNodeRelationships(
       sublabel: label.sublabel,
       mentioned: label.mentioned,
       predicate: side.predicate,
+      viewerIsSource: side.viewerIsSource,
       role: relationshipRole(side.predicate, side.viewerIsSource, customLabels),
     }];
   });

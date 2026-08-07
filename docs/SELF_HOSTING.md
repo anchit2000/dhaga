@@ -525,8 +525,25 @@ Vercel, an hourly system crontab or container timer is enough.
 Forward a contact card, a note, or a photo to a WhatsApp or Telegram bot
 and Dhaga turns it into people in your graph. Messages from one sender
 accumulate in a **session** until you reply **DONE** (or the session goes idle);
-then a positional batch processor creates and tags the contacts, keeps a receipt
-per message, and replies with a summary.
+then the whole batch is planned in ONE LLM call that reads every message
+together, deterministic code applies that plan, and the bot replies with a
+per-person summary.
+
+**This needs a working LLM.** Unlike web quick-add, which falls back to an
+offline heuristic parser, batch capture has no non-AI path: an offline parser
+cannot do cross-message attribution at all, so falling back would quietly build
+the wrong graph. With no LLM configured the batch is left **unprocessed and
+retryable** and the sender is told — nothing is written on a guess. Self-hosters
+running without cloud AI should expect forwarded batches to sit unsaved rather
+than to degrade.
+
+The schema for this is created by the core DDL like everything else, with no
+migration step: `messaging_sessions` carries `processed_at` / `summary` /
+`error` and `messaging_session_items` carries `outcome_kind` / `outcome`, which
+together are what the capture log (Settings → Messaging) reads back. On a
+self-host these tables have no `user_id` column, so the batch list pages on a
+`(created_at, id)` index; the hosted build adds a tenant-leading equivalent in
+`packages/ee`, and neither is needed by the other.
 
 **This is core / fully self-hostable (AGPL) — not an EE/cloud feature.** All of
 it lives in `apps/web` (webhooks, jobs, repo, the Settings UI) and
@@ -541,15 +558,19 @@ then register the webhook URL with the provider:
 
 - **WhatsApp** (Meta Cloud API) — set `WHATSAPP_ACCESS_TOKEN`,
   `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_VERIFY_TOKEN`, and `WHATSAPP_APP_SECRET`
-  (optionally `WHATSAPP_GRAPH_VERSION`; `WHATSAPP_BUSINESS_NUMBER` is display
-  only). Register the callback URL
+  (optionally `WHATSAPP_GRAPH_VERSION`; `WHATSAPP_BUSINESS_NUMBER` is not used
+  for auth, but set it — it is what builds the scan-to-link QR in Settings, and
+  without it users are back to retyping the token). Register the callback URL
   `https://your-domain/api/messaging/whatsapp/webhook`. Meta's GET verification
   handshake is answered with `WHATSAPP_VERIFY_TOKEN`; inbound POSTs are verified
   by the `WHATSAPP_APP_SECRET` request signature and rejected when it's unset
   (fails closed).
 - **Telegram** (@BotFather) — set `TELEGRAM_BOT_TOKEN` and
-  `TELEGRAM_WEBHOOK_SECRET` (both reused from the existing Telegram integration;
-  `TELEGRAM_BOT_USERNAME` is display only). Register the webhook:
+  `TELEGRAM_WEBHOOK_SECRET` (both reused from the existing Telegram integration).
+  Set `TELEGRAM_BOT_USERNAME` too: it builds the `t.me/<bot>?start=<token>`
+  scan-to-link QR, which is the one-tap path — Telegram delivers that payload
+  back as `/start <token>` and the chat links with nothing typed. Register the
+  webhook:
 
   ```
   curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \

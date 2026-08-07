@@ -26,6 +26,7 @@ export const metadata: Metadata = {
     siteName: "Dhaga",
     url: `${SITE_URL}/features`,
     locale: "en_US",
+    images: ["/opengraph-image.png"],
   },
   twitter: {
     card: "summary_large_image",

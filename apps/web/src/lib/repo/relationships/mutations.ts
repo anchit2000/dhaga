@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/lib/db/request-scope";
 import { edges } from "@/lib/db/schema";
 import {
@@ -51,6 +51,62 @@ export async function createRelationshipEdge(input: RelationshipInput): Promise<
     sourceNoteId: null,
   });
   return id;
+}
+
+/** Where an edge pointed BEFORE an edit — the caller has to revalidate the
+ *  pages it left as well as the ones it now joins. Kinds stay plain strings
+ *  because they are read back off a stored row, where legacy values can live. */
+export interface RelationshipEndpoints {
+  srcKind: string;
+  srcId: string;
+  dstKind: string;
+  dstId: string;
+}
+
+/**
+ * Repoint an existing edge: any of its predicate, its direction, or the node
+ * at the other end. The caller sends the whole desired edge rather than a diff
+ * — direction is not a column (an edge reads "father of" one way and "child
+ * of" the other), so a flip and a swapped endpoint are the same write, and
+ * `validateRelationshipInput` gates both the same way it gates a create.
+ *
+ * In place, not delete-and-recreate, so the edge keeps its id and its
+ * `source_note_id` receipt — correcting a mislabelled extracted relationship
+ * must not sever it from the note it came from. Returns the pre-edit endpoints,
+ * or null when the edge is already gone (deleted in another tab), so the caller
+ * can say so instead of reporting a phantom success.
+ */
+export async function updateRelationshipEdge(
+  edgeId: string,
+  next: RelationshipInput,
+): Promise<RelationshipEndpoints | null> {
+  const db = await getDb();
+  const [row] = await db
+    .select({
+      srcType: edges.srcType,
+      srcId: edges.srcId,
+      dstType: edges.dstType,
+      dstId: edges.dstId,
+    })
+    .from(edges)
+    .where(and(eq(edges.id, edgeId), isNull(edges.deletedAt)));
+  if (!row) return null;
+  await db
+    .update(edges)
+    .set({
+      predicate: next.predicate,
+      srcType: next.srcKind,
+      srcId: next.srcId,
+      dstType: next.dstKind,
+      dstId: next.dstId,
+    })
+    .where(eq(edges.id, edgeId));
+  return {
+    srcKind: row.srcType,
+    srcId: row.srcId,
+    dstKind: row.dstType,
+    dstId: row.dstId,
+  };
 }
 
 /** Tombstone, matching how note deletion retires derived edges. */

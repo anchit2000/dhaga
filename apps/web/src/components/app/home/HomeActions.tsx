@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FollowUpDueChip } from "@/components/app/FollowUpDueChip";
@@ -8,6 +9,7 @@ import { HomeTile } from "./HomeTile";
 import { completeFollowUpAction, dismissFollowUpAction } from "@/lib/actions/follow-ups";
 import { useOptimisticList } from "@/lib/hooks/useOptimisticList";
 import { HOME_PREVIEW_LIMIT } from "@/utils/constants/app";
+import { companyFilteredHref } from "@/utils/company-href";
 import type { listAllOpenFollowUps } from "@/lib/repo/reminders";
 
 type HomeFollowUp = Awaited<ReturnType<typeof listAllOpenFollowUps>>[number];
@@ -42,7 +44,8 @@ export function HomeActions({ openFollowUps, onSelectContact }: {
     remove(item, async () => {
       const data = new FormData();
       data.set("followUpId", item.id);
-      data.set("contactId", item.contactId);
+      data.set("contactId", item.contactId ?? "");
+      data.set("expectedDueDate", item.dueDate?.toISOString() ?? "");
       await action(data);
       // The actions revalidate /app and the contact page — refresh so this
       // tile's server data drops the row and reconciles the optimistic edit.
@@ -73,16 +76,18 @@ export function HomeActions({ openFollowUps, onSelectContact }: {
         <div className="divide-y divide-seam">
           {shown.map((item) => (
             <div key={item.id} className="flex items-start gap-2.5 py-2.5 first:pt-0 last:pb-0">
-              <Button type="button" onClick={() => handleRemove(item, completeFollowUpAction)} variant="ghost" size="icon-sm" aria-label="Mark done" className="shrink-0"><Check /></Button>
+              <Button type="button" onClick={() => handleRemove(item, completeFollowUpAction)} variant="ghost" size="icon-sm" aria-label="Mark done" className="min-h-11 min-w-11 shrink-0"><Check /></Button>
               {/* Action wraps in full — the rail tile is too narrow to truncate against. */}
               <div className="min-w-0 flex-1">
                 <p className="text-sm leading-snug text-paper">{item.action}</p>
                 <div className="mt-0.5 flex flex-wrap items-center gap-x-2">
-                  <Button render={<div />} variant="ghost" onClick={() => onSelectContact(item.contactId)} className="h-auto rounded-md p-0 text-xs font-normal normal-case text-ember hover:bg-transparent hover:underline">{item.contactName}</Button>
+                  {item.contactId && item.contactName ? <Button render={<div />} variant="ghost" onClick={() => onSelectContact(item.contactId!)} className="min-h-11 rounded-md p-0 text-xs font-normal normal-case text-ember hover:bg-transparent hover:underline">{item.contactName}</Button>
+                    : item.companyId && item.companyName ? <Link href={companyFilteredHref(item.companyName)} className="inline-flex min-h-11 items-center text-xs text-ember hover:underline">{item.companyName}</Link>
+                    : <span className="text-xs text-fog">Personal task</span>}
                   <FollowUpDueChip item={item} />
                 </div>
               </div>
-              <Button type="button" onClick={() => handleRemove(item, dismissFollowUpAction)} variant="ghost" size="icon-sm" aria-label="Dismiss follow-up" className="shrink-0 text-fog hover:text-paper"><X /></Button>
+              <Button type="button" onClick={() => handleRemove(item, dismissFollowUpAction)} variant="ghost" size="icon-sm" aria-label="Dismiss follow-up" className="min-h-11 min-w-11 shrink-0 text-fog hover:text-paper"><X /></Button>
             </div>
           ))}
         </div>

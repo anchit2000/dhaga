@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { profileFromExtracted } from "@dhaga/core";
+import { bareMethods, profileFromExtracted } from "@dhaga/core";
 import { importContacts } from "@/lib/repo/import";
 import { getContact, listContacts } from "@/lib/repo/contacts";
 import { listNotes } from "@/lib/repo/notes";
@@ -19,8 +19,8 @@ const candidate = (
     name,
     title: null,
     company,
-    emails,
-    phones,
+    emails: bareMethods(emails),
+    phones: bareMethods(phones),
     links: [],
     location: null,
   }),
@@ -129,12 +129,12 @@ describe("confirmed cluster suggestions", () => {
   it("links only members without a company — never overwrites existing data", async () => {
     await importContacts(
       [
-        candidate("Anchit JOGET", null),
+        candidate("Priya JOGET", null),
         candidate("Arjit JOGET", "Existing Employer"),
       ],
       "google",
     );
-    const anchit = await findByName("Anchit JOGET");
+    const anchit = await findByName("Priya JOGET");
     const arjit = await findByName("Arjit JOGET");
 
     const linked = await linkClusterToCompany("Joget", [anchit.id, arjit.id]);

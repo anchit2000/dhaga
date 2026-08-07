@@ -1,4 +1,4 @@
-import { FACT_TYPES } from "@dhaga/core";
+import { FACT_TYPES } from "@dhaga/core/src/schemas/extraction";
 import type { FactWithReceipt } from "@/lib/repo/notes";
 import { FactListClient } from "./FactListClient";
 

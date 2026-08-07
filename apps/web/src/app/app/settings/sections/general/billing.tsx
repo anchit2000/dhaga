@@ -1,6 +1,7 @@
 import { hasLLM } from "@dhaga/core";
 import { requireUserIdForPage } from "@/lib/auth/guard";
 import { getBillingGate } from "@/lib/hosted/gate";
+import { preferredProcessor } from "@/lib/billing/processor";
 import { aiCreditsUsedThisMonth, effectiveMonthlyAiCap, hasUnlimitedAiCredits } from "@/lib/ai/metering";
 import { BillingSetting } from "@/components/app/settings/BillingSetting";
 
@@ -20,5 +21,13 @@ export async function BillingSection() {
     hasLLM() ? hasUnlimitedAiCredits(userId) : Promise.resolve(false),
   ]);
   const aiUsage = hasLLM() ? { used, cap: await effectiveMonthlyAiCap(), unlimited } : null;
-  return <BillingSetting summary={planSummary} aiUsage={aiUsage} />;
+  // Country → which processor's button leads and which currency the cards
+  // show. A default, never a lock; see lib/billing/processor.
+  return (
+    <BillingSetting
+      summary={planSummary}
+      aiUsage={aiUsage}
+      preferred={await preferredProcessor()}
+    />
+  );
 }

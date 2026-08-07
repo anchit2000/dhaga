@@ -33,6 +33,41 @@ export interface CheckoutHandoff {
   keyId: string;
 }
 
+/** The route cannot host the modal at all — distinct from a payment failure,
+ *  because no amount of retrying will help and the fix is ours, not the user's. */
+export class CheckoutBlockedError extends Error {
+  constructor() {
+    super(
+      "Razorpay Checkout cannot open on a cross-origin-isolated page: remove " +
+        "Cross-Origin-Embedder-Policy from this route (apps/web/next.config.ts).",
+    );
+    this.name = "CheckoutBlockedError";
+  }
+}
+
+/**
+ * Razorpay's modal is a cross-origin iframe served by api.razorpay.com, which
+ * sends no COEP header of its own. A document carrying
+ * `Cross-Origin-Embedder-Policy` therefore makes Chrome block that frame with
+ * ERR_BLOCKED_BY_RESPONSE and paint its own "api.razorpay.com refused to
+ * connect" page inside an otherwise-empty modal — no console error, no failed
+ * promise, nothing to debug from. `credentialless` does not save us: it relaxes
+ * COEP for no-cors subresources, never for nested frames.
+ *
+ * So check before opening and fail with a sentence naming the cause. Shipped
+ * after exactly this bug cost a full investigation; /app/settings now opts out
+ * of isolation in next.config.ts, and this is the tripwire if that regresses.
+ *
+ * `crossOriginIsolated` is the only COEP-adjacent signal a page can read about
+ * itself, and it is true only when COOP *and* COEP are both set — so this
+ * catches the isolated-route case (the one we actually ship) but not a route
+ * that somehow sends COEP without COOP. Better a guard with a known blind spot
+ * than a blank frame.
+ */
+export function assertCheckoutEmbeddable(): void {
+  if (window.crossOriginIsolated) throw new CheckoutBlockedError();
+}
+
 /**
  * Loads Razorpay's hosted bundle on first use rather than on page load, so the
  * settings route doesn't pay for a third-party script nobody clicks. Resolves

@@ -10,16 +10,21 @@ export { heuristicContactParse } from "../parse/heuristic-contact";
 export { cardReceiptText } from "../parse/card-receipt";
 export { withUrlScheme } from "../parse/web-url";
 export {
+  AnthropicSearchClient,
   FirecrawlSearchClient,
   getSearchClient,
   getSearchProvider,
   hasSearch,
+  isMeteredSearchClient,
   registerSearchProvider,
   selectSearchProvider,
+  type MeteredSearchClient,
   type SearchClient,
   type SearchOptions,
   type SearchProvider,
+  type SearchResponse,
   type SearchResult,
+  type SearchUsage,
 } from "../search";
 export {
   NominatimGeocodingClient,

@@ -7,6 +7,7 @@
 declare module "@dhaga/ee" {
   import type {
     AdminGate,
+    ApprovalGate,
     BillingGate,
     ReferralGate,
     SignupGate,
@@ -15,6 +16,7 @@ declare module "@dhaga/ee" {
 
   export const tenantGate: TenantGate; // see ScopedConnection in lib/hosted/gate
   export const signupGate: SignupGate;
+  export const approvalGate: ApprovalGate;
   export const billingGate: BillingGate;
   export const adminGate: AdminGate;
   export const referralGate: ReferralGate;

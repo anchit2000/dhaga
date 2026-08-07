@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { requireUserId } from "@/lib/auth/guard";
 import { getBillingGate, type PlanOffer } from "@/lib/hosted/gate";
 
@@ -27,4 +28,38 @@ export async function createBillingPortalSessionAction(): Promise<void> {
   const userId = await requireUserId();
   const url = await (await getBillingGate()).createPortalUrl(userId);
   redirect(url);
+}
+
+/**
+ * Moves an EXISTING subscriber to another tier/cadence. Deliberately a
+ * different action from createCheckoutSessionAction: this one never opens a
+ * Checkout, so a subscriber can't end up paying two subscriptions. The gate
+ * throws if the account has no live subscription to modify.
+ *
+ * No redirect — the change happens server-to-server at the processor, so the
+ * page just re-renders with the new state (immediate) or the scheduled-change
+ * line (deferred).
+ */
+export async function changePlanAction(formData: FormData): Promise<void> {
+  const userId = await requireUserId();
+  await (await getBillingGate()).changePlan(userId, selectionFrom(formData));
+  revalidatePath("/app/settings");
+}
+
+export async function cancelPlanAction(): Promise<void> {
+  const userId = await requireUserId();
+  await (await getBillingGate()).cancelPlan(userId);
+  revalidatePath("/app/settings");
+}
+
+export async function resumePlanAction(): Promise<void> {
+  const userId = await requireUserId();
+  await (await getBillingGate()).resumePlan(userId);
+  revalidatePath("/app/settings");
+}
+
+export async function revertScheduledChangeAction(): Promise<void> {
+  const userId = await requireUserId();
+  await (await getBillingGate()).revertScheduledChange(userId);
+  revalidatePath("/app/settings");
 }

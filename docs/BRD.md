@@ -421,7 +421,27 @@ client actually uploads.
 | Follow-up draft | 1 | Sonnet | 383 / 222 | **$0.0045** |
 | Pre-meeting brief | 1 | Sonnet | 543 / 375 | **$0.0073** |
 | Deep research / enrichment (web search + synthesis + extraction) | 2 | Sonnet + Haiku | 2,947 / 2,571 (+36k cached, 2.3 searches) | **$0.0975** |
-| Watchlist change scan, per contact per cycle | 1 | Haiku, Batch API | 1,090 / 117 | **$0.0008** |
+| Watchlist change scan, per contact per cycle | 1 | Haiku, Batch API | 1,090 / 117 | **$0.0008** — **stale**, see below |
+
+**The watchlist row is stale as of 2026-08-08 — re-measure before pricing
+anything on it.** The $0.0008 above is a real measurement, but of a job that no
+longer exists in that shape: it priced only the Batch *classification*, from when
+the search half was a flat Firecrawl subscription costing nothing at the margin.
+Firecrawl is gone; search now runs on Anthropic's own server-side `web_search`
+tool, billed **$10 per 1,000 searches** on top of charging every retrieved page
+as input tokens to the searching model. **ESTIMATED, never run against a live
+key:** $0.0100 search + ~$0.0055 tokens (~4k in / ~300 out on Haiku 4.5, no Batch
+discount — the search is a synchronous turn) + $0.0008 classify ≈ **$0.016 per
+contact per cycle**, roughly 20× the figure the 0-credit decision below was
+argued from. At `PRO_TIER_WATCHLIST_CAP` = 25 and a ~6-day rescan that is
+**~$2/month per Pro user** on an $8/month plan — against the ~$0.10/month
+previously assumed. Everything else in the table stands as measured.
+
+(Anthropic's web search *is* supported inside Message Batches API requests, at
+the same per-search price, so the search half could in principle move to Batch
+too — Anthropic throttles web-search requests per organization there, so large
+batches may take longer. The current design does not: it searches synchronously
+and batches only the classification.)
 
 Three corrections to the earlier order-of-magnitude estimates, all of which
 this table supersedes:
@@ -455,7 +475,7 @@ multiple rounded up (`packages/core/src/metering/credits.ts`):
 | Card scan · quick add · note · follow-up draft | 1 | All within ~1.4× of the anchor |
 | Ask Dhaga · pre-meeting brief | 2 | Sonnet reasoning over retrieved context |
 | Deep research | 20 | Web search billed on top of tokens |
-| Watchlist change scan | 0 | Throttled by the watch limit, not by credits — billing it would eat ~125 credits/month for ~$0.10 of Batch inference |
+| Watchlist change scan | 0 | Throttled by the watch limit, not by credits — billing it would eat ~125 credits/month for what was then ~$0.10 of Batch inference. **That justification no longer holds arithmetically** (2026-08-08): at the ESTIMATED ~$0.016/contact/cycle above it is ~$2/month per Pro user, ~20× the number the decision was made on. Left at 0 **deliberately** — repricing starts charging a user's allowance for a job they never triggered, which is a product decision, not a rounding fix. Measure it against a live key, then decide. Meanwhile the dollar ceiling (`lib/ai/metering/dollar-cap.ts`) is the backstop, and it sees the **token half only**: search now writes one 0-credit `signal_detection` row per contact carrying the search turn's tokens, but the $10/1k per-search charge has no column on `ai_actions` and is under-reported by ~$0.01 per contact per cycle |
 | Nightly curation sweep — person/service classification, goal match | 0 | Throttled by a per-night contact cap, not by credits. **ESTIMATED, not measured** (the table above is 39 real calls; neither of these has been run against the live API): a 5,000-contact graph is classified once for roughly **$2.4** of Batch inference — ~400 credits at the ~$0.006/credit blended ceiling, which is exactly why billing it would be wrong. Re-check once measured |
 | Goal match requested on demand (`goal_match_now`) | 3 | The user pressing "Request now" instead of waiting for the free nightly pass — asked for, so priced. **ESTIMATED, not measured**: at `GOAL_SYNC_RESOLVE_CAP` = 20 candidates × ~720 in / 45 out tokens on Haiku 4.5 with no Batch discount, one request is at most 20 × $0.000945 ≈ **$0.019** → ~3.15 credits at ~$0.006/credit, rounded **down** because 20 is a ceiling recall rarely reaches. Saving a goal is free and calls no model |
 
@@ -472,8 +492,41 @@ notes, the priciest credit):
 (The table uses annual-plan monthly equivalents for unit economics. Public
 pricing shows Pro at $10 month-to-month or $8/month billed $96 yearly, and the
 planned Power tier at $30 month-to-month or $24/month billed $288 yearly. The
-first 500 Pro seats can request a $79 first year, shown separately from standard
-billing.)
+first 500 Pro seats can buy Founding Pro, a permanently discounted yearly price
+shown separately from standard billing.)
+
+(**Founding Pro is now buyable, and INR-only.** It is one Razorpay plan —
+₹6,999 a year against the standard ₹8,499, the same ~18% the old
+$79-vs-$96 copy promised, in the currency actually charged — with no Stripe
+equivalent on purpose: a USD checkout would mint a seat the cap cannot see.
+**It is not a first-year teaser** (resolved 2026-08, §11 Q6): a founding member
+keeps ₹6,999 for as long as they stay subscribed. The Plan carries the amount
+and `createSubscription()` books `CYCLES_PER_YEAR[period] × 10` cycles of it, so
+renewal at the founding price needs no code change and no dashboard change. The
+honest bound is that ten-year horizon rather than the word "forever": Razorpay
+has no "bill until cancelled", `total_count` is mandatory, and the subscription
+*completes* — ending the entitlement — once it is exhausted.
+"First 500" is enforced server-side by a `founding_seats` row claimed when the
+checkout is created, decided by a UNIQUE seat number rather than a count, so
+two buyers racing for the last seat cannot both win it. **The live seat count is
+not public.** "{n} of the first 500 left" advertised how little had sold — at
+500 of 500, that nobody had bought anything — so the remaining/position count is
+gone from every public surface and claimed-vs-cap is an admin number
+(`dashboardCounts()`, `/app/admin`). The static "first 500" framing stays; it
+leaks nothing. It is a PRICE, not a
+tier: it grants Pro, it cannot be switched onto later, and a founding member is
+never offered — or moved onto — standard yearly, which would be a silent price
+rise. When the plan id is unset or the seats are gone the offer disappears from
+the pricing card, the schema.org markup and the in-app buttons alike.)
+
+(**`/pricing` has an INR/USD toggle, and it is display only.** It defaults from
+`x-vercel-ip-country` through the existing `preferredProcessor()` signal (India
+→ INR, everywhere else → USD) and remembers what the visitor picked. Razorpay is
+the only live processor, so everyone is charged in INR whatever the toggle says:
+the non-charging currency is labelled an approximate conversion, and the
+schema.org Offer always advertises the charging currency, never the toggled
+one — structured data that priced the product in a currency we cannot take
+would be a lie to a shopping crawler.)
 
 (**Power is now wired for sale**, not just sized — it has an `EntitlementPlan`
 member, a stored `plan` value and price-id slots for both processors, so it goes
@@ -624,6 +677,46 @@ with each one's ceiling, the rung that set it, and **utilisation %**, so "is
 2. **Teams:** per-seat, shared graph, SSO, admin. The defensible, expanding revenue line.
 3. **Self-host support** (later): paid support/SLA for companies running the AGPL stack internally.
 
+**Plan-change lifecycle.** A subscriber changes tier or cadence from Settings →
+Plan & billing. The change always **modifies the existing processor
+subscription**; checkout is only ever used to create the first one, and is
+refused outright for an account that already has a live subscription (a second
+one would bill the same card twice, and neither processor deduplicates for us).
+
+**Upgrades apply immediately** and the processor settles the difference —
+Stripe prorates the subscription item, Razorpay's Update Subscription API
+(`schedule_change_at: "now"`) raises an invoice for the difference.
+
+**Downgrades — a lower tier, or yearly → monthly — are scheduled for the
+renewal boundary**, never applied immediately. An immediate downgrade makes
+Stripe credit, and Razorpay outright *refund*, the unused difference: a
+liability against revenue already recognised. The customer loses nothing — they
+keep the higher tier they paid for until it runs out.
+
+Tier dominates cadence when both move: power/yearly → pro/monthly is a
+downgrade, and pro/yearly → power/monthly is an upgrade.
+
+**Cancel** is always at the renewal boundary on both processors, behind a
+confirmation dialog. Stripe cancellations can be undone from the same screen
+("Keep my plan"); Razorpay has no resume API, so the dialog says so and
+restarting later means a new subscription. A change that is merely *booked* can
+be dropped at any point before it lands.
+
+**Founding Pro sits outside this ladder on purpose.** It is a third cadence
+(`founding_yearly`) rather than a tier, sold only as a first purchase: a
+founding member is never offered — and cannot ask for — standard Pro yearly,
+which would be a silent price rise, and the change API refuses a founding target
+before it reads anything.
+
+**Every processor state a screen depends on is stored, not fetched.** The
+subscription row carries its cadence, any booked change and the last time a
+processor confirmed them, so entitlement reads are pure database reads; a
+separate `payments` ledger records each confirmed charge, refund, dispute and
+failure. That ledger is what makes access honest at the boundaries: hosted
+access is granted only by a payment the processor has **confirmed**, revoked by
+a refund or chargeback, and deliberately *not* revoked by a cancellation — the
+term was paid for.
+
 ### 8.5 Community flywheel
 
 - Public roadmap + good-first-issues on capture parsers and language support.
@@ -689,6 +782,7 @@ in `docs/checklist.md` §21):
 3. ~~Enrichment data sources: which are ToS-safe?~~ **Resolved 2026-07 — see §6.7.** LinkedIn API is partner-gated and closed to CRMs; X API reads are pay-per-use and uneconomical. Channels: user-triggered web search, LinkedIn Connections CSV import + re-import diff, opt-in news watchlist, extension DOM capture. Remaining sub-question: is this enrichment quality enough vs the NFC badge-scanner's claimed 90%?
 4. ~~Browser extension and LinkedIn: confirm legal posture.~~ **Resolved 2026-07 — see §6.7.** User-initiated, single-profile DOM read of a page the user is viewing (the one-click LinkedIn-capture pattern) is the posture; shipped in the extension. No automation, no bulk collection.
 5. Brand/name: "NetworkPro" is a working title; trademark search needed.
+6. ~~What does year two of Founding Pro cost?~~ **Resolved 2026-08 — see §8.3.** ₹6,999, the same as year one: a founding member keeps the founding price for as long as they stay subscribed, rather than for a first year only. Nothing in code makes year two differ, and that is now the desired behaviour instead of the open question — the Razorpay Plan carries the amount, and `createSubscription()` (`packages/ee/src/billing/razorpay/client.ts`) sets `total_count` to `CYCLES_PER_YEAR[plan.period] × 10`, so a yearly founding subscription is created for ten yearly cycles and every one of them is charged at the Plan's ₹6,999. No dashboard change is needed. The one caveat, stated plainly rather than rounded up to "forever": Razorpay has no "bill until cancelled" — `total_count` is mandatory — so the subscription *completes* after that ten-cycle horizon, and a completed subscription ends the entitlement. The constant is now `PRO_FOUNDING_PRICE`; the old name `PRO_FIRST_YEAR_OFFER` asserted the opposite of the decision. **Still undetermined:** what a founding member who cancels and re-subscribes later pays. The seat claim is idempotent per user (`founding_seats.user_id` is the PK, so `claimFoundingSeat` returns the seat they already hold), but whether a fresh founding checkout is reachable at all then depends on `assertNoExistingSubscription` and on the offer still being on sale. No code decides it today, so the public copy deliberately claims nothing about it.
 
 ---
 

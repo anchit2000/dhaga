@@ -3,6 +3,7 @@ import type { ReactElement } from "react";
 
 import { ArrowRight, Blocks, Globe2, MessageCircle, Send, Smartphone } from "lucide-react";
 
+import { BetaBadge } from "@/components/ui/beta-badge";
 import { Button } from "@/components/ui/button";
 import { CopyCommand } from "@/components/ui/copy-command";
 import { MCP_DOCS_PATH, SKILLS_INSTALL_COMMAND } from "@/utils/constants/skills";
@@ -13,9 +14,17 @@ export function Hero(): ReactElement {
     <section id="product" className="border-b border-seam pt-24">
       <div className="mx-auto grid max-w-[1440px] items-center gap-12 px-6 pb-14 lg:grid-cols-[0.9fr_1.1fr] lg:gap-14 lg:pb-16">
         <div className="max-w-2xl">
-          <p className="font-mono text-xs uppercase tracking-[0.24em] text-trust">
-            The personal CRM you own
-          </p>
+          {/* The stage marker rides the eyebrow, not the header: the header row
+              is already over-subscribed (at 375px signed-in it has ~4px of
+              slack, and its desktop nav is tighter still), so widening it would
+              cost a wrap. This line is the first thing a visitor reads and has
+              ~80px spare at 375px. flex-wrap is the belt-and-braces. */}
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="font-mono text-xs uppercase tracking-[0.24em] text-trust">
+              The personal CRM you own
+            </p>
+            <BetaBadge />
+          </div>
           <h1 className="mt-5 text-balance font-display text-5xl leading-[0.98] tracking-tight sm:text-6xl">
             Your CRM belongs to the company. Your relationships don&apos;t.
           </h1>
@@ -25,8 +34,8 @@ export function Hero(): ReactElement {
             Dhaga keeps them with the right person.
           </p>
           <div className="mt-5 flex flex-wrap items-center gap-4">
-            <Button render={<Link href="#request-access" />} size="lg">
-              Request early access
+            <Button render={<Link href="/signup" />} size="lg">
+              Create your account
               <ArrowRight aria-hidden="true" />
             </Button>
             <Button render={<Link href="/features" />} variant="outline" size="lg">

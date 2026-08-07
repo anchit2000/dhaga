@@ -1,12 +1,17 @@
 import { hasMessagingProvider } from "@dhaga/core/src/messaging";
 import { requireUserIdForPage } from "@/lib/auth/guard";
+import { hasFeature } from "@/lib/entitlements";
 import {
   getActiveTokenForUser,
   listIdentitiesForUser,
   listUnfinishedBatches,
 } from "@/lib/repo/messaging";
 import { CAPTURE_LOG_UNFINISHED_LIMIT } from "@/utils/constants/capture-log";
-import { MESSAGING_PROVIDERS, MESSAGING_PROVIDER_LABELS } from "@/utils/constants/messaging";
+import {
+  MESSAGING_LINK_PLAN_GATE_REASON,
+  MESSAGING_PROVIDERS,
+  MESSAGING_PROVIDER_LABELS,
+} from "@/utils/constants/messaging";
 import { MessagingSettings } from "@/components/app/settings/MessagingSettings";
 
 /** Privacy: a linked chat only ever surfaces its provider + the last 4 chars of
@@ -24,9 +29,14 @@ function maskMessagingExternalId(externalId: string): string {
  */
 export async function MessagingSection() {
   const userId = await requireUserIdForPage();
-  const [activeToken, identities] = await Promise.all([
+  const [activeToken, identities, entitled] = await Promise.all([
     getActiveTokenForUser(userId),
     listIdentitiesForUser(userId),
+    // Resolved server-side so a free user sees the reason BEFORE clicking; the
+    // real refusal is generateMessagingLinkTokenAction's own check, not this.
+    // Safe to fan out here for the same reason the other two are: it reads the
+    // billing pool (packages/ee), never the three-connection tenant pool.
+    hasFeature(userId, "multi_device_sync"),
   ]);
   // Sequential, and NOT folded into the Promise.all above: the two reads there
   // are cross-tenant routing lookups, this one is an RLS-scoped tenant read on
@@ -56,6 +66,7 @@ export async function MessagingSection() {
       unfinishedLimit={CAPTURE_LOG_UNFINISHED_LIMIT}
       telegramBotUsername={process.env.TELEGRAM_BOT_USERNAME ?? null}
       whatsappNumber={process.env.WHATSAPP_BUSINESS_NUMBER ?? null}
+      linkGate={entitled ? null : MESSAGING_LINK_PLAN_GATE_REASON}
     />
   );
 }

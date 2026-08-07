@@ -26,6 +26,8 @@ export interface CaptureVoice {
   transcribing: boolean;
   loadingProgress: number | null;
   notice?: string | null;
+  /** Why the mic is greyed out here, or null when it works — see DictationState. */
+  comingSoon: string | null;
   start: () => void;
   stop: () => void;
   review: {
@@ -86,6 +88,7 @@ export function useCaptureVoice(fieldRef: RefObject<HTMLTextAreaElement | null>)
     transcribing: dictation.transcribing,
     loadingProgress: dictation.loadingProgress,
     notice: dictation.notice,
+    comingSoon: dictation.comingSoon,
     start,
     stop: () => dictation.stop(),
     review: {

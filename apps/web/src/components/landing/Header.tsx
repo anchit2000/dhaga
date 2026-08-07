@@ -10,7 +10,13 @@ import type { ReactElement } from "react";
 
 export function Header(): ReactElement {
   return (
-    <header className="fixed inset-x-0 top-0 z-40 bg-gradient-to-b from-ink via-ink/80 to-transparent">
+    // Near-opaque, not a fade-to-transparent gradient: the bar is fixed, so
+    // everything the page scrolls under it used to read straight through —
+    // body copy collided with the wordmark and the toggle on every long page,
+    // and a dark section passing behind turned the light-mode bar dark and
+    // dropped the wordmark to near-zero contrast. `ink` is the page ground, so
+    // at the top of the page this looks exactly as it did before.
+    <header className="fixed inset-x-0 top-0 z-40 bg-ink/95 backdrop-blur-md">
       <div className="mx-auto flex max-w-[1440px] items-center justify-between px-4 py-4 sm:px-6">
         <Link href="/" className="flex min-h-11 items-center gap-2 font-display text-xl">
           <ThreadMark />

@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { availableCombinations, parsePlanSelection, tierForRazorpayPlanId } from "../catalog";
+import {
+  availableCombinations,
+  parsePlanSelection,
+  selectionForRazorpayPlanId,
+  tierForRazorpayPlanId,
+} from "../catalog";
 
 /**
  * WHY THIS SUITE EXISTS: the catalog decides two things that money depends on
@@ -11,6 +16,7 @@ import { availableCombinations, parsePlanSelection, tierForRazorpayPlanId } from
 const ENV_KEYS = [
   "RAZORPAY_PLAN_PRO_MONTHLY",
   "RAZORPAY_PLAN_PRO_YEARLY",
+  "RAZORPAY_PLAN_PRO_FOUNDING_YEARLY",
   "RAZORPAY_PLAN_POWER_MONTHLY",
   "RAZORPAY_PLAN_POWER_YEARLY",
   "STRIPE_PRICE_PRO_MONTHLY",
@@ -85,6 +91,39 @@ describe("tierForRazorpayPlanId", () => {
     // equal to anything.
     expect(tierForRazorpayPlanId("")).toBeNull();
     expect(tierForRazorpayPlanId("undefined")).toBeNull();
+  });
+});
+
+describe("Founding Pro in the catalog", () => {
+  it("resolves the founding plan id to the pro TIER, not a tier of its own", () => {
+    // It grants exactly Pro. Anything else — a null, a new tier — would either
+    // strand a paying founding member with no entitlement or invent a plan the
+    // rest of the app has no rules for.
+    process.env.RAZORPAY_PLAN_PRO_FOUNDING_YEARLY = "plan_founding";
+    expect(tierForRazorpayPlanId("plan_founding")).toBe("pro");
+    expect(selectionForRazorpayPlanId("plan_founding")).toEqual({
+      plan: "pro",
+      cadence: "founding_yearly",
+    });
+  });
+
+  it("keeps founding out of the combinations anyone may buy or switch to", () => {
+    // availableCombinations feeds BOTH the buy grid and planChangeOffers. A
+    // founding entry here would let an existing subscriber switch onto the
+    // discount from the settings page, with no seat cap anywhere on that path.
+    process.env.RAZORPAY_PLAN_PRO_YEARLY = "plan_pro_yr";
+    process.env.RAZORPAY_PLAN_PRO_FOUNDING_YEARLY = "plan_founding";
+    expect(availableCombinations("razorpay")).toEqual([{ plan: "pro", cadence: "yearly" }]);
+  });
+
+  it("parses a founding selection — a shape check is not an authorisation", () => {
+    // The parser's job is 400-vs-not. Whether the seat EXISTS is decided
+    // server-side by the cap in billing/founding, and changePlan refuses it
+    // outright; neither belongs in a body parser.
+    expect(parsePlanSelection({ plan: "pro", cadence: "founding_yearly" })).toEqual({
+      plan: "pro",
+      cadence: "founding_yearly",
+    });
   });
 });
 

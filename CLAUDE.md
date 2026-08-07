@@ -192,9 +192,10 @@ packages/ee/       Dhaga Cloud only: multi-tenant RLS, billing, admin, early
 - Adding Ollama/BYO-key later = new implementation of `LLMClient`, zero changes to callers
 
 **Search gateway pattern (same shape as the LLM gateway — web search is provider-agnostic too):**
-- `packages/core/search/types.ts` — `SearchClient` interface (the contract)
-- `packages/core/search/firecrawl-client.ts` — `FirecrawlSearchClient implements SearchClient` (default provider)
-- `packages/core/search/index.ts` — `getSearchClient()` factory, keyed off `SEARCH_PROVIDER`
+- `packages/core/search/types.ts` — `SearchClient` interface (the contract), plus `MeteredSearchClient` — an **optional** capability (`searchMetered()` also returns what the search cost) kept separate for the same Interface-Segregation reason `BatchLLMClient` is kept separate from `LLMClient`. A provider with no inference bill to report must not be forced to invent one; callers feature-detect with `isMeteredSearchClient()`
+- `packages/core/search/anthropic-client/` — `AnthropicSearchClient implements MeteredSearchClient`, over Anthropic's own server-side `web_search` tool on the extract-tier model
+- `packages/core/search/firecrawl-client.ts` — `FirecrawlSearchClient implements SearchClient`
+- `packages/core/search/index.ts` — `getSearchClient()` factory. **Precedence, most specific first:** `selectSearchProvider()` (the test hook) → `SEARCH_PROVIDER` → `FIRECRAWL_API_KEY` set ? `firecrawl` : `anthropic`. An existing self-host that configured Firecrawl keeps it with no config change; everywhere else the default is Anthropic, so `hasSearch()` is true whenever `ANTHROPIC_API_KEY` is set
 - Adding Brave/SerpAPI/a self-hosted SearXNG instance = new implementation of `SearchClient` + one case in the factory, zero changes to callers
 
 **Messaging gateway pattern (same shape — inbound WhatsApp/Telegram capture is provider-agnostic too; CORE/AGPL, no `packages/ee`):**

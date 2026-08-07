@@ -1,5 +1,8 @@
 import { headers } from "next/headers";
 import { getAuth } from "@/lib/auth/config";
+import { requireUserId } from "@/lib/auth/guard";
+import { hasFeature } from "@/lib/entitlements";
+import { API_KEY_PLAN_GATE_REASON } from "@/utils/constants/api-keys";
 import { shouldStoreCardPhotos } from "@/lib/repo/settings";
 import { listVocab } from "@/lib/repo/voice-vocab";
 import { countCardImages } from "@/lib/repo/card-images";
@@ -19,6 +22,17 @@ export async function VoiceTeachingSection() {
 
 export async function ApiKeysSection() {
   const auth = await getAuth();
-  const { apiKeys } = await auth.api.listApiKeys({ headers: await headers() });
-  return <ApiKeysSetting keys={apiKeys} />;
+  const userId = await requireUserId();
+  const [{ apiKeys }, entitled] = await Promise.all([
+    auth.api.listApiKeys({ headers: await headers() }),
+    hasFeature(userId, "multi_device_sync"),
+  ]);
+  // Resolved server-side so a free user sees the reason BEFORE clicking; the
+  // real refusal is `createApiKeyAction`'s requireFeature, not this flag.
+  return (
+    <ApiKeysSetting
+      keys={apiKeys}
+      createGate={entitled ? null : API_KEY_PLAN_GATE_REASON}
+    />
+  );
 }

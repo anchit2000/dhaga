@@ -19,7 +19,11 @@ export const PLAN_COMPARISON_ROWS: PlanComparisonRow[] = [
     power: "✓",
   },
   {
-    feature: "On-device voice transcription",
+    // The browser caveat belongs in the label, not a cell: it is true of every
+    // column. The on-device engine needs a WebGPU adapter, and without one the
+    // control stays inert (components/app/contact/dictation-gate.ts) — which
+    // rules out iOS Safari and most mobile browsers.
+    feature: "On-device voice transcription (needs a WebGPU browser — not iOS Safari)",
     free: "✓ Audio never leaves your browser",
     pro: "✓",
     power: "✓",
@@ -55,13 +59,19 @@ export const PLAN_COMPARISON_ROWS: PlanComparisonRow[] = [
     power: "✓",
   },
   {
-    feature: "Enrichment & job-change alerts",
+    // Was "Enrichment & job-change alerts" / "✓ Watch up to 25 contacts". The
+    // job-change and news alerts came from the nightly signal-detection job,
+    // which runs on the web-search gateway; with no search provider configured
+    // it no-ops, so the watchlist never raises anything on any plan. Only
+    // on-demand enrichment (the LLM's own web-search tool) actually runs — the
+    // same correction as FEATURE_LABELS.enrichment in @/utils/constants/plans.
+    feature: "On-demand enrichment — research a person or company",
     free: "✗",
-    pro: "✓ Watch up to 25 contacts",
-    power: "✓ Watch up to 25 contacts",
+    pro: "✓",
+    power: "✓",
   },
   {
-    feature: "Encrypted multi-device sync",
+    feature: "Integrations — MCP clients, WhatsApp & Telegram capture, API tokens",
     free: "✗",
     pro: "✓",
     power: "✓",

@@ -9,7 +9,17 @@ import {
 import type { SearchWeights } from "@/utils/constants/search";
 import { useAskStream } from "./useAskStream";
 
-const EMPTY_SEARCH: SearchState = { query: "", hits: [], unindexed: 0 };
+// `semanticEnabled: false` until the first searchAction answers. Fail CLOSED on
+// purpose: guessing `true` would render the Semantic slider as a live control on
+// an instance where semantic retrieval is off, which is the exact dead-control
+// dishonesty the coming-soon gate exists to prevent. Guessing wrong the other
+// way only over-explains for the ~300ms before the first query returns.
+const EMPTY_SEARCH: SearchState = {
+  query: "",
+  hits: [],
+  unindexed: 0,
+  semanticEnabled: false,
+};
 const SEARCH_DEBOUNCE_MS = 300;
 
 export type SearchMode = "search" | "ask";

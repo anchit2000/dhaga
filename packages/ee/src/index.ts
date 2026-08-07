@@ -10,6 +10,7 @@
 // directly — see package.json's "exports" map.
 export { tenantGate } from "./tenant";
 export { signupGate } from "./access-requests";
+export { approvalGate } from "./approval";
 export { adminGate } from "./admin";
 export { billingGate } from "./billing";
 export { referralGate } from "./referrals";

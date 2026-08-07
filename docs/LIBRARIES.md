@@ -211,6 +211,27 @@ header to `/maplibre/:path*`. Do not remove or narrow that rule independently of
 the app-shell policy. The `MapLibre worker asset` test pins both the URL and the
 header seam.
 
+**This is a rule about every worker under an isolated document, not about
+MapLibre.** Same-origin buys no exemption: HTML's *check a global object's
+embedder policy* makes a dedicated worker a network error whenever the owner
+document's COEP is compatible with cross-origin isolation (`credentialless`
+counts) and the worker *response's* own COEP is not. It is not a CORP check —
+`Cross-Origin-Resource-Policy: same-origin` on the worker was A/B-tested against
+the graph worker and left it just as blocked. The graph's ForceAtlas2 worker
+(`components/app/graph/layout/worker-runner.ts`) hit exactly this: Turbopack
+bundles it to `/_next/static/chunks/turbopack-worker-*.js`, which matched no
+header rule, so every `/app/graph` load silently fell back to a ~2.5s
+synchronous main-thread layout pass. `next.config.ts` now carries a
+`/_next/static/:path*` COEP rule, pinned by the `graph layout worker
+cross-origin isolation` test. The header is inert on every other asset there —
+COEP is only read when a response creates a document or worker global, and
+`/_next/static` never serves a document — so marketing, blog and docs pages keep
+their own unset policy and their cross-origin frames and media.
+
+So: **any new `new Worker(...)` reachable from `/app/**` needs its bundled URL to
+match a COEP rule**, and the failure mode is silent degradation rather than a
+visible break — budget a real-browser check, not just a passing build.
+
 On every preview that changes Next headers, MapLibre, or the worker-copy step:
 
 1. Inspect `/app/map` and confirm `COOP: same-origin` plus

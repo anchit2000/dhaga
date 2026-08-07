@@ -4,6 +4,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { getPool } from "../db/pool";
 import { openAdminConnection } from "../db/admin-db";
 import { ensureEeSchema } from "../db/bootstrap";
+import { approveUserByEmail, revokeUserApprovalByEmail } from "../approval/repo";
 import { accessRequests, type AccessRequestRow, type AccessRequestStatus } from "../db/schema";
 
 /** access_requests has no RLS (it's pre-account, control-plane) — a plain
@@ -86,6 +87,22 @@ export async function listAccessRequestsPage({ page, pageSize, email, status }: 
   }
 }
 
+/**
+ * Reviewing a request now moves TWO things, because signup is open: the
+ * request row (the admin queue's own state) and the account's `approved_at`
+ * (what the guards actually read). Before Model A the account did not exist
+ * yet, so flipping the row was enough; now the person is already signed up and
+ * sitting on /pending, and approving only the row would leave them locked out
+ * with a green tick in the admin panel.
+ *
+ * Both directions: rejecting an approved user sends them back to pending. An
+ * admin can't be locked out this way — isUserApproved lets admins and
+ * DHAGA_ADMIN_EMAILS through regardless of `approved_at`.
+ *
+ * The account update is by email and matches nothing when they haven't signed
+ * up yet; the signup hook grants approval on the way in for an already-approved
+ * email, so that case is covered too.
+ */
 export async function reviewAccessRequest(
   email: string,
   status: "approved" | "rejected",
@@ -100,4 +117,9 @@ export async function reviewAccessRequest(
       approvalToken: status === "approved" ? randomUUID() : null,
     })
     .where(eq(accessRequests.email, email.toLowerCase()));
+  if (status === "approved") {
+    await approveUserByEmail(email);
+  } else {
+    await revokeUserApprovalByEmail(email);
+  }
 }

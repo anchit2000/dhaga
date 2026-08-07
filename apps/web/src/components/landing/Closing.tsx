@@ -1,24 +1,28 @@
 import { GITHUB_URL } from "@/utils/constants/landing";
-import { RequestAccessForm } from "./RequestAccessForm";
+import { SignUpCta } from "./SignUpCta";
 import { SectionHeading } from "./SectionHeading";
 
 export function FinalCta() {
+  // The `request-access` anchor id is kept even though the pricing cards now
+  // point straight at /signup: the /pricing JSON-LD offer URLs still resolve
+  // here, and renaming it would break those and any bookmarked link. Only what
+  // it leads to has changed.
   return (
     <section className="border-t border-seam bg-panel-2/40" id="request-access">
       <div className="mx-auto max-w-6xl px-6 py-24">
         <SectionHeading
-          eyebrow="Early access"
+          eyebrow="Get started"
           heading="Own the relationship context that moves with you."
           headingClassName="max-w-2xl"
           intro={
             <>
-              Request access to Dhaga Cloud. The first 500 approved Pro seats
-              can request a $79 first year; standard annual Pro is $96. Power
-              stays on the waitlist until its billing and entitlements are live.
+              Sign up for Dhaga Cloud in a minute. New accounts join a short
+              approval queue — or skip it entirely by starting a paid plan, which
+              lets you in as soon as the payment completes.
             </>
           }
         />
-        <RequestAccessForm />
+        <SignUpCta />
       </div>
     </section>
   );

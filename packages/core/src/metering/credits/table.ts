@@ -59,7 +59,25 @@ export const AI_ACTION_CREDITS: Record<AiActionFeature, number> = {
    *  the user never asked for this particular scan, and the watchlist size cap
    *  (PRO_TIER_WATCHLIST_CAP) is already its throttle. Billing it would let a
    *  full watchlist quietly eat ~125 credits a month for ~$0.10 of Batch-API
-   *  inference — a cap on a cap, charged to the wrong budget. */
+   *  inference — a cap on a cap, charged to the wrong budget.
+   *
+   *  ⚠️ THAT $0.10 IS NOW STALE — RE-DERIVE THIS PRICE FIRST. The $0.0008
+   *  measured above prices only the Batch classification, from when the search
+   *  half was a flat Firecrawl subscription costing nothing at the margin.
+   *  Firecrawl is gone (2026-08-07); search now runs on Anthropic's own
+   *  web-search tool, billed $10/1,000 searches ON TOP of charging every
+   *  retrieved page as input tokens to the searching model. ESTIMATED, never
+   *  run against a live key: $0.0100 search + ~$0.0055 tokens (~4k in / ~300
+   *  out, Haiku 4.5, no batch discount — the search is a synchronous turn) +
+   *  $0.0008 classify ≈ $0.016 per contact per cycle, ~20× what the 0-credit
+   *  decision above was argued from. At PRO_TIER_WATCHLIST_CAP = 25 and a
+   *  ~6-day rescan that is ~$2/month per Pro user on an $8/month plan.
+   *
+   *  Left at 0 deliberately: repricing starts charging a user's allowance for a
+   *  job they never triggered — a product decision, not a rounding fix. The
+   *  dollar ceiling (apps/web/src/lib/ai/metering/dollar-cap.ts) is the backstop
+   *  meanwhile, and it sees the TOKEN half only: the $10/1k search charge has no
+   *  column on `ai_actions`. Measure, then decide. */
   signal_detection: 0,
   /** One contact judged person-vs-service in the nightly Batch pass. Free of
    *  credits for the same reason as the watchlist scan: the user never asked

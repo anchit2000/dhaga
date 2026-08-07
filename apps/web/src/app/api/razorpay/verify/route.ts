@@ -1,7 +1,7 @@
 // Dhaga Cloud only — see packages/ee/LICENSE. Self-hosters can delete this
 // whole api/razorpay/** folder; nothing else in the app references it.
 import { confirmRazorpayPayment, razorpayEnabled } from "@dhaga/ee/billing";
-import { requireUserIdFromRequest } from "@/lib/auth/guard";
+import { requireUserIdFromRequestAllowingPending } from "@/lib/auth/guard";
 
 /**
  * Verifies the checkout handler's signature and grants the plan.
@@ -25,7 +25,11 @@ export async function POST(request: Request): Promise<Response> {
 
   let userId: string;
   try {
-    userId = await requireUserIdFromRequest(request);
+    // Pending-tolerant: the buyer may still be waiting for approval — that is
+    // the whole point of paying. This route records the subscription; it does
+    // NOT grant approval. Only /api/razorpay/webhook does, once Razorpay itself
+    // confirms the charge.
+    userId = await requireUserIdFromRequestAllowingPending(request);
   } catch {
     return Response.json({ error: "Unauthorized." }, { status: 401 });
   }

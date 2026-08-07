@@ -1,9 +1,17 @@
-import type { AdminGate, BillingGate, ReferralGate, SignupGate, TenantGate } from "./types";
+import type {
+  AdminGate,
+  ApprovalGate,
+  BillingGate,
+  ReferralGate,
+  SignupGate,
+  TenantGate,
+} from "./types";
 import {
   noAdminGate,
   noBillingGate,
   noReferralGate,
   noTenantGate,
+  openApprovalGate,
   openSignupGate,
 } from "./defaults";
 
@@ -24,6 +32,9 @@ export async function getSignupGate(): Promise<SignupGate> {
 }
 export async function getBillingGate(): Promise<BillingGate> {
   return (await loadEe())?.billingGate ?? noBillingGate;
+}
+export async function getApprovalGate(): Promise<ApprovalGate> {
+  return (await loadEe())?.approvalGate ?? openApprovalGate;
 }
 export async function getAdminGate(): Promise<AdminGate> {
   return (await loadEe())?.adminGate ?? noAdminGate;

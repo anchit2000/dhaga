@@ -3,7 +3,8 @@ import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { getPool } from "../db/pool";
 import { openAdminConnection } from "../db/admin-db";
 import { ensureEeSchema } from "../db/bootstrap";
-import { accessRequests, eeUser, subscriptions, type SubscriptionRow } from "../db/schema";
+import { accessRequests, eeUser, foundingSeats, subscriptions, type SubscriptionRow } from "../db/schema";
+import { FOUNDING_SEAT_CAP } from "../billing/founding/cap";
 
 /** `user`, `access_requests`, `subscriptions` carry no RLS — a plain
  *  connection off the shared pool is enough for all of these. */
@@ -108,26 +109,31 @@ export interface AdminDashboardCounts {
   pendingAccessRequests: number;
   totalUsers: number;
   activeSubscriptions: number;
+  foundingSeatsClaimed: number;
+  foundingSeatCap: number;
 }
 
 export async function dashboardCounts(): Promise<AdminDashboardCounts> {
-  // ONE checkout for all three counts: a Promise.all on a single admin
-  // connection pipelines them on one backend, instead of three concurrent
+  // ONE checkout for all four counts: a Promise.all on a single admin
+  // connection pipelines them on one backend, instead of four concurrent
   // checkouts saturating the max-3 tenant pool in a single admin call.
-  // access_requests / user / subscriptions carry no RLS, so the bypass-RLS
-  // admin connection reads them exactly like the plain pooled one — visibility
-  // is unchanged.
+  // access_requests / user / subscriptions / founding_seats carry no RLS, so the
+  // bypass-RLS admin connection reads them exactly like the plain pooled one —
+  // visibility is unchanged.
   const { db: conn, release } = await openAdminConnection();
   try {
-    const [[pending], [users], [active]] = await Promise.all([
+    const [[pending], [users], [active], [seats]] = await Promise.all([
       conn.select({ n: count() }).from(accessRequests).where(eq(accessRequests.status, "pending")),
       conn.select({ n: count() }).from(eeUser),
       conn.select({ n: count() }).from(subscriptions).where(eq(subscriptions.status, "active")),
+      conn.select({ n: count() }).from(foundingSeats),
     ]);
     return {
       pendingAccessRequests: pending?.n ?? 0,
       totalUsers: users?.n ?? 0,
       activeSubscriptions: active?.n ?? 0,
+      foundingSeatsClaimed: seats?.n ?? 0,
+      foundingSeatCap: FOUNDING_SEAT_CAP,
     };
   } finally {
     await release();

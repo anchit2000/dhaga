@@ -44,7 +44,7 @@ export function PlaceSheet({
             <li key={contact.id}>
               <Link
                 href={`/app/people/${contact.id}`}
-                className="flex min-h-11 items-center justify-between gap-3 text-sm text-paper hover:text-amber"
+                className="flex min-h-11 items-center justify-between gap-3 text-sm text-paper hover:text-ember"
               >
                 <span className="truncate">{contact.name}</span>
                 <ChevronRight className="size-4 shrink-0 text-fog" aria-hidden />

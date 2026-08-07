@@ -31,6 +31,7 @@ export function MessagingSettings({
   unfinishedLimit,
   telegramBotUsername,
   whatsappNumber,
+  linkGate,
 }: {
   providers: ProviderStatus[];
   activeToken: { token: string; expiresAt: string } | null;
@@ -40,6 +41,10 @@ export function MessagingSettings({
   unfinishedLimit: number;
   telegramBotUsername: string | null;
   whatsappNumber: string | null;
+  /** Why a new chat can't be linked (plan), or null when it can. Only the
+   *  "Connect this chat" control is affected — linked chats keep capturing and
+   *  their Disconnect buttons stay live. */
+  linkGate: string | null;
 }) {
   const labelByProvider = new Map(providers.map((provider) => [provider.id, provider.label]));
 
@@ -98,6 +103,7 @@ export function MessagingSettings({
           ttlMinutes={LINK_TOKEN_TTL_MINUTES}
           telegramBotUsername={telegramBotUsername}
           whatsappNumber={whatsappNumber}
+          linkGate={linkGate}
         />
       </div>
 

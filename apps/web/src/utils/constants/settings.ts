@@ -2,6 +2,10 @@
 
 export const SETTINGS_TABS = [
   { value: "account", label: "Account" },
+  // Directly before Credits: the plan decides the monthly credit allowance, so
+  // the two read as cause then effect. Its own tab because buried under Account
+  // (below Profile and Appearance) nobody could find it.
+  { value: "billing", label: "Plan & billing" },
   { value: "credits", label: "Credits" },
   { value: "capture", label: "Capture" },
   { value: "calendar", label: "Calendar" },
@@ -24,6 +28,8 @@ export type SettingsTab = (typeof SETTINGS_TABS)[number]["value"];
 export const SETTINGS_HASH_TO_TAB: Record<string, SettingsTab> = {
   account: "account",
   appearance: "account",
+  billing: "billing",
+  plan: "billing",
   credits: "credits",
   capture: "capture",
   "voice-dictation": "capture",

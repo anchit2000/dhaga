@@ -8,14 +8,21 @@ import { emailEnabled, emailShell, ownerEmail, sendEmail } from "@/lib/email/sen
  */
 export async function notifyAccessApproved(email: string): Promise<void> {
   if (!emailEnabled()) return;
-  const signupUrl = `${process.env.BETTER_AUTH_URL ?? ""}/signup?email=${encodeURIComponent(email)}`;
+  // Signup is open, so by far the likeliest reader already has an account and
+  // has been sitting on /pending — send them to the app, and mention signup
+  // only as the fallback for the rarer case (approved off the intake form
+  // before they ever created one).
+  const base = process.env.BETTER_AUTH_URL ?? "";
+  const signupUrl = `${base}/signup?email=${encodeURIComponent(email)}`;
   await sendEmail({
     to: email,
-    subject: "You're in — sign up for Dhaga",
+    subject: "You're in — your Dhaga account is approved",
     html: emailShell(
       "You're approved",
-      `<p>Your access request was approved. Create your account:</p>
-       <p><a href="${signupUrl}" style="color:#e2a44c;">Sign up for Dhaga</a></p>`,
+      `<p>Your Dhaga account is approved — you can go straight in:</p>
+       <p><a href="${base}/app" style="color:#e2a44c;">Open Dhaga</a></p>
+       <p>Haven't created an account yet?
+       <a href="${signupUrl}" style="color:#e2a44c;">Sign up here</a>.</p>`,
     ),
   });
 }

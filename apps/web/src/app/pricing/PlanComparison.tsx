@@ -4,6 +4,7 @@ import {
   PLAN_COMPARISON_ROWS,
   PRICING_PLANS,
 } from "@/utils/constants/landing";
+import { PlanPriceHeading } from "./PlanPriceHeading";
 import type { ReactElement } from "react";
 import styles from "./PlanComparison.module.css";
 
@@ -61,14 +62,7 @@ export function PlanComparison(): ReactElement {
                   >
                     {plan.tier}
                   </p>
-                  <p className="mt-2 font-display text-2xl tabular-nums text-paper">
-                    ${plan.monthlyPrice}/mo
-                  </p>
-                  <p className="text-xs text-fog">
-                    {plan.monthlyPrice === 0
-                      ? "Forever"
-                      : `$${plan.yearlyMonthlyPrice}/mo yearly`}
-                  </p>
+                  <PlanPriceHeading plan={plan} />
                 </th>
               ))}
             </tr>

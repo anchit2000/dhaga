@@ -25,8 +25,12 @@ const SECTIONS: { heading: string; body: string }[] = [
     body: "Export your full graph as CSV, vCard, or JSON at any time. No lock-in is a feature.",
   },
   {
-    heading: "Access request emails",
-    body: "If you request access we store your email address to send the invite once approved, and nothing else. One email confirms the request; unsubscribe by replying.",
+    heading: "Your account and the waiting list",
+    body: "Signing up creates an account straight away — we store your email address, your name if you give one, and either a password hash or the identifier from the provider you signed in with. Dhaga Cloud is invite-only while it's in beta, so we also record whether your account has been approved yet. You get one email confirming you're in the queue and one when you're approved; unsubscribe by replying.",
+  },
+  {
+    heading: "Payments",
+    body: "Card details never reach Dhaga — the payment processor handles them and we never see or store them. What we keep is the record of the charge itself: the processor's payment and subscription identifiers, the amount, the currency, the status, and which plan it bought. That's what lets us honour refunds, answer billing questions, and reconcile our records against the processor's.",
   },
 ];
 

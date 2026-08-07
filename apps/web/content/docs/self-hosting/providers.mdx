@@ -91,6 +91,65 @@ export const searxng: SearchProvider = {
 Use `registerSearchProvider`, then either `selectSearchProvider("searxng")`
 or `SEARCH_PROVIDER=searxng`.
 
+Two providers ship built in:
+
+| `id` | Implementation | Configured when |
+|---|---|---|
+| `anthropic` | `AnthropicSearchClient` — Anthropic's own server-side `web_search` tool, run on the extract-tier model | `ANTHROPIC_API_KEY` is set |
+| `firecrawl` | `FirecrawlSearchClient` — Firecrawl's search API | `FIRECRAWL_API_KEY` is set |
+
+**Which one runs, most specific first:** an explicit `selectSearchProvider(id)`
+→ `SEARCH_PROVIDER` → `FIRECRAWL_API_KEY` set ? `firecrawl` : `anthropic`.
+
+So Firecrawl stays the provider on any instance that actually configured it —
+an existing self-host keeps its behaviour with no config change and no surprise
+switch to a differently-metered one. Everywhere else the default is Anthropic,
+which means `hasSearch()` is true on any instance that already set
+`ANTHROPIC_API_KEY` for the other AI features. With neither key set the default
+is still `anthropic`, so the error a caller eventually sees names
+`ANTHROPIC_API_KEY` — the key that would actually fix it.
+
+<Callout title="Wired, not yet proven">
+The `anthropic` provider has never been exercised against a live key: it
+typechecks and is unit-tested against recorded response shapes, but no
+end-to-end search has been observed. It is also billed twice over — $10 per
+1,000 searches *and* every retrieved page charged as input tokens to the
+searching model — so the published cost figures for the watchlist sweep are
+estimates, not measurements.
+</Callout>
+
+### Reporting what a search cost (optional)
+
+A provider **may** additionally implement `MeteredSearchClient`, which adds one
+method returning the results *and* their cost:
+
+```ts
+import type { MeteredSearchClient } from "@dhaga/core";
+
+const client: MeteredSearchClient = {
+  async search(query, options) { /* … */ },
+  async searchMetered(query, options) {
+    return {
+      results: await this.search(query, options),
+      // `model` + `tokens` only when the search ran THROUGH a model.
+      usage: { searches: 1 },
+    };
+  },
+};
+```
+
+This is a **capability, not a requirement** — kept separate from `SearchClient`
+for the same Interface-Segregation reason `BatchLLMClient` is kept separate from
+`LLMClient`. A SearXNG or Brave client has no per-search inference bill to report
+and must not be forced to invent one. Callers feature-detect with
+`isMeteredSearchClient(client)` and meter only when they can, so a plain
+`SearchClient` still needs zero changes anywhere else.
+
+It exists because the built-in providers cost money in different currencies:
+Firecrawl bills a flat subscription outside Dhaga's metering entirely, while
+Anthropic's web search charges retrieved pages as model input tokens — a real
+inference bill the instance dollar ceiling has to see.
+
 ## Embedding providers and vector stores
 
 Embedding generation and storage are independent plugins. Their declared

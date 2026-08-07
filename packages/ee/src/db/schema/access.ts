@@ -5,13 +5,19 @@ import { boolean, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core"
  * — same physical table, only the columns EE actually needs. EE can't
  * import apps/web's own schema module (wrong direction across the open-core
  * boundary), so this is a deliberate, minimal duplication of the columns
- * that matter here (id, email, isAdmin).
+ * that matter here (id, email, isAdmin, approvedAt).
+ *
+ * `approved_at` is EE-owned (added by EE_TABLES_DDL, not core's AUTH_DDL): the
+ * pending-approval gate is a Dhaga Cloud concept only, and a self-hosted core
+ * database never grows the column at all — its ApprovalGate default approves
+ * everyone. Null means "signed up, not yet let in".
  */
 export const eeUser = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull(),
   isAdmin: boolean("is_admin"),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
   createdAt: timestamp("created_at").notNull(),
 });
 
@@ -43,33 +49,3 @@ export const accessRequests = pgTable("access_requests", {
 
 export type AccessRequestRow = typeof accessRequests.$inferSelect;
 export type AccessRequestStatus = "pending" | "approved" | "rejected";
-
-export const subscriptions = pgTable("subscriptions", {
-  id: text("id").primaryKey(),
-  userId: text("user_id").notNull().unique(),
-  // Nullable since the Razorpay path: a row is now identified by whichever
-  // processor's ids it carries. Stripe rows always set stripeCustomerId;
-  // Razorpay rows always set razorpayPaymentId and leave the Stripe ids null.
-  stripeCustomerId: text("stripe_customer_id"),
-  stripeSubscriptionId: text("stripe_subscription_id"),
-  // The recurring Razorpay Subscription that re-charges on its own. Mirrors
-  // stripeSubscriptionId, and is what webhook events key on. Every plan is
-  // recurring — there is no one-time purchase, so no order id to store.
-  razorpaySubscriptionId: text("razorpay_subscription_id"),
-  /** Most recent captured payment, on either path. */
-  razorpayPaymentId: text("razorpay_payment_id"),
-  // 'pro' | 'power'. The TIER only — billing cadence is NOT stored: it lives
-  // in the processor's price/plan object, and the renewal boundary it implies
-  // is already carried by currentPeriodEnd. Persisting it would be a second
-  // copy that can drift from the thing actually charging.
-  plan: text("plan").notNull(),
-  status: text("status").notNull(), // 'active' | 'past_due' | 'canceled' | 'incomplete'
-  currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
-  cancelAtPeriodEnd: boolean("cancel_at_period_end").notNull().default(false),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-});
-
-export type SubscriptionRow = typeof subscriptions.$inferSelect;
-export type SubscriptionPlan = "pro" | "power";
-export type SubscriptionStatus = "active" | "past_due" | "canceled" | "incomplete";

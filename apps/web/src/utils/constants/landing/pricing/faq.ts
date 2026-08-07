@@ -20,16 +20,25 @@ const CREDITS_RUN_OUT_FAQ: FaqItem = {
     "Nothing breaks and nothing is billed. Contacts and notes still save, keyword search and event grouping still work, and export still works — those never used credits. The AI parts pause: a note is kept but not turned into facts until the reset, card scanning stops (you can still add the person by hand), and asking your network a question falls back to keyword matches instead of a reasoned answer. Credits reset on the 1st of each month. They don't roll over, and there is no overage charge — the allowance is a ceiling, not a meter.",
 };
 
+// Quoted in dollars because that is the sizing the rest of the copy uses, with
+// the charging currency stated outright — the /pricing toggle can render these
+// same plans in either currency, and only one of them is what a card is
+// actually debited. Same honesty rule as CurrencyToggle's caveat.
 const BILLING_FAQ: FaqItem = {
   question: "How do monthly and yearly billing compare?",
   answer:
-    "Choose monthly for flexibility: Pro is $10/month and Power will be $30/month. Yearly billing saves 20%: Pro is $96/year ($8/month, saving $24) and Power will be $288/year ($24/month, saving $72). Power is not available yet, so joining its waitlist does not start a subscription.",
+    "Choose monthly for flexibility: Pro is $10/month and Power will be $30/month. Yearly billing saves 20%: Pro is $96/year ($8/month, saving $24) and Power will be $288/year ($24/month, saving $72). Payments are taken in rupees through Razorpay today, so those dollar figures are an approximate conversion and checkout shows the ₹ amount. Power is not available yet, so joining its waitlist does not start a subscription.",
 };
 
+// The renewal sentence is the decision recorded in BRD §11 Q6, and it is
+// deliberately bounded by "while your subscription is active": a Razorpay Plan
+// charges the same amount every cycle, so nothing steps the price up — but
+// whether someone who CANCELS can come back to the founding price later is not
+// decided by any code today, so this claims nothing about it.
 const FOUNDING_FAQ: FaqItem = {
   question: "What is the founding Pro offer?",
   answer:
-    "The first 500 approved Pro seats can request a $79 first year, saving $17 against the standard $96 annual price. It is a limited early-access offer, shown separately so it is not confused with normal monthly or yearly billing.",
+    "The first 500 Pro seats can buy a year of Pro for ₹6,999 instead of ₹8,499 — and it stays ₹6,999 at every renewal for as long as the subscription is active, rather than stepping up to the standard price after the first year. It is billed in rupees through Razorpay — the only currency it is sold in — and it is claimed at checkout, not switched onto later: once the 500 seats are gone the offer disappears and standard Pro is what remains. Shown separately so it is never confused with normal monthly or yearly billing.",
 };
 
 export const FAQ_ITEMS: FaqItem[] = [
@@ -42,7 +51,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   {
     question: "iPhone and Android?",
     answer:
-      "A native mobile app (one React Native codebase for both) is on the roadmap, not out yet. Today, capture happens through the web app — quick-add by pasting an email or article, card/badge photo scan, voice notes — and a browser extension for one-click capture from any page. You can also capture from your phone with nothing installed: forward a contact card, note, or photo to the Dhaga bot on WhatsApp or Telegram and reply DONE (voice notes to the bot are coming soon).",
+      "A native mobile app (one React Native codebase for both) is on the roadmap, not out yet. Today, capture happens through the web app — quick-add by pasting an email or article, card/badge photo scan, voice notes — free on every plan. There is also a browser extension for one-click capture from any page: it is built and free, but it is not in the Chrome Web Store yet, so for now you load it unpacked from the repo. You can also capture from your phone with nothing installed: forward a contact card, note, or photo to the Dhaga bot on WhatsApp or Telegram and reply DONE (voice notes to the bot are coming soon). Connecting a chat to the bot is part of Pro and Power.",
   },
   {
     question: "Do the people I scan get contacted or scraped?",
@@ -59,7 +68,7 @@ export const PRICING_FAQ_ITEMS: FaqItem[] = [
   {
     question: "What exactly do I get for free?",
     answer:
-      "Unlimited contacts, notes, facts and follow-ups, the full CRM used manually, on-device voice transcription, keyword search and event grouping over your graph, full export at any time, and the right to self-host everything — none of that is metered, on any plan. On top of it, 10 AI credits a month: about 10 business cards scanned, or 5 cards plus 5 notes turned into facts, or 5 questions asked of your network. Enough to judge whether the AI earns its keep on your own contacts. Pre-meeting briefs, enrichment and encrypted multi-device sync stay on the paid plans.",
+      "Unlimited contacts, notes, facts and follow-ups, the full CRM used manually, on-device voice transcription, keyword search and event grouping over your graph, full export at any time, and the right to self-host everything — none of that is metered, on any plan. On top of it, 10 AI credits a month: about 10 business cards scanned, or 5 cards plus 5 notes turned into facts, or 5 questions asked of your network. Enough to judge whether the AI earns its keep on your own contacts. The browser extension is free too — it signs in with the session you're already logged into, no token needed — though it is not in the Chrome Web Store yet, so today you load it unpacked from the repo. Pre-meeting briefs, enrichment, MCP clients, connecting a WhatsApp or Telegram chat, and the API tokens the mobile app and your scripts use stay on the paid plans.",
   },
   CREDITS_RUN_OUT_FAQ,
   BILLING_FAQ,

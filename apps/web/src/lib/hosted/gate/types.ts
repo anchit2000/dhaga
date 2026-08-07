@@ -58,38 +58,35 @@ export interface SignupGate {
   requestAccess(email: string): Promise<boolean>;
 }
 
-/** A buyable combination. Every plan is recurring, so a cadence is required. */
-export interface PlanOffer {
-  plan: "pro" | "power";
-  cadence: "monthly" | "yearly";
-}
+export type {
+  BillingCadence,
+  FoundingOffer,
+  PlanOffer,
+  PlanChangeOffer,
+  CurrentPlanState,
+  PlanSummary,
+  BillingGate,
+} from "./billing-types";
 
-export interface PlanSummary {
-  plan: "free" | "pro" | "power";
-  status: string | null;
-  hasStripeCustomer: boolean;
-  /** Which processors this instance actually has keys for. An instance may
-   *  sell through either or both, so the settings UI renders a checkout
-   *  control only for the ones that would work. */
-  stripeEnabled: boolean;
-  razorpayEnabled: boolean;
-  /** Only the combinations with a configured price id, per processor — the UI
-   *  must never offer a button whose price env var is missing. */
-  offers: { stripe: PlanOffer[]; razorpay: PlanOffer[] };
-}
-
-export interface BillingGate {
-  /** Pass the request's already-scoped connection so the entitlement read
-   *  reuses it instead of opening a second checkout from the small tenant pool
-   *  (the AI-metering hot path — see lib/ai/metering). Optional: callers off
-   *  the hot path (e.g. settings render) may omit it. */
-  hasUnlimitedAi(userId: string, db?: DhagaDb): Promise<boolean>;
-  /** Null in core-only mode — the settings page renders no billing UI at
-   *  all when this is null, so self-hosters never see a "buy" button for a
-   *  product not for sale on their instance. */
-  getPlanSummary(userId: string): Promise<PlanSummary | null>;
-  createCheckoutUrl(userId: string, selection: PlanOffer): Promise<string>;
-  createPortalUrl(userId: string): Promise<string>;
+/**
+ * Hosted pending-approval gate ("payment is the invite"). Signup is open on a
+ * hosted instance, but the new account is UNAPPROVED: it can authenticate and
+ * reach /pending, the checkout that pays for it, and sign-out — nothing else.
+ * Approval comes from an admin approving the access request, from a payment the
+ * processor has CONFIRMED (webhook only — never at checkout-intent time), or
+ * from an admin comp plan.
+ *
+ * Permissive by default: without packages/ee, isApproved is always true and
+ * approve is a no-op, so a self-hosted core instance has no gate whatsoever.
+ */
+export interface ApprovalGate {
+  /** Pass the request's already-scoped connection to avoid a second checkout
+   *  from the small tenant pool — `user` has no RLS, so a scoped connection
+   *  reads it identically. Optional: the auth guards have no scoped db yet at
+   *  the point they ask, and memoize the answer per request instead. */
+  isApproved(userId: string, db?: DhagaDb): Promise<boolean>;
+  /** Idempotent grant, used at signup for an email an admin already approved. */
+  approve(userId: string): Promise<void>;
 }
 
 export interface AdminGate {

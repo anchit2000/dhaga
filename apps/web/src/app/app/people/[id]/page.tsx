@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
+import { hasSearch } from "@dhaga/core";
 import { requireUserIdForPage } from "@/lib/auth/guard";
 import { aiGateReason } from "@/lib/ai/gate";
 import { getContact } from "@/lib/repo/contacts";
@@ -109,9 +110,14 @@ export default async function PersonPage({
             lastTouch={lastTouch.toLocaleDateString()}
             due={isDue}
           />
+          {/* hasSearch() is server-only (reads process.env), so the runtime
+              capability is resolved here and handed to the client control —
+              no hardcoded flag, so the toggle lights itself up the moment a
+              search provider is configured. */}
           <WatchToggle
             contactId={id}
             watched={contact.watchedForSignals}
+            searchConfigured={hasSearch()}
           />
           <Suspense fallback={<ListSkeleton rows={1} />}>
             <SignalsSection contactId={id} contactName={contact.name} />

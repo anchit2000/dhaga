@@ -41,24 +41,38 @@ export interface RazorpaySubscription {
   /** created | authenticated | active | pending | halted | cancelled | completed | expired */
   status: string;
   planId: string;
+  /** Start of the paid period — the processor's own timestamp for the charge
+   *  that opened it, which is what the payment ledger reconciles against. */
+  currentStart: Date | null;
   /** End of the paid period, or null before the first charge lands. */
   currentEnd: Date | null;
   userId: string | null;
+  /** A plan change already booked for the next cycle. Razorpay keeps it off the
+   *  subscription object itself — `pendingUpdate` is the only way to see which
+   *  plan it switches to. */
+  hasScheduledChanges: boolean;
+  changeScheduledAt: Date | null;
 }
 
 function toSubscription(raw: {
   id: string;
   status: string;
   plan_id: string;
+  current_start?: number | null;
   current_end?: number | null;
+  has_scheduled_changes?: boolean;
+  change_scheduled_at?: number | null;
   notes?: Record<string, string | number | null> | null;
 }): RazorpaySubscription {
   return {
     id: raw.id,
     status: raw.status,
     planId: raw.plan_id,
+    currentStart: raw.current_start ? new Date(raw.current_start * 1000) : null,
     currentEnd: raw.current_end ? new Date(raw.current_end * 1000) : null,
     userId: note(raw.notes, "userId"),
+    hasScheduledChanges: Boolean(raw.has_scheduled_changes),
+    changeScheduledAt: raw.change_scheduled_at ? new Date(raw.change_scheduled_at * 1000) : null,
   };
 }
 
@@ -88,4 +102,45 @@ export async function createSubscription(input: {
 
 export async function fetchSubscription(subscriptionId: string): Promise<RazorpaySubscription> {
   return toSubscription(await getClient().subscriptions.fetch(subscriptionId));
+}
+
+/**
+ * Moves an EXISTING subscription onto another plan.
+ *
+ * `when` decides how Razorpay settles the difference: `now` raises an invoice
+ * and charges it, or refunds it when the new plan is cheaper; `cycle_end`
+ * applies the plan after the current cycle is charged and moves no money now.
+ * The caller picks — see planChangeTiming in ../plan-change/decide for why a
+ * downgrade must never be `now`.
+ *
+ * Razorpay accepts this only for an `authenticated` or `active` subscription.
+ */
+export async function updateSubscriptionPlan(
+  subscriptionId: string,
+  planId: string,
+  when: "now" | "cycle_end",
+): Promise<RazorpaySubscription> {
+  return toSubscription(
+    await getClient().subscriptions.update(subscriptionId, {
+      plan_id: planId,
+      schedule_change_at: when,
+    }),
+  );
+}
+
+/** The plan a booked change switches to. Only meaningful when the subscription
+ *  reports `hasScheduledChanges`. */
+export async function fetchPendingUpdate(subscriptionId: string): Promise<RazorpaySubscription> {
+  return toSubscription(await getClient().subscriptions.pendingUpdate(subscriptionId));
+}
+
+export async function cancelScheduledChanges(subscriptionId: string): Promise<void> {
+  await getClient().subscriptions.cancelScheduledChanges(subscriptionId);
+}
+
+/** `true` = cancel at the end of the paid cycle. The customer keeps what they
+ *  paid for and we owe no refund — the same boundary Stripe's
+ *  cancel_at_period_end uses. */
+export async function cancelSubscription(subscriptionId: string): Promise<RazorpaySubscription> {
+  return toSubscription(await getClient().subscriptions.cancel(subscriptionId, true));
 }

@@ -10,7 +10,8 @@ This repo ships two things in one codebase:
    font presets) plus real user accounts (better-auth). This is what you get
    when you self-host. Nothing here is crippled or trial-limited.
 2. **`packages/ee`** — Dhaga Cloud only: multi-tenant row-level security,
-   the "request access" gate, the admin panel, and Stripe billing. Licensed
+   the pending-approval gate (open signup, `/pending` until an admin or a
+   payment lets you in), the admin panel, and Stripe billing. Licensed
    separately (source-available, noncompete — see
    [`packages/ee/LICENSE`](https://github.com/anchit2000/dhaga/blob/main/packages/ee/LICENSE)),
    not AGPL, not required to run the core.
@@ -38,11 +39,12 @@ This is the default state of `apps/web/.env.example` — the var isn't even
 listed there, only in [`packages/ee/.env.example`](https://github.com/anchit2000/dhaga/blob/main/packages/ee/.env.example).
 With it unset:
 
-- Every one of the four extension points in
-  [`apps/web/src/lib/hosted/gate.ts`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/lib/hosted/gate.ts)
-  (`TenantGate`, `SignupGate`, `BillingGate`, `AdminGate`) short-circuits to
-  its permissive default *before* it ever tries to load `@dhaga/ee` — so it
-  doesn't matter whether the package is physically present.
+- Every one of the extension points in
+  [`apps/web/src/lib/hosted/gate/`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/lib/hosted/gate)
+  (`TenantGate`, `SignupGate`, `BillingGate`, `ApprovalGate`, `AdminGate`,
+  `ReferralGate`) short-circuits to its permissive default *before* it ever
+  tries to load `@dhaga/ee` — so it doesn't matter whether the package is
+  physically present.
 - The EE-only routes (`/api/access-requests`, `/api/stripe/webhook`,
   `/api/razorpay/order`, `/api/razorpay/verify`, `/api/razorpay/webhook`)
   additionally check the flag themselves and return `404` if it's off, so an
@@ -110,14 +112,49 @@ takes over. Self-hosting the core for a genuinely shared, trusted household
 where everyone is fine seeing everyone's data is not supported by relaxing this
 guard — the guard is what keeps "single-user" honest.
 
-## Disabling just billing (keep admin + early access)
+## Disabling just billing (keep admin + the approval queue)
 
 If you're running the hosted product but not ready to charge (a free beta,
-for instance), you don't need to touch `DHAGA_HOSTED_MODE`. Simply don't set
-`STRIPE_SECRET_KEY`. The settings page's "Plan & billing" section checks for
-that key itself and renders nothing — not a broken "Upgrade" button, no
-section at all — while the admin panel and early-access gate keep working
-normally.
+for instance), you don't need to touch `DHAGA_HOSTED_MODE`. Simply leave the
+processor credentials unset — **both** of them: `STRIPE_SECRET_KEY`, and
+`RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET`. The settings page's "Plan & billing"
+section checks for them itself and renders nothing — not a broken "Upgrade"
+button, no section at all — while the admin panel and the approval queue keep
+working normally. `/pending` then shows no "skip the queue" buttons either, since
+the only way in is an admin. Setting just one of the two is a valid
+configuration, not a half-off switch: the section appears and sells through
+whichever processor is configured.
+
+The whole subscription lifecycle sits behind the same wall. Plan changes
+(`packages/ee/src/billing/plan-change/`), cancel and resume, the founding-seat
+claim (`billing/founding/`), the charge/refund/dispute ledger
+(`billing/payments/`) and the webhook receivers (`billing/webhook/`,
+`billing/razorpay/`) are all EE-only, and the `subscriptions` and `payments`
+tables they write are created by EE's schema — a core-only self-host has neither
+the code nor the tables, and needs neither. The Level 2 removal list above
+already covers this: it deletes `packages/ee/` and the two API route folders
+wholesale, so new billing modules never add entries to it.
+
+## The pending-approval gate (hosted only)
+
+On a hosted instance signup is **open** — anyone can create an account — but a
+new account is created *unapproved* (`user.approved_at` is null, a column
+`packages/ee` adds; core's own schema never has it). An unapproved account can
+authenticate and reach exactly three things: `/pending`, the checkout that pays
+for it, and sign-out. Every other `/app/*` page redirects to `/pending` and
+every authenticated API route refuses it, enforced once in
+`apps/web/src/lib/auth/guard.ts`.
+
+Approval is granted by an admin approving the access request, by a payment the
+processor has **confirmed** (the webhook — never at checkout-intent time, so an
+abandoned checkout grants nothing), or by an admin comp plan. A refund or
+chargeback revokes it; a cancellation does not.
+
+**None of this exists on a self-host.** Without `packages/ee` the `ApprovalGate`
+falls back to its permissive default — `isApproved` is always true, `/pending`
+is unreachable, and the `approved_at` column is never even created. Same
+open-core pattern as billing and the admin gate
+(`apps/web/src/lib/hosted/gate`).
 
 ## Referral rewards (hosted/EE only)
 
@@ -142,16 +179,16 @@ half-rewarding.
 ## Creating the first admin user
 
 There's a deliberate chicken-and-egg problem here: the admin panel can only
-promote a user to admin if you're *already* an admin, and (in hosted mode)
-signup itself is gated behind an approved access request, which normally
-only an admin can approve. `DHAGA_ADMIN_EMAILS` breaks that circle:
+promote a user to admin if you're *already* an admin, and (in hosted mode) a
+new account lands unapproved on `/pending`, which normally only an admin can
+clear. `DHAGA_ADMIN_EMAILS` breaks that circle:
 
 1. Set `DHAGA_HOSTED_MODE=true` and `DHAGA_ADMIN_EMAILS=you@yourdomain.com`
    (comma-separated if more than one) in `packages/ee`'s environment.
-2. Go to `/signup` and create an account with that exact email address.
-   `DHAGA_ADMIN_EMAILS` bypasses the access-request check for these specific
-   emails — this is the one case where signup works without a prior
-   approved request.
+2. Go to `/signup` and create an account with that exact email address. These
+   emails are approved on the way in rather than parked on `/pending`, and an
+   admin is let through regardless of `approved_at` — so an admin can never be
+   locked out of their own instance.
 3. You're now an admin automatically — `isAdmin` checks `DHAGA_ADMIN_EMAILS`
    in addition to the database flag, so nothing needs to be flipped
    manually. `/app/admin` is live for that account immediately.
@@ -183,6 +220,21 @@ Stripe, comp that user's access:
   charged per user-visible action, not per model call — a card scan costs 1
   credit whether it takes one round-trip or three, and deep research costs 20
   (`packages/core/src/metering/credits.ts`, BRD §8.3).
+
+**An admin can comp a plan up, but may only lower or remove a plan an admin
+granted.** A user who pays through a live Stripe or Razorpay subscription can't
+be downgraded from the admin page, because our row and the processor would then
+disagree and the card would keep being charged for access we just revoked. Those
+changes belong in the customer's own **Plan & billing** settings, or in the
+processor dashboard. The plan selector disables the options the server would
+refuse and states why — but the refusal itself is enforced server-side and
+re-checked inside the transaction, so it holds however the request arrives. The
+guard is specifically "there is a live processor subscription behind this row":
+a comped plan (the `admin-granted:` sentinel), a cancelled subscription and a
+never-completed checkout are all still lowerable, and raising a tier is always
+allowed. Setting a genuine former customer back to `free` cancels their
+processor subscription before the row is deleted, so a downgrade can't leave a
+processor billing a subscription the database has forgotten.
 
 These controls live only in the EE admin panel. On a core-only self-host billing
 isn't running, so no plan is ever in play and every user resolves through the
@@ -391,9 +443,24 @@ at it:
   https://your-domain/api/jobs/detect-signals
 ```
 
-Requires `CRON_SECRET` and `FIRECRAWL_API_KEY` (or another `SEARCH_PROVIDER`)
-set — see `.env.example`. Without `CRON_SECRET` the route always returns
-401, so it's safe to leave unconfigured if you don't want the feature.
+Requires `CRON_SECRET` and a search provider. Since 2026-08-08 the default
+provider is **Anthropic's own server-side `web_search` tool**, so
+`ANTHROPIC_API_KEY` on its own is enough — `FIRECRAWL_API_KEY` is optional and
+only takes precedence where you set it. See "Search providers" in
+[Providers](/docs/self-hosting/providers) and `.env.example`. Without
+`CRON_SECRET` the route always returns 401, so it's safe to leave unconfigured if
+you don't want the feature. Without any search provider the sweep returns
+`{ skipped: "no_search" }` and writes nothing, and the contact-page toggle that
+would enrol someone in it is greyed out "Coming soon" rather than arming a scan
+that can't run — see "Optional providers, and what the UI does without them"
+below.
+
+Two honest caveats. **This path has never been run against a live Anthropic
+key** — it typechecks and is unit-tested, but no end-to-end sweep has been
+observed, so treat it as armed rather than proven. And it is **not free**:
+Anthropic bills $10 per 1,000 searches on top of charging every retrieved page
+as input tokens to the searching model. The token half is recorded against your
+instance's dollar ceiling; the per-search charge is not.
 
 ### Nightly curation passes (person/service classification, goal matching)
 
@@ -444,6 +511,36 @@ available there. Off Vercel, an hourly system crontab or container timer hitting
 the same URL with the same `Authorization: Bearer $CRON_SECRET` header is enough.
 </Callout>
 
+## Optional providers, and what the UI does without them
+
+Everything above is core and self-hostable, but four capabilities need
+something this repo deliberately doesn't ship: a third-party provider, or a
+browser feature. Dhaga is in beta, and the product rule is that a control which
+cannot do its job is **greyed out with a "Coming soon" label and the reason** —
+never rendered live to silently no-op. So an unconfigured provider is visible in
+the UI rather than a mystery. Every one of these is a **runtime** check, so the
+control lights itself up the moment the missing piece is in place, with no code
+change and no extra flag to flip.
+
+| Capability | Needs | What happens without it |
+|---|---|---|
+| Job-change detection + news watchlist | `ANTHROPIC_API_KEY` (the default provider is Anthropic's own server-side web search), or `FIRECRAWL_API_KEY`, or another registered `SEARCH_PROVIDER` | `hasSearch()` is false, so `/api/jobs/detect-signals` returns `{ skipped: "no_search" }` and writes no signals, and the contact page's "Watch for job changes & news" toggle is greyed out "Coming soon" instead of arming a scan that would never run. **Since 2026-08-08 an instance that set `ANTHROPIC_API_KEY` for the other AI features has this on by default** — the same runtime `hasSearch()` check un-greys the toggle with no code change and no extra flag. Unproven, though: no end-to-end sweep has been run against a live key, and searches cost $10/1k on top of tokens |
+| Semantic (vector) search | `DHAGA_EMBEDDINGS` left unset (it defaults on), plus pgvector or a `DHAGA_VECTOR_STORE` | With `DHAGA_EMBEDDINGS=off`, `embeddingsEnabled()` is false: search runs on keywords + trigram only, and the search palette's **Semantic similarity** weight slider is greyed out "Coming soon" because it would be weighting an empty result set |
+| SMS | `TWILIO_ACCOUNT_SID` + `TWILIO_AUTH_TOKEN` + `TWILIO_FROM_NUMBER` | `smsEnabled()` is false and no code can be delivered. **This one stays gated even with Twilio configured**: there is no phone-number sign-in path anywhere in the app (email, magic link, passkey and social are the ways in), so Settings → Security → Phone number is "Coming soon" either way — only the wording changes, to name which half is missing |
+| Voice notes (in-browser dictation) | **WebGPU in the visitor's browser** — not a server setting you can supply | Dhaga Voice runs the Moonshine speech model on the user's own device and has no CPU/WASM fallback, so on iOS Safari and most mobile browsers the mic button renders greyed out "Coming soon" up front rather than failing after a tap. Chrome or Edge on desktop works today. (Transcribing voice notes *forwarded to a WhatsApp/Telegram bot* is a separate, server-side gateway keyed off `TRANSCRIPTION_PROVIDER`, which ships no provider yet either) |
+
+The copy for all four lives in one place,
+[`apps/web/src/utils/constants/coming-soon.ts`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/utils/constants/coming-soon.ts),
+and the affordance is
+[`apps/web/src/components/app/ComingSoonNotice.tsx`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/components/app/ComingSoonNotice.tsx).
+Nothing in it links to pricing: "coming soon" is an admission that nobody can
+have the feature yet, not an upsell.
+
+Two things this table does **not** cover, because they degrade rather than
+gate: `ANTHROPIC_API_KEY` (see the env table below — AI features fall back to
+heuristic parsing or switch off), and `RESEND_*` (every recurring email becomes
+a clean no-op).
+
 ## Self-host env var reference
 
 Everything below lives in `apps/web/.env.local` — see
@@ -464,9 +561,11 @@ None of the `packages/ee/.env.example` vars (`DHAGA_HOSTED_MODE`,
 | `MORNING_REMINDER_HOURLY` | No | Deprecated alias for `EMAIL_JOBS_HOURLY`, still honoured for one release. Despite the name it now gates all three of those jobs, not just the morning reminder — prefer the new name |
 | `TELEGRAM_*` | No | Owner-only bot capture |
 | `DHAGA_WEBHOOK_URL` | No | Outbound automation |
-| `SEARCH_PROVIDER`, `FIRECRAWL_API_KEY` | No | Job-change detection + news watchlist |
+| `SEARCH_PROVIDER`, `FIRECRAWL_API_KEY` | No | Job-change detection + news watchlist. Both optional: leave them unset and search runs on `ANTHROPIC_API_KEY` via Anthropic's own web-search tool, which is the default. Set `FIRECRAWL_API_KEY` and Firecrawl wins instead; `SEARCH_PROVIDER` overrides both. With no key at all the nightly sweep no-ops and the watch toggle is greyed out — see "Optional providers" above |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` | No | SMS delivery. Note phone-number sign-in is unbuilt regardless, so the Settings phone section stays gated either way — see "Optional providers" above |
 | `CRON_SECRET` | No | Required to enable `/api/jobs/detect-signals` — see above |
-| `DHAGA_AI_MONTHLY_CAP`, `DHAGA_DATA_DIR`, `DHAGA_EMBEDDINGS` | No | See `.env.example` for defaults |
+| `DHAGA_EMBEDDINGS` | No | Defaults **on**. Set `off` to skip local semantic indexing — search then runs keyword + trigram only and the semantic weight slider is greyed out; see "Optional providers" above |
+| `DHAGA_AI_MONTHLY_CAP`, `DHAGA_DATA_DIR` | No | See `.env.example` for defaults |
 
 See [Deploying](/docs/self-hosting/deploy) for the full deploy walkthrough (Vercel and
 single-server options), including the additional `packages/ee` vars if you

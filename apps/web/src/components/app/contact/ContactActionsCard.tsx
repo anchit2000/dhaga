@@ -36,7 +36,12 @@ export function ContactActionsCard({
         <Waypoints />
         View in graph
       </Button>
-      <AddToEventPicker contactId={contactId} currentEventIds={currentEventIds} />
+      {/* The picker owns its trigger button and sets no width or alignment of
+          its own, so in this stretched flex column it rendered full-width but
+          centre-aligned — out of step with Edit / View in graph above it. */}
+      <div className="[&>button]:w-full [&>button]:justify-start">
+        <AddToEventPicker contactId={contactId} currentEventIds={currentEventIds} />
+      </div>
     </div>
   );
 }

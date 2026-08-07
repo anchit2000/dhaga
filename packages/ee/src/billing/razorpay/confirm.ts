@@ -1,5 +1,6 @@
 import type { SubscriptionPlan } from "../../db/schema";
-import { tierForRazorpayPlanId } from "../catalog";
+import { selectionForRazorpayPlanId, tierForRazorpayPlanId } from "../catalog";
+import { recordPayment } from "../payments";
 import { upsertSubscription } from "../repo";
 import { fetchSubscription } from "./client";
 import { getRazorpayCredentials } from "./config";
@@ -57,6 +58,7 @@ export async function confirmRazorpayPayment(
   if (!tier) return { ok: false, reason: "wrong_plan" };
   const status = RAZORPAY_STATUS_TO_STORED[subscription.status];
   if (!status) return { ok: false, reason: "unpaid" };
+  const cadence = selectionForRazorpayPlanId(subscription.planId)?.cadence ?? null;
 
   await upsertSubscription({
     userId,
@@ -66,8 +68,34 @@ export async function confirmRazorpayPayment(
     razorpayPaymentId: input.paymentId,
     plan: tier,
     status,
+    // Null before the first charge lands; upsertSubscription preserves rather
+    // than erases, since a null boundary reads as "never expires".
     currentPeriodEnd: subscription.currentEnd,
+    cadence,
+    scheduled: null, // a subscription being confirmed has nothing booked yet
   });
+  // Ledger the charge with what this path actually knows — and only once
+  // Razorpay says the subscription is `active`, which is the same "money has
+  // moved" test the webhook grants approval on. An `authenticated` mandate has
+  // no charge to record, and inventing one would put a payment that never
+  // happened into the reconciliation.
+  //
+  // The amount is deliberately absent rather than invented: only the
+  // `subscription.charged` webhook carries the payment entity, and it fills the
+  // gap moments later through recordPayment's coalesce-on-conflict. Recording
+  // here means a webhook that never arrives still leaves the charge on record.
+  if (status === "active") {
+    await recordPayment({
+      userId,
+      processor: "razorpay",
+      processorPaymentId: input.paymentId,
+      processorSubscriptionId: subscription.id,
+      status: "captured",
+      plan: tier,
+      cadence,
+      occurredAt: subscription.currentStart,
+    });
+  }
   // `authenticated` is a real, successful outcome: the mandate is approved but
   // the first charge hasn't settled. Say so rather than claiming the plan is
   // live — subscription.charged will flip it within moments.

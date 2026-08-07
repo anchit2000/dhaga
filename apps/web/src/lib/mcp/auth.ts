@@ -1,5 +1,13 @@
 import type { AuthInfo } from "@modelcontextprotocol/server";
 import { getAuth } from "@/lib/auth/config";
+import { isUserApproved } from "@/lib/auth/guard";
+import { hasFeature } from "@/lib/entitlements";
+import {
+  MCP_APPROVAL_GATE_ERROR,
+  MCP_APPROVAL_GATE_REASON,
+  MCP_PLAN_GATE_ERROR,
+  MCP_PLAN_GATE_REASON,
+} from "@/utils/constants/mcp";
 
 /**
  * Resolves the Dhaga user behind an MCP request. Two credentials are accepted,
@@ -56,6 +64,60 @@ export async function verifyMcpToken(
     scopes: [],
     extra: { userId: result.key.referenceId },
   };
+}
+
+/**
+ * The `multi_device_sync` payment gate for MCP itself (utils/constants/plans.ts).
+ *
+ * It runs on the resolved `AuthInfo`, which is what makes it cover BOTH
+ * credentials with one check: gating token minting
+ * (`lib/actions/api-keys.ts`) does nothing to an OAuth connector, since that
+ * client negotiates its own bearer token and never touches a PAT. By the time
+ * `withMcpAuth({ required: true })` hands a request on, either branch of
+ * `verifyMcpToken` has produced the same `AuthInfo`, so there is exactly one
+ * place left where both are the same thing.
+ *
+ * WHY IT ISN'T INSIDE `verifyMcpToken`, which is the obvious spot: neither exit
+ * that function has can say this. Returning `undefined` produces a 401 with the
+ * RFC 9728 challenge, which tells a client to send the user back through login
+ * — a loop that can never succeed, because the credential was never the
+ * problem. And `withMcpAuth` catches everything the verifier throws (including
+ * an `OAuthError`) and rewrites it to the same 401 `invalid_token`, logging it
+ * as an unexpected error. So the gate has to sit one step later, where it can
+ * answer 403 with a body that names the real reason.
+ *
+ * Returns the refusal `Response`, or null when the user may proceed.
+ */
+export async function mcpPlanGateResponse(
+  authInfo: AuthInfo | undefined,
+): Promise<Response | null> {
+  if (await hasFeature(userIdFromAuth(authInfo), "multi_device_sync")) return null;
+  return Response.json(
+    { error: MCP_PLAN_GATE_ERROR, error_description: MCP_PLAN_GATE_REASON },
+    { status: 403 },
+  );
+}
+
+/**
+ * The approval gate for MCP. Sibling of the plan gate above and runs before it,
+ * because "your account isn't approved" outranks "your plan doesn't include
+ * this" — an unapproved user can't act on an upgrade prompt.
+ *
+ * MCP needs its own call because it never touches `lib/auth/guard`: it resolves
+ * its own credentials in `verifyMcpToken`, so the approval check every other
+ * entry point inherits from `requireUserId` doesn't reach here. Without this, a
+ * connected client keeps working after a refund or chargeback revokes access.
+ *
+ * Returns the refusal `Response`, or null when the user may proceed.
+ */
+export async function mcpApprovalGateResponse(
+  authInfo: AuthInfo | undefined,
+): Promise<Response | null> {
+  if (await isUserApproved(userIdFromAuth(authInfo))) return null;
+  return Response.json(
+    { error: MCP_APPROVAL_GATE_ERROR, error_description: MCP_APPROVAL_GATE_REASON },
+    { status: 403 },
+  );
 }
 
 /**

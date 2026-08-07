@@ -1,7 +1,12 @@
 import type { SubscriptionStatus } from "../../db/schema";
-import { upsertSubscription } from "../repo";
+import { approveUser } from "../../approval/repo";
+import { selectionForRazorpayPlanId } from "../catalog";
+import { getSubscriptionForUser, upsertSubscription } from "../repo";
 import { getRazorpayWebhookSecret } from "./config";
 import { isValidWebhookSignature } from "./verify";
+import type { RazorpayEvent } from "./webhook-events";
+import { paymentIdFrom, userIdFrom } from "./webhook-events";
+import { ledgerCharge, refundOutcome, revokeForPayment, tierFor } from "./webhook-ledger";
 
 /**
  * Maps Razorpay's subscription-status set onto the four statuses this app
@@ -29,23 +34,6 @@ export const RAZORPAY_STATUS_TO_STORED: Record<string, SubscriptionStatus> = {
   expired: "canceled",
 };
 
-interface SubscriptionEntity {
-  id: string;
-  status: string;
-  current_end?: number | null;
-  notes?: Record<string, string | number | null> | null;
-}
-
-interface RazorpayEvent {
-  event?: string;
-  payload?: { subscription?: { entity?: SubscriptionEntity } };
-}
-
-function userIdFrom(notes: Record<string, string | number | null> | null | undefined): string | null {
-  const value = notes?.userId;
-  return typeof value === "string" || typeof value === "number" ? String(value) : null;
-}
-
 /**
  * Verifies the Razorpay signature itself (this route has no session — the
  * signature IS the auth) and writes to the DB before returning, so retries on
@@ -54,7 +42,18 @@ function userIdFrom(notes: Record<string, string | number | null> | null | undef
  * This is the reliable half of the integration. /api/razorpay/verify depends on
  * the buyer's browser surviving the redirect back; this does not, so a customer
  * who pays and immediately closes the tab still gets what they paid for. Every
- * handler is an idempotent upsert keyed on userId, safe for redelivery.
+ * handler is idempotent under redelivery: the subscription upsert is keyed on
+ * userId, and the payment-ledger write on the UNIQUE processor_payment_id.
+ *
+ * It is also the ONLY Razorpay path that grants pending-approval access
+ * ("payment is the invite" — see ../../approval). /api/razorpay/verify runs on
+ * the buyer's browser right after the modal closes and deliberately does NOT
+ * approve: the rule is "approval when the payment is confirmed by the
+ * processor", and this is the only place that is true of. Refund and dispute
+ * revoke; `subscription.cancelled` does not — they paid for the term.
+ *
+ * Split per the 150-line rule: ./webhook-events holds the payload shapes,
+ * ./webhook-ledger the ledger writes and the refund→account resolution.
  */
 export async function handleRazorpayWebhook(rawBody: string, signature: string): Promise<void> {
   if (!isValidWebhookSignature({ rawBody, signature, webhookSecret: getRazorpayWebhookSecret() })) {
@@ -76,18 +75,55 @@ export async function handleRazorpayWebhook(rawBody: string, signature: string):
       // An unrecognised status is not an excuse to guess: skip rather than
       // grant or revoke on a value this code has never seen.
       if (!userId || !status) break;
-      // Tier from the notes stamped at creation, same binding the confirm path
-      // trusts. Anything unrecognised is not silently promoted to Pro.
-      const tier = entity.notes?.plan === "power" ? "power" : "pro";
+      // The payment id stays on the subscription row for the pre-ledger refund
+      // fallback; the ledger write below is what actually records the charge.
+      // Only `subscription.charged` carries one, and the other events must not
+      // blank it, hence the read-then-preserve.
+      const chargedPaymentId = event.payload?.payment?.entity?.id ?? null;
+      const existingPaymentId = chargedPaymentId
+        ? null
+        : ((await getSubscriptionForUser(userId))?.razorpayPaymentId ?? null);
       await upsertSubscription({
         userId,
         stripeCustomerId: null,
         stripeSubscriptionId: null,
         razorpaySubscriptionId: entity.id,
-        plan: tier,
+        razorpayPaymentId: chargedPaymentId ?? existingPaymentId,
+        plan: tierFor(entity),
         status,
+        // Null in the `created` state; upsertSubscription preserves rather than
+        // erases, since a null boundary reads as "never expires".
         currentPeriodEnd: entity.current_end ? new Date(entity.current_end * 1000) : null,
+        // Denormalised so no entitlement read ever has to ask Razorpay for it.
+        cadence: entity.plan_id ? (selectionForRazorpayPlanId(entity.plan_id)?.cadence ?? null) : null,
+        // A cleared flag means the booked change landed or was dropped. While it
+        // is set we leave the stored target alone: naming the target plan needs
+        // the separate pendingUpdate call, which the change-plan path and the
+        // settings-page reconcile already make.
+        ...(entity.has_scheduled_changes ? {} : { scheduled: null }),
       });
+      if (status === "active") {
+        await ledgerCharge(userId, entity, event.payload?.payment?.entity);
+        await approveUser(userId);
+      }
+      break;
+    }
+    // Money going the other way. Razorpay sends the refunded/disputed PAYMENT
+    // alongside the refund or dispute entity; either names the payment id the
+    // ledger is keyed on.
+    case "refund.created":
+    case "refund.processed": {
+      const payment = event.payload?.payment?.entity;
+      await revokeForPayment(
+        paymentIdFrom(event),
+        payment?.notes,
+        refundOutcome(event.payload?.refund?.entity?.amount, payment?.amount),
+      );
+      break;
+    }
+    case "payment.dispute.created":
+    case "payment.dispute.lost": {
+      await revokeForPayment(paymentIdFrom(event), event.payload?.payment?.entity?.notes, "disputed");
       break;
     }
     default:

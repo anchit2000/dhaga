@@ -48,7 +48,12 @@ services:
       RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-}
       DHAGA_OWNER_EMAIL: ${DHAGA_OWNER_EMAIL:-}
       DHAGA_AI_MONTHLY_CAP: ${DHAGA_AI_MONTHLY_CAP:-}
-      SEARCH_PROVIDER: ${SEARCH_PROVIDER:-firecrawl}
+      # Both optional. Unset, web search runs on ANTHROPIC_API_KEY above via
+      # Anthropic's own web_search tool (the gateway's default); set
+      # FIRECRAWL_API_KEY and Firecrawl takes precedence instead. Do not pin a
+      # default here — a hardcoded `firecrawl` would turn the feature off on
+      # every instance that has only an Anthropic key.
+      SEARCH_PROVIDER: ${SEARCH_PROVIDER:-}
       FIRECRAWL_API_KEY: ${FIRECRAWL_API_KEY:-}
       CRON_SECRET: ${CRON_SECRET:-}
 

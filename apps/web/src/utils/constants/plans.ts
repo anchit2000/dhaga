@@ -59,7 +59,35 @@ export const PLAN_AI_CREDITS_PER_MONTH: Record<EntitlementPlan, number | null> =
 };
 
 export const FEATURE_LABELS: Record<PlanFeature, string> = {
-  enrichment: "Company enrichment, job-change detection & news alerts",
+  // "job-change detection & news alerts" — the rest of the original label — is
+  // deliberately gone. Those come from the nightly signal-detection job
+  // (lib/jobs/detect-signals), which is driven by the web-search gateway
+  // (@dhaga/core search, Firecrawl by default). With no search provider
+  // configured the job no-ops, so no signal is ever detected and no alert is
+  // ever raised — on any plan. The label sold a feature nobody receives.
+  // On-demand enrichment is untouched by that: it runs on the LLM's own
+  // web-search tool (lib/ai/enrich.ts), not the search gateway, so it ships.
+  enrichment: "On-demand company & person enrichment",
   pre_meeting_brief: "Pre-meeting briefs",
-  multi_device_sync: "Encrypted multi-device sync",
+  // The key stays `multi_device_sync` (it is referenced by plan data), but the
+  // label says what is actually gated: the integration surfaces that let
+  // something OTHER than this browser reach the graph. Three enforcement
+  // points, all on the same feature — minting a personal access token
+  // (lib/actions/api-keys.ts), connecting an MCP client (lib/mcp/auth.ts, which
+  // covers the OAuth path a token never touches), and linking a WhatsApp or
+  // Telegram chat (lib/actions/messaging.ts).
+  //
+  // The browser EXTENSION is deliberately absent: it authenticates with the
+  // logged-in cookie session (`credentials: "include"`, apps/extension/src/popup.ts),
+  // never a token, so claiming it here promised a gate that does not exist.
+  // "Encrypted multi-device sync" — the original label — described a sync
+  // engine that does not exist either.
+  multi_device_sync: "MCP clients, WhatsApp & Telegram capture, and API tokens for the mobile app and scripts",
 };
+
+/**
+ * How long a hover rests on a plan-gated control before its tooltip opens
+ * (`PlanGateNotice`). Well under Base UI's 600ms default: the reason is an
+ * explanation someone is actively hunting for, not an incidental label.
+ */
+export const PLAN_GATE_TOOLTIP_DELAY_MS = 150;

@@ -38,6 +38,19 @@ const EXEMPT: Record<string, string> = {
   endAiCreditGrantAction: "EE admin pool per-query (bypass-RLS grant ledger write)",
   createCheckoutSessionAction: "EE billing pool per-query (+ Stripe after)",
   createBillingPortalSessionAction: "EE billing pool per-query (+ Stripe after)",
+  // The plan-change lifecycle, exempt for the SAME reason as the two above and
+  // checked one by one rather than waved through as a group. Each is: read the
+  // subscription row, call the processor, patch the row — two short per-query
+  // acquires on EE's own pool (drizzle(getPool()) in packages/ee/src/billing/
+  // repo), never a request-scope getDb(), which EE cannot even reach across the
+  // open-core boundary. Wrapping them in withUserDb would CREATE the problem
+  // this guard exists to prevent: it would hold one tenant-pool checkout open
+  // across a multi-second Stripe/Razorpay HTTP round-trip.
+  changePlanAction: "EE billing pool per-query; holds no connection across the processor call",
+  cancelPlanAction: "EE billing pool per-query; holds no connection across the processor call",
+  resumePlanAction: "EE billing pool per-query; holds no connection across the processor call",
+  revertScheduledChangeAction:
+    "EE billing pool per-query; holds no connection across the processor call",
   // Thin action wrappers that delegate to lib/ai (generateBrief /
   // generateFollowUpDraft), which short-scope withUserDb AROUND the LLM call
   // internally (metering read/write in their own scopes, nothing held across the

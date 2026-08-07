@@ -18,7 +18,12 @@
  * India priced lower, that is a margin decision to make explicitly.
  */
 export type BillingTier = "pro" | "power";
-export type BillingCadence = "monthly" | "yearly";
+/** Every cadence a subscription row may carry, including the capped founding
+ *  price on Pro (see PRO_FOUNDING_PRICE). */
+export type BillingCadence = "monthly" | "yearly" | "founding_yearly";
+/** The ladder the pickers iterate. Founding is a price, not a rung: it is
+ *  bought once, from the founding button, and never switched onto. */
+export type StandardCadence = Exclude<BillingCadence, "founding_yearly">;
 export type Currency = "USD" | "INR";
 
 export interface DisplayPrice {
@@ -31,8 +36,37 @@ export interface DisplayPrice {
 }
 
 export const CURRENCY_SYMBOL: Record<Currency, string> = { USD: "$", INR: "₹" };
+/** Spelled out where a sentence needs the currency, not the glyph. */
+export const CURRENCY_NAME: Record<Currency, string> = {
+  USD: "US dollars",
+  INR: "Indian rupees",
+};
+export const CURRENCIES: readonly Currency[] = ["INR", "USD"];
 
-export const PRICES: Record<Currency, Record<BillingTier, Record<BillingCadence, DisplayPrice>>> = {
+/**
+ * Where /pricing remembers a visitor's currency choice so it survives
+ * navigation. A cookie rather than localStorage: the page resolves the initial
+ * currency on the SERVER (the visitor's region, or this), and a preference only
+ * the browser could read would make the first paint flip to the other currency.
+ *
+ * DISPLAY ONLY. It never reaches checkout — what a customer is charged is
+ * decided by the processor that takes the money, never by anything the browser
+ * remembers. See chargingProcessor in @/lib/billing/display-currency.
+ */
+export const CURRENCY_PREFERENCE_COOKIE = "dhaga-price-currency";
+
+/** Narrows an untrusted cookie value. Anything else falls back to the
+ *  region-derived default rather than being coerced into a currency. */
+export function asCurrency(value: string | undefined): Currency | null {
+  return CURRENCIES.find((currency) => currency === value) ?? null;
+}
+
+/** Render order for the pickers. Mirrors packages/ee's catalog, which decides
+ *  which of these are actually for sale on an instance. */
+export const BILLING_TIERS: readonly BillingTier[] = ["pro", "power"];
+export const BILLING_CADENCES: readonly StandardCadence[] = ["monthly", "yearly"];
+
+export const PRICES: Record<Currency, Record<BillingTier, Record<StandardCadence, DisplayPrice>>> = {
   USD: {
     pro: {
       monthly: { amount: 10, perMonth: 10 },
@@ -56,11 +90,24 @@ export const PRICES: Record<Currency, Record<BillingTier, Record<BillingCadence,
 };
 
 /**
- * First-500-seats offer on Pro's first year (BRD §8.4). Shown separately from
- * standard billing so it is never confused with the ongoing price — year two
- * renews at the normal yearly figure.
+ * Founding Pro — the first-500-seats price on Pro (BRD §8.4). Shown separately
+ * from standard billing so it is never confused with the ongoing price.
+ *
+ * NOT a first-year teaser, and the name says so. A Razorpay Plan carries the
+ * amount and charges it every cycle, so a founding subscription renews at
+ * ₹6,999 rather than stepping up to the standard ₹8,499 — that is the decision
+ * (BRD §11 Q6, resolved 2026-08), and it needs no dashboard change because it
+ * is already what the Plan does. `createSubscription` in packages/ee opens the
+ * mandate for a ten-year horizon of cycles (Razorpay has no "bill until
+ * cancelled"), which is the one bound on "for as long as you stay subscribed".
+ *
+ * SOLD IN INR ONLY: the Razorpay plan (RAZORPAY_PLAN_PRO_FOUNDING_YEARLY,
+ * ₹6,999 against ₹8,499) is the only one that exists, and packages/ee has no
+ * Stripe price for it on purpose — a USD checkout would mint a seat the
+ * Razorpay-side cap never sees. The USD figures stay as the equivalent quoted
+ * on the USD marketing cards; nothing charges them.
  */
-export const PRO_FIRST_YEAR_OFFER: Record<Currency, DisplayPrice> = {
+export const PRO_FOUNDING_PRICE: Record<Currency, DisplayPrice> = {
   USD: { amount: 79, perMonth: 7, originalAmount: 96 },
   INR: { amount: 6999, perMonth: 583, originalAmount: 8499 },
 };
@@ -70,6 +117,11 @@ export const TIER_LABEL: Record<BillingTier, string> = { pro: "Pro", power: "Pow
 export const CADENCE_LABEL: Record<BillingCadence, string> = {
   monthly: "Monthly",
   yearly: "Yearly",
+  // Keyed for EVERY cadence a row can hold, not just the two the picker shows:
+  // the plan status line renders CADENCE_LABEL[current.cadence], so a missing
+  // key would crash the settings page for exactly the customers who paid for
+  // the founding seat.
+  founding_yearly: "Founding yearly",
 };
 
 /** Whole-number percent saved by paying yearly, for the "Save 20%" badge. */

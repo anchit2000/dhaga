@@ -83,7 +83,7 @@ to `apps/web`, keep the default Next.js build command.
 | `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` | Yes | Auth cookie/session signing; `BETTER_AUTH_URL` is your `*.vercel.app` URL or custom domain. |
 | `DHAGA_EMBEDDINGS=off` | Recommended | The local semantic-search embedding model is a heavy native runtime, a poor fit for serverless functions; search still works via keyword matching without it. |
 | `ANTHROPIC_API_KEY` | No (your own key, add whenever) | Every AI feature has a documented degraded mode without it — see the table in §8. |
-| `FIRECRAWL_API_KEY`, `CRON_SECRET` | No | Only needed for the job-change/news signal sweep (§7j). |
+| `CRON_SECRET` | No | Only needed for the job-change/news signal sweep (§7j). `FIRECRAWL_API_KEY` is optional there now — the sweep's search defaults to `ANTHROPIC_API_KEY`. |
 | `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `DHAGA_OWNER_EMAIL` | No | Only for event-digest / waitlist emails. |
 | `DHAGA_HOSTED_MODE`, `DHAGA_ADMIN_EMAILS`, `STRIPE_*` | No, add later | Skip for now — add these once you want to test the admin panel; see §3. |
 
@@ -210,16 +210,20 @@ Everything in this section (admin panel, gated signup, billing) is
 
 There's a deliberate chicken-and-egg problem this var exists to solve: the
 admin panel can only promote someone to admin if you're already an admin,
-and in hosted mode signup is gated behind an approved access request, which
-normally only an admin can approve. `DHAGA_ADMIN_EMAILS` breaks the circle:
+and in hosted mode a brand-new account is created **unapproved** — it can only
+reach `/pending` until an admin approves it or a payment is confirmed, and
+normally only an admin can do the approving. `DHAGA_ADMIN_EMAILS` breaks the
+circle:
 
 - [ ] With the three vars above set, go to `/signup` and create an account
       with the **exact** email in `DHAGA_ADMIN_EMAILS`. Confirmed
       (`packages/ee/src/access-requests/index.ts:11-21`): the signup gate's
       `checkEmail` short-circuits to `{ allowed: true }` for bootstrap-admin
-      emails specifically, bypassing the access-request check that would
-      otherwise block a brand-new email — this is the one case where signup
-      works with zero prior approval.
+      emails, so `grantOrRequestApproval` stamps `approved_at` on the way in
+      and you land in `/app` rather than on `/pending`. Belt and braces:
+      `isUserApproved` (`packages/ee/src/approval/repo.ts`) also lets any
+      `is_admin` / `DHAGA_ADMIN_EMAILS` account through even with
+      `approved_at` null, so an admin can never be locked out.
 - [ ] You're an admin immediately, no manual DB flip — confirmed
       (`packages/ee/src/admin/repo.ts:14-25`): `isUserAdmin` checks
       `DHAGA_ADMIN_EMAILS` in addition to the stored `isAdmin` column, so
@@ -355,44 +359,54 @@ can't serve them.
 
 ## 5. Access-request flow, end to end (needs §3, a non-admin test email)
 
-Two independent entry points converge on the same `access_requests` table
-(`onConflictDoNothing` — idempotent, no duplicate/reset on retry):
+**Signup is open** — the wall moved from in front of account creation to
+behind it ("Model A: payment is the invite"). Anyone can create an account;
+a hosted account that nobody invited is created with `approved_at` null and
+can reach only `/pending`, the checkout that pays for it, and sign-out.
 
-- [ ] **Landing-page form**: on `/`, submit an email via the "Request
-      access" form (`components/landing/RequestAccessForm.tsx`, posts to
-      `POST /api/access-requests`) → success message "Request received —
-      we'll email you when you're approved." Confirmed this route 404s if
-      `DHAGA_HOSTED_MODE` isn't `"true"` (`apps/web/src/app/api/access-
-      requests/route.ts:26-31`), so don't expect this to do anything outside
-      hosted mode.
-- [ ] **Or just try `/signup`** with an email that hasn't been approved and
-      isn't in `DHAGA_ADMIN_EMAILS`: better-auth's `databaseHooks.user.create
-      .before` hook (`apps/web/src/lib/auth/config/index.ts:44-59`) calls the
-      same `checkEmail`, and on rejection **automatically files the same
-      access request** and throws a `FORBIDDEN` error with the reason shown
-      on the signup form — you don't need to separately use the landing
-      form first; a blocked signup attempt *is* an access request.
+- [ ] **`/signup`** with an email nobody has approved and that isn't in
+      `DHAGA_ADMIN_EMAILS` → the account is **created**. Verify the email,
+      sign in, and you land on `/pending`, not `/app`
+      (`apps/web/src/lib/auth/guard.ts` redirects every `/app/*` page).
+- [ ] The same signup filed the access request automatically
+      (`grantOrRequestApproval`, `apps/web/src/lib/auth/config/signup-hooks.ts`)
+      — no separate form needed.
+- [ ] While pending, confirm the account is *actually* boxed in: any
+      `/app/**` URL redirects to `/pending`, and an authenticated API route
+      (e.g. `GET /api/contacts`) refuses it. Only `/pending`,
+      `/api/razorpay/{order,verify}` and sign-out are reachable.
+- [ ] The public intake form is still there for people without an account:
+      `POST /api/access-requests` (404s unless `DHAGA_HOSTED_MODE=true`).
+      No landing page posts to it any more — the marketing CTAs go to
+      `/signup`.
 - [ ] Sign in as the admin from §3 → `/app/admin/access-requests` → pending
       tab shows that email.
-- [ ] Click **Approve** → confirmed (`packages/ee/src/access-requests/
-      repo.ts:43-57`) this flips `status` to `approved`. The email address
-      can now complete `/signup` successfully (`isEmailApproved` check in
-      `signupGate.checkEmail` now passes).
-- [ ] Click **Reject** (on a different pending email) instead → status
-      flips to `rejected`; that email is still blocked from signing up.
-      **Not confirmed by reading the code:** whether re-submitting a
-      rejected email's access request is possible or silently stays rejected
-      forever — `submitAccessRequest`'s `onConflictDoNothing` suggests a
-      second request for the same email is a no-op regardless of its current
-      status, so a rejected user may need an admin to flip them back to
-      pending manually via direct DB access; there's no "re-request" UI
-      affordance found. Worth confirming by actually clicking through it.
-- [ ] With `RESEND_API_KEY`/`RESEND_FROM_EMAIL` set: approving sends the
-      approved email a "You're in" email with a `/signup?email=...`
-      deep link that pre-fills the signup form
-      (`apps/web/src/lib/access/notify.ts:9-21`). Without Resend configured,
-      this is a silent no-op (`emailEnabled()` guard) — the approval still
-      works, there's just no email.
+- [ ] Click **Approve** → `reviewAccessRequest`
+      (`packages/ee/src/access-requests/repo.ts`) flips `status` to
+      `approved` **and** stamps `approved_at` on the account. Reload
+      `/pending` in the other browser → it redirects to `/app`.
+- [ ] Click **Reject** (on a different pending email) instead → status flips
+      to `rejected` and the account's `approved_at` is cleared, so an
+      already-approved user is sent back to `/pending`. A rejected email may
+      re-request after `ACCESS_REQUEST_RETRY_DAYS` (30) — the
+      `onConflictDoUpdate` in `submitAccessRequest` reopens it.
+- [ ] An admin can never lock themselves out: revoke your own row and
+      `/app/admin` still loads, because `isUserApproved` honours `is_admin`
+      and `DHAGA_ADMIN_EMAILS` regardless of `approved_at`.
+- [ ] **Pay instead of waiting.** From `/pending`, start a plan. Abandon the
+      Stripe Checkout / dismiss the Razorpay modal → still pending (nothing
+      grants at checkout-intent time). Complete the payment → the
+      **webhook** (`packages/ee/src/billing/webhook`,
+      `.../razorpay/webhook.ts`) stamps `approved_at` and `/pending` starts
+      redirecting to `/app`. Refund it → back to `/pending`. Cancel it
+      instead → still in, for the term they paid for.
+- [ ] An admin comp plan (`/app/admin/users/[id]` → set Pro/Power) also
+      approves the account.
+- [ ] With `RESEND_API_KEY`/`RESEND_FROM_EMAIL` set: approving sends a
+      "You're in" email linking straight to `/app`
+      (`apps/web/src/lib/access/notify.ts`). Without Resend configured, this
+      is a silent no-op (`emailEnabled()` guard) — the approval still works,
+      there's just no email.
 
 ---
 
@@ -440,7 +454,8 @@ INR checkout, independent of Stripe: an instance can run either processor or
 both. Env vars (`packages/ee/.env.example`): `RAZORPAY_KEY_ID`,
 `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, a Plan id per (tier, cadence)
 — `RAZORPAY_PLAN_PRO_MONTHLY`, `RAZORPAY_PLAN_PRO_YEARLY`,
-`RAZORPAY_PLAN_POWER_MONTHLY`, `RAZORPAY_PLAN_POWER_YEARLY`.
+`RAZORPAY_PLAN_POWER_MONTHLY`, `RAZORPAY_PLAN_POWER_YEARLY`, and the optional
+`RAZORPAY_PLAN_PRO_FOUNDING_YEARLY` (see 6c).
 
 **Every tier is a Razorpay Plan.** They ride the Subscriptions API, so Razorpay
 re-charges on its own and the plan owns both price and cadence — moving a tier
@@ -509,10 +524,16 @@ per BRD §8.3 — Pro $10/mo or $96/yr, Power $30/mo
 or $288/yr (INR at rough parity: ₹899 / ₹8,499 / ₹2,599 / ₹24,999). Every tier
 is recurring — there is no one-time purchase.
 
-Cadence is **not stored**. The subscription row keeps the tier only; the
-interval lives in the Stripe Price / Razorpay Plan, and the renewal boundary it
-implies is already `current_period_end`. A second copy could drift from the
-thing actually charging.
+Cadence **is** stored, and so is any booked change. The subscription row carries
+`cadence`, `scheduled_plan`, `scheduled_cadence`, `scheduled_change_at` and
+`synced_at` alongside the tier. This reverses the earlier "keep the tier only"
+design, and deliberately: every screen that reads a plan — the settings picker,
+the entitlement check — must answer from the database, so `getPlanSummary` makes
+**no processor call at all** (pinned by `entitlement-no-processor-call.test.ts`).
+The processor is still the authority; the row is a cache the webhooks and
+`reconcilePlanState` refresh, and `synced_at` records when one last confirmed it.
+Nothing reconciles in the background, so drift between webhooks is expected and
+bounded by them.
 
 - [ ] **Only configured combinations appear.** Unset `STRIPE_PRICE_POWER_MONTHLY`
       → Power's monthly button vanishes rather than erroring
@@ -533,9 +554,117 @@ thing actually charging.
       (`x-vercel-ip-country`; absent locally, so Stripe leads in dev.)
 - [ ] **Both remain clickable** wherever both processors are configured. Routing
       reorders, it never removes — a VPN user must still be able to pay.
+- [ ] **The `/pricing` currency toggle opens on the visitor's region** — the same
+      `preferredProcessor()` read, so INR from an Indian IP and USD elsewhere
+      (absent locally, so USD in dev). Switch it, navigate away and back: the
+      choice survives, in the `dhaga-price-currency` cookie. The page is
+      `dynamic = "force-dynamic"` for exactly this — a cached copy would serve
+      one visitor's currency to the next.
+- [ ] **The toggle is display only.** Select the currency you would *not* be
+      charged in and a caption calls the figures an approximate conversion and
+      names the charging one; select the charging currency and the caption stops
+      rendering. Checkout still states the INR amount, and the page's schema.org
+      `Offer` always publishes the charging currency — Razorpay is the only live
+      processor, so today everyone is billed in rupees whatever the toggle says.
 - [ ] **Local currency for non-INR is Stripe Adaptive Pricing**, a Dashboard
       setting, not code. With it off, everyone outside India is charged USD.
-      Nothing in this repo converts currency.
+      Nothing in this repo converts at a live rate — the toggle switches between
+      two hand-set tables (`PRICES`, `@/utils/constants/pricing`).
+
+### Plan changes, cancel, and the admin guard
+
+**Nothing below has been run against a live processor.** The decision layer
+(`classifyPlanChange`, `planChangeTiming`, `canAdminDowngrade`) is unit-tested,
+but no test and no recorded run covers the processor calls underneath it — treat
+every box here as a first run, and the Stripe deferred downgrade as the one most
+likely to be wrong.
+
+- [ ] **Upgrade Pro → Power on Stripe** — a prorated charge lands immediately and
+      the row flips to `power` now. The button said "Takes effect now, prorated"
+      before you pressed it.
+- [ ] **Downgrade Power → Pro on Stripe** — no charge now. The row keeps
+      `plan = 'power'` and gains `scheduled_plan = 'pro'` plus
+      `scheduled_change_at`; settings reads "Power yearly until *date*, then Pro
+      …". After the boundary, `customer.subscription.updated` flips the row to
+      `pro`. This exercises a two-phase Subscription Schedule with
+      `end_behavior: "release"` that **has never touched the live Stripe API**.
+- [ ] **The same two on Razorpay** — `schedule_change_at: "now"` raises an
+      invoice for the difference; `cycle_end` books it. A subscription that is
+      `halted` or `pending` refuses the change outright ("paused for a failed
+      payment") rather than half-applying it.
+- [ ] **Undo before it lands** — **Undo scheduled change** drops the booked
+      change at the processor and clears `scheduled_*`; the pending line
+      disappears.
+- [ ] **Attempt checkout while subscribed: refused**
+      (`assertNoExistingSubscription`), and no second subscription exists at the
+      processor afterwards. Test the server action / `/api/razorpay/order`
+      directly — the UI hiding the buy buttons is not the enforcement point.
+- [ ] **Cancel on Razorpay** — the subscription ends at cycle end, the row has
+      `cancel_at_period_end = true`, and the dialog does **not** offer "Keep my
+      plan", because Razorpay has no resume API.
+- [ ] **Cancel then un-cancel on Stripe** — "Keep my plan" clears
+      `cancel_at_period_end` at Stripe as well as in the row.
+- [ ] **Cancelling does not revoke access** — `approved_at` survives to the
+      boundary; only a refund or dispute revokes it (§6a).
+- [ ] **Admin downgrade of a live paying user is refused server-side.** The
+      option is disabled in the selector *and* a request past the disabled
+      control still fails (`canAdminDowngrade`, re-checked under the advisory
+      lock). Downgrading a **comped** user succeeds, and setting a cancelled
+      former customer to `free` succeeds too.
+
+---
+
+## 6c. Founding Pro seats (needs §6a + `RAZORPAY_PLAN_PRO_FOUNDING_YEARLY`)
+
+₹6,999 a year against the standard ₹8,499, capped at the first 500 seats. Sold
+only through Razorpay — there is deliberately no Stripe price, because a USD
+checkout would mint a seat the cap never sees. The cap lives in
+`packages/ee/src/billing/founding/cap.ts`; the seats are rows in
+`founding_seats`, claimed when the checkout is created.
+
+- [ ] **Unset the env var** → no card on `/pricing`, no founding entry in the
+      page's JSON-LD, no claim button on `/pending` or `/app/settings`. The
+      three standard cards render exactly as before.
+- [ ] **Set it** → the `/pricing` aside quotes **₹6,999 a year** against the
+      standard ₹8,499, frames the offer as one of the first 500 Pro seats, and
+      says it renews at ₹6,999 for as long as the subscription stays active.
+      `/pending` + `/app/settings` show **Claim a founding seat — INR** for
+      an account with no live subscription. A subscriber sees no such button:
+      founding is a first-purchase price, never a plan change.
+- [ ] **No live seat count is public.** Neither the aside nor the page's JSON-LD
+      prints how many seats are left — only the static cap. Claimed-vs-cap is
+      admin-only: `/app/admin` carries a **Founding seats claimed** stat card,
+      the claimed count over the caption "of 500" (`foundingSeatsClaimed` /
+      `foundingSeatCap` on `dashboardCounts()`). Sell-out is still public, by
+      the whole offer vanishing rather than by a counter reaching zero.
+- [ ] **Buy one** (test card `4111 1111 1111 1111`) → one row in
+      `founding_seats`, and the subscription row lands with `plan = 'pro'`,
+      `cadence = 'founding_yearly'`. Access is granted by the webhook, same as
+      any other paid plan — not at checkout intent.
+- [ ] **Re-opening checkout does not burn a second seat** — `user_id` is the
+      table's primary key, so the same user's second attempt re-uses their row.
+- [ ] **Sold out fails at CHECKOUT, not at payment.** With `seat_no` values up
+      to 500 already in the table, clicking the button returns `409` from
+      `/api/razorpay/order` and toasts "The founding seats are all claimed" —
+      no Razorpay subscription is created, no card is mandated.
+- [ ] **A founding member is never moved off their price.** On
+      `/app/settings`, "Switch to Pro yearly" is absent (it is the same rung,
+      classified `unchanged`), Power is offered as an immediate upgrade, and
+      monthly is offered as a downgrade at renewal. POSTing
+      `{plan:'pro',cadence:'founding_yearly'}` to the change-plan action is
+      refused outright.
+- [ ] **Year two is ₹6,999 too — check the mandate, not the dashboard.** The
+      Plan carries the amount and Razorpay charges it every cycle, so there is
+      no first-year step-up to configure away (BRD §11 Q6, resolved). What a
+      live run should confirm is the horizon: `createSubscription` sends
+      `total_count = CYCLES_PER_YEAR[period] × SUBSCRIPTION_HORIZON_YEARS`, so a
+      yearly founding subscription books **10 cycles** and then *completes* —
+      Razorpay has no "bill until cancelled". What a founding member who
+      cancels and re-subscribes later pays is not decided anywhere in the code;
+      don't assert an answer on the card until there is one.
+- [ ] **Unverified (needs a live run):** the cap has only been exercised
+      against a fake connection in unit tests; nobody has raced two real
+      test-mode checkouts at the last seat.
 
 ---
 
@@ -720,9 +849,19 @@ On a contact, add this note:
 - [ ] Pick a target with no connection — honest "No thread reaches…"
       message.
 
-### 7j. Job-change & news signal detection (opt-in, needs `FIRECRAWL_API_KEY` + `CRON_SECRET`)
+### 7j. Job-change & news signal detection (opt-in, needs `ANTHROPIC_API_KEY` + `CRON_SECRET`)
 
-- [ ] On a contact, toggle **"Watch for job changes & news"**.
+`FIRECRAWL_API_KEY` is **no longer needed**: since 2026-08-08 the search gateway
+defaults to Anthropic's own server-side `web_search` tool, so the same
+`ANTHROPIC_API_KEY` the rest of §7 needs also arms this sweep and un-greys the
+watch toggle. Setting `FIRECRAWL_API_KEY` still switches back to Firecrawl.
+**Nothing below has ever been run** — the Anthropic search path has never been
+exercised against a live key, so treat every box here as untested, not merely
+unchecked. Expect a real bill while you do: $10 per 1,000 searches on top of
+input tokens for every retrieved page.
+
+- [ ] On a contact, toggle **"Watch for job changes & news"** — it should be a
+      live control, not greyed out "Coming soon", once `ANTHROPIC_API_KEY` is set.
 - [ ] Hit `/api/jobs/detect-signals` yourself with the cron header:
       `curl -H "Authorization: Bearer $CRON_SECRET" <url>/api/jobs/
       detect-signals` — without `CRON_SECRET` set, this always 401s
@@ -742,7 +881,14 @@ On a contact, add this note:
 - [ ] Edit the text, **Copy**, paste somewhere — matches your edit.
 - [ ] **Redraft** replaces your edits with a fresh draft.
 
-### 7l. Enrichment (needs `ANTHROPIC_API_KEY`, ideally `FIRECRAWL_API_KEY` too)
+### 7l. Enrichment (needs `ANTHROPIC_API_KEY`)
+
+**Correction (2026-08-08):** this section used to say "ideally
+`FIRECRAWL_API_KEY` too". It never applied. Enrichment does not go through the
+search gateway at all — `apps/web/src/lib/ai/enrich.ts` passes `webSearch: true`
+to the *LLM* client and lets the provider run its own web search, so
+`FIRECRAWL_API_KEY` changes nothing here. Only §7j's sweep reads
+`SEARCH_PROVIDER`.
 
 - [ ] On a contact with a real public identity, **Enrich from public web** —
       a "web enrichment" note appears with cited source URLs, and facts
@@ -798,8 +944,9 @@ On a contact, add this note:
 
 ### 7p. Email digest & waitlist (needs `RESEND_API_KEY` + `RESEND_FROM_EMAIL`)
 
-- [ ] Join the waitlist / request access on the landing page with a real
-      address — a branded confirmation email arrives.
+- [ ] Sign up on a hosted instance with an email nobody has invited — the
+      account is created, lands on `/pending`, and a branded "request
+      received" confirmation email arrives.
 - [ ] On an event page with people in it, **Email me the digest** — the
       digest (people + facts + follow-ups) arrives at `DHAGA_OWNER_EMAIL`.
 - [ ] Unset `DHAGA_OWNER_EMAIL` and retry — clear "Set DHAGA_OWNER_EMAIL…"
@@ -1299,6 +1446,16 @@ in them as genuinely unrun rather than "probably fine".
       worker completes without `ERR_BLOCKED_BY_RESPONSE` or
       `coep-frame-resource-needs-coep-header`, the loading veil clears, the
       canvas and attribution render, and no new console error is emitted.
+- [ ] Same check for the **graph** worker, which is bundled rather than copied:
+      open `/app/graph` in Chrome with DevTools recording and confirm the
+      `/_next/static/chunks/turbopack-worker-*.js` request is 200 **and carries
+      `Cross-Origin-Embedder-Policy: credentialless`**, with no
+      `ERR_BLOCKED_BY_RESPONSE`. Verified locally under `next start`; **the
+      Vercel path is unverified** — `/_next/static` is CDN-served there, so
+      confirm the header actually survives on a preview deployment. This one
+      fails silently: when the worker is blocked the graph still renders, just
+      via a multi-second synchronous main-thread layout, so the only symptom is
+      a frozen tab on first load of a large graph.
 
 ## 8. What works with zero API keys vs. what needs one
 
@@ -1323,11 +1480,11 @@ click** with a credits reason (§7r-ii). `aiGateReason` returns `null` when
 | Warm-path graph traversal | Ask AI (search reasoning) | — |
 | CSV/vCard/JSON export | Follow-up drafts | — |
 | Forget this person (deletion cascade) | Brief me (pre-meeting dossier) | — |
-| LinkedIn/Google CSV import | Web enrichment | Best with `FIRECRAWL_API_KEY` too |
+| LinkedIn/Google CSV import | Web enrichment | — (the LLM provider's own web search; no `FIRECRAWL_API_KEY` involved — see §7l) |
 | Browser extension capture | — | — |
 | Telegram bot capture/query | Telegram's `?who...` query answers | `TELEGRAM_*` |
 | Admin panel / access requests / billing | — | `DHAGA_HOSTED_MODE`, real Postgres (`DATABASE_URL`), `DHAGA_ADMIN_EMAILS`; billing also needs `STRIPE_SECRET_KEY` |
-| Job-change/news signal detection | Signal detection itself needs the key | `FIRECRAWL_API_KEY`, `CRON_SECRET` |
+| Job-change/news signal detection | The whole sweep — search *and* classification — needs the key | `CRON_SECRET` (`FIRECRAWL_API_KEY` optional; search defaults to Anthropic's own web-search tool) |
 | Event digest emails | — | `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `DHAGA_OWNER_EMAIL` |
 
 ---

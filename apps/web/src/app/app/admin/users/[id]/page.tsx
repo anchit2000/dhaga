@@ -6,6 +6,7 @@ import {
   aiCreditsThisMonthFor,
   getAiCapOverrideFor,
   activeGrantedCreditsFor,
+  canAdminDowngrade,
 } from "@dhaga/ee/admin";
 import { isUnlimitedAiSub } from "@dhaga/ee/billing";
 import { setUserAdminAction } from "@/lib/actions/admin/users";
@@ -87,6 +88,9 @@ export default async function AdminUserDetailPage({
         currentPlan={(subscription?.plan ?? "free") as "free" | "pro" | "power"}
         currentExpiry={subscription?.currentPeriodEnd ?? null}
         currentCredits={aiCapOverride}
+        // Same predicate the server action enforces, so the form disables what
+        // it would refuse instead of offering an option that silently fails.
+        canDowngrade={canAdminDowngrade(subscription)}
       />
 
       <GrantCard userId={user.id} />

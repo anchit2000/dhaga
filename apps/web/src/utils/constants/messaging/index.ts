@@ -4,7 +4,8 @@
  * until the user replies DONE or the session goes idle, then it is processed
  * into contacts. Split per the 150-line rule: ./config holds the values and the
  * pure routing decisions, ./replies answers one message, ./notices reports what
- * a batch skipped. Import path stays `@/utils/constants/messaging`.
+ * a batch skipped, ./plan-gate explains the paid gate on linking a new chat.
+ * Import path stays `@/utils/constants/messaging`.
  */
 export {
   DONE_DELIMITERS,
@@ -84,3 +85,4 @@ export {
   type MessagingItemOutcome,
 } from "./outcomes";
 export { messagingLinkUrl, telegramLinkUrl, whatsappLinkUrl } from "./links";
+export { MESSAGING_LINK_PLAN_GATE_REASON } from "./plan-gate";

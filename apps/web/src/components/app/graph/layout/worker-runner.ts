@@ -6,7 +6,7 @@ import type { LayoutRequest, WorkerReply } from "./messages";
  * Runs the bounded FA2 pass in the module worker (fast path, off the main
  * thread) and forwards progress. If the worker fails to load, it transparently
  * falls back to computing the same pass synchronously on the main thread so the
- * graph always renders — see the onerror comment for the Turbopack cause.
+ * graph always renders — see the onerror comment for when that can still happen.
  */
 export function runWorker(
   payload: FullGraphPayload,
@@ -45,15 +45,17 @@ export function runWorker(
     };
     worker.onerror = () => {
       worker.terminate();
-      // Module worker throws on load in Next 16 Turbopack production (shipped as
-      // a classic importScripts worker, rejected by the /app COOP/COEP isolation
-      // headers), so onerror fires empty on the cold/no-cache path. Fall back to
-      // the same bounded FA2 pass on the MAIN thread — slower on large graphs and
-      // it blocks paint, but positions are cached after the first run (see
-      // savePositionCache in runLayout) so the graph always renders. `flat` is
-      // intact here because only `edges` (below) is transferred, not positions.
-      // TODO: fix the worker transport so the off-main-thread fast path works in
-      // Turbopack production; then this fallback is only cold-start insurance.
+      // Cold-start insurance only. This used to fire on EVERY production load:
+      // Turbopack bundles the worker to /_next/static/chunks/turbopack-worker-*.js,
+      // that path carried no Cross-Origin-Embedder-Policy, and /app is cross-origin
+      // isolated — so Chrome blocked the worker's own 200 with
+      // ERR_BLOCKED_BY_RESPONSE and every graph laid out on the main thread. Fixed
+      // by the /_next/static COEP rule in next.config.ts (see the comment there for
+      // why same-origin doesn't exempt a worker). Keep the fallback: it still runs
+      // the same bounded FA2 pass so the graph renders even if the worker can't
+      // start, and positions are cached afterwards (savePositionCache in
+      // runLayout). `flat` is intact here because only `edges` (below) is
+      // transferred, not positions.
       const settled = runFa2(flat, Uint32Array.from(pairs), iterations, onProgress);
       resolve(toPositionMap(nodeIds, settled));
     };

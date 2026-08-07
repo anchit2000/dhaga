@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { getBillingGate } from "@/lib/hosted/gate";
 import { PLAN_FEATURES, type EntitlementPlan, type PlanFeature } from "@/utils/constants/plans";
 
@@ -15,12 +16,19 @@ export class FeatureNotEntitledError extends Error {
   }
 }
 
-export async function currentPlan(userId: string): Promise<EntitlementPlan> {
+/**
+ * Memoized per-request and keyed by userId. One page renders several gated
+ * controls (Messaging, API keys, plan cards) and each one asks independently —
+ * without this, that is one subscription lookup per control. Server actions and
+ * route handlers get no cache() dedupe (see lib/db/request-scope), so this
+ * bounds the render path only; the lookup itself must stay cheap for the rest.
+ */
+export const currentPlan = cache(async (userId: string): Promise<EntitlementPlan> => {
   const summary = await (await getBillingGate()).getPlanSummary(userId);
   if (!summary) return "self_hosted"; // billing isn't running on this instance
   if (summary.status !== "active") return "free";
   return summary.plan;
-}
+});
 
 export async function hasFeature(userId: string, feature: PlanFeature): Promise<boolean> {
   const plan = await currentPlan(userId);

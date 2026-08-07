@@ -479,8 +479,41 @@ notes, the priciest credit):
 (The table uses annual-plan monthly equivalents for unit economics. Public
 pricing shows Pro at $10 month-to-month or $8/month billed $96 yearly, and the
 planned Power tier at $30 month-to-month or $24/month billed $288 yearly. Power
-remains sized but not sold; the first 500 Pro seats can request a $79 first
-year, shown separately from standard billing.)
+remains sized but not sold; the first 500 Pro seats can buy Founding Pro, a
+permanently discounted yearly price shown separately from standard billing.)
+
+(**Founding Pro is now buyable, and INR-only.** It is one Razorpay plan —
+₹6,999 a year against the standard ₹8,499, the same ~18% the old
+$79-vs-$96 copy promised, in the currency actually charged — with no Stripe
+equivalent on purpose: a USD checkout would mint a seat the cap cannot see.
+**It is not a first-year teaser** (resolved 2026-08, §11 Q6): a founding member
+keeps ₹6,999 for as long as they stay subscribed. The Plan carries the amount
+and `createSubscription()` books `CYCLES_PER_YEAR[period] × 10` cycles of it, so
+renewal at the founding price needs no code change and no dashboard change. The
+honest bound is that ten-year horizon rather than the word "forever": Razorpay
+has no "bill until cancelled", `total_count` is mandatory, and the subscription
+*completes* — ending the entitlement — once it is exhausted.
+"First 500" is enforced server-side by a `founding_seats` row claimed when the
+checkout is created, decided by a UNIQUE seat number rather than a count, so
+two buyers racing for the last seat cannot both win it. **The live seat count is
+not public.** "N of the first 500 left" advertised how little had sold — at
+500 of 500, that nobody had bought anything — so the remaining/position count is
+gone from every public surface and claimed-vs-cap is an admin number
+(`dashboardCounts()`, `/app/admin`). The static "first 500" framing stays; it
+leaks nothing. It is a PRICE, not a tier: it grants Pro, it cannot be switched
+onto later, and a founding member is never offered — or moved onto — standard
+yearly, which would be a silent price rise. When the plan id is unset or the
+seats are gone the offer disappears from the pricing card, the schema.org markup
+and the in-app buttons alike.)
+
+(**`/pricing` has an INR/USD toggle, and it is display only.** It defaults from
+`x-vercel-ip-country` through the existing `preferredProcessor()` signal (India
+→ INR, everywhere else → USD) and remembers what the visitor picked. Razorpay is
+the only live processor, so everyone is charged in INR whatever the toggle says:
+the non-charging currency is labelled an approximate conversion, and the
+schema.org Offer always advertises the charging currency, never the toggled
+one — structured data that priced the product in a currency we cannot take
+would be a lie to a shopping crawler.)
 
 (Margins are after Stripe's 2.9% + $0.30; hosting is not included.) A 100-credit
 Pro tier would clear ~94% margin but ration the product to a sixth of the heavy
@@ -531,6 +564,46 @@ stops mattering.*
 1. **Pro (individual):** hosted sync + a monthly AI-credit allowance (§8.3 — 300 credits, sold as such on /pricing since 2026-07-31 and enforced by default since the same date) + enrichment + alerts. Monthly or yearly; **no one-time tier** (see §8.3 — the economics do not hold).
 2. **Teams:** per-seat, shared graph, SSO, admin. The defensible, expanding revenue line.
 3. **Self-host support** (later): paid support/SLA for companies running the AGPL stack internally.
+
+**Plan-change lifecycle.** A subscriber changes tier or cadence from Settings →
+Plan & billing. The change always **modifies the existing processor
+subscription**; checkout is only ever used to create the first one, and is
+refused outright for an account that already has a live subscription (a second
+one would bill the same card twice, and neither processor deduplicates for us).
+
+**Upgrades apply immediately** and the processor settles the difference —
+Stripe prorates the subscription item, Razorpay's Update Subscription API
+(`schedule_change_at: "now"`) raises an invoice for the difference.
+
+**Downgrades — a lower tier, or yearly → monthly — are scheduled for the
+renewal boundary**, never applied immediately. An immediate downgrade makes
+Stripe credit, and Razorpay outright *refund*, the unused difference: a
+liability against revenue already recognised. The customer loses nothing — they
+keep the higher tier they paid for until it runs out.
+
+Tier dominates cadence when both move: power/yearly → pro/monthly is a
+downgrade, and pro/yearly → power/monthly is an upgrade.
+
+**Cancel** is always at the renewal boundary on both processors, behind a
+confirmation dialog. Stripe cancellations can be undone from the same screen
+("Keep my plan"); Razorpay has no resume API, so the dialog says so and
+restarting later means a new subscription. A change that is merely *booked* can
+be dropped at any point before it lands.
+
+**Founding Pro sits outside this ladder on purpose.** It is a third cadence
+(`founding_yearly`) rather than a tier, sold only as a first purchase: a
+founding member is never offered — and cannot ask for — standard Pro yearly,
+which would be a silent price rise, and the change API refuses a founding target
+before it reads anything.
+
+**Every processor state a screen depends on is stored, not fetched.** The
+subscription row carries its cadence, any booked change and the last time a
+processor confirmed them, so entitlement reads are pure database reads; a
+separate `payments` ledger records each confirmed charge, refund, dispute and
+failure. That ledger is what makes access honest at the boundaries: hosted
+access is granted only by a payment the processor has **confirmed**, revoked by
+a refund or chargeback, and deliberately *not* revoked by a cancellation — the
+term was paid for.
 
 ### 8.5 Community flywheel
 
@@ -597,6 +670,7 @@ in [checklist.md](/docs/roadmap/checklist) §21):
 3. ~~Enrichment data sources: which are ToS-safe?~~ **Resolved 2026-07 — see §6.7.** LinkedIn API is partner-gated and closed to CRMs; X API reads are pay-per-use and uneconomical. Channels: user-triggered web search, LinkedIn Connections CSV import + re-import diff, opt-in news watchlist, extension DOM capture. Remaining sub-question: is this enrichment quality enough vs the NFC badge-scanner's claimed 90%?
 4. ~~Browser extension and LinkedIn: confirm legal posture.~~ **Resolved 2026-07 — see §6.7.** User-initiated, single-profile DOM read of a page the user is viewing (the one-click LinkedIn-capture pattern) is the posture; shipped in the extension. No automation, no bulk collection.
 5. Brand/name: "NetworkPro" is a working title; trademark search needed.
+6. ~~What does year two of Founding Pro cost?~~ **Resolved 2026-08 — see §8.3.** ₹6,999, the same as year one: a founding member keeps the founding price for as long as they stay subscribed, rather than for a first year only. Nothing in code makes year two differ, and that is now the desired behaviour instead of the open question — the Razorpay Plan carries the amount, and `createSubscription()` (`packages/ee/src/billing/razorpay/client.ts`) sets `total_count` to `CYCLES_PER_YEAR[plan.period] × 10`, so a yearly founding subscription is created for ten yearly cycles and every one of them is charged at the Plan's ₹6,999. No dashboard change is needed. The one caveat, stated plainly rather than rounded up to "forever": Razorpay has no "bill until cancelled" — `total_count` is mandatory — so the subscription *completes* after that ten-cycle horizon, and a completed subscription ends the entitlement. The constant is now `PRO_FOUNDING_PRICE`; the old name `PRO_FIRST_YEAR_OFFER` asserted the opposite of the decision. **Still undetermined:** what a founding member who cancels and re-subscribes later pays. The seat claim is idempotent per user (`founding_seats.user_id` is the PK, so `claimFoundingSeat` returns the seat they already hold), but whether a fresh founding checkout is reachable at all then depends on `assertNoExistingSubscription` and on the offer still being on sale. No code decides it today, so the public copy deliberately claims nothing about it.
 
 ---
 

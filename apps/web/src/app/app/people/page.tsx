@@ -47,7 +47,10 @@ export default async function PeoplePage({ searchParams }: { searchParams: Promi
             </Link>
           ) : null}
         </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        {/* Left-aligned while the row is wrapped (below sm the three actions
+            take two lines, and right-aligning them left a ragged edge under
+            the H1); right-aligned again once it fits on one line. */}
+        <div className="flex flex-wrap items-center justify-start gap-2 sm:justify-end">
           <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-fog">
             Export
             {(["csv", "vcard", "json"] as const).map((format) => (

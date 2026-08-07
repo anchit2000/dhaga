@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { RAZORPAY_CHECKOUT_NAME, RAZORPAY_PLAN_DESCRIPTION } from "@/utils/constants/razorpay";
 import {
+  assertCheckoutEmbeddable,
+  CheckoutBlockedError,
   loadCheckoutScript,
   type CheckoutHandoff,
   type RazorpayHandlerResponse,
@@ -68,13 +70,26 @@ export function RazorpayCheckoutButton({
   const start = useCallback(async (): Promise<void> => {
     setBusy(true);
     try {
+      // BEFORE the subscription is minted, not after: on a route that can't
+      // frame the modal every click would otherwise leave an unpayable
+      // subscription behind on the Razorpay account.
+      assertCheckoutEmbeddable();
       await loadCheckoutScript();
       const created = await fetch("/api/razorpay/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(selection),
       });
-      if (!created.ok) throw new Error("checkout creation failed");
+      if (!created.ok) {
+        // The server owns scarcity: a founding seat can sell out between the
+        // page render and this click, and "sold out — standard Pro is still
+        // available" is something the buyer can act on, unlike a generic
+        // failure. The route only ever returns safe, pre-written sentences.
+        const body = (await created.json().catch(() => null)) as { error?: string } | null;
+        toast.error(body?.error ?? "Couldn't start checkout — please try again.");
+        setBusy(false);
+        return;
+      }
       const handoff = (await created.json()) as CheckoutHandoff;
       const checkout = window.Razorpay;
       if (!checkout) throw new Error("checkout unavailable");
@@ -94,8 +109,15 @@ export function RazorpayCheckoutButton({
         setBusy(false);
       });
       instance.open();
-    } catch {
-      toast.error("Couldn't start checkout — please try again.");
+    } catch (error) {
+      // A blocked route is our misconfiguration, not a transient failure —
+      // "please try again" would send the buyer round a loop that can't end.
+      if (error instanceof CheckoutBlockedError) {
+        console.error("[razorpay]", error.message);
+        toast.error("Card payment can't open on this page — please use the Stripe option.");
+      } else {
+        toast.error("Couldn't start checkout — please try again.");
+      }
       setBusy(false);
     }
   }, [selection, verify]);

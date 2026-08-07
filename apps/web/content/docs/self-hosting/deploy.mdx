@@ -46,11 +46,16 @@ page + waitlist (email fallback) function.
    - `DHAGA_EMBEDDINGS=off` recommended on Vercel for now: the local
      embedding model (~100 MB of native runtime) is a poor fit for
      serverless functions; search falls back to keyword matching.
-   - `CRON_SECRET`, `FIRECRAWL_API_KEY` — optional, job-change detection +
-     news watchlist. `apps/web/vercel.json` already declares the nightly
-     cron; Vercel sends `Authorization: Bearer $CRON_SECRET` to it
-     automatically once the var is set (unset = the route 401s to everyone,
-     including Vercel's own cron — the feature is simply off).
+   - `CRON_SECRET` — optional, job-change detection + news watchlist.
+     `apps/web/vercel.json` already declares the nightly cron; Vercel sends
+     `Authorization: Bearer $CRON_SECRET` to it automatically once the var is
+     set (unset = the route 401s to everyone, including Vercel's own cron —
+     the feature is simply off). The sweep's web search needs no separate
+     provider: it defaults to Anthropic's own server-side `web_search` tool on
+     the `ANTHROPIC_API_KEY` above. `FIRECRAWL_API_KEY` is optional and takes
+     precedence only where you set it. Two caveats — the Anthropic search path
+     has never been run against a live key, and searches are billed $10/1k on
+     top of the input tokens every retrieved page costs.
    - `NEXT_PUBLIC_SITE_URL` — set once a custom domain is attached (step 4):
      the canonical origin for the sitemap, robots.txt, OG tags, and llms.txt.
      Defaults to the Vercel preview URL until then.
@@ -85,6 +90,24 @@ account once it's live.
   processor alone is enough for the billing UI to render. Reference prices: Pro
   ₹899/mo or ₹8,499/yr, Power ₹2,599/mo or ₹24,999/yr — roughly parity with the
   USD figures, so BRD §8.3's margins carry over.
+- `RAZORPAY_PLAN_PRO_FOUNDING_YEARLY` — **optional**, and the only way to sell
+  Founding Pro (₹6,999 a year against the standard ₹8,499, and it **renews at
+  ₹6,999** — a founding member keeps that price for as long as the subscription
+  stays active, not just year one. There is nothing to configure for that: the
+  Plan carries the amount and Razorpay charges it every cycle. `createSubscription`
+  books `CYCLES_PER_YEAR × SUBSCRIPTION_HORIZON_YEARS` cycles — ten yearly ones —
+  because Razorpay has no "bill until cancelled" and `total_count` is mandatory,
+  so the subscription *completes* after that horizon rather than running
+  forever). Leave it unset and the offer does not exist:
+  no card on /pricing, no schema.org offer, no claim button. There is
+  deliberately no Stripe equivalent — a USD checkout would mint a seat the cap
+  can't see. The cap itself is 500, a constant in
+  `packages/ee/src/billing/founding/cap.ts` and NOT an env var (it is a promise
+  printed on a public page), enforced by claiming a row in `founding_seats`
+  when the checkout is created. Seats are claimed at checkout INTENT, so an
+  abandoned checkout holds one: the offer can sell fewer than 500, never more.
+  How many are claimed is **not** public — /pricing quotes only the static cap,
+  and claimed-vs-500 is a stat card on /app/admin.
 - **Processor routing** is by `x-vercel-ip-country`: India leads with Razorpay,
   everywhere else with Stripe (`RAZORPAY_COUNTRIES`,
   `apps/web/src/lib/billing/processor.ts`). It only reorders the buttons —

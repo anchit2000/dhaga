@@ -146,5 +146,6 @@ describe("signal detection job — graceful degradation", () => {
     const summary = await runSignalDetection();
     expect(summary.skipped).toBe("no_search");
     expect(summary.created).toBe(0);
+    // Mirror (ANTHROPIC_API_KEY alone now arms the sweep): core's provider-selection.test.ts.
   });
 });

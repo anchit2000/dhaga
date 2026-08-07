@@ -105,10 +105,10 @@ export function MobileNav(): ReactElement {
                 Sign in
               </Button>
               <Button
-                render={<Link href="#request-access" onClick={closeMenu} />}
+                render={<Link href="/signup" onClick={closeMenu} />}
                 className="w-full"
               >
-                Request early access
+                Create your account
               </Button>
             </>
           )}

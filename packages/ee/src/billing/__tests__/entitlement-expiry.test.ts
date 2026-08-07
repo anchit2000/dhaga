@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { isUnlimitedAiSub } from "../index";
+import { subscriptionRow } from "./fixtures";
 import type { SubscriptionRow } from "../../db/schema";
 
 /**
@@ -10,21 +11,12 @@ import type { SubscriptionRow } from "../../db/schema";
  * loosened. `now` is injected so the assertions don't depend on wall-clock.
  */
 function subRow(overrides: Partial<SubscriptionRow>): SubscriptionRow {
-  return {
+  return subscriptionRow({
     id: "sub_1",
     userId: "user_1",
     stripeCustomerId: "admin-granted:user_1",
-    stripeSubscriptionId: null,
-    razorpaySubscriptionId: null,
-    razorpayPaymentId: null,
-    plan: "pro",
-    status: "active",
-    currentPeriodEnd: null,
-    cancelAtPeriodEnd: false,
-    createdAt: new Date("2026-01-01T00:00:00Z"),
-    updatedAt: new Date("2026-01-01T00:00:00Z"),
     ...overrides,
-  };
+  });
 }
 
 const now = new Date("2026-07-24T00:00:00Z");

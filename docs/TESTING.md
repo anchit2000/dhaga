@@ -979,11 +979,11 @@ Each case gets a contact, a note, or a reply saying why not. Covered by
       The contact is named after the **organisation**, never saved blank (a
       blank-named contact is unfindable by search), and where the source says
       *whose* number is whose — "Society office – 75076…", "MNGL – 97646…
-      (Navnath)" — those **labels land on the phone/email rows**, not as an
+      (Ravi)" — those **labels land on the phone/email rows**, not as an
       anonymous list. With no organisation on it either, expect *"Unnamed
       contact"*.
 - [ ] **Tell the bot what to do rather than telling it something.** After that
-      photo, send *"R10 Universe Society contact details, create a new
+      photo, send *"Maple Court Society contact details, create a new
       contact"*. It must **not** become a note, and must **not** produce
       follow-ups like *"Create a new contact"* — that exact sequence used to
       generate two phantom follow-ups the user had to delete. Send the same

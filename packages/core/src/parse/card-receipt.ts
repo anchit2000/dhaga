@@ -19,7 +19,7 @@ import type { ExtractedContact } from "../schemas/contact";
  * place (apps/web/src/lib/ai/card-transcription.ts, docs/TESTING.md §7c). What
  * this function returns is what the user sees for the few seconds in between.
  */
-/** "Society office – 7507626215", or just the value when nothing labeled it.
+/** "Society office – 9999900102", or just the value when nothing labeled it.
  *  The label is part of the receipt: a bare list of four numbers is not an
  *  audit trail of a noticeboard that said which was which. */
 function methodLine(method: ExtractedMethod): string {

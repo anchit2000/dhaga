@@ -29,7 +29,7 @@ export type ContactMethod = z.infer<typeof contactMethodSchema>;
 /**
  * A capture-time email or phone: the value plus whatever label was written NEXT
  * TO it in the source. Extraction always saw those labels — a noticeboard
- * listing "Society office – 7507626215 / MNGL – 9764648750 (Navnath)" states
+ * listing "Society office – 9999900102 / MNGL – 9999900103 (Ravi)" states
  * plainly whose number is whose — but the capture shape carried bare strings,
  * so four numbers arrived as four anonymous numbers and the user had to relabel
  * them by hand from the note.
@@ -46,7 +46,7 @@ export const extractedMethodSchema = z.object({
     .string()
     .nullable()
     .describe(
-      'Who or what it belongs to, copied from the text beside it ("Work", "Society office", "MNGL (Navnath)"); null when the text gives none',
+      'Who or what it belongs to, copied from the text beside it ("Work", "Society office", "MNGL (Ravi)"); null when the text gives none',
     ),
 });
 export type ExtractedMethod = z.infer<typeof extractedMethodSchema>;

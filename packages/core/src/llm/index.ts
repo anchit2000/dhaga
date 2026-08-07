@@ -25,6 +25,12 @@ export {
   buildContactParsePrompt,
 } from "./prompts/contact-parse";
 export {
+  BATCH_PLAN_SYSTEM,
+  buildBatchPlanPrompt,
+  type BatchPlanCandidate,
+  type BatchPlanItem,
+} from "./prompts/batch-plan";
+export {
   NOTE_EXTRACTION_SYSTEM,
   ENRICHMENT_EXTRACTION_SYSTEM,
   buildNoteExtractionPrompt,

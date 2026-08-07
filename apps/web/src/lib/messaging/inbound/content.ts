@@ -6,6 +6,7 @@ import {
   appendSessionItem,
   getOpenSession,
   getOrCreateOpenSession,
+  getRetriableSession,
   setSessionStatus,
 } from "@/lib/repo/messaging";
 import {
@@ -34,7 +35,15 @@ function rejectionReply(item: Extract<NormalizedItem, { accepted: false }>): str
   }
 }
 
-/** DONE: flush the open batch for processing, or say there's nothing to save. */
+/**
+ * DONE: flush the sender's batch for processing, or say there's nothing to save.
+ *
+ * Uses getRetriableSession, not getOpenSession, so a batch that FAILED can be
+ * re-driven — which is what the failure reply has always told the sender to do.
+ * It was a lie: a failed batch matched neither the open-session lookup nor the
+ * sweeper (idle-`open` and stalled-`processing` only), so its items sat intact
+ * and permanently unreachable.
+ */
 export async function handleDone(
   client: MessagingClient,
   msg: NormalizedInboundMessage,
@@ -42,7 +51,7 @@ export async function handleDone(
 ): Promise<void> {
   const { provider, externalUserId: externalId } = msg;
   const flushed = await withUserDb(userId, async () => {
-    const session = await getOpenSession({ provider, externalId });
+    const session = await getRetriableSession({ provider, externalId });
     if (!session || session.itemCount === 0) return null;
     await setSessionStatus({ sessionId: session.id, status: "processing" });
     return { id: session.id, itemCount: session.itemCount };

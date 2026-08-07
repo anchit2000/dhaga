@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { useTagLayerFetch } from "./fetch";
 import { useTagSpokes } from "./spokes";
 import type { RelationshipLabelMap } from "@dhaga/core";
 import type { GraphIndexes } from "../../logic/indexes";
@@ -12,7 +12,6 @@ import type {
   FullGraphNode,
   FullGraphPayload,
   PositionMap,
-  TagLayerPayload,
 } from "../../types";
 
 // Directory split per the 150-line rule; import paths unchanged.
@@ -57,20 +56,9 @@ export function useTagLayer(
   labelMap: RelationshipLabelMap,
   tagsEnabled: boolean,
 ): TagLayerApi {
-  const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
-  /** Server-side bounds echoed by the payload: withheld spokes and hub cap. */
-  const [bounds, setBounds] = useState({
-    spokesTruncated: false,
-    hubsTruncated: false,
-    totalHubs: 0,
-  });
   const [merged, setMerged] = useState<MergedTagLayer>({ nodes: [], edges: [] });
-  // startedRef guards the whole attempt (StrictMode re-runs share it); the
-  // promise ref keeps a mid-flight fetch reusable if the layer is re-toggled.
   // aliveRef is re-armed by every effect run, so it goes false-for-good only
   // on real unmount — a late resolve must not merge into a killed renderer.
-  const startedRef = useRef(false);
-  const fetchRef = useRef<Promise<TagLayerPayload> | null>(null);
   const aliveRef = useRef(true);
 
   const onMerged = useCallback((result: MergedTagLayer) => {
@@ -88,39 +76,7 @@ export function useTagLayer(
     onMerged,
   );
 
-  useEffect(() => {
-    aliveRef.current = true;
-    if (tagsEnabled && renderer && !startedRef.current) {
-      startedRef.current = true;
-      setStatus("loading");
-      fetchRef.current ??= fetch("/api/graph/tags").then(async (res) => {
-        if (!res.ok) throw new Error(`Tag layer request failed (${res.status})`);
-        return (await res.json()) as TagLayerPayload;
-      });
-      fetchRef.current
-        .then((layer) => {
-          if (!aliveRef.current) return;
-          if (layer.truncated) registerHubs(layer.hubs);
-          setBounds({
-            spokesTruncated: layer.truncated,
-            hubsTruncated: layer.hubsTruncated,
-            totalHubs: layer.totalHubs,
-          });
-          applyMerge(layer, renderer);
-          setStatus("ready");
-        })
-        .catch(() => {
-          startedRef.current = false; // the next enable retries
-          fetchRef.current = null;
-          if (!aliveRef.current) return;
-          setStatus("error");
-          toast.error("Couldn't load tags — toggle the Tags layer to retry.");
-        });
-    }
-    return () => {
-      aliveRef.current = false;
-    };
-  }, [renderer, tagsEnabled, applyMerge, registerHubs]);
+  const { status, bounds } = useTagLayerFetch(renderer, tagsEnabled, applyMerge, registerHubs, aliveRef);
 
   const grown = merged.nodes.length > 0 || merged.edges.length > 0;
   const nodes = useMemo(

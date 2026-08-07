@@ -64,4 +64,23 @@ export {
   unreadableItemNotice,
   voiceSkippedNotice,
 } from "./notices";
+export {
+  BATCH_FAILURE_REPLIES,
+  attachedPersonLine,
+  batchFailedReply,
+  batchFailureReply,
+  createdPersonLine,
+  needsInputLine,
+  nothingReadableReply,
+  unaccountedLine,
+} from "./batch-replies";
+export {
+  MESSAGING_BATCH_FAILURES,
+  MESSAGING_BATCH_FAILURE_LABELS,
+  MESSAGING_ITEM_OUTCOMES,
+  MESSAGING_ITEM_OUTCOME_LABELS,
+  batchFailureLabel,
+  type MessagingBatchFailure,
+  type MessagingItemOutcome,
+} from "./outcomes";
 export { messagingLinkUrl, telegramLinkUrl, whatsappLinkUrl } from "./links";

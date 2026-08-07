@@ -133,6 +133,18 @@ export {
   type CaptureRoute,
   type CaptureRoutingInput,
 } from "./capture/route";
+// Batch capture planning: the shape ONE structured output turns a whole
+// forwarded messaging batch into. See ./schemas/batch-plan.ts for why the batch
+// is planned as a whole rather than walked message by message.
+export {
+  batchPlanSchema,
+  emptyBatchPlan,
+  plannedItemSeqs,
+  type BatchPlan,
+  type PlannedNote,
+  type PlannedPerson,
+  type UnclearNote,
+} from "./schemas/batch-plan";
 // Contact-sync merge core. Pure (no I/O, no native modules), so it is safe at
 // the package root; the sync TARGETS are deep-import-only (see ./sync/index.ts)
 // because the device target pulls expo-contacts, which the web bundle cannot load.

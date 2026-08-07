@@ -1,11 +1,17 @@
 import { randomUUID } from "node:crypto";
-import type { ExtractedContact } from "@dhaga/core";
+import type { ConfirmationOption, ContactProfile, ExtractedContact } from "@dhaga/core";
 import { store } from "../harness";
 
 /**
- * The doubles for what a batch WRITES into the graph — contacts, notes,
- * embeddings, kept photos, and the privacy switch that governs them. Split from
- * ./session (which doubles the webhook/batch plumbing) per the 150-line rule.
+ * The doubles for what a batch WRITES for the user — contacts, notes,
+ * embeddings, kept photos, the privacy switch that governs them, and the
+ * confirmation inbox an unattributable note is parked in. Split from
+ * ./session (the webhook/batch plumbing) and ./ai (the models) per the 150-line
+ * rule.
+ *
+ * `createContact` and `createContactProfile` are kept DISTINGUISHABLE on purpose:
+ * a forwarded contact card must go through the structured profile write, so a
+ * case has to be able to tell which of the two ran.
  */
 
 export function contactsMock() {
@@ -16,7 +22,10 @@ export function contactsMock() {
   };
   return {
     createContact: async (input: ExtractedContact) => create(input.name),
-    createContactProfile: async (input: { name: string }) => create(input.name),
+    createContactProfile: async (input: ContactProfile) => {
+      store.profiles.push(input);
+      return create(input.name);
+    },
   };
 }
 
@@ -49,4 +58,23 @@ export function cardImagesMock() {
 
 export function settingsMock() {
   return { shouldStoreCardPhotos: async () => store.storePhotos };
+}
+
+export function confirmationsMock() {
+  return {
+    createNoteSubjectConfirmation: async (input: {
+      noteBody: string;
+      subjectName: string | null;
+      question: string;
+      options?: ConfirmationOption[];
+      origin?: string;
+    }) => {
+      store.confirmations.push({
+        ...input,
+        options: input.options ?? [],
+        origin: input.origin ?? null,
+      });
+      return { id: randomUUID() };
+    },
+  };
 }

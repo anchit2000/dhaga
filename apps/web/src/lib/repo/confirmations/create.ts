@@ -3,7 +3,7 @@ import type {
   ConfirmationPayload,
   NoteExtraction,
 } from "@dhaga/core";
-import { insertConfirmation } from "./insert";
+import { insertConfirmation, type ConfirmationOrigin } from "./insert";
 import type { ConfirmationView } from "./queue";
 
 /**
@@ -81,12 +81,18 @@ export async function createSupplementConfirmation(input: {
  * Returns the full {@link ConfirmationView} (not just the id) so the inline
  * quick-add flow can render it through <ConfirmationCard> immediately, with no
  * re-read and no duplicated payload construction.
+ *
+ * `origin` says which surface has to answer it and defaults to "inline" (the
+ * quick-add case). Pass "messaging" when a background batch raises it: that row
+ * has no synchronous card to be answered in, so the inbox is its only surface
+ * and the queue must show it.
  */
 export async function createNoteSubjectConfirmation(input: {
   noteBody: string;
   subjectName: string | null;
   question: string;
   options?: ConfirmationOption[];
+  origin?: ConfirmationOrigin;
 }): Promise<ConfirmationView> {
   const payload: ConfirmationPayload = {
     type: "note_subject",
@@ -98,7 +104,7 @@ export async function createNoteSubjectConfirmation(input: {
       subjectName: input.subjectName,
     },
   };
-  const id = await insertConfirmation(payload, null, null);
+  const id = await insertConfirmation(payload, null, null, input.origin ?? "inline");
   return {
     id,
     type: "note_subject",

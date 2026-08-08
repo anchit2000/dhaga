@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { requireUserIdForPage } from "@/lib/auth/guard";
+import { getBillingGate } from "@/lib/hosted/gate";
 import { ListSkeleton } from "@/components/app/skeletons";
 import { ImportPanel } from "@/components/app/import/ImportPanel";
 import { OnboardingTour } from "@/components/app/onboarding";
@@ -29,7 +30,13 @@ export default async function SettingsPage({
 }) {
   // Auth guard: the one lookup that must resolve before any card renders.
   // Memoized, so each section re-reading the session/user costs nothing more.
-  await requireUserIdForPage();
+  const userId = await requireUserIdForPage();
+  // Whether the "Plan & billing" tab exists at all. BillingSection renders null
+  // when the instance has no billing (core-only self-host), and a permanently
+  // empty tab is worse than none — so the tab list needs the answer up front.
+  // One indexed read (the entitlement hot path), awaited here for the same
+  // reason `calendarActive` is: it decides which triggers render, not content.
+  const billingActive = Boolean(await (await getBillingGate()).getPlanSummary(userId));
   // searchParams is a fast (non-DB) resolve; awaiting it here only decides which
   // tab opens. The OAuth-callback flow returns to ?calendar=… and relies on the
   // Calendar tab being selected. The promise is still passed to CalendarSection
@@ -37,7 +44,10 @@ export default async function SettingsPage({
   const { calendar } = await searchParams;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    // max-w-3xl, not 2xl: the eight tab triggers measure 720px, so a 672px
+    // column clipped the last one ("Import" → "Im", underline sliced in half)
+    // at every width including desktop. 768px holds the whole row.
+    <div className="mx-auto max-w-3xl space-y-6">
       {/* Renders null; resumes the onboarding tour's settings leg (notifications
           → contact sync → import) when handed off from Home, guarded by a
           sessionStorage flag. */}
@@ -50,6 +60,7 @@ export default async function SettingsPage({
       </div>
       <SettingsTabs
         calendarActive={Boolean(calendar)}
+        billingActive={billingActive}
         account={
           <>
             <Suspense fallback={<ListSkeleton rows={2} />}>
@@ -57,9 +68,6 @@ export default async function SettingsPage({
             </Suspense>
             <Suspense fallback={<ListSkeleton rows={3} />}>
               <AppearanceSection />
-            </Suspense>
-            <Suspense fallback={<ListSkeleton rows={2} />}>
-              <BillingSection />
             </Suspense>
             <Suspense fallback={<ListSkeleton rows={4} />}>
               <SecuritySection />
@@ -71,6 +79,11 @@ export default async function SettingsPage({
               <ApiKeysSection />
             </Suspense>
           </>
+        }
+        billing={
+          <Suspense fallback={<ListSkeleton rows={2} />}>
+            <BillingSection />
+          </Suspense>
         }
         credits={
           <Suspense fallback={<ListSkeleton rows={4} />}>

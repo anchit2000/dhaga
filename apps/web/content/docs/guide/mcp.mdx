@@ -16,6 +16,16 @@ The endpoint is **`/api/mcp`** on your instance. Any client that speaks the
 Dhaga doesn't ship a per-client integration, because the client discovers the
 tools, their inputs and their descriptions at connect time.
 
+## What it costs
+
+On a hosted instance, MCP is part of **Pro and Power**. Both ways in are gated
+the same way — the connector and the token reach the same endpoint, so there is
+no cheaper door. A request from an account without the plan is refused with a
+`403` and `"error": "plan_required"`, which most clients surface as a connection
+error; reconnecting or logging in again won't clear it, upgrading will.
+
+Self-hosted instances have no plans, so nothing here is gated.
+
 ## Connecting a client
 
 There are two ways in, and both reach the same tools. Which one you use depends
@@ -42,7 +52,8 @@ log in.
 For local clients — Claude Code, Cursor, anything running on your own machine —
 the simpler path is the **API key you already have**. It's the same personal
 access token the mobile app uses, created under **Settings › Account › API
-keys** (see [Settings](/docs/guide/settings)).
+keys** (see [Settings](/docs/guide/settings)). On a hosted instance, creating a
+new token needs Pro or Power; self-hosted instances have no plans and no gate.
 
 Claude Code, in one line:
 

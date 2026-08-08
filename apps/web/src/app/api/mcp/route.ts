@@ -3,6 +3,8 @@ import { RateLimitError, enforceRateLimit } from "@/lib/ratelimit";
 import {
   DHAGA_MCP_INSTRUCTIONS,
   DHAGA_MCP_SERVER_INFO,
+  mcpApprovalGateResponse,
+  mcpPlanGateResponse,
   registerDhagaTools,
   userIdFromAuth,
   verifyMcpToken,
@@ -25,6 +27,11 @@ import {
  * discovers where to send the user to log in. Both credential types are
  * resolved in `verifyMcpToken`.
  *
+ * Being logged in is not the same as being entitled: MCP is a paid integration
+ * surface, so an authenticated-but-unentitled user is refused separately, with
+ * a 403 that says so (`mcpPlanGateResponse`) rather than a 401 that would send
+ * them round the login loop again.
+ *
  * Node runtime: the tool handlers reach Postgres through the `pg` pool.
  */
 export const runtime = "nodejs";
@@ -36,13 +43,17 @@ const handler = createMcpHandler(registerDhagaTools, {
 });
 
 /**
- * Per-user burst guard, applied after auth so the bucket is keyed to a real
- * user rather than an IP. An autonomous client issues tool calls far faster
- * than a person clicks and retries tools it didn't like, and every read takes
- * one of the three tenant connections — so this protects the pool the rest of
- * the app shares, not just this endpoint.
+ * Per-user burst guard, then the approval and plan gates, then the protocol.
+ *
+ * The burst guard is applied after auth so the bucket is keyed to a real user
+ * rather than an IP. An autonomous client issues tool calls far faster than a
+ * person clicks and retries tools it didn't like, and every read takes one of
+ * the three tenant connections — so this protects the pool the rest of the app
+ * shares, not just this endpoint. It runs BEFORE the plan gate because the plan
+ * lookup is itself a query: a client hammering the endpoint must not be able to
+ * turn its own refusals into load.
  */
-async function rateLimited(request: Request): Promise<Response> {
+async function gated(request: Request): Promise<Response> {
   try {
     await enforceRateLimit(userIdFromAuth(request.auth), "mcp");
   } catch (error) {
@@ -57,9 +68,16 @@ async function rateLimited(request: Request): Promise<Response> {
     }
     throw error;
   }
+  // Approval before plan: a revoked or still-pending account has nothing to
+  // gain from an upgrade prompt, and MCP resolves its own credentials, so it
+  // never inherits the approval check the rest of the app gets from its guards.
+  const approvalRefusal = await mcpApprovalGateResponse(request.auth);
+  if (approvalRefusal) return approvalRefusal;
+  const planRefusal = await mcpPlanGateResponse(request.auth);
+  if (planRefusal) return planRefusal;
   return handler(request);
 }
 
-const authenticated = withMcpAuth(rateLimited, verifyMcpToken, { required: true });
+const authenticated = withMcpAuth(gated, verifyMcpToken, { required: true });
 
 export { authenticated as GET, authenticated as POST, authenticated as DELETE };

@@ -97,7 +97,9 @@ export function useVoiceSession(onFinalText: (text: string) => void): DictationS
     }
   }
 
-  return { supported, listening, transcribing, loadingProgress, partialText, backend, notice, start, stop };
+  // comingSoon is always null here: this is the engine that CAN run. Only the
+  // gate (dictation-gate.ts) sets it, when the WebGPU probe comes back false.
+  return { supported, listening, transcribing, loadingProgress, partialText, backend, notice, comingSoon: null, start, stop };
 }
 
 /** Probe WebGPU once on mount: null while probing, then true/false. Drives the

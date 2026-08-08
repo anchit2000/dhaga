@@ -151,7 +151,7 @@ embeddings — both true today, not aspirational.
 | Feature | Status |
 |---|---|
 | Web quick-add (paste email signature / free text / article) | **Shipped** |
-| Browser extension (Chrome/Edge, one-click capture + "save this article to X") | **Shipped** — Chrome Web Store listing is packaged and ready; publishing itself needs a manual reviewer demo account and the one-time developer registration fee |
+| Browser extension (Chrome/Edge, one-click capture + "save this article to X") | **Built, not published** — it works today only if you load it unpacked from the repo. The Chrome Web Store listing is packaged but unsubmitted; publishing needs a manual reviewer demo account and the one-time developer registration fee, so there is no install link on the site |
 | LinkedIn Connections CSV import | **Shipped** |
 | User-triggered public-web enrichment | **Shipped** |
 | Badge scanning | Planned |
@@ -1275,9 +1275,10 @@ Switch to an AI capture mode for however else you captured the person:
 
 Dhaga Voice dictation runs entirely on-device, so it needs **WebGPU** — available
 today in desktop Chrome and Edge. On iOS Safari and other browsers without WebGPU,
-Dhaga detects this up front and shows a clean "voice isn't supported on this
-device — type it in instead" message rather than failing mid-recording. Manual
-entry is always available.
+Dhaga detects this up front: the mic is greyed out with a "Coming soon" note
+explaining why, so you never tap a button that can't work. It's a live capability
+check, not a browser blocklist — the mic switches itself on the day your browser
+ships WebGPU. Typing and manual entry are always available.
 
 - **Card photo** — take or upload a photo of a business card. Dhaga runs OCR and
   also reads a LinkedIn QR code if one is on the card. You're not limited to one
@@ -1576,12 +1577,14 @@ web about a contact on its own or in the background — you press the button, fo
 one person, each time. That keeps enrichment consistent with the rest of the
 product: no silent data collection.
 
-**Requires a configured search provider**
+**Requires an AI provider that can search the web**
 
-Enrichment runs against a web-search backend, which a self-hosted instance has
-to supply. Set `SEARCH_PROVIDER` and its key, or implement your own — see
-[Add a search provider](/docs/extending/search-provider). Without one
-configured, the Enrich button has nothing to call.
+Enrichment asks the *LLM* provider to run its own web search, so all it needs is
+`ANTHROPIC_API_KEY` (or another provider declaring the `webSearch` capability).
+**Corrected 2026-08-08:** this note used to say enrichment needed
+`SEARCH_PROVIDER` set. It does not — `SEARCH_PROVIDER` selects the search gateway
+used by the nightly job-change/news sweep, which is a separate path. See
+[Add a search provider](/docs/extending/search-provider) for that one.
 
 ---
 
@@ -1900,6 +1903,16 @@ The endpoint is **`/api/mcp`** on your instance. Any client that speaks the
 Dhaga doesn't ship a per-client integration, because the client discovers the
 tools, their inputs and their descriptions at connect time.
 
+## What it costs
+
+On a hosted instance, MCP is part of **Pro and Power**. Both ways in are gated
+the same way — the connector and the token reach the same endpoint, so there is
+no cheaper door. A request from an account without the plan is refused with a
+`403` and `"error": "plan_required"`, which most clients surface as a connection
+error; reconnecting or logging in again won't clear it, upgrading will.
+
+Self-hosted instances have no plans, so nothing here is gated.
+
 ## Connecting a client
 
 There are two ways in, and both reach the same tools. Which one you use depends
@@ -1926,7 +1939,8 @@ log in.
 For local clients — Claude Code, Cursor, anything running on your own machine —
 the simpler path is the **API key you already have**. It's the same personal
 access token the mobile app uses, created under **Settings › Account › API
-keys** (see [Settings](/docs/guide/settings)).
+keys** (see [Settings](/docs/guide/settings)). On a hosted instance, creating a
+new token needs Pro or Power; self-hosted instances have no plans and no gate.
 
 Claude Code, in one line:
 
@@ -2229,6 +2243,11 @@ This is a **core, fully self-hostable** feature — it needs no cloud tier. Sett
 up the bot (the webhook, the API keys) is a one-time admin job covered in
 [Self-hosting](/docs/self-hosting); this page is about *using* it once a channel
 is connected.
+
+On the hosted instance, **connecting a chat** is part of Pro and Power. Chats
+you've already linked keep capturing whatever your plan does afterwards, and you
+can disconnect one at any time — the gate is on adding a channel, never on the
+messages you're already sending or on your ability to stop them.
 
 ## Connecting your chat
 
@@ -2626,6 +2645,12 @@ beneath it.
   (two-factor authentication, 2FA), and **API keys** — personal access tokens for
   the API and the browser extension, and for scripted
   [exports](/docs/self-hosting/deploy#backups--migration). On a hosted instance
+  **creating** a token is part of Pro and Power: a token is what signs the
+  browser extension, the mobile app and MCP clients in as you, so adding another
+  device is a paid step. Tokens you already hold keep working and stay revocable
+  if your plan lapses — a downgrade never silently breaks an integration you've
+  already set up. Self-hosted instances have no plans, so nothing is gated. On a
+  hosted instance
   the Billing section also shows a one-line **AI credits** summary — *"3 of 10 AI
   credits used"*. Free accounts have a monthly allowance like any other: **10
   credits a month**. The line only reads *"No monthly AI credits on this plan —
@@ -2682,9 +2707,52 @@ beneath it.
 
 **Some sections depend on configuration**
 
-Billing only appears when the instance has Stripe configured, and calendar/
+Billing only appears when the instance has a payment processor configured —
+Stripe, Razorpay, or both — and calendar/
 email features need their providers wired up. On a plain self-host several of
 these sections are intentionally absent — see [Self-hosting](/docs/self-hosting).
+
+## Your plan and billing
+
+**Account → Billing** shows what you're on, how you're billed and when it
+renews. It's there whatever plan you're on, not just while you're on Free.
+
+### Changing your plan
+
+Pick another tier or switch between monthly and yearly from the same cards. You
+never go through checkout twice — a change always edits the subscription you
+already have, which is also why the "buy" buttons disappear once you have one.
+
+- **Moving up** (Pro → Power, or monthly → yearly) takes effect straight away,
+  and you're charged the difference for the rest of the current period. The
+  button says *"Takes effect now, prorated"* before you press it.
+- **Moving down** (Power → Pro, or yearly → monthly) starts at your next
+  renewal. You keep what you've already paid for until then, and the button
+  tells you the date it starts.
+- A scheduled change shows as *"Power yearly until 3 Mar, then Pro monthly"*,
+  and **Undo scheduled change** cancels it any time before that date.
+
+**Tier wins over billing period**
+
+If you change both at once, the tier decides which way it's going. Power yearly →
+Pro monthly is a **move down** and waits for your renewal, even though monthly
+bills sooner. Pro yearly → Power monthly is a **move up** and happens now.
+
+If you bought a **founding** Pro seat, it isn't a rung on this ladder: it's a
+first-purchase price, so it's never offered to an existing subscriber and you
+won't be moved onto standard Pro yearly by accident. Power is still offered as a
+move up, and monthly as a move down at renewal.
+
+### Cancelling
+
+**Cancel plan** ends your subscription at the renewal date — never mid-period.
+Nothing is charged again and nothing is refunded, because nothing extra was
+charged. You keep everything you've paid for until that date, then the account
+drops to Free.
+
+If you pay through Stripe you can change your mind with **Keep my plan** right
+up to that date. Razorpay can't un-cancel a subscription, so the confirmation
+says so and restarting there means starting a new one.
 
 ## Appearance
 
@@ -2751,8 +2819,10 @@ card. It shows two things, each copyable in one click: this instance's **MCP
 endpoint**, and the **`npx skills add`** command that teaches an assistant how
 to use Dhaga. A token from the card below it is what a client running on your
 own machine — Claude Code, Cursor — signs in with; claude.ai and ChatGPT connect
-as a connector instead and need no token at all. Which route is yours, and what
-to paste where, is in [Connect your AI assistant](/docs/guide/mcp).
+as a connector instead and need no token at all. On a hosted instance both routes
+need Pro or Power: the connector isn't a way around the gate on creating a token,
+because the endpoint itself checks the plan. Which route is yours, and what to
+paste where, is in [Connect your AI assistant](/docs/guide/mcp).
 
 ## Your time zone
 
@@ -3742,12 +3812,16 @@ an independent npm package.
 
 Source: https://www.dhaga.app/docs/extending/search-provider
 
-Implement the SearchClient interface and register a SearchProvider so Dhaga's enrichment and news-watchlist features run against your web search backend — Brave, SerpAPI, or a self-hosted SearXNG.
+Implement the SearchClient interface and register a SearchProvider so Dhaga's news/job-change watchlist runs against your web search backend — Brave, SerpAPI, or a self-hosted SearXNG.
 
-Web search powers enrichment and the opt-in news/job-change watchlist. It sits
-behind the `SearchClient` gateway in `packages/core/src/search/types.ts`, which
-mirrors the LLM gateway exactly. Firecrawl is the default; adding Brave,
-SerpAPI, or a self-hosted SearXNG is one implementation plus a registration.
+Web search powers the opt-in news/job-change watchlist. It sits behind the
+`SearchClient` gateway in `packages/core/src/search/types.ts`, which mirrors the
+LLM gateway exactly. (It does **not** power enrichment: that asks the *LLM*
+provider to run its own web search and never touches `getSearchClient()`.)
+Two providers ship built in — `anthropic`
+(Anthropic's own server-side `web_search` tool, the default) and `firecrawl` —
+and adding Brave, SerpAPI, or a self-hosted SearXNG is one implementation plus a
+registration.
 
 ## The contract
 
@@ -3776,6 +3850,38 @@ export interface SearchProvider {
   createClient(): SearchClient;
 }
 ```
+
+### Reporting what a search cost (optional)
+
+The same file exports a second, **optional** interface. Implement it only if
+your backend's searches carry a cost Dhaga's metering should see:
+
+```ts
+export interface SearchUsage {
+  /** Provider-side searches performed. Providers not billed per search report 0. */
+  searches: number;
+  /** Set only when the provider ran the search THROUGH a model. */
+  model?: string;
+  /** The model tokens that search consumed. Present iff `model` is. */
+  tokens?: LLMUsage;
+}
+
+export interface MeteredSearchClient extends SearchClient {
+  searchMetered(query: string, options?: SearchOptions): Promise<SearchResponse>;
+}
+```
+
+It is kept separate from `SearchClient` for the same Interface-Segregation
+reason `BatchLLMClient` is kept separate from `LLMClient`: a SearXNG or Brave
+client has no per-search inference bill to report and must not be forced to
+invent one. Callers feature-detect with `isMeteredSearchClient(client)` and
+meter only when they can, so **a plain `SearchClient` provider stays a
+first-class citizen** — nothing downstream changes.
+
+The built-in `anthropic` provider implements it because Anthropic's web search
+charges every retrieved page as input tokens to the searching model; the
+built-in `firecrawl` provider does not, because its flat subscription sits
+outside Dhaga's metering entirely.
 
 ## Implement and register
 
@@ -3808,11 +3914,14 @@ selectSearchProvider("searxng"); // or leave it to SEARCH_PROVIDER=searxng
 ## Selection and graceful degradation
 
 `getSearchClient()` resolves the active provider from `selectSearchProvider(...)`,
-then `SEARCH_PROVIDER`, then the `firecrawl` default
-(`packages/core/src/search/index.ts`). Features that use search first call
-`hasSearch()` — which returns your provider's `isConfigured()` — and degrade
-quietly when no provider is configured, so an unconfigured search backend
-never crashes a request; it just turns the feature off.
+then `SEARCH_PROVIDER`, then a built-in default: `firecrawl` where
+`FIRECRAWL_API_KEY` is set, otherwise `anthropic`
+(`packages/core/src/search/index.ts`). An instance that configured Firecrawl
+therefore keeps it with no config change; everywhere else search runs on the
+`ANTHROPIC_API_KEY` the product already needs. Features that use search first
+call `hasSearch()` — which returns the active provider's `isConfigured()` — and
+degrade quietly when no provider is configured, so an unconfigured search
+backend never crashes a request; it just turns the feature off.
 
 **Return an empty array, not an error, for no results**
 
@@ -3967,7 +4076,8 @@ This repo ships two things in one codebase:
    font presets) plus real user accounts (better-auth). This is what you get
    when you self-host. Nothing here is crippled or trial-limited.
 2. **`packages/ee`** — Dhaga Cloud only: multi-tenant row-level security,
-   the "request access" gate, the admin panel, and Stripe billing. Licensed
+   the pending-approval gate (open signup, `/pending` until an admin or a
+   payment lets you in), the admin panel, and Stripe billing. Licensed
    separately (source-available, noncompete — see
    [`packages/ee/LICENSE`](https://github.com/anchit2000/dhaga/blob/main/packages/ee/LICENSE)),
    not AGPL, not required to run the core.
@@ -3995,12 +4105,14 @@ This is the default state of `apps/web/.env.example` — the var isn't even
 listed there, only in [`packages/ee/.env.example`](https://github.com/anchit2000/dhaga/blob/main/packages/ee/.env.example).
 With it unset:
 
-- Every one of the four extension points in
-  [`apps/web/src/lib/hosted/gate.ts`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/lib/hosted/gate.ts)
-  (`TenantGate`, `SignupGate`, `BillingGate`, `AdminGate`) short-circuits to
-  its permissive default *before* it ever tries to load `@dhaga/ee` — so it
-  doesn't matter whether the package is physically present.
-- The two EE-only routes (`/api/access-requests`, `/api/stripe/webhook`)
+- Every one of the extension points in
+  [`apps/web/src/lib/hosted/gate/`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/lib/hosted/gate)
+  (`TenantGate`, `SignupGate`, `BillingGate`, `ApprovalGate`, `AdminGate`,
+  `ReferralGate`) short-circuits to its permissive default *before* it ever
+  tries to load `@dhaga/ee` — so it doesn't matter whether the package is
+  physically present.
+- The EE-only routes (`/api/access-requests`, `/api/stripe/webhook`,
+  `/api/razorpay/order`, `/api/razorpay/verify`, `/api/razorpay/webhook`)
   additionally check the flag themselves and return `404` if it's off, so an
   unrelated visitor can't accidentally trigger EE's schema setup against your
   database even if `packages/ee` happens to be installed and `DATABASE_URL`
@@ -4022,6 +4134,7 @@ packages/ee/
 apps/web/src/app/app/admin/
 apps/web/src/app/api/access-requests/
 apps/web/src/app/api/stripe/
+apps/web/src/app/api/razorpay/
 apps/web/src/lib/actions/admin/
 apps/web/src/components/app/admin/
 apps/web/src/components/app/table/AdminTables.tsx
@@ -4065,14 +4178,49 @@ takes over. Self-hosting the core for a genuinely shared, trusted household
 where everyone is fine seeing everyone's data is not supported by relaxing this
 guard — the guard is what keeps "single-user" honest.
 
-## Disabling just billing (keep admin + early access)
+## Disabling just billing (keep admin + the approval queue)
 
 If you're running the hosted product but not ready to charge (a free beta,
-for instance), you don't need to touch `DHAGA_HOSTED_MODE`. Simply don't set
-`STRIPE_SECRET_KEY`. The settings page's "Plan & billing" section checks for
-that key itself and renders nothing — not a broken "Upgrade" button, no
-section at all — while the admin panel and early-access gate keep working
-normally.
+for instance), you don't need to touch `DHAGA_HOSTED_MODE`. Simply leave the
+processor credentials unset — **both** of them: `STRIPE_SECRET_KEY`, and
+`RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET`. The settings page's "Plan & billing"
+section checks for them itself and renders nothing — not a broken "Upgrade"
+button, no section at all — while the admin panel and the approval queue keep
+working normally. `/pending` then shows no "skip the queue" buttons either, since
+the only way in is an admin. Setting just one of the two is a valid
+configuration, not a half-off switch: the section appears and sells through
+whichever processor is configured.
+
+The whole subscription lifecycle sits behind the same wall. Plan changes
+(`packages/ee/src/billing/plan-change/`), cancel and resume, the founding-seat
+claim (`billing/founding/`), the charge/refund/dispute ledger
+(`billing/payments/`) and the webhook receivers (`billing/webhook/`,
+`billing/razorpay/`) are all EE-only, and the `subscriptions` and `payments`
+tables they write are created by EE's schema — a core-only self-host has neither
+the code nor the tables, and needs neither. The Level 2 removal list above
+already covers this: it deletes `packages/ee/` and the two API route folders
+wholesale, so new billing modules never add entries to it.
+
+## The pending-approval gate (hosted only)
+
+On a hosted instance signup is **open** — anyone can create an account — but a
+new account is created *unapproved* (`user.approved_at` is null, a column
+`packages/ee` adds; core's own schema never has it). An unapproved account can
+authenticate and reach exactly three things: `/pending`, the checkout that pays
+for it, and sign-out. Every other `/app/*` page redirects to `/pending` and
+every authenticated API route refuses it, enforced once in
+`apps/web/src/lib/auth/guard.ts`.
+
+Approval is granted by an admin approving the access request, by a payment the
+processor has **confirmed** (the webhook — never at checkout-intent time, so an
+abandoned checkout grants nothing), or by an admin comp plan. A refund or
+chargeback revokes it; a cancellation does not.
+
+**None of this exists on a self-host.** Without `packages/ee` the `ApprovalGate`
+falls back to its permissive default — `isApproved` is always true, `/pending`
+is unreachable, and the `approved_at` column is never even created. Same
+open-core pattern as billing and the admin gate
+(`apps/web/src/lib/hosted/gate`).
 
 ## Referral rewards (hosted/EE only)
 
@@ -4089,7 +4237,7 @@ In hosted mode the reward is delivered Stripe-safely. An advocate who already
 has a live Stripe subscription is given a Stripe coupon — set
 `STRIPE_REFERRAL_COUPON_ID` to a `duration: once`, 100%-off coupon you create in
 the Stripe dashboard — while free/comp users get an additive comp Pro month
-(their `current_period_end` is extended, never downgrading a lifetime grant). If
+(their `current_period_end` is extended, never downgrading a higher tier). If
 `STRIPE_REFERRAL_COUPON_ID` is unset when a paying advocate qualifies, the grant
 fails loud and the referral stays `pending` for retry rather than silently
 half-rewarding.
@@ -4097,16 +4245,16 @@ half-rewarding.
 ## Creating the first admin user
 
 There's a deliberate chicken-and-egg problem here: the admin panel can only
-promote a user to admin if you're *already* an admin, and (in hosted mode)
-signup itself is gated behind an approved access request, which normally
-only an admin can approve. `DHAGA_ADMIN_EMAILS` breaks that circle:
+promote a user to admin if you're *already* an admin, and (in hosted mode) a
+new account lands unapproved on `/pending`, which normally only an admin can
+clear. `DHAGA_ADMIN_EMAILS` breaks that circle:
 
 1. Set `DHAGA_HOSTED_MODE=true` and `DHAGA_ADMIN_EMAILS=you@yourdomain.com`
    (comma-separated if more than one) in `packages/ee`'s environment.
-2. Go to `/signup` and create an account with that exact email address.
-   `DHAGA_ADMIN_EMAILS` bypasses the access-request check for these specific
-   emails — this is the one case where signup works without a prior
-   approved request.
+2. Go to `/signup` and create an account with that exact email address. These
+   emails are approved on the way in rather than parked on `/pending`, and an
+   admin is let through regardless of `approved_at` — so an admin can never be
+   locked out of their own instance.
 3. You're now an admin automatically — `isAdmin` checks `DHAGA_ADMIN_EMAILS`
    in addition to the database flag, so nothing needs to be flipped
    manually. `/app/admin` is live for that account immediately.
@@ -4124,10 +4272,10 @@ controls it.
 From a user's detail page (`/app/admin/users/[id]`) an admin can, without
 Stripe, comp that user's access:
 
-- **Plan** — set `free`, `pro`, or `lifetime`. `free` removes the subscription
+- **Plan** — set `free`, `pro`, or `power`. `free` removes the subscription
   row (the account falls back to the instance default allowance); `pro` and
-  `lifetime` move it onto that plan's monthly allowance — 300 credits a month
-  for Pro, no ceiling at all for Lifetime.
+  `power` move it onto that plan's monthly allowance — 300 credits a month for
+  Pro, 1,000 for Power.
 - **Expiry** — an optional date on a paid plan. Once it passes the plan stops
   being in play and the account drops back to the instance default allowance
   (leave it blank for no expiry).
@@ -4138,6 +4286,21 @@ Stripe, comp that user's access:
   charged per user-visible action, not per model call — a card scan costs 1
   credit whether it takes one round-trip or three, and deep research costs 20
   (`packages/core/src/metering/credits.ts`, BRD §8.3).
+
+**An admin can comp a plan up, but may only lower or remove a plan an admin
+granted.** A user who pays through a live Stripe or Razorpay subscription can't
+be downgraded from the admin page, because our row and the processor would then
+disagree and the card would keep being charged for access we just revoked. Those
+changes belong in the customer's own **Plan & billing** settings, or in the
+processor dashboard. The plan selector disables the options the server would
+refuse and states why — but the refusal itself is enforced server-side and
+re-checked inside the transaction, so it holds however the request arrives. The
+guard is specifically "there is a live processor subscription behind this row":
+a comped plan (the `admin-granted:` sentinel), a cancelled subscription and a
+never-completed checkout are all still lowerable, and raising a tier is always
+allowed. Setting a genuine former customer back to `free` cancels their
+processor subscription before the row is deleted, so a downgrade can't leave a
+processor billing a subscription the database has forgotten.
 
 These controls live only in the EE admin panel. On a core-only self-host billing
 isn't running, so no plan is ever in play and every user resolves through the
@@ -4153,8 +4316,8 @@ behind it:
 
 - **Plan-cap enforcement** — a master switch that is **on by default**
   (`AI_PLAN_CAP_ENFORCEMENT_DEFAULT = true`). In the shipped state every user is
-  held to the monthly allowance for their plan: Free and Pro have a number,
-  Lifetime / Annual has no cap. That is what the pricing page states — it sells
+  held to the monthly allowance for their plan: Free, Pro and Power each have a
+  number. That is what the pricing page states — it sells
   Pro and Annual as **300 credits a month** and says what runs out when they do
   — so leave it on unless you have a reason not to. Turning it **off** is an
   escape hatch (a migration, an incident), not a resting state: the allowances
@@ -4346,9 +4509,24 @@ at it:
   https://your-domain/api/jobs/detect-signals
 ```
 
-Requires `CRON_SECRET` and `FIRECRAWL_API_KEY` (or another `SEARCH_PROVIDER`)
-set — see `.env.example`. Without `CRON_SECRET` the route always returns
-401, so it's safe to leave unconfigured if you don't want the feature.
+Requires `CRON_SECRET` and a search provider. Since 2026-08-08 the default
+provider is **Anthropic's own server-side `web_search` tool**, so
+`ANTHROPIC_API_KEY` on its own is enough — `FIRECRAWL_API_KEY` is optional and
+only takes precedence where you set it. See "Search providers" in
+[Providers](/docs/self-hosting/providers) and `.env.example`. Without
+`CRON_SECRET` the route always returns 401, so it's safe to leave unconfigured if
+you don't want the feature. Without any search provider the sweep returns
+`{ skipped: "no_search" }` and writes nothing, and the contact-page toggle that
+would enrol someone in it is greyed out "Coming soon" rather than arming a scan
+that can't run — see "Optional providers, and what the UI does without them"
+below.
+
+Two honest caveats. **This path has never been run against a live Anthropic
+key** — it typechecks and is unit-tested, but no end-to-end sweep has been
+observed, so treat it as armed rather than proven. And it is **not free**:
+Anthropic bills $10 per 1,000 searches on top of charging every retrieved page
+as input tokens to the searching model. The token half is recorded against your
+instance's dollar ceiling; the per-search charge is not.
 
 ### Nightly curation passes (person/service classification, goal matching)
 
@@ -4399,6 +4577,36 @@ Vercel Hobby caps crons at once per day, and a more-frequent entry in
 available there. Off Vercel, an hourly system crontab or container timer hitting
 the same URL with the same `Authorization: Bearer $CRON_SECRET` header is enough.
 
+## Optional providers, and what the UI does without them
+
+Everything above is core and self-hostable, but four capabilities need
+something this repo deliberately doesn't ship: a third-party provider, or a
+browser feature. Dhaga is in beta, and the product rule is that a control which
+cannot do its job is **greyed out with a "Coming soon" label and the reason** —
+never rendered live to silently no-op. So an unconfigured provider is visible in
+the UI rather than a mystery. Every one of these is a **runtime** check, so the
+control lights itself up the moment the missing piece is in place, with no code
+change and no extra flag to flip.
+
+| Capability | Needs | What happens without it |
+|---|---|---|
+| Job-change detection + news watchlist | `ANTHROPIC_API_KEY` (the default provider is Anthropic's own server-side web search), or `FIRECRAWL_API_KEY`, or another registered `SEARCH_PROVIDER` | `hasSearch()` is false, so `/api/jobs/detect-signals` returns `{ skipped: "no_search" }` and writes no signals, and the contact page's "Watch for job changes & news" toggle is greyed out "Coming soon" instead of arming a scan that would never run. **Since 2026-08-08 an instance that set `ANTHROPIC_API_KEY` for the other AI features has this on by default** — the same runtime `hasSearch()` check un-greys the toggle with no code change and no extra flag. Unproven, though: no end-to-end sweep has been run against a live key, and searches cost $10/1k on top of tokens |
+| Semantic (vector) search | `DHAGA_EMBEDDINGS` left unset (it defaults on), plus pgvector or a `DHAGA_VECTOR_STORE` | With `DHAGA_EMBEDDINGS=off`, `embeddingsEnabled()` is false: search runs on keywords + trigram only, and the search palette's **Semantic similarity** weight slider is greyed out "Coming soon" because it would be weighting an empty result set |
+| SMS | `TWILIO_ACCOUNT_SID` + `TWILIO_AUTH_TOKEN` + `TWILIO_FROM_NUMBER` | `smsEnabled()` is false and no code can be delivered. **This one stays gated even with Twilio configured**: there is no phone-number sign-in path anywhere in the app (email, magic link, passkey and social are the ways in), so Settings → Security → Phone number is "Coming soon" either way — only the wording changes, to name which half is missing |
+| Voice notes (in-browser dictation) | **WebGPU in the visitor's browser** — not a server setting you can supply | Dhaga Voice runs the Moonshine speech model on the user's own device and has no CPU/WASM fallback, so on iOS Safari and most mobile browsers the mic button renders greyed out "Coming soon" up front rather than failing after a tap. Chrome or Edge on desktop works today. (Transcribing voice notes *forwarded to a WhatsApp/Telegram bot* is a separate, server-side gateway keyed off `TRANSCRIPTION_PROVIDER`, which ships no provider yet either) |
+
+The copy for all four lives in one place,
+[`apps/web/src/utils/constants/coming-soon.ts`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/utils/constants/coming-soon.ts),
+and the affordance is
+[`apps/web/src/components/app/ComingSoonNotice.tsx`](https://github.com/anchit2000/dhaga/blob/main/apps/web/src/components/app/ComingSoonNotice.tsx).
+Nothing in it links to pricing: "coming soon" is an admission that nobody can
+have the feature yet, not an upsell.
+
+Two things this table does **not** cover, because they degrade rather than
+gate: `ANTHROPIC_API_KEY` (see the env table below — AI features fall back to
+heuristic parsing or switch off), and `RESEND_*` (every recurring email becomes
+a clean no-op).
+
 ## Self-host env var reference
 
 Everything below lives in `apps/web/.env.local` — see
@@ -4419,9 +4627,11 @@ None of the `packages/ee/.env.example` vars (`DHAGA_HOSTED_MODE`,
 | `MORNING_REMINDER_HOURLY` | No | Deprecated alias for `EMAIL_JOBS_HOURLY`, still honoured for one release. Despite the name it now gates all three of those jobs, not just the morning reminder — prefer the new name |
 | `TELEGRAM_*` | No | Owner-only bot capture |
 | `DHAGA_WEBHOOK_URL` | No | Outbound automation |
-| `SEARCH_PROVIDER`, `FIRECRAWL_API_KEY` | No | Job-change detection + news watchlist |
+| `SEARCH_PROVIDER`, `FIRECRAWL_API_KEY` | No | Job-change detection + news watchlist. Both optional: leave them unset and search runs on `ANTHROPIC_API_KEY` via Anthropic's own web-search tool, which is the default. Set `FIRECRAWL_API_KEY` and Firecrawl wins instead; `SEARCH_PROVIDER` overrides both. With no key at all the nightly sweep no-ops and the watch toggle is greyed out — see "Optional providers" above |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` | No | SMS delivery. Note phone-number sign-in is unbuilt regardless, so the Settings phone section stays gated either way — see "Optional providers" above |
 | `CRON_SECRET` | No | Required to enable `/api/jobs/detect-signals` — see above |
-| `DHAGA_AI_MONTHLY_CAP`, `DHAGA_DATA_DIR`, `DHAGA_EMBEDDINGS` | No | See `.env.example` for defaults |
+| `DHAGA_EMBEDDINGS` | No | Defaults **on**. Set `off` to skip local semantic indexing — search then runs keyword + trigram only and the semantic weight slider is greyed out; see "Optional providers" above |
+| `DHAGA_AI_MONTHLY_CAP`, `DHAGA_DATA_DIR` | No | See `.env.example` for defaults |
 
 See [Deploying](/docs/self-hosting/deploy) for the full deploy walkthrough (Vercel and
 single-server options), including the additional `packages/ee` vars if you
@@ -4726,11 +4936,16 @@ page + waitlist (email fallback) function.
    - `DHAGA_EMBEDDINGS=off` recommended on Vercel for now: the local
      embedding model (~100 MB of native runtime) is a poor fit for
      serverless functions; search falls back to keyword matching.
-   - `CRON_SECRET`, `FIRECRAWL_API_KEY` — optional, job-change detection +
-     news watchlist. `apps/web/vercel.json` already declares the nightly
-     cron; Vercel sends `Authorization: Bearer $CRON_SECRET` to it
-     automatically once the var is set (unset = the route 401s to everyone,
-     including Vercel's own cron — the feature is simply off).
+   - `CRON_SECRET` — optional, job-change detection + news watchlist.
+     `apps/web/vercel.json` already declares the nightly cron; Vercel sends
+     `Authorization: Bearer $CRON_SECRET` to it automatically once the var is
+     set (unset = the route 401s to everyone, including Vercel's own cron —
+     the feature is simply off). The sweep's web search needs no separate
+     provider: it defaults to Anthropic's own server-side `web_search` tool on
+     the `ANTHROPIC_API_KEY` above. `FIRECRAWL_API_KEY` is optional and takes
+     precedence only where you set it. Two caveats — the Anthropic search path
+     has never been run against a live key, and searches are billed $10/1k on
+     top of the input tokens every retrieved page costs.
    - `NEXT_PUBLIC_SITE_URL` — set once a custom domain is attached (step 4):
      the canonical origin for the sitemap, robots.txt, OG tags, and llms.txt.
      Defaults to the Vercel preview URL until then.
@@ -4747,10 +4962,55 @@ account once it's live.
   without it, regardless of whether the other vars below are set.
 - `DHAGA_ADMIN_EMAILS` — comma-separated emails that bootstrap into admins
   on signup (see Self-hosting's "Creating the first admin user").
-- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_PRO_ANNUAL`,
-  `STRIPE_PRICE_LIFETIME` — from the Stripe Dashboard (test-mode keys while
-  developing). Omit `STRIPE_SECRET_KEY` to run hosted mode without billing
-  (e.g. a free beta) — the billing UI simply doesn't render without it.
+- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and one price id per
+  (tier, cadence): `STRIPE_PRICE_PRO_MONTHLY`, `STRIPE_PRICE_PRO_ANNUAL`,
+  `STRIPE_PRICE_POWER_MONTHLY`, `STRIPE_PRICE_POWER_ANNUAL`. Any left blank is
+  simply not offered — the picker
+  renders only combinations that have a price. Omit `STRIPE_SECRET_KEY`
+  entirely to run hosted mode without billing (e.g. a free beta).
+  Reference prices, BRD §8.3: Pro $10/mo or $96/yr, Power $30/mo or $288/yr.
+  Every tier is recurring — there is no one-time purchase.
+- **Local currency is Stripe Adaptive Pricing**, a Dashboard setting on
+  Checkout — not code and not extra env vars. Turn it on there and a visitor in
+  the UAE is quoted dirhams off the same price id.
+- `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, one
+  **Plan id** per (tier, cadence) — `RAZORPAY_PLAN_PRO_MONTHLY`,
+  `RAZORPAY_PLAN_PRO_YEARLY`, `RAZORPAY_PLAN_POWER_MONTHLY`,
+  `RAZORPAY_PLAN_POWER_YEARLY`. Optional and independent of Stripe: either
+  processor alone is enough for the billing UI to render. Reference prices: Pro
+  ₹899/mo or ₹8,499/yr, Power ₹2,599/mo or ₹24,999/yr — roughly parity with the
+  USD figures, so BRD §8.3's margins carry over.
+- `RAZORPAY_PLAN_PRO_FOUNDING_YEARLY` — **optional**, and the only way to sell
+  Founding Pro (₹6,999 a year against the standard ₹8,499, and it **renews at
+  ₹6,999** — a founding member keeps that price for as long as the subscription
+  stays active, not just year one. There is nothing to configure for that: the
+  Plan carries the amount and Razorpay charges it every cycle. `createSubscription`
+  books `CYCLES_PER_YEAR × SUBSCRIPTION_HORIZON_YEARS` cycles — ten yearly ones —
+  because Razorpay has no "bill until cancelled" and `total_count` is mandatory,
+  so the subscription *completes* after that horizon rather than running
+  forever). Leave it unset and the offer does not exist:
+  no card on /pricing, no schema.org offer, no claim button. There is
+  deliberately no Stripe equivalent — a USD checkout would mint a seat the cap
+  can't see. The cap itself is 500, a constant in
+  `packages/ee/src/billing/founding/cap.ts` and NOT an env var (it is a promise
+  printed on a public page), enforced by claiming a row in `founding_seats`
+  when the checkout is created. Seats are claimed at checkout INTENT, so an
+  abandoned checkout holds one: the offer can sell fewer than 500, never more.
+  How many are claimed is **not** public — /pricing quotes only the static cap,
+  and claimed-vs-500 is a stat card on /app/admin.
+- **Processor routing** is by `x-vercel-ip-country`: India leads with Razorpay,
+  everywhere else with Stripe (`RAZORPAY_COUNTRIES`,
+  `apps/web/src/lib/billing/processor.ts`). It only reorders the buttons —
+  both stay clickable wherever both are configured, because IP geo is wrong
+  often enough that locking someone out of paying is the worse failure.
+- Register the Razorpay webhook at
+  `https://your-domain/api/razorpay/webhook`, subscribed to at least
+  `subscription.activated`, `subscription.charged`, `subscription.halted`,
+  `subscription.cancelled`. Its secret is **per-endpoint
+  and not the API key secret**. Without it, a customer who closes the tab
+  mid-redirect is charged and never upgraded, and renewals never update the
+  stored status. Razorpay-paid customers also have no billing portal —
+  cancelling is dashboard-side.
 - Register the webhook in Stripe pointing at
   `https://your-domain/api/stripe/webhook`, subscribed to at least
   `checkout.session.completed`, `customer.subscription.updated`,
@@ -5080,6 +5340,65 @@ export const searxng: SearchProvider = {
 
 Use `registerSearchProvider`, then either `selectSearchProvider("searxng")`
 or `SEARCH_PROVIDER=searxng`.
+
+Two providers ship built in:
+
+| `id` | Implementation | Configured when |
+|---|---|---|
+| `anthropic` | `AnthropicSearchClient` — Anthropic's own server-side `web_search` tool, run on the extract-tier model | `ANTHROPIC_API_KEY` is set |
+| `firecrawl` | `FirecrawlSearchClient` — Firecrawl's search API | `FIRECRAWL_API_KEY` is set |
+
+**Which one runs, most specific first:** an explicit `selectSearchProvider(id)`
+→ `SEARCH_PROVIDER` → `FIRECRAWL_API_KEY` set ? `firecrawl` : `anthropic`.
+
+So Firecrawl stays the provider on any instance that actually configured it —
+an existing self-host keeps its behaviour with no config change and no surprise
+switch to a differently-metered one. Everywhere else the default is Anthropic,
+which means `hasSearch()` is true on any instance that already set
+`ANTHROPIC_API_KEY` for the other AI features. With neither key set the default
+is still `anthropic`, so the error a caller eventually sees names
+`ANTHROPIC_API_KEY` — the key that would actually fix it.
+
+**Wired, not yet proven**
+
+The `anthropic` provider has never been exercised against a live key: it
+typechecks and is unit-tested against recorded response shapes, but no
+end-to-end search has been observed. It is also billed twice over — $10 per
+1,000 searches *and* every retrieved page charged as input tokens to the
+searching model — so the published cost figures for the watchlist sweep are
+estimates, not measurements.
+
+### Reporting what a search cost (optional)
+
+A provider **may** additionally implement `MeteredSearchClient`, which adds one
+method returning the results *and* their cost:
+
+```ts
+import type { MeteredSearchClient } from "@dhaga/core";
+
+const client: MeteredSearchClient = {
+  async search(query, options) { /* … */ },
+  async searchMetered(query, options) {
+    return {
+      results: await this.search(query, options),
+      // `model` + `tokens` only when the search ran THROUGH a model.
+      usage: { searches: 1 },
+    };
+  },
+};
+```
+
+This is a **capability, not a requirement** — kept separate from `SearchClient`
+for the same Interface-Segregation reason `BatchLLMClient` is kept separate from
+`LLMClient`. A SearXNG or Brave client has no per-search inference bill to report
+and must not be forced to invent one. Callers feature-detect with
+`isMeteredSearchClient(client)` and meter only when they can, so a plain
+`SearchClient` still needs zero changes anywhere else.
+
+It exists because the built-in providers cost money in different currencies:
+Firecrawl bills a flat subscription outside Dhaga's metering entirely, while
+Anthropic's web search charges retrieved pages as model input tokens — a real
+inference bill the instance dollar ceiling has to see.
 
 ## Embedding providers and vector stores
 

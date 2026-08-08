@@ -44,9 +44,10 @@ Switch to an AI capture mode for however else you captured the person:
 <Callout title="Voice needs WebGPU">
 Dhaga Voice dictation runs entirely on-device, so it needs **WebGPU** — available
 today in desktop Chrome and Edge. On iOS Safari and other browsers without WebGPU,
-Dhaga detects this up front and shows a clean "voice isn't supported on this
-device — type it in instead" message rather than failing mid-recording. Manual
-entry is always available.
+Dhaga detects this up front: the mic is greyed out with a "Coming soon" note
+explaining why, so you never tap a button that can't work. It's a live capability
+check, not a browser blocklist — the mic switches itself on the day your browser
+ships WebGPU. Typing and manual entry are always available.
 </Callout>
 
 - **Card photo** — take or upload a photo of a business card. Dhaga runs OCR and

@@ -1,8 +1,9 @@
 /**
- * EE-owned tables — not part of core's tenant data, so no RLS needed here;
- * these are control-plane tables the admin panel/webhooks read directly.
+ * Access requests, the pending-approval column, and the one-shot migration
+ * marker table every backfill in this directory gates itself on. Ordered first
+ * in ./index because `dhaga_ee_migrations` must exist before anything uses it.
  */
-export const EE_TABLES_DDL = `
+export const ACCESS_DDL = `
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 CREATE TABLE IF NOT EXISTS access_requests (
@@ -44,47 +45,38 @@ BEGIN
   UPDATE access_requests SET email = lower(email) WHERE email <> lower(email);
 END $$;
 
-CREATE TABLE IF NOT EXISTS subscriptions (
+-- Pending-approval gate ("payment is the invite"). Signup is open, but a hosted
+-- account only reaches /app once approved_at is set — by an admin approving the
+-- access request, by a confirmed payment, or by an admin comp. EE-owned and
+-- additive: core's AUTH_DDL never adds this column, so a self-hosted instance
+-- without packages/ee has no gate at all (ApprovalGate's permissive default).
+ALTER TABLE "user" ADD COLUMN IF NOT EXISTS approved_at timestamptz;
+
+-- BACKFILL, exactly once. Every account that existed when the gate shipped was
+-- created under the old "approval happens before signup" wall, so all of them
+-- are already approved — leaving them null would lock out every real user on
+-- the next deploy. It must not repeat: a plain UPDATE ... WHERE approved_at IS
+-- NULL would re-approve everyone still legitimately pending on the next DDL
+-- replay (this whole script re-runs whenever its text changes). A marker row
+-- makes it one-shot and idempotent, same pattern as core's
+-- grandfather-email-verification-v1.
+CREATE TABLE IF NOT EXISTS dhaga_ee_migrations (
   id text PRIMARY KEY,
-  user_id text NOT NULL UNIQUE,
-  stripe_customer_id text NOT NULL,
-  stripe_subscription_id text,
-  plan text NOT NULL,
-  status text NOT NULL,
-  current_period_end timestamptz,
-  cancel_at_period_end boolean NOT NULL DEFAULT false,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
+  applied_at timestamptz NOT NULL DEFAULT now()
 );
-CREATE INDEX IF NOT EXISTS subscriptions_stripe_customer_id_idx ON subscriptions (stripe_customer_id);
-CREATE INDEX IF NOT EXISTS subscriptions_stripe_subscription_id_idx ON subscriptions (stripe_subscription_id);
-CREATE INDEX IF NOT EXISTS subscriptions_status_plan_created_idx ON subscriptions (status, plan, created_at DESC);
+WITH applied AS (
+  INSERT INTO dhaga_ee_migrations (id)
+  VALUES ('backfill-user-approval-v1')
+  ON CONFLICT DO NOTHING
+  RETURNING id
+)
+UPDATE "user"
+SET approved_at = now()
+WHERE approved_at IS NULL
+  AND EXISTS (SELECT 1 FROM applied);
+
 CREATE INDEX IF NOT EXISTS access_requests_status_requested_idx ON access_requests (status, requested_at DESC);
 CREATE INDEX IF NOT EXISTS ee_user_created_idx ON "user" (created_at DESC);
 CREATE INDEX IF NOT EXISTS ee_user_name_trgm_idx ON "user" USING GIN (name gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS ee_user_email_trgm_idx ON "user" USING GIN (email gin_trgm_ops);
-
--- Two-sided referral program (Dhaga Cloud). Control-plane, same as
--- subscriptions/access_requests — NO RLS (rls-ddl.ts's tenant loop deliberately
--- excludes these; referral reads/writes filter by an explicit user_id/code).
-CREATE TABLE IF NOT EXISTS referral_codes (
-  user_id text PRIMARY KEY,
-  code text UNIQUE NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS referrals (
-  id text PRIMARY KEY,
-  code text NOT NULL,
-  referrer_user_id text NOT NULL,
-  referee_user_id text,
-  referee_email text,
-  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'rewarded', 'blocked')),
-  reward_kind text,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  rewarded_at timestamptz,
-  UNIQUE (code, referee_user_id)
-);
-CREATE INDEX IF NOT EXISTS referrals_referrer_user_id_idx ON referrals (referrer_user_id);
-CREATE INDEX IF NOT EXISTS referrals_referee_user_id_idx ON referrals (referee_user_id);
 `;

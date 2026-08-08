@@ -1,9 +1,8 @@
 import { APIError } from "better-auth/api";
 import { getDb } from "@/lib/db";
 import { authUser } from "@/lib/db/schema";
-import { getSignupGate } from "@/lib/hosted/gate";
+import { getApprovalGate, getSignupGate } from "@/lib/hosted/gate";
 import { notifyAccessRequested } from "@/lib/access/notify";
-import { isReferralBypassAllowed } from "@/lib/referral";
 import type { User } from "better-auth";
 
 /**
@@ -30,52 +29,61 @@ async function assertSingleUserOnCore(): Promise<void> {
 }
 
 /**
- * The signup gate's `create.before` hook body — extracted (rather than left
- * inline) so it's independently unit-testable. notifyAccessRequested sends
- * up to two emails (lib/email/send.ts, via Resend); a transient
- * provider/network failure there must never replace the intended
- * `APIError("FORBIDDEN", ...)` below with an unrelated 500 — the
- * confirmation email is a courtesy, not something the signup rejection can
- * be blocked on. This call site can't reach for next/server's after() the
- * way the other notifyAccessRequested caller (api/access-requests/route.ts)
- * does: better-auth's own types allow the hook's `context` to be null (it
- * isn't guaranteed to run inside an active Next.js request scope), and this
- * exact function also runs directly against a plain DB connection under
- * vitest with no HTTP request in play at all — after() would throw there.
- * A plain try/catch works in every one of those cases.
+ * better-auth's `user.create.before` hook.
+ *
+ * Signup is OPEN. This used to file an access request and then throw FORBIDDEN
+ * so no account was ever created on a gated hosted instance; under "payment is
+ * the invite" the account is always created and the waiting list moved to
+ * *after* the account exists (see grantOrRequestApproval below, and
+ * lib/hosted/gate's ApprovalGate). The only signup this still refuses is a
+ * second account on a core instance, which is a data-isolation bug, not a
+ * business rule.
  */
 export async function beforeUserCreate(
   user: User & Record<string, unknown>,
 ): Promise<{ data: User & Record<string, unknown> } | void> {
   await assertSingleUserOnCore();
-  const gate = await getSignupGate();
-  const { allowed, reason } = await gate.checkEmail(user.email);
-  if (!allowed) {
-    // A genuinely valid invite code lets a referred user past the
-    // access-request wall. EE's recordReferral (fired in create.after) is the
-    // authoritative self-referral/duplicate/cap guard — this only trusts a
-    // valid code, and best-effort: a failure here just keeps the normal
-    // allowlist path below.
-    if (await isReferralBypassAllowed()) {
-      return { data: user };
-    }
-    // The blocked signup attempt doubles as an access request, so
-    // the same email just works once an admin approves it — no
-    // separate "request access" step required first.
-    const submitted = await gate.requestAccess(user.email);
-    if (submitted) {
-      try {
-        await notifyAccessRequested(user.email);
-      } catch {
-        // Swallowed deliberately: the FORBIDDEN rejection below must always
-        // reach the caller, regardless of whether this best-effort
-        // confirmation email succeeds.
-      }
-    }
-    throw new APIError("FORBIDDEN", {
-      message:
-        reason ?? "We've sent your access request — check your email once you're approved.",
-    });
-  }
   return { data: user };
+}
+
+/**
+ * better-auth's `user.create.after` hook, approval half. Decides whether the
+ * brand-new account walks straight in or lands on /pending:
+ *
+ *  - the signup gate already knows the email (an admin approved the access
+ *    request before they signed up, or they're a DHAGA_ADMIN_EMAILS bootstrap
+ *    admin) → approved immediately;
+ *  - otherwise → unapproved, and the signup doubles as the access request, so
+ *    the admin queue lists them and approving it lets them in with no second
+ *    step.
+ *
+ * Never throws. The account exists by the time this runs, so a failure here
+ * must not turn a completed signup into an error page — the worst case is an
+ * account that sits on /pending until an admin or a payment moves it, which is
+ * exactly where an unapproved account belongs. notifyAccessRequested is
+ * best-effort for the same reason: the confirmation email is a courtesy.
+ */
+export async function grantOrRequestApproval(user: {
+  id: string;
+  email: string;
+}): Promise<void> {
+  const gate = await getSignupGate();
+  const { allowed } = await gate.checkEmail(user.email);
+  // A referral invite code deliberately does NOT approve. It still earns the
+  // referrer their reward (EE's recordReferral, also in create.after), but the
+  // only two ways past the queue are an admin and a confirmed payment —
+  // otherwise anyone holding a code walks around the wall.
+  if (allowed) {
+    await (await getApprovalGate()).approve(user.id);
+    return;
+  }
+  const submitted = await gate.requestAccess(user.email);
+  if (submitted) {
+    try {
+      await notifyAccessRequested(user.email);
+    } catch {
+      // Swallowed deliberately: an email-provider hiccup (lib/email/send.ts,
+      // via Resend) must not take down a signup that already succeeded.
+    }
+  }
 }

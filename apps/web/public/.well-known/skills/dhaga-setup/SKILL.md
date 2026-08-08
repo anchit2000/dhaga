@@ -41,8 +41,20 @@ copied by hand, so there is nothing to leak in a chat transcript.
 
 **Personal access token.** The user creates it in Dhaga under **Settings > Account >
 API keys** — the same token the mobile app uses. It goes in an `x-api-key` header.
+On the hosted tier, *creating* one needs a Pro or Power plan (tokens already issued
+keep working, on any plan); a self-hosted instance has no such gate.
 Treat it as a password: do not echo it back, do not paste it into a file the user
 shares. Revoking it in Settings cuts off every client holding it immediately.
+
+## Both paths need the plan
+
+On the hosted tier, `/api/mcp` itself is part of Pro and Power — the OAuth connector
+is **not** a way around a greyed-out Create token button. An account without the plan
+gets `403 {"error": "plan_required"}` on every request, whichever credential it sent.
+That is not an auth failure: do not retry, do not re-run the OAuth flow, do not suggest
+a different client. Tell the user to upgrade in Settings, or to self-host (no plans, no
+gate). If tools never appear and the client reports a connection error, check for that
+403 before debugging the config.
 
 ## Steps
 
@@ -86,6 +98,10 @@ that the config file the client actually loads is the one you edited.
 **401 with no challenge, on a client that worked yesterday.** A bearer token that fails
 to resolve is a hard 401. A revoked or expired OAuth grant looks exactly like this.
 Reconnect the connector — do not start rewriting the URL, which is rarely the cause.
+
+**403 with `{"error": "plan_required"}`.** Not an auth problem — the credential
+resolved fine, the account just isn't on Pro or Power (hosted tier only). Reconnecting
+and re-issuing tokens both change nothing. The `error_description` says what to do.
 
 **Self-hosted: OAuth tokens the client rejects.** If `BETTER_AUTH_URL` does not match
 the URL clients actually reach, the issued tokens carry the wrong issuer and the client

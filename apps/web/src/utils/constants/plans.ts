@@ -14,15 +14,21 @@
 export type PlanFeature = "enrichment" | "pre_meeting_brief" | "multi_device_sync";
 
 /** `self_hosted` = billing isn't running on this instance (no EE / no Stripe). */
-export type EntitlementPlan = "free" | "pro" | "lifetime" | "self_hosted";
+export type EntitlementPlan = "free" | "pro" | "power" | "self_hosted";
 
 export const PLAN_FEATURES: Record<EntitlementPlan, readonly PlanFeature[]> = {
   free: [],
   pro: ["enrichment", "pre_meeting_brief", "multi_device_sync"],
-  lifetime: ["enrichment", "pre_meeting_brief", "multi_device_sync"],
+  // Power is Pro's feature set with a bigger credit allowance — the tiers are
+  // separated by volume, not by capability, so nothing is gated away from Pro.
+  power: ["enrichment", "pre_meeting_brief", "multi_device_sync"],
   // Nothing is for sale on a self-hosted instance — the owner gets everything.
   self_hosted: ["enrichment", "pre_meeting_brief", "multi_device_sync"],
 };
+
+/** Power's allowance. Named separately because ai-budget.ts references it
+ *  directly when sizing the dollar ceiling. */
+export const POWER_PLAN_AI_CREDITS_PER_MONTH = 1000;
 
 /**
  * Monthly AI-credit allowance the credit model supports per plan (BRD §8.3),
@@ -48,17 +54,40 @@ export const PLAN_FEATURES: Record<EntitlementPlan, readonly PlanFeature[]> = {
 export const PLAN_AI_CREDITS_PER_MONTH: Record<EntitlementPlan, number | null> = {
   free: 10,
   pro: 300,
-  lifetime: null,
+  power: POWER_PLAN_AI_CREDITS_PER_MONTH,
   self_hosted: null,
 };
 
-/** The Power tier is sized here but not yet sold — no Stripe price and no
- *  `EntitlementPlan` member. Kept beside its siblings so the credit ladder is
- *  reviewed as one thing when it does ship. */
-export const POWER_PLAN_AI_CREDITS_PER_MONTH = 1000;
-
 export const FEATURE_LABELS: Record<PlanFeature, string> = {
-  enrichment: "Company enrichment, job-change detection & news alerts",
+  // "job-change detection & news alerts" — the rest of the original label — is
+  // deliberately gone. Those come from the nightly signal-detection job
+  // (lib/jobs/detect-signals), which is driven by the web-search gateway
+  // (@dhaga/core search, Firecrawl by default). With no search provider
+  // configured the job no-ops, so no signal is ever detected and no alert is
+  // ever raised — on any plan. The label sold a feature nobody receives.
+  // On-demand enrichment is untouched by that: it runs on the LLM's own
+  // web-search tool (lib/ai/enrich.ts), not the search gateway, so it ships.
+  enrichment: "On-demand company & person enrichment",
   pre_meeting_brief: "Pre-meeting briefs",
-  multi_device_sync: "Encrypted multi-device sync",
+  // The key stays `multi_device_sync` (it is referenced by plan data), but the
+  // label says what is actually gated: the integration surfaces that let
+  // something OTHER than this browser reach the graph. Three enforcement
+  // points, all on the same feature — minting a personal access token
+  // (lib/actions/api-keys.ts), connecting an MCP client (lib/mcp/auth.ts, which
+  // covers the OAuth path a token never touches), and linking a WhatsApp or
+  // Telegram chat (lib/actions/messaging.ts).
+  //
+  // The browser EXTENSION is deliberately absent: it authenticates with the
+  // logged-in cookie session (`credentials: "include"`, apps/extension/src/popup.ts),
+  // never a token, so claiming it here promised a gate that does not exist.
+  // "Encrypted multi-device sync" — the original label — described a sync
+  // engine that does not exist either.
+  multi_device_sync: "MCP clients, WhatsApp & Telegram capture, and API tokens for the mobile app and scripts",
 };
+
+/**
+ * How long a hover rests on a plan-gated control before its tooltip opens
+ * (`PlanGateNotice`). Well under Base UI's 600ms default: the reason is an
+ * explanation someone is actively hunting for, not an incidental label.
+ */
+export const PLAN_GATE_TOOLTIP_DELAY_MS = 150;

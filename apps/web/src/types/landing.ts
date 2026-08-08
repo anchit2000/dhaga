@@ -3,6 +3,7 @@
  * out of ./index.ts under the File Length Rule and re-exported from there, so
  * every `@/types` import path holds unchanged.
  */
+import type { BillingTier } from "@/utils/constants/pricing";
 
 export interface HowItWorksStep {
   step: string;
@@ -27,9 +28,12 @@ export interface ComparisonRow {
 
 export interface PricingPlan {
   tier: string;
-  monthlyPrice: number;
-  yearlyMonthlyPrice: number;
-  yearlyTotal: number;
+  /** Which row of `PRICES` (@/utils/constants/pricing) this card quotes.
+   *  Omitted for Free, which is 0 in every currency. The amounts are NOT
+   *  restated here: the cards render whichever currency the visitor is
+   *  looking at, so one source per (tier, cadence, currency) is the only way
+   *  a card and a checkout can't disagree. */
+  priceTier?: BillingTier;
   /** One plain sentence on who the plan is for, in people-per-month terms. */
   suits?: string;
   highlight: boolean;

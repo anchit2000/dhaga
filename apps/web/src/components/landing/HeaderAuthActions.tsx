@@ -36,9 +36,9 @@ export function HeaderAuthActions(): ReactElement {
         >
           Sign in
         </Link>
-        <Button render={<Link href="/#request-access" />} size="sm" className="min-h-11">
-          <span className="sm:hidden">Join beta</span>
-          <span className="hidden sm:inline">Request early access</span>
+        <Button render={<Link href="/signup" />} size="sm" className="min-h-11">
+          <span className="sm:hidden">Sign up</span>
+          <span className="hidden sm:inline">Create your account</span>
         </Button>
       </div>
       <div className="hidden items-center group-data-[signed-in=true]/auth:flex">

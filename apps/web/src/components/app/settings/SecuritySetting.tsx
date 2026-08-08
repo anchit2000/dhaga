@@ -14,10 +14,17 @@ import { PhoneNumberSection } from "./PhoneNumberSection";
 interface SecuritySettingProps {
   email: string;
   twoFactorEnabled: boolean;
+  /** Resolved server-side by `smsEnabled()` — see the phone section for why it
+   *  only picks the wording, not whether the section is gated. */
+  smsEnabled: boolean;
 }
 
 /** Password, 2FA, passkeys, and phone verification — all optional, all self-serve. */
-export function SecuritySetting({ email, twoFactorEnabled: initialEnabled }: SecuritySettingProps) {
+export function SecuritySetting({
+  email,
+  twoFactorEnabled: initialEnabled,
+  smsEnabled,
+}: SecuritySettingProps) {
   const [enabled, setEnabled] = useState(initialEnabled);
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
@@ -116,7 +123,7 @@ export function SecuritySetting({ email, twoFactorEnabled: initialEnabled }: Sec
         </div>
 
         <PasskeySection />
-        <PhoneNumberSection />
+        <PhoneNumberSection smsEnabled={smsEnabled} />
       </CardContent>
     </Card>
   );

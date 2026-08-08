@@ -5,13 +5,19 @@ import { boolean, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core"
  * — same physical table, only the columns EE actually needs. EE can't
  * import apps/web's own schema module (wrong direction across the open-core
  * boundary), so this is a deliberate, minimal duplication of the columns
- * that matter here (id, email, isAdmin).
+ * that matter here (id, email, isAdmin, approvedAt).
+ *
+ * `approved_at` is EE-owned (added by EE_TABLES_DDL, not core's AUTH_DDL): the
+ * pending-approval gate is a Dhaga Cloud concept only, and a self-hosted core
+ * database never grows the column at all — its ApprovalGate default approves
+ * everyone. Null means "signed up, not yet let in".
  */
 export const eeUser = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull(),
   isAdmin: boolean("is_admin"),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
   createdAt: timestamp("created_at").notNull(),
 });
 
@@ -43,20 +49,3 @@ export const accessRequests = pgTable("access_requests", {
 
 export type AccessRequestRow = typeof accessRequests.$inferSelect;
 export type AccessRequestStatus = "pending" | "approved" | "rejected";
-
-export const subscriptions = pgTable("subscriptions", {
-  id: text("id").primaryKey(),
-  userId: text("user_id").notNull().unique(),
-  stripeCustomerId: text("stripe_customer_id").notNull(),
-  stripeSubscriptionId: text("stripe_subscription_id"), // null for Lifetime (one-time payment)
-  plan: text("plan").notNull(), // 'lifetime' | 'pro'
-  status: text("status").notNull(), // 'active' | 'past_due' | 'canceled' | 'incomplete'
-  currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
-  cancelAtPeriodEnd: boolean("cancel_at_period_end").notNull().default(false),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-});
-
-export type SubscriptionRow = typeof subscriptions.$inferSelect;
-export type SubscriptionPlan = "lifetime" | "pro";
-export type SubscriptionStatus = "active" | "past_due" | "canceled" | "incomplete";

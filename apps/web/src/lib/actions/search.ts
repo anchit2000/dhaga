@@ -20,6 +20,15 @@ export interface SearchState {
   query: string;
   hits: SearchIndexResult[];
   unindexed: number;
+  /**
+   * Whether semantic (embedding) retrieval actually contributed to `hits`.
+   * `embeddingsEnabled()` is server-only env config, and the palette is a
+   * client component, so it rides back on the same channel `unindexed` already
+   * uses rather than through a second lookup. The "Tune ranking" panel greys
+   * out its Semantic slider when this is false — with embeddings off the
+   * semantic source returns nothing and the slider weights an empty set.
+   */
+  semanticEnabled: boolean;
 }
 
 export async function searchAction(
@@ -28,16 +37,19 @@ export async function searchAction(
 ): Promise<SearchState> {
   await requireUserId();
   const query = String(formData.get("q") ?? "").trim();
-  if (!query) return { query: "", hits: [], unindexed: 0 };
+  // Resolved before the empty-query bail so BOTH return paths carry it —
+  // otherwise clearing the query would flip the Semantic slider's gate.
+  const semanticEnabled = embeddingsEnabled();
+  if (!query) return { query: "", hits: [], unindexed: 0, semanticEnabled };
   const weights = parseSearchWeights(formData.get("weights")?.toString());
   const index = getSearchIndex();
   const [hits, unindexed] = await Promise.all([
     index.search({ text: query, kinds: ["contact"], weights }),
-    embeddingsEnabled() ? index.countUnindexed() : Promise.resolve(0),
+    semanticEnabled ? index.countUnindexed() : Promise.resolve(0),
   ]);
   // Backfill runs after the response is sent — never blocks the palette.
   if (unindexed > 0) after(() => index.reindex());
-  return { query, hits, unindexed };
+  return { query, hits, unindexed, semanticEnabled };
 }
 
 /**

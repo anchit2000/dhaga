@@ -58,8 +58,11 @@ export function CaptureForm({
   // Off the home dock (the standalone page / nav dialog) the paste tab carries
   // its own mic, so suppress the dock's now-redundant Voice item there
   // (supported:false hides it) while keeping Camera / Upload. On the home dock
-  // the dock owns voice, so the inline mic stays hidden instead.
-  const inlineVoice = !inDialog;
+  // the dock owns voice, so the inline mic stays hidden instead — EXCEPT when
+  // voice can't run at all (no WebGPU): a dock icon has nowhere to put a visible
+  // "Coming soon" reason, and a hover-only tooltip fails the mobile-first rule,
+  // so ownership moves to the paste tab, whose greyed mic can say why in text.
+  const inlineVoice = !inDialog || voice.comingSoon !== null;
   const dockVoice = {
     supported: inlineVoice ? false : voice.supported,
     listening: voice.listening,

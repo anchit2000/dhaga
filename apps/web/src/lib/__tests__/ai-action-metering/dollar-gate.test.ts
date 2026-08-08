@@ -12,7 +12,7 @@ import { clearActions, clearBudgetControls, recordNightlyClassification } from "
  *
  *   - it blocks a 0-CREDIT action once the dollar ceiling is passed (the credit
  *     cap physically cannot see that action, which is the whole hole);
- *   - it reaches an unlimited-CREDIT plan (Lifetime), the account nothing else
+ *   - it reaches an unlimited-CREDIT plan (admin-uncapped), the account nothing else
  *     bounds;
  *   - credits and dollars are INDEPENDENT: either can refuse while the other
  *     has room, and the user gets the message that matches which one tripped.
@@ -20,7 +20,7 @@ import { clearActions, clearBudgetControls, recordNightlyClassification } from "
  * Which ceiling each plan resolves to is pinned next door in ./dollar-cap.test.ts.
  */
 
-const plan = { value: "pro" as "pro" | "lifetime" | "free", unlimited: false };
+const plan = { value: "pro" as "pro" | "power" | "free", unlimited: false };
 
 vi.mock("@/lib/auth/guard", () => ({
   getCurrentUser: async () => null,
@@ -83,7 +83,7 @@ describe("the gate can actually refuse a 0-credit action", () => {
   it("refuses the same way for a plan with unlimited credits", async () => {
     // Unlimited CREDITS must not mean unlimited DOLLARS. If the dollar check
     // sat inside the credit branch, this account would bypass the gate.
-    plan.value = "lifetime";
+    plan.value = "power";
     plan.unlimited = true;
     await setSetting(AI_MONTHLY_DOLLAR_CAP_OVERRIDE_KEY, "0.4");
     await recordNightlyClassification(); // $0.50 > $0.40

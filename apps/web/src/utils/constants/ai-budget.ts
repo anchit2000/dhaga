@@ -14,7 +14,7 @@ import {
 
 /** "on" | "off" — the master switch for plan-cap enforcement. */
 export const AI_PLAN_CAP_ENFORCEMENT_KEY = "plan_cap_enforcement";
-/** JSON `{ pro: 300, lifetime: null, ... }` — admin overrides of the constants. */
+/** JSON `{ pro: 300, power: 1000, ... }` — admin overrides of the constants. */
 export const AI_PLAN_ALLOWANCES_KEY = "plan_allowances";
 /** JSON `{ credits, startsAt, endsAt, note }` — the instance-wide promotion. */
 export const AI_PROMOTION_KEY = "promotion";
@@ -77,11 +77,8 @@ export const DEFAULT_AI_DOLLAR_CAP_FLOOR_USD = 0.5;
  * marketing $10 in landing/pricing is the undiscounted list price and is
  * deliberately NOT used here — a ceiling must be built on revenue received.
  *
- * `lifetime` is one-off, so it has no monthly revenue and no price constant
- * anywhere in the repo. Amortising it at Pro's $8 is an ASSUMPTION, stated here
- * rather than hidden: a lifetime buyer paid at least a year of Pro up front, so
- * treating them as a Pro month is the conservative floor. Replace it the moment
- * a real lifetime price exists.
+ * Every plan is recurring, so every paid plan has a real monthly figure here —
+ * no amortised one-off to assume about.
  *
  * A plan at 0 falls to DEFAULT_AI_DOLLAR_CAP_FLOOR_USD instead of to a $0
  * ceiling.
@@ -89,7 +86,6 @@ export const DEFAULT_AI_DOLLAR_CAP_FLOOR_USD = 0.5;
 export const PLAN_MONTHLY_REVENUE_USD: Record<AiAllowancePlan, number> = {
   free: 0,
   pro: 8,
-  lifetime: 8,
   power: 24,
 };
 
@@ -119,11 +115,10 @@ export const AI_PLAN_CAP_ENFORCEMENT_DEFAULT = true;
  * The plans whose monthly allowance an admin can edit. `self_hosted` is absent
  * on purpose: it is the "billing isn't running on this instance" sentinel, not
  * a plan anybody is on, and plan-cap enforcement is skipped entirely when no
- * plan is in play. `power` is sized but NOT SOLD (no Stripe price, not an
- * `EntitlementPlan`) — editable here so the ladder is reviewed as one thing,
- * inert until the tier ships.
+ * plan is in play. `power` is now a real, sellable tier (it has price ids and
+ * is an `EntitlementPlan`), so its allowance here is live rather than inert.
  */
-export const AI_ALLOWANCE_PLANS = ["free", "pro", "lifetime", "power"] as const;
+export const AI_ALLOWANCE_PLANS = ["free", "pro", "power"] as const;
 
 export type AiAllowancePlan = (typeof AI_ALLOWANCE_PLANS)[number];
 
@@ -131,15 +126,13 @@ export type AiAllowancePlan = (typeof AI_ALLOWANCE_PLANS)[number];
 export const DEFAULT_AI_PLAN_ALLOWANCES: Record<AiAllowancePlan, number | null> = {
   free: PLAN_AI_CREDITS_PER_MONTH.free,
   pro: PLAN_AI_CREDITS_PER_MONTH.pro,
-  lifetime: PLAN_AI_CREDITS_PER_MONTH.lifetime,
   power: POWER_PLAN_AI_CREDITS_PER_MONTH,
 };
 
 export const AI_ALLOWANCE_PLAN_LABELS: Record<AiAllowancePlan, string> = {
   free: "Free",
   pro: "Pro",
-  lifetime: "Lifetime / Annual",
-  power: "Power (sized, not sold)",
+  power: "Power",
 };
 
 /** Whether an `EntitlementPlan` has an editable allowance in the ladder above. */

@@ -47,7 +47,7 @@ export default async function UseCasePage({ params }: UseCasePageProps): Promise
         <h1 className="mt-5 max-w-4xl text-balance font-display text-5xl leading-[1.02] sm:text-6xl">{useCase.headline}</h1>
         <p className="mt-6 max-w-3xl text-pretty text-lg leading-8 text-fog">{useCase.intro}</p>
         <div className="mt-8 flex flex-wrap gap-4">
-          <Button render={<Link href="#request-access" />} size="lg">Request early access <ArrowRight /></Button>
+          <Button render={<Link href="/signup" />} size="lg">Create your account <ArrowRight /></Button>
           <Button render={<Link href="/features" />} variant="outline" size="lg">See how Dhaga works</Button>
         </div>
       </section>

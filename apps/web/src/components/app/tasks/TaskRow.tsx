@@ -51,7 +51,11 @@ export function TaskRow({ item }: { item: TaskItem }): React.ReactElement {
       ) : <span className="mt-1 size-2 rounded-full bg-amber" aria-label="Completed" />}
       <div className="min-w-0 flex-1">
         <p className={item.status === "done" ? "text-sm text-fog line-through" : "text-sm text-paper"}>{item.action}</p>
-        <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-xs text-fog">
+        {/* items-center, not the default stretch: the contact/company links
+            carry a 44px touch target, so an un-centred row leaves the plain
+            due-date text pinned to the top of a 44px line while the link sits
+            in its middle — the two read as ragged, misaligned rows. */}
+        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-fog">
           {item.dueDate ? <span>{formatDueDate(item.dueDate)}</span> : <span>Unscheduled</span>}
           {recurrenceLabel(item) ? <span>· {recurrenceLabel(item)}</span> : null}
           {item.contactId && item.contactName ? <Link className="inline-flex min-h-11 items-center text-ember hover:underline" href={`/app/people/${item.contactId}`}>{item.contactName}</Link> : null}

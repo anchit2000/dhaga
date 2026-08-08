@@ -39,9 +39,9 @@ export default async function SyncConflictsPage(): Promise<React.ReactElement> {
         <p className="font-mono text-[10px] uppercase tracking-widest text-ember">Contact sync</p>
         <h1 className="mt-1 font-display text-2xl tracking-tight">Sync conflicts</h1>
         <p className="mt-1.5 text-sm text-fog">
-          Fields your phone and Dhaga both changed. Dhaga took the phone&apos;s value so the
-          edit you made on the handset survived — the value it held is kept here until you
-          decide. Restoring it also sends it back to your phone on the next sync.
+          Fields a connected address book and Dhaga both changed. Dhaga took the address
+          book&apos;s value so the edit you made there survived — the value it held is kept
+          here until you decide. Restoring it also sends it back on the next sync.
         </p>
       </div>
       <SyncConflictList rows={rows} />

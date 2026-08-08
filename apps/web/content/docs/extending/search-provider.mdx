@@ -1,12 +1,16 @@
 ---
 title: Add a search provider
-description: Implement the SearchClient interface and register a SearchProvider so Dhaga's enrichment and news-watchlist features run against your web search backend — Brave, SerpAPI, or a self-hosted SearXNG.
+description: Implement the SearchClient interface and register a SearchProvider so Dhaga's news/job-change watchlist runs against your web search backend — Brave, SerpAPI, or a self-hosted SearXNG.
 ---
 
-Web search powers enrichment and the opt-in news/job-change watchlist. It sits
-behind the `SearchClient` gateway in `packages/core/src/search/types.ts`, which
-mirrors the LLM gateway exactly. Firecrawl is the default; adding Brave,
-SerpAPI, or a self-hosted SearXNG is one implementation plus a registration.
+Web search powers the opt-in news/job-change watchlist. It sits behind the
+`SearchClient` gateway in `packages/core/src/search/types.ts`, which mirrors the
+LLM gateway exactly. (It does **not** power enrichment: that asks the *LLM*
+provider to run its own web search and never touches `getSearchClient()`.)
+Two providers ship built in — `anthropic`
+(Anthropic's own server-side `web_search` tool, the default) and `firecrawl` —
+and adding Brave, SerpAPI, or a self-hosted SearXNG is one implementation plus a
+registration.
 
 ## The contract
 
@@ -35,6 +39,38 @@ export interface SearchProvider {
   createClient(): SearchClient;
 }
 ```
+
+### Reporting what a search cost (optional)
+
+The same file exports a second, **optional** interface. Implement it only if
+your backend's searches carry a cost Dhaga's metering should see:
+
+```ts
+export interface SearchUsage {
+  /** Provider-side searches performed. Providers not billed per search report 0. */
+  searches: number;
+  /** Set only when the provider ran the search THROUGH a model. */
+  model?: string;
+  /** The model tokens that search consumed. Present iff `model` is. */
+  tokens?: LLMUsage;
+}
+
+export interface MeteredSearchClient extends SearchClient {
+  searchMetered(query: string, options?: SearchOptions): Promise<SearchResponse>;
+}
+```
+
+It is kept separate from `SearchClient` for the same Interface-Segregation
+reason `BatchLLMClient` is kept separate from `LLMClient`: a SearXNG or Brave
+client has no per-search inference bill to report and must not be forced to
+invent one. Callers feature-detect with `isMeteredSearchClient(client)` and
+meter only when they can, so **a plain `SearchClient` provider stays a
+first-class citizen** — nothing downstream changes.
+
+The built-in `anthropic` provider implements it because Anthropic's web search
+charges every retrieved page as input tokens to the searching model; the
+built-in `firecrawl` provider does not, because its flat subscription sits
+outside Dhaga's metering entirely.
 
 ## Implement and register
 
@@ -67,11 +103,14 @@ selectSearchProvider("searxng"); // or leave it to SEARCH_PROVIDER=searxng
 ## Selection and graceful degradation
 
 `getSearchClient()` resolves the active provider from `selectSearchProvider(...)`,
-then `SEARCH_PROVIDER`, then the `firecrawl` default
-(`packages/core/src/search/index.ts`). Features that use search first call
-`hasSearch()` — which returns your provider's `isConfigured()` — and degrade
-quietly when no provider is configured, so an unconfigured search backend
-never crashes a request; it just turns the feature off.
+then `SEARCH_PROVIDER`, then a built-in default: `firecrawl` where
+`FIRECRAWL_API_KEY` is set, otherwise `anthropic`
+(`packages/core/src/search/index.ts`). An instance that configured Firecrawl
+therefore keeps it with no config change; everywhere else search runs on the
+`ANTHROPIC_API_KEY` the product already needs. Features that use search first
+call `hasSearch()` — which returns the active provider's `isConfigured()` — and
+degrade quietly when no provider is configured, so an unconfigured search
+backend never crashes a request; it just turns the feature off.
 
 <Callout title="Return an empty array, not an error, for no results">
 `search()` should resolve to `[]` when a query has no hits. Reserve thrown

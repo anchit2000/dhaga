@@ -5,6 +5,9 @@ import { userIdFromAuth, verifyMcpToken } from "./auth";
  * Which credential opens the door to a user's whole private graph, and — more
  * importantly — which one does not. `/api/mcp` is the only endpoint we hand to
  * software written by strangers, so each rule here is pinned on its own.
+ *
+ * Resolving a credential is only half the door: the `multi_device_sync` plan
+ * gate that runs on the resolved user lives in ./auth-plan-gate.test.ts.
  */
 
 const getMcpSession = vi.fn();
@@ -12,6 +15,12 @@ const verifyApiKey = vi.fn();
 
 vi.mock("@/lib/auth/config", () => ({
   getAuth: async () => ({ api: { getMcpSession, verifyApiKey } }),
+}));
+
+// ./auth reaches billing through @/lib/entitlements for the plan gate; these
+// tests are about credentials only, so the gate is stubbed out of the way.
+vi.mock("@/lib/hosted/gate", () => ({
+  getBillingGate: async () => ({ getPlanSummary: async () => null }),
 }));
 
 beforeEach(() => {

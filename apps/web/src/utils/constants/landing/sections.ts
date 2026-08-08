@@ -14,7 +14,13 @@ export const HOW_IT_WORKS: HowItWorksStep[] = [
   {
     step: "STEP 3",
     title: "Ask, and act",
-    body: "Search your network in plain language. Get a follow-up draft that mentions the sailing thing. Get nudged when someone changes jobs — the moment outreach matters most. Home opens on a short briefing of who's worth a message today, aimed by whatever goal you've set.",
+    // "Get nudged when someone changes jobs" used to sit here. Job-change and
+    // news nudges come from the nightly signal-detection job, which needs a
+    // configured web-search provider and no-ops without one — so no user is
+    // nudged about a job change today. The reasons named below are the ones the
+    // Home scorer actually ranks on (SUGGESTION_WEIGHTS in
+    // @/utils/constants/suggestions): cadence, follow-up, important date, goal.
+    body: "Search your network in plain language. Get a follow-up draft that mentions the sailing thing. Get nudged when a reach-out cadence comes due, a promise you made falls past its date, or someone's birthday lands. Home opens on a short briefing of who's worth a message today, aimed by whatever goal you've set.",
   },
 ];
 
@@ -31,7 +37,10 @@ export const DAILY_LOOP_STEPS = [
   {
     kicker: "Today",
     title: "A briefing, not an inbox.",
-    body: "Home leads with a handful of people worth a message today — a cadence that came due, a promise you made, an occasion, a job change, a relationship going quiet. Mark one reached out and it leaves the list.",
+    // "a job change" was in this list too; same reason as STEP 3 above — the
+    // signal term exists in the scorer but nothing populates it while the
+    // nightly signal job has no web-search provider to run on.
+    body: "Home leads with a handful of people worth a message today — a cadence that came due, a promise you made, an occasion, a relationship going quiet. Mark one reached out and it leaves the list.",
   },
   {
     kicker: "Goals",
@@ -106,7 +115,10 @@ export const COMPARISON_ROWS: ComparisonRow[] = [
   },
   {
     feature: "Price",
-    dhaga: "$79/yr",
+    // The standard Pro year, not the founding price: that one is a capped,
+    // INR-only offer (see pricing/plans.ts) and quoting it here would advertise
+    // a dollar figure nothing charges, to visitors who may find it sold out.
+    dhaga: "$96/yr",
     cardApps: "$6+/mo",
     personalCrms: "$10–18/mo",
     enterprise: "$2,000+/seat/yr",

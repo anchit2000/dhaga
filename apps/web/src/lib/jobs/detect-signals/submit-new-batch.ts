@@ -6,12 +6,14 @@ import {
   signalDetectionSchema,
   type BatchExtractItem,
   type BatchLLMClient,
+  type SearchResponse,
   type SignalDetection,
 } from "@dhaga/core";
 import type { SignalDetectionSummary } from "@dhaga/core/src/api/jobs";
 import { getDb } from "@/lib/db/request-scope";
 import { companies, contacts } from "@/lib/db/schema";
 import { setPendingSignalBatchId } from "@/lib/repo/settings";
+import { recordSearchCost, searchOne } from "./search-phase";
 import type { ScopedRunner } from "./index";
 
 /** Re-scan cadence per watched contact — nightly cron, weekly-ish per contact. */
@@ -29,9 +31,11 @@ const RESCAN_AFTER_DAYS = 6;
  * the final summary rather than recomputing it.
  *
  * `runScoped` runs each DB unit in the caller's scope (global in self-host, one
- * RLS transaction per unit in hosted). The per-contact Firecrawl search runs
- * BETWEEN those units — the read of due contacts and the writes that follow —
- * never inside one, so no DB connection is held across the network I/O.
+ * RLS transaction per unit in hosted). The per-contact search runs BETWEEN
+ * those units — the read of due contacts and the writes that follow — never
+ * inside one, so no DB connection is held across the network I/O. That matters
+ * more now than it did under Firecrawl: with Anthropic's web-search tool a
+ * search is a model turn, so it can take seconds.
  */
 export async function submitNewBatch(
   runScoped: ScopedRunner,
@@ -60,13 +64,15 @@ export async function submitNewBatch(
 
   const search = getSearchClient();
   const items: BatchExtractItem<SignalDetection>[] = [];
+  const searchCost: SearchResponse["usage"][] = [];
 
   for (const contact of due) {
     try {
-      const results = await search.search(
+      const { results, usage } = await searchOne(
+        search,
         [contact.name, contact.companyName].filter(Boolean).join(" "),
-        { limit: 5 },
       );
+      if (usage.model && usage.tokens) searchCost.push(usage);
       items.push({
         id: contact.id,
         schema: signalDetectionSchema,
@@ -94,6 +100,10 @@ export async function submitNewBatch(
     const batchId = await batchClient.submitExtractBatch(items);
     await runScoped(() => setPendingSignalBatchId(batchId));
   }
+
+  // Meter the searches themselves — see ./search-phase for what that does and
+  // does not capture. A scoped unit of its own, after the network I/O.
+  await recordSearchCost(runScoped, searchCost);
 
   // Mark every due contact scanned only after the batch is safely in flight.
   await runScoped(async () => {

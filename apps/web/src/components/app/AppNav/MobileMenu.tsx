@@ -19,8 +19,9 @@ import { NavQuickAdd } from "./NavQuickAdd";
 import { useStartTour } from "./useStartTour";
 
 /**
- * Below-sm: NavLinks + MoreMenu (both `hidden sm:flex`) collapse into this
- * hamburger Sheet, so every nav destination stays reachable on mobile.
+ * Below-lg: NavLinks + MoreMenu (both `hidden lg:flex`) collapse into this
+ * hamburger Sheet, so every nav destination stays reachable on mobile AND on
+ * tablet widths, where the labelled pills no longer fit beside the search pill.
  * Mirrors the landing page's MobileNav (side="right", border-seam/bg-ink).
  */
 export function MobileMenu({ confirmationsCount }: { confirmationsCount: number }) {
@@ -37,7 +38,7 @@ export function MobileMenu({ confirmationsCount }: { confirmationsCount: number 
             variant="ghost"
             size="icon"
             aria-label="Open menu"
-            className="rounded-full text-fog hover:text-paper sm:hidden"
+            className="rounded-full text-fog hover:text-paper lg:hidden"
           />
         }
       >

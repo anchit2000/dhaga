@@ -92,7 +92,12 @@ export function SearchPalette({
           </div>
 
           {p.mode === "search" && p.showTuner ? (
-            <WeightTuner weights={p.weights} onChange={p.setWeights} onCommit={p.commitWeights} />
+            <WeightTuner
+              weights={p.weights}
+              onChange={p.setWeights}
+              onCommit={p.commitWeights}
+              semanticEnabled={p.search.state.semanticEnabled}
+            />
           ) : null}
 
           <PaletteBody

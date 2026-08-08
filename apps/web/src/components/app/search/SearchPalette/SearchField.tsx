@@ -3,6 +3,8 @@
 import { Mic, Search, Square, X } from "lucide-react";
 import { DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { ComingSoonNotice } from "@/components/app/ComingSoonNotice";
+import { showsDictationControl } from "@/components/app/contact/dictation-gate";
 import type { DictationState } from "@/components/app/contact/useDictation";
 import type { SearchMode } from "./useSearchPalette";
 
@@ -28,7 +30,7 @@ export function SearchField({
   dictation: DictationState;
 }) {
   return (
-    <form id={formId} action={dispatch} role="search" className="flex items-center gap-3">
+    <form id={formId} action={dispatch} role="search" className="flex flex-wrap items-center gap-3">
       <div className="relative flex min-w-0 flex-1 items-center">
         <Search className="pointer-events-none absolute left-3 size-4 text-fog" />
         <Input
@@ -55,20 +57,31 @@ export function SearchField({
           </button>
         ) : null}
       </div>
-      {dictation.supported ? (
-        <button
-          type="button"
-          onClick={dictation.listening ? dictation.stop : dictation.start}
-          disabled={dictation.transcribing || dictation.loadingProgress !== null}
-          aria-label={dictation.listening ? "Stop dictation" : "Search by voice"}
-          className={`flex size-11 shrink-0 items-center justify-center rounded-full border transition-colors disabled:opacity-60 ${
-            dictation.listening
-              ? "border-destructive/50 text-destructive"
-              : "border-seam text-fog hover:text-paper"
-          }`}
-        >
-          {dictation.listening ? <Square className="size-4" /> : <Mic className="size-4" />}
-        </button>
+      {/* A greyed mic drops to its own full-width row (order-last) rather than
+          staying inline: the coming-soon reason has to be VISIBLE — no hover or
+          focus exists on a touch screen — and a wide notice beside the field
+          would crush the query input. When it works, the wrapper doesn't render
+          and the mic sits inline as before. */}
+      {showsDictationControl(dictation) ? (
+        <ComingSoonNotice reason={dictation.comingSoon} className="order-last w-full">
+          <button
+            type="button"
+            onClick={dictation.listening ? dictation.stop : dictation.start}
+            disabled={
+              dictation.comingSoon !== null ||
+              dictation.transcribing ||
+              dictation.loadingProgress !== null
+            }
+            aria-label={dictation.listening ? "Stop dictation" : "Search by voice"}
+            className={`flex size-11 shrink-0 items-center justify-center rounded-full border transition-colors disabled:opacity-60 ${
+              dictation.listening
+                ? "border-destructive/50 text-destructive"
+                : "border-seam text-fog hover:text-paper"
+            }`}
+          >
+            {dictation.listening ? <Square className="size-4" /> : <Mic className="size-4" />}
+          </button>
+        </ComingSoonNotice>
       ) : null}
       <DialogClose
         aria-label="Close"

@@ -3,7 +3,9 @@
 import type { RefObject } from "react";
 import { Loader2, Mic, Square } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { ComingSoonNotice } from "@/components/app/ComingSoonNotice";
 import { SubmitButton } from "../SubmitButton";
+import { showsDictationControl } from "../contact/dictation-gate";
 import { VoiceNoteReview } from "../contact/VoiceNoteReview";
 import type { CaptureVoice } from "./useCaptureVoice";
 
@@ -52,26 +54,29 @@ export function PasteCapture({
         }
         className="font-mono text-sm"
       />
-      {showVoice && voice.supported ? (
-        <button
-          type="button"
-          onClick={toggleVoice}
-          aria-pressed={voice.listening}
-          className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm transition-colors ${
-            voice.listening
-              ? "border-amber/40 bg-amber/15 font-medium text-ember"
-              : "border-seam text-fog hover:text-paper"
-          }`}
-        >
-          {busy ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : voice.listening ? (
-            <Square className="size-4" />
-          ) : (
-            <Mic className="size-4" />
-          )}
-          {busy ? "Loading voice…" : voice.listening ? "Stop" : "Voice"}
-        </button>
+      {showVoice && showsDictationControl(voice) ? (
+        <ComingSoonNotice reason={voice.comingSoon}>
+          <button
+            type="button"
+            onClick={toggleVoice}
+            disabled={voice.comingSoon !== null}
+            aria-pressed={voice.listening}
+            className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm transition-colors disabled:opacity-60 ${
+              voice.listening
+                ? "border-amber/40 bg-amber/15 font-medium text-ember"
+                : "border-seam text-fog hover:text-paper"
+            }`}
+          >
+            {busy ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : voice.listening ? (
+              <Square className="size-4" />
+            ) : (
+              <Mic className="size-4" />
+            )}
+            {busy ? "Loading voice…" : voice.listening ? "Stop" : "Voice"}
+          </button>
+        </ComingSoonNotice>
       ) : null}
       {voice.review.show ? (
         <VoiceNoteReview

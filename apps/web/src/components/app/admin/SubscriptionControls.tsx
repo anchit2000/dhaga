@@ -11,10 +11,17 @@ import { Select } from "@/components/ui/select";
 
 interface SubscriptionControlsProps {
   userId: string;
-  currentPlan: "free" | "pro" | "lifetime";
+  currentPlan: "free" | "pro" | "power";
   currentExpiry: Date | null;
   currentCredits: number | null;
+  /** False when this user pays through a live Stripe/Razorpay subscription.
+   *  The server refuses those downgrades either way (canAdminDowngrade in
+   *  packages/ee); this only stops the admin picking an option that would be
+   *  rejected. */
+  canDowngrade: boolean;
 }
+
+const PLAN_RANK: Record<"free" | "pro" | "power", number> = { free: 0, pro: 1, power: 2 };
 
 /**
  * Admin-only controls to comp a user's subscription and AI allowance. A client
@@ -27,8 +34,11 @@ export function SubscriptionControls({
   currentPlan,
   currentExpiry,
   currentCredits,
+  canDowngrade,
 }: SubscriptionControlsProps): React.JSX.Element {
   const [expiry, setExpiry] = React.useState<Date | null>(currentExpiry);
+  const blocked = (plan: "free" | "pro" | "power"): boolean =>
+    !canDowngrade && PLAN_RANK[plan] < PLAN_RANK[currentPlan];
 
   return (
     <div className="space-y-6">
@@ -41,15 +51,27 @@ export function SubscriptionControls({
         <div>
           <p className="text-sm font-medium text-paper">Manage subscription</p>
           <p className="mt-1 text-sm text-fog">Comp a plan directly, no Stripe. An expiry lapses paid access.</p>
+          {canDowngrade ? null : (
+            <p className="mt-1 text-sm text-ember">
+              This user pays through a live subscription, so lowering their plan is disabled here —
+              change or end it from their own billing settings, or in the processor dashboard.
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="plan">Plan</Label>
             <Select id="plan" name="plan" defaultValue={currentPlan}>
-              <option value="free">Free</option>
-              <option value="pro">Pro</option>
-              <option value="lifetime">Lifetime</option>
+              <option value="free" disabled={blocked("free")}>
+                Free
+              </option>
+              <option value="pro" disabled={blocked("pro")}>
+                Pro
+              </option>
+              <option value="power" disabled={blocked("power")}>
+                Power
+              </option>
             </Select>
           </div>
           <div className="space-y-1.5">

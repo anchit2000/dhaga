@@ -15,7 +15,7 @@ NetworkPro is an AI-native personal CRM that turns fleeting professional encount
 
 **One-line pitch:** *Your professional memory, augmented.*
 
-**Business model:** Open-core. The client apps and self-hostable core are open source (community trust, zero-cost adoption, contributor leverage); revenue comes from a hosted cloud tier (sync, enrichment, team graph) and a one-time "lifetime" purchase echoing the incumbent card scanner's pricing model that validated this market.
+**Business model:** Open-core. The client apps and self-hostable core are open source (community trust, zero-cost adoption, contributor leverage); revenue comes from a hosted cloud tier (sync, enrichment, team graph) sold as recurring Pro and Power subscriptions.
 
 ---
 
@@ -43,7 +43,7 @@ The market splits into five camps. Nobody occupies the intersection NetworkPro t
 
 | Product | Pricing | Strengths | Weaknesses vs NetworkPro |
 |---|---|---|---|
-| **The incumbent card scanner** | AUD $99.99 one-time | Best-in-class OCR (25 languages), Salesforce export, proven lifetime-price model | Frozen product; zero intelligence, no context, no notes, no search |
+| **The incumbent card scanner** | AUD $99.99 one-time | Best-in-class OCR (25 languages), Salesforce export, proven one-time-purchase model | Frozen product; zero intelligence, no context, no notes, no search |
 | **A digital business-card app** | Free / paid tiers | Top-rated digital card on G2 (8,800+ reviews); simple shareable profile; card + badge scanning | Their graph is *outbound* (share my card), not *inbound* (remember who I met); no notes/knowledge layer |
 | **An enterprise digital-card app** | Free / team tiers | Polished; enterprise-grade (SOC 2, SSO/SAML/SCIM); card + badge scanner, email signatures | Same — digital-identity tool, not memory tool |
 | **An NFC badge-scanner / lead-capture tool** | Free / paid + NFC hardware | NFC tap-to-share; universal badge scanner with ~90% AI enrichment success; strong at events | Lead-capture for exhibitors, priced/designed for sales teams at booths, not attendees building a personal network |
@@ -92,7 +92,7 @@ One-click LinkedIn→CRM enrichment extensions — Chrome extensions with enrich
 **Strategic implications adopted into scope:**
 1. **Badge scanning moves up** to v1.1 (the digital-card and badge-scanner apps made it table stakes).
 2. **Browser extension is a first-class capture surface** (validated by adoption of the one-click LinkedIn-capture pattern) — promoted into v1.1.
-3. **Lifetime pricing stays** (the incumbent card scanner's anchor) alongside subscription — an explicit counter to Camp B's subscription fatigue.
+3. **Subscription only.** A one-time tier was considered as a counter to Camp B's subscription fatigue and rejected: an unbounded AI allowance sold for a single payment has no defensible unit economics (see §8.3).
 4. **Privacy/open source is the marketing spearhead** against the auto-enrichment / sync CRMs and the sales-tooling camp.
 
 ---
@@ -148,7 +148,7 @@ The MVP must prove one loop end-to-end:
 | Graph | Per-user, on-device, basic edges | Rich ontology, article-to-contact links, team-shared graph, cross-user dedup |
 | Platform | iOS + Android (one RN codebase) | + web app + browser extension + watch/widgets |
 | Sync | Optional encrypted backup | Full multi-device sync (mobile ↔ web ↔ extension), team workspaces |
-| Monetization | Free beta | Free tier + Pro (lifetime or annual) + Teams (per-seat) |
+| Monetization | Free beta | Free tier + Pro (monthly or annual) + Power + Teams (per-seat) |
 
 ### 5.4 Considered features backlog (2026-07 review)
 
@@ -421,7 +421,27 @@ client actually uploads.
 | Follow-up draft | 1 | Sonnet | 383 / 222 | **$0.0045** |
 | Pre-meeting brief | 1 | Sonnet | 543 / 375 | **$0.0073** |
 | Deep research / enrichment (web search + synthesis + extraction) | 2 | Sonnet + Haiku | 2,947 / 2,571 (+36k cached, 2.3 searches) | **$0.0975** |
-| Watchlist change scan, per contact per cycle | 1 | Haiku, Batch API | 1,090 / 117 | **$0.0008** |
+| Watchlist change scan, per contact per cycle | 1 | Haiku, Batch API | 1,090 / 117 | **$0.0008** — **stale**, see below |
+
+**The watchlist row is stale as of 2026-08-08 — re-measure before pricing
+anything on it.** The $0.0008 above is a real measurement, but of a job that no
+longer exists in that shape: it priced only the Batch *classification*, from when
+the search half was a flat Firecrawl subscription costing nothing at the margin.
+Firecrawl is gone; search now runs on Anthropic's own server-side `web_search`
+tool, billed **$10 per 1,000 searches** on top of charging every retrieved page
+as input tokens to the searching model. **ESTIMATED, never run against a live
+key:** $0.0100 search + ~$0.0055 tokens (~4k in / ~300 out on Haiku 4.5, no Batch
+discount — the search is a synchronous turn) + $0.0008 classify ≈ **$0.016 per
+contact per cycle**, roughly 20× the figure the 0-credit decision below was
+argued from. At `PRO_TIER_WATCHLIST_CAP` = 25 and a ~6-day rescan that is
+**~$2/month per Pro user** on an $8/month plan — against the ~$0.10/month
+previously assumed. Everything else in the table stands as measured.
+
+(Anthropic's web search *is* supported inside Message Batches API requests, at
+the same per-search price, so the search half could in principle move to Batch
+too — Anthropic throttles web-search requests per organization there, so large
+batches may take longer. The current design does not: it searches synchronously
+and batches only the classification.)
 
 Three corrections to the earlier order-of-magnitude estimates, all of which
 this table supersedes:
@@ -455,7 +475,7 @@ multiple rounded up (`packages/core/src/metering/credits.ts`):
 | Card scan · quick add · note · follow-up draft | 1 | All within ~1.4× of the anchor |
 | Ask Dhaga · pre-meeting brief | 2 | Sonnet reasoning over retrieved context |
 | Deep research | 20 | Web search billed on top of tokens |
-| Watchlist change scan | 0 | Throttled by the watch limit, not by credits — billing it would eat ~125 credits/month for ~$0.10 of Batch inference |
+| Watchlist change scan | 0 | Throttled by the watch limit, not by credits — billing it would eat ~125 credits/month for what was then ~$0.10 of Batch inference. **That justification no longer holds arithmetically** (2026-08-08): at the ESTIMATED ~$0.016/contact/cycle above it is ~$2/month per Pro user, ~20× the number the decision was made on. Left at 0 **deliberately** — repricing starts charging a user's allowance for a job they never triggered, which is a product decision, not a rounding fix. Measure it against a live key, then decide. Meanwhile the dollar ceiling (`lib/ai/metering/dollar-cap.ts`) is the backstop, and it sees the **token half only**: search now writes one 0-credit `signal_detection` row per contact carrying the search turn's tokens, but the $10/1k per-search charge has no column on `ai_actions` and is under-reported by ~$0.01 per contact per cycle |
 | Nightly curation sweep — person/service classification, goal match | 0 | Throttled by a per-night contact cap, not by credits. **ESTIMATED, not measured** (the table above is 39 real calls; neither of these has been run against the live API): a 5,000-contact graph is classified once for roughly **$2.4** of Batch inference — ~400 credits at the ~$0.006/credit blended ceiling, which is exactly why billing it would be wrong. Re-check once measured |
 | Goal match requested on demand (`goal_match_now`) | 3 | The user pressing "Request now" instead of waiting for the free nightly pass — asked for, so priced. **ESTIMATED, not measured**: at `GOAL_SYNC_RESOLVE_CAP` = 20 candidates × ~720 in / 45 out tokens on Haiku 4.5 with no Batch discount, one request is at most 20 × $0.000945 ≈ **$0.019** → ~3.15 credits at ~$0.006/credit, rounded **down** because 20 is a ceiling recall rarely reaches. Saving a goal is free and calls no model |
 
@@ -471,15 +491,56 @@ notes, the priciest credit):
 
 (The table uses annual-plan monthly equivalents for unit economics. Public
 pricing shows Pro at $10 month-to-month or $8/month billed $96 yearly, and the
-planned Power tier at $30 month-to-month or $24/month billed $288 yearly. Power
-remains sized but not sold; the first 500 Pro seats can request a $79 first
-year, shown separately from standard billing.)
+planned Power tier at $30 month-to-month or $24/month billed $288 yearly. The
+first 500 Pro seats can buy Founding Pro, a permanently discounted yearly price
+shown separately from standard billing.)
+
+(**Founding Pro is now buyable, and INR-only.** It is one Razorpay plan —
+₹6,999 a year against the standard ₹8,499, the same ~18% the old
+$79-vs-$96 copy promised, in the currency actually charged — with no Stripe
+equivalent on purpose: a USD checkout would mint a seat the cap cannot see.
+**It is not a first-year teaser** (resolved 2026-08, §11 Q6): a founding member
+keeps ₹6,999 for as long as they stay subscribed. The Plan carries the amount
+and `createSubscription()` books `CYCLES_PER_YEAR[period] × 10` cycles of it, so
+renewal at the founding price needs no code change and no dashboard change. The
+honest bound is that ten-year horizon rather than the word "forever": Razorpay
+has no "bill until cancelled", `total_count` is mandatory, and the subscription
+*completes* — ending the entitlement — once it is exhausted.
+"First 500" is enforced server-side by a `founding_seats` row claimed when the
+checkout is created, decided by a UNIQUE seat number rather than a count, so
+two buyers racing for the last seat cannot both win it. **The live seat count is
+not public.** "{n} of the first 500 left" advertised how little had sold — at
+500 of 500, that nobody had bought anything — so the remaining/position count is
+gone from every public surface and claimed-vs-cap is an admin number
+(`dashboardCounts()`, `/app/admin`). The static "first 500" framing stays; it
+leaks nothing. It is a PRICE, not a
+tier: it grants Pro, it cannot be switched onto later, and a founding member is
+never offered — or moved onto — standard yearly, which would be a silent price
+rise. When the plan id is unset or the seats are gone the offer disappears from
+the pricing card, the schema.org markup and the in-app buttons alike.)
+
+(**`/pricing` has an INR/USD toggle, and it is display only.** It defaults from
+`x-vercel-ip-country` through the existing `preferredProcessor()` signal (India
+→ INR, everywhere else → USD) and remembers what the visitor picked. Razorpay is
+the only live processor, so everyone is charged in INR whatever the toggle says:
+the non-charging currency is labelled an approximate conversion, and the
+schema.org Offer always advertises the charging currency, never the toggled
+one — structured data that priced the product in a currency we cannot take
+would be a lie to a shopping crawler.)
+
+(**Power is now wired for sale**, not just sized — it has an `EntitlementPlan`
+member, a stored `plan` value and price-id slots for both processors, so it goes
+live the moment those prices exist in the dashboards. There is **no one-time
+tier**: an unbounded AI allowance sold for a single payment cannot be bounded by
+anything except the dollar ceiling, so every plan is recurring. INR pricing is
+approximate parity at ~₹87/USD — ₹899 / ₹8,499 monthly-yearly Pro, ₹2,599 /
+₹24,999 Power — not a PPP discount, so the margins above carry over unchanged.)
 
 (Margins are after Stripe's 2.9% + $0.30; hosting is not included.) A 100-credit
 Pro tier would clear ~94% margin but ration the product to a sixth of the heavy
 user profile above — 300 is the number that keeps >70% margin *and* covers a
 conference month. 1,000 credits for Power only works at ~$24/mo; at $12 it would
-be a 42% worst-case margin. Lifetime and self-hosted stay uncapped. The free
+be a 42% worst-case margin. Self-hosted stays uncapped. The free
 tier gets **10 credits** — 10 card scans, or 5 scans plus 5 notes, or 5
 Ask-Dhaga questions — which costs at most $0.06 per free user per month (10 ×
 the all-notes credit, ~$0.05 on the typical mix). Deep research can never be
@@ -563,16 +624,14 @@ deliberately mirroring the credit ladder rung for rung:
 |---|---:|---|---:|
 | Free | $0 | floor | **$0.50** |
 | Pro | $8 | revenue × 2.0 | **$16** |
-| Lifetime / Annual | $8 (assumed) | revenue × 2.0 | **$16** |
-| Power (sized, not sold) | $24 | revenue × 2.0 | **$48** |
+| Power | $24 | revenue × 2.0 | **$48** |
 | No plan in play (self-host, billing not running) | — | none | **no ceiling** |
 
 Revenue, not list price: Pro is $8/month of revenue (sold annually at $96), the
 same number the credit allowance is sized against — the $10 month-to-month
 marketing price is deliberately not used, because a ceiling must be built on
-money received. `lifetime` is one-off and has no price constant anywhere in the
-repo; amortising it at Pro's $8 is a **stated assumption**, conservative because
-a lifetime buyer paid at least a year of Pro up front. Free is the case that
+money received. Every plan is recurring, so each has a real monthly figure and
+nothing here rests on an amortised assumption. Free is the case that
 breaks a pure percentage model on day one — 0 × 2.0 = $0 would refuse every AI
 action a free user takes, including the ten their credit allowance is meant to
 buy — which is why the floor exists. Rung 4 is the other deliberate asymmetry
@@ -596,7 +655,7 @@ second**: the credit message is the one a user can act on ("you've used your 300
 credits" → upgrade), while the dollar gate is the operator's backstop and should
 only speak when the credit ladder did not already stop it. The dollar check sits
 *outside* the `hasUnlimitedAiCredits` early return on purpose — an
-unlimited-credit plan (Lifetime) is exactly the account nothing else bounds.
+unlimited-credit plan (one an admin has uncapped) is exactly the account nothing else bounds.
 Failure matches the credit cap: `AiBudgetError` with `kind: "dollar_cap"` (the
 kinds are now `"cap" | "dollar_cap" | "burst"`), message "This account has
 reached its monthly AI spending limit. It resets at the start of next month."
@@ -614,9 +673,49 @@ with each one's ceiling, the rung that set it, and **utilisation %**, so "is
 
 ### 8.4 Revenue streams
 
-1. **Pro (individual):** hosted sync + a monthly AI-credit allowance (§8.3 — 300 credits, sold as such on /pricing since 2026-07-31 and enforced by default since the same date) + enrichment + alerts. Monthly, yearly, and a **lifetime tier** — deliberately echoing the incumbent card scanner's proven one-time-purchase psychology.
+1. **Pro (individual):** hosted sync + a monthly AI-credit allowance (§8.3 — 300 credits, sold as such on /pricing since 2026-07-31 and enforced by default since the same date) + enrichment + alerts. Monthly or yearly; **no one-time tier** (see §8.3 — the economics do not hold).
 2. **Teams:** per-seat, shared graph, SSO, admin. The defensible, expanding revenue line.
 3. **Self-host support** (later): paid support/SLA for companies running the AGPL stack internally.
+
+**Plan-change lifecycle.** A subscriber changes tier or cadence from Settings →
+Plan & billing. The change always **modifies the existing processor
+subscription**; checkout is only ever used to create the first one, and is
+refused outright for an account that already has a live subscription (a second
+one would bill the same card twice, and neither processor deduplicates for us).
+
+**Upgrades apply immediately** and the processor settles the difference —
+Stripe prorates the subscription item, Razorpay's Update Subscription API
+(`schedule_change_at: "now"`) raises an invoice for the difference.
+
+**Downgrades — a lower tier, or yearly → monthly — are scheduled for the
+renewal boundary**, never applied immediately. An immediate downgrade makes
+Stripe credit, and Razorpay outright *refund*, the unused difference: a
+liability against revenue already recognised. The customer loses nothing — they
+keep the higher tier they paid for until it runs out.
+
+Tier dominates cadence when both move: power/yearly → pro/monthly is a
+downgrade, and pro/yearly → power/monthly is an upgrade.
+
+**Cancel** is always at the renewal boundary on both processors, behind a
+confirmation dialog. Stripe cancellations can be undone from the same screen
+("Keep my plan"); Razorpay has no resume API, so the dialog says so and
+restarting later means a new subscription. A change that is merely *booked* can
+be dropped at any point before it lands.
+
+**Founding Pro sits outside this ladder on purpose.** It is a third cadence
+(`founding_yearly`) rather than a tier, sold only as a first purchase: a
+founding member is never offered — and cannot ask for — standard Pro yearly,
+which would be a silent price rise, and the change API refuses a founding target
+before it reads anything.
+
+**Every processor state a screen depends on is stored, not fetched.** The
+subscription row carries its cadence, any booked change and the last time a
+processor confirmed them, so entitlement reads are pure database reads; a
+separate `payments` ledger records each confirmed charge, refund, dispute and
+failure. That ledger is what makes access honest at the boundaries: hosted
+access is granted only by a payment the processor has **confirmed**, revoked by
+a refund or chargeback, and deliberately *not* revoked by a cancellation — the
+term was paid for.
 
 ### 8.5 Community flywheel
 
@@ -678,11 +777,12 @@ in `docs/checklist.md` §21):
 
 ## 11. Open Questions
 
-1. Lifetime-tier pricing: $79 vs $99 vs $129? Needs willingness-to-pay testing against the incumbent card scanner's AUD $99.99 anchor and the ~$10/mo enrichment-CRM anchor.
+1. Does dropping a one-time tier cost conversions against the incumbent card scanner's AUD $99.99 anchor? Needs willingness-to-pay testing of recurring-only pricing against that anchor and the ~$10/mo enrichment-CRM anchor.
 2. Sync build-vs-adopt: PowerSync/ElectricSQL licensing fit with AGPL? Lead candidate as of 2026-07: **TanStack DB 0.6 + ElectricSQL** — SQLite-backed persistence incl. React Native/Expo, incremental Postgres sync, and we already ship Electric's PGlite (`docs/LIBRARIES.md` §5). Before any M8 sync code, run an evaluation covering: sync model vs the planned field-level LWW, offline semantics, RN/Expo maturity, AGPL/licensing fit, and lock-in vs the decided op-sqlite + sqlite-vec store. Ends in a decision doc + sign-off — not silent adoption.
 3. ~~Enrichment data sources: which are ToS-safe?~~ **Resolved 2026-07 — see §6.7.** LinkedIn API is partner-gated and closed to CRMs; X API reads are pay-per-use and uneconomical. Channels: user-triggered web search, LinkedIn Connections CSV import + re-import diff, opt-in news watchlist, extension DOM capture. Remaining sub-question: is this enrichment quality enough vs the NFC badge-scanner's claimed 90%?
 4. ~~Browser extension and LinkedIn: confirm legal posture.~~ **Resolved 2026-07 — see §6.7.** User-initiated, single-profile DOM read of a page the user is viewing (the one-click LinkedIn-capture pattern) is the posture; shipped in the extension. No automation, no bulk collection.
 5. Brand/name: "NetworkPro" is a working title; trademark search needed.
+6. ~~What does year two of Founding Pro cost?~~ **Resolved 2026-08 — see §8.3.** ₹6,999, the same as year one: a founding member keeps the founding price for as long as they stay subscribed, rather than for a first year only. Nothing in code makes year two differ, and that is now the desired behaviour instead of the open question — the Razorpay Plan carries the amount, and `createSubscription()` (`packages/ee/src/billing/razorpay/client.ts`) sets `total_count` to `CYCLES_PER_YEAR[plan.period] × 10`, so a yearly founding subscription is created for ten yearly cycles and every one of them is charged at the Plan's ₹6,999. No dashboard change is needed. The one caveat, stated plainly rather than rounded up to "forever": Razorpay has no "bill until cancelled" — `total_count` is mandatory — so the subscription *completes* after that ten-cycle horizon, and a completed subscription ends the entitlement. The constant is now `PRO_FOUNDING_PRICE`; the old name `PRO_FIRST_YEAR_OFFER` asserted the opposite of the decision. **Still undetermined:** what a founding member who cancels and re-subscribes later pays. The seat claim is idempotent per user (`founding_seats.user_id` is the PK, so `claimFoundingSeat` returns the seat they already hold), but whether a fresh founding checkout is reachable at all then depends on `assertNoExistingSubscription` and on the offer still being on sale. No code decides it today, so the public copy deliberately claims nothing about it.
 
 ---
 

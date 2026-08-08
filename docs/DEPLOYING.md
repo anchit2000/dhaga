@@ -39,11 +39,16 @@ Two very different things deploy from this repo today:
    - `DHAGA_EMBEDDINGS=off` recommended on Vercel for now: the local
      embedding model (~100 MB of native runtime) is a poor fit for
      serverless functions; search falls back to keyword matching.
-   - `CRON_SECRET`, `FIRECRAWL_API_KEY` — optional, job-change detection +
-     news watchlist. `apps/web/vercel.json` already declares the nightly
-     cron; Vercel sends `Authorization: Bearer $CRON_SECRET` to it
-     automatically once the var is set (unset = the route 401s to everyone,
-     including Vercel's own cron — the feature is simply off).
+   - `CRON_SECRET` — optional, job-change detection + news watchlist.
+     `apps/web/vercel.json` already declares the nightly cron; Vercel sends
+     `Authorization: Bearer $CRON_SECRET` to it automatically once the var is
+     set (unset = the route 401s to everyone, including Vercel's own cron —
+     the feature is simply off). The sweep's web search needs no separate
+     provider: it defaults to Anthropic's own server-side `web_search` tool on
+     the `ANTHROPIC_API_KEY` above. `FIRECRAWL_API_KEY` is optional and takes
+     precedence only where you set it. Two caveats — the Anthropic search path
+     has never been run against a live key, and searches are billed $10/1k on
+     top of the input tokens every retrieved page costs.
    - `NEXT_PUBLIC_SITE_URL` — set once a custom domain is attached (step 4):
      the canonical origin for the sitemap, robots.txt, OG tags, and llms.txt.
      Defaults to the Vercel preview URL until then.
@@ -60,10 +65,55 @@ account once it's live.
   without it, regardless of whether the other vars below are set.
 - `DHAGA_ADMIN_EMAILS` — comma-separated emails that bootstrap into admins
   on signup (see SELF_HOSTING.md's "Creating the first admin user").
-- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_PRO_ANNUAL`,
-  `STRIPE_PRICE_LIFETIME` — from the Stripe Dashboard (test-mode keys while
-  developing). Omit `STRIPE_SECRET_KEY` to run hosted mode without billing
-  (e.g. a free beta) — the billing UI simply doesn't render without it.
+- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and one price id per
+  (tier, cadence): `STRIPE_PRICE_PRO_MONTHLY`, `STRIPE_PRICE_PRO_ANNUAL`,
+  `STRIPE_PRICE_POWER_MONTHLY`, `STRIPE_PRICE_POWER_ANNUAL`. Any left blank is
+  simply not offered — the picker
+  renders only combinations that have a price. Omit `STRIPE_SECRET_KEY`
+  entirely to run hosted mode without billing (e.g. a free beta).
+  Reference prices, BRD §8.3: Pro $10/mo or $96/yr, Power $30/mo or $288/yr.
+  Every tier is recurring — there is no one-time purchase.
+- **Local currency is Stripe Adaptive Pricing**, a Dashboard setting on
+  Checkout — not code and not extra env vars. Turn it on there and a visitor in
+  the UAE is quoted dirhams off the same price id.
+- `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, one
+  **Plan id** per (tier, cadence) — `RAZORPAY_PLAN_PRO_MONTHLY`,
+  `RAZORPAY_PLAN_PRO_YEARLY`, `RAZORPAY_PLAN_POWER_MONTHLY`,
+  `RAZORPAY_PLAN_POWER_YEARLY`. Optional and independent of Stripe: either
+  processor alone is enough for the billing UI to render. Reference prices: Pro
+  ₹899/mo or ₹8,499/yr, Power ₹2,599/mo or ₹24,999/yr — roughly parity with the
+  USD figures, so BRD §8.3's margins carry over.
+- `RAZORPAY_PLAN_PRO_FOUNDING_YEARLY` — **optional**, and the only way to sell
+  Founding Pro (₹6,999 a year against the standard ₹8,499, and it **renews at
+  ₹6,999** — a founding member keeps that price for as long as the subscription
+  stays active, not just year one. There is nothing to configure for that: the
+  Plan carries the amount and Razorpay charges it every cycle. `createSubscription`
+  books `CYCLES_PER_YEAR × SUBSCRIPTION_HORIZON_YEARS` cycles — ten yearly ones —
+  because Razorpay has no "bill until cancelled" and `total_count` is mandatory,
+  so the subscription *completes* after that horizon rather than running
+  forever). Leave it unset and the offer does not exist:
+  no card on /pricing, no schema.org offer, no claim button. There is
+  deliberately no Stripe equivalent — a USD checkout would mint a seat the cap
+  can't see. The cap itself is 500, a constant in
+  `packages/ee/src/billing/founding/cap.ts` and NOT an env var (it is a promise
+  printed on a public page), enforced by claiming a row in `founding_seats`
+  when the checkout is created. Seats are claimed at checkout INTENT, so an
+  abandoned checkout holds one: the offer can sell fewer than 500, never more.
+  How many are claimed is **not** public — /pricing quotes only the static cap,
+  and claimed-vs-500 is a stat card on /app/admin.
+- **Processor routing** is by `x-vercel-ip-country`: India leads with Razorpay,
+  everywhere else with Stripe (`RAZORPAY_COUNTRIES`,
+  `apps/web/src/lib/billing/processor.ts`). It only reorders the buttons —
+  both stay clickable wherever both are configured, because IP geo is wrong
+  often enough that locking someone out of paying is the worse failure.
+- Register the Razorpay webhook at
+  `https://your-domain/api/razorpay/webhook`, subscribed to at least
+  `subscription.activated`, `subscription.charged`, `subscription.halted`,
+  `subscription.cancelled`. Its secret is **per-endpoint
+  and not the API key secret**. Without it, a customer who closes the tab
+  mid-redirect is charged and never upgraded, and renewals never update the
+  stored status. Razorpay-paid customers also have no billing portal —
+  cancelling is dashboard-side.
 - Register the webhook in Stripe pointing at
   `https://your-domain/api/stripe/webhook`, subscribed to at least
   `checkout.session.completed`, `customer.subscription.updated`,

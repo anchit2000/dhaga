@@ -1,24 +1,38 @@
 "use client";
 
-import Link from "next/link";
 import { useState, type ReactElement } from "react";
 
 import { PricingPlanCard } from "@/components/landing/PricingPlanCard";
 import { Button } from "@/components/ui/button";
 import styles from "./PricingCards.module.css";
-import {
-  FOUNDING_PRO_OFFER,
-  PRICING_PLANS,
-  type BillingCadence,
-} from "@/utils/constants/landing";
+import { CurrencyToggle } from "./CurrencyToggle";
+import { FoundingAside } from "./FoundingAside";
+import { useDisplayCurrency } from "./currency-context";
+import { PRICING_PLANS, type BillingCadence } from "@/utils/constants/landing";
+import type { FoundingOffer } from "@/lib/hosted/gate";
 
-export function PricingCards(): ReactElement {
+/**
+ * `founding` comes from the billing gate on the server. Null — unconfigured, no
+ * Razorpay, or the seats gone — means the aside is not rendered at all and the
+ * three standard cards stand alone, the same rule availableCombinations already
+ * applies to a price with no configured id.
+ *
+ * Currency comes from the provider above, not a prop: the comparison table
+ * further down the page quotes the same prices and has to move with this.
+ */
+export function PricingCards({
+  founding,
+}: {
+  founding?: FoundingOffer | null;
+}): ReactElement {
   const [cadence, setCadence] = useState<BillingCadence>("yearly");
+  const { currency } = useDisplayCurrency();
 
   return (
     <div className={styles.pricing}>
+      <CurrencyToggle />
       <div
-        className={`mt-10 inline-flex rounded-full border p-1 ${styles.toggle}`}
+        className={`mt-6 inline-flex rounded-full border p-1 ${styles.toggle}`}
         role="group"
         aria-label="Billing cadence"
       >
@@ -35,25 +49,12 @@ export function PricingCards(): ReactElement {
             key={plan.tier}
             plan={plan}
             cadence={cadence}
+            currency={currency}
             delay={index * 120}
           />
         ))}
       </div>
-      <aside className={`mt-6 flex flex-col gap-3 rounded-xl border p-5 sm:flex-row sm:items-center sm:justify-between ${styles.founding}`}>
-        <div>
-          <p className="font-display text-xl">Founding Pro · ${FOUNDING_PRO_OFFER.price}/year</p>
-          <p className="mt-1 text-sm text-fog">
-            First {FOUNDING_PRO_OFFER.seats} seats save ${FOUNDING_PRO_OFFER.savings} against the standard ${FOUNDING_PRO_OFFER.standardYearlyPrice} annual price.
-          </p>
-        </div>
-        <Button
-          render={<Link href="#request-access" />}
-          variant="link"
-          className="min-h-11 justify-start px-0 text-ember"
-        >
-          Request a founding seat →
-        </Button>
-      </aside>
+      {founding ? <FoundingAside offer={founding} /> : null}
     </div>
   );
 }

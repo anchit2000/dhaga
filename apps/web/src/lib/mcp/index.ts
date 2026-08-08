@@ -2,7 +2,12 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import { registerReadTools } from "./tools/reads";
 import { registerWriteTools } from "./tools/writes";
 
-export { verifyMcpToken, userIdFromAuth } from "./auth";
+export {
+  verifyMcpToken,
+  userIdFromAuth,
+  mcpApprovalGateResponse,
+  mcpPlanGateResponse,
+} from "./auth";
 
 /**
  * Registers Dhaga's whole MCP tool surface on a server instance.

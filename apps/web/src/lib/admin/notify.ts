@@ -37,7 +37,7 @@ export async function notifyCreditsGranted(
 /** Tells a user their plan changed (admin-managed, not a Stripe checkout). */
 export async function notifyPlanChanged(
   email: string,
-  plan: "free" | "pro" | "lifetime",
+  plan: "free" | "pro" | "power",
 ): Promise<void> {
   if (!emailEnabled()) return;
   const label = AI_ALLOWANCE_PLAN_LABELS[plan];

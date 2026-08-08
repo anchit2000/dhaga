@@ -105,7 +105,10 @@ export function UnscheduledTray({
               className="flex min-h-[44px] shrink-0 cursor-grab select-none flex-col justify-center rounded-xl border border-seam bg-panel px-3 py-2 text-left transition-colors outline-none hover:border-amber/40 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:cursor-grabbing"
             >
               <span className="text-sm font-medium text-paper">{item.associationLabel}</span>
-              <span className="max-w-[12rem] truncate text-xs text-fog">{item.action}</span>
+              {/* The cap keeps chips comparable in a narrow scroller, but at
+                  desktop it was ellipsising titles with ~1000px of empty tray
+                  to their right — so let it grow with the room. */}
+              <span className="max-w-[12rem] truncate text-xs text-fog lg:max-w-sm">{item.action}</span>
             </button>
           ))}
         </div>

@@ -20,7 +20,12 @@ export const CREDIT_EXAMPLES = [
   { price: "20 credits", action: "Deep research on a person or company, from the live web" },
   {
     price: "Free",
+    // "The nightly job-change and news watch on contacts you follow" was the
+    // first item here. It costs 0 credits, but it also produces nothing: the
+    // nightly signal-detection job runs on the web-search gateway and no-ops
+    // with no provider configured. Listing a free thing that never happens is
+    // still a promise. Same correction as ./plans.ts and ./comparison.ts.
     action:
-      "The nightly job-change and news watch on contacts you follow, the people a goal picks out, and the address-book noise it keeps out of suggestions",
+      "The people a goal picks out each night, and the address-book noise it keeps out of suggestions",
   },
 ] as const;

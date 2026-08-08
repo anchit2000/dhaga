@@ -26,7 +26,7 @@ import { clearActions, clearBudgetControls } from "./helpers";
  */
 
 const plan = {
-  value: "pro" as "pro" | "lifetime" | "free",
+  value: "pro" as "pro" | "power" | "free",
   unlimited: false,
   billing: true,
 };
@@ -90,9 +90,10 @@ describe("the ceiling each plan resolves to, on a fresh instance", () => {
   });
 
   it("still bounds a plan that has NO credit ceiling at all", async () => {
-    // Lifetime's credit allowance is null — nothing else in the system limits
-    // this account, which is exactly why the dollar gate must reach it.
-    plan.value = "lifetime";
+    // An admin can set any plan's allowance to null, and then nothing else in
+    // the system limits the account — which is exactly why the dollar gate
+    // must still reach it.
+    plan.value = "power";
     plan.unlimited = true;
 
     expect((await effectiveMonthlyDollarCap(await getAiBudgetConfig(), "user-1")).usd).not.toBeNull();

@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/auth/guard";
 import { getUiTheme } from "@/lib/repo/settings";
+import { smsEnabled } from "@/lib/sms/send";
 import { ProfileSetting } from "@/components/app/settings/ProfileSetting";
 import { AppearanceSetting } from "@/components/app/settings/AppearanceSetting";
 import { SecuritySetting } from "@/components/app/settings/SecuritySetting";
@@ -27,6 +28,11 @@ export async function SecuritySection() {
     <SecuritySetting
       email={user.email}
       twoFactorEnabled={Boolean((user as { twoFactorEnabled?: boolean }).twoFactorEnabled)}
+      // smsEnabled() reads TWILIO_* — server-only, and SecuritySetting is a
+      // client component, so the capability is resolved here and threaded down
+      // as a plain boolean. Evaluated per request, never baked into a constant,
+      // so configuring Twilio changes the copy with no code change.
+      smsEnabled={smsEnabled()}
     />
   );
 }

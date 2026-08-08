@@ -24,7 +24,6 @@ export function SignupForm({ socialProviders, defaultEmail }: SignupFormProps) {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | undefined>();
-  const [requested, setRequested] = useState<string | undefined>();
   const [verificationSent, setVerificationSent] = useState(false);
   const [magicLinkMode, setMagicLinkMode] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
@@ -42,9 +41,9 @@ export function SignupForm({ socialProviders, defaultEmail }: SignupFormProps) {
 
     if (magicLinkMode) {
       // In magic-link mode the account is only created when the user clicks the
-      // link (the verify step runs the signup access gate then) — so the send
-      // itself never returns the 403 access-request response. Keep the copy
-      // honest: tell them to check their email, don't claim the account exists.
+      // link, so don't claim the account exists yet. `/app` is the right
+      // callback either way: an account still waiting for approval is redirected
+      // from there to /pending by the auth guard.
       const { error: linkError } = await authClient.signIn.magicLink({ email, name, callbackURL: "/app" });
       setPending(false);
       if (linkError) {
@@ -58,13 +57,10 @@ export function SignupForm({ socialProviders, defaultEmail }: SignupFormProps) {
     const { error: signUpError } = await authClient.signUp.email({ name, email, password });
     setPending(false);
     if (signUpError) {
-      // Signup gate blocks unapproved emails with a 403 and files an access
-      // request automatically — see lib/auth/config/index.ts. Show that as
-      // a next step, not a failure.
-      if (signUpError.status === 403) {
-        setRequested(signUpError.message ?? "We've sent your access request — check your email.");
-        return;
-      }
+      // Signup is open now — the only 403 left is the AGPL core's single-user
+      // guard (lib/auth/config/signup-hooks.ts), which IS a failure and whose
+      // message explains itself. The hosted waiting list happens after the
+      // account exists, on /pending.
       setError(signUpError.message ?? "Couldn't create your account.");
       return;
     }
@@ -72,14 +68,8 @@ export function SignupForm({ socialProviders, defaultEmail }: SignupFormProps) {
     router.refresh();
   }
 
-  if (requested || verificationSent || magicLinkSent) {
-    return (
-      <SignupNotice
-        requested={requested}
-        verificationSent={verificationSent}
-        magicLinkSent={magicLinkSent}
-      />
-    );
+  if (verificationSent || magicLinkSent) {
+    return <SignupNotice verificationSent={verificationSent} magicLinkSent={magicLinkSent} />;
   }
 
   return (

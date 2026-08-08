@@ -19,6 +19,12 @@ beneath it.
   (two-factor authentication, 2FA), and **API keys** — personal access tokens for
   the API and the browser extension, and for scripted
   [exports](/docs/self-hosting/deploy#backups--migration). On a hosted instance
+  **creating** a token is part of Pro and Power: a token is what signs the
+  browser extension, the mobile app and MCP clients in as you, so adding another
+  device is a paid step. Tokens you already hold keep working and stay revocable
+  if your plan lapses — a downgrade never silently breaks an integration you've
+  already set up. Self-hosted instances have no plans, so nothing is gated. On a
+  hosted instance
   the Billing section also shows a one-line **AI credits** summary — *"3 of 10 AI
   credits used"*. Free accounts have a monthly allowance like any other: **10
   credits a month**. The line only reads *"No monthly AI credits on this plan —
@@ -74,10 +80,53 @@ beneath it.
 - **Import** — bring an existing address book into Dhaga (see below).
 
 <Callout title="Some sections depend on configuration">
-Billing only appears when the instance has Stripe configured, and calendar/
+Billing only appears when the instance has a payment processor configured —
+Stripe, Razorpay, or both — and calendar/
 email features need their providers wired up. On a plain self-host several of
 these sections are intentionally absent — see [Self-hosting](/docs/self-hosting).
 </Callout>
+
+## Your plan and billing
+
+**Account → Billing** shows what you're on, how you're billed and when it
+renews. It's there whatever plan you're on, not just while you're on Free.
+
+### Changing your plan
+
+Pick another tier or switch between monthly and yearly from the same cards. You
+never go through checkout twice — a change always edits the subscription you
+already have, which is also why the "buy" buttons disappear once you have one.
+
+- **Moving up** (Pro → Power, or monthly → yearly) takes effect straight away,
+  and you're charged the difference for the rest of the current period. The
+  button says *"Takes effect now, prorated"* before you press it.
+- **Moving down** (Power → Pro, or yearly → monthly) starts at your next
+  renewal. You keep what you've already paid for until then, and the button
+  tells you the date it starts.
+- A scheduled change shows as *"Power yearly until 3 Mar, then Pro monthly"*,
+  and **Undo scheduled change** cancels it any time before that date.
+
+<Callout title="Tier wins over billing period">
+If you change both at once, the tier decides which way it's going. Power yearly →
+Pro monthly is a **move down** and waits for your renewal, even though monthly
+bills sooner. Pro yearly → Power monthly is a **move up** and happens now.
+</Callout>
+
+If you bought a **founding** Pro seat, it isn't a rung on this ladder: it's a
+first-purchase price, so it's never offered to an existing subscriber and you
+won't be moved onto standard Pro yearly by accident. Power is still offered as a
+move up, and monthly as a move down at renewal.
+
+### Cancelling
+
+**Cancel plan** ends your subscription at the renewal date — never mid-period.
+Nothing is charged again and nothing is refunded, because nothing extra was
+charged. You keep everything you've paid for until that date, then the account
+drops to Free.
+
+If you pay through Stripe you can change your mind with **Keep my plan** right
+up to that date. Razorpay can't un-cancel a subscription, so the confirmation
+says so and restarting there means starting a new one.
 
 ## Appearance
 
@@ -144,8 +193,10 @@ card. It shows two things, each copyable in one click: this instance's **MCP
 endpoint**, and the **`npx skills add`** command that teaches an assistant how
 to use Dhaga. A token from the card below it is what a client running on your
 own machine — Claude Code, Cursor — signs in with; claude.ai and ChatGPT connect
-as a connector instead and need no token at all. Which route is yours, and what
-to paste where, is in [Connect your AI assistant](/docs/guide/mcp).
+as a connector instead and need no token at all. On a hosted instance both routes
+need Pro or Power: the connector isn't a way around the gate on creating a token,
+because the endpoint itself checks the plan. Which route is yours, and what to
+paste where, is in [Connect your AI assistant](/docs/guide/mcp).
 
 ## Your time zone
 

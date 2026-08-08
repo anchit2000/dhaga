@@ -22,7 +22,9 @@ export default async function CompaniesPage({ searchParams }: { searchParams: Pr
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-2xl tracking-tight">Companies</h1>
-        <div className="flex items-center gap-3">
+        {/* flex-wrap: the three actions are wider than 375px together, and
+            without it the New company button ran off the right edge. */}
+        <div className="flex flex-wrap items-center gap-3">
           <Button render={<Link href="/app/companies/aliases" />} variant="ghost" size="sm">Aliases</Button>
           <Button render={<Link href="/app/companies/duplicates" />} variant="ghost" size="sm">Find duplicates</Button>
           <NewCompanyButton />

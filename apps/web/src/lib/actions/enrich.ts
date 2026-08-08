@@ -46,7 +46,7 @@ export async function enrichContactAction(
   } catch (error) {
     if (error instanceof AiBudgetError) return { error: error.message };
     if (error instanceof FeatureNotEntitledError) {
-      return { error: "Enrichment requires a Pro or Lifetime plan." };
+      return { error: "Enrichment requires a Pro or Power plan." };
     }
     logActionError("enrich", error);
     return { error: SAVE_RETRY_MESSAGE };

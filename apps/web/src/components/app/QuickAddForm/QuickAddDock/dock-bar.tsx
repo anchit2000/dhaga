@@ -35,11 +35,16 @@ export function DockBar({
           <DictationProgress loadingProgress={loadingProgress} transcribing={transcribing} partialText={partialText} />
         </div>
       ) : null}
+      {/* backgroundOpacity is near-solid on purpose: this dock floats over
+          dense list content, and at 0.35 the page text behind it refracted
+          straight through the chromatic backdrop filter and collided with the
+          dock's own "Voice / Camera / Upload / Capture" labels — illegible,
+          worst in light mode. The glass edge treatment survives. */}
       <GlassSurface
         width="fit-content"
         height={88}
         borderRadius={28}
-        backgroundOpacity={0.35}
+        backgroundOpacity={0.92}
         className={`tour-quick-add px-1 ${floating ? "pointer-events-auto" : ""}`}
       >
         <Dock items={items} />

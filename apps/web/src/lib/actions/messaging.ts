@@ -3,11 +3,14 @@
 import { randomInt } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { mutation, type MutationResult } from "@/lib/actions/mutation";
+import { requireUserId } from "@/lib/auth/guard";
+import { hasFeature } from "@/lib/entitlements";
 import { createLinkToken, unlinkIdentity } from "@/lib/repo/messaging";
 import {
   LINK_TOKEN_ALPHABET,
   LINK_TOKEN_LENGTH,
   LINK_TOKEN_TTL_MINUTES,
+  MESSAGING_LINK_PLAN_GATE_REASON,
 } from "@/utils/constants/messaging";
 
 /**
@@ -31,10 +34,27 @@ function generateLinkToken(): string {
  * echoes it to the bot; the webhook redeems it (see repo/messaging tokens).
  * Returns the MutationResult so the client can render the token or toast the
  * error — never logs the token itself (PII/secret).
+ *
+ * LINKING is one of the `multi_device_sync` payment gates (utils/constants/plans.ts):
+ * a link token is the only way a new chat becomes a capture channel, so "can
+ * this user connect another channel" is exactly "can this user mint a link
+ * token". Two things stay deliberately outside the gate, for the same reason
+ * `deleteApiKeyAction` does:
+ *   - `unlinkMessagingIdentityAction` — a lapsed plan taking away the ability to
+ *     disconnect a live channel is a privacy problem, not a monetisation one;
+ *   - inbound processing of an ALREADY-LINKED chat (the webhook, which never
+ *     comes through here) — the user is still messaging a number we told them
+ *     to message, and silently dropping what they send loses their data.
+ *
+ * The check runs before `mutation()` rather than inside it so the billing read
+ * never nests inside the request-scoped tenant connection.
  */
 export async function generateMessagingLinkTokenAction(): Promise<
   MutationResult<{ token: string; expiresAt: string }>
 > {
+  if (!(await hasFeature(await requireUserId(), "multi_device_sync"))) {
+    return { ok: false, error: MESSAGING_LINK_PLAN_GATE_REASON };
+  }
   const result = await mutation("generate_messaging_token", async (userId) => {
     const token = generateLinkToken();
     const expiresAt = new Date(Date.now() + LINK_TOKEN_TTL_MINUTES * 60000);
@@ -46,7 +66,8 @@ export async function generateMessagingLinkTokenAction(): Promise<
 }
 
 /** Remove one linked chat. unlinkIdentity scopes the delete to its owner, so a
- *  user can only ever unlink their own identity. */
+ *  user can only ever unlink their own identity. Deliberately NOT plan-gated —
+ *  see the note on generateMessagingLinkTokenAction above. */
 export async function unlinkMessagingIdentityAction(
   identityId: string,
 ): Promise<MutationResult<void>> {

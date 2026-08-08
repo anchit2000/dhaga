@@ -28,7 +28,7 @@ import { clearBudgetControls } from "./helpers";
  * pinned next door in ./env-seed.test.ts.
  */
 
-const plan = { value: "pro" as "pro" | "lifetime" | "free", unlimited: true };
+const plan = { value: "pro" as "pro" | "power" | "free", unlimited: true };
 
 vi.mock("@/lib/auth/guard", () => ({
   getCurrentUser: async () => null,
@@ -78,7 +78,12 @@ describe("plan caps are enforced on a fresh instance, with nothing configured", 
   });
 
   it("keeps a plan whose allowance is null uncapped", async () => {
-    plan.value = "lifetime"; // PLAN_AI_CREDITS_PER_MONTH.lifetime === null
+    // No shipped plan is uncapped any more — every tier is recurring and
+    // carries a number. But an admin can still set one to null, and null has
+    // to keep meaning "no ceiling", or that lever silently becomes a
+    // zero-credit lockout for everyone on the plan.
+    plan.value = "power";
+    await setPlanAllowanceOverrides({ power: null });
     expect(await hasUnlimitedAiCredits("user-1")).toBe(true);
   });
 });
@@ -91,9 +96,11 @@ describe("an admin-set plan allowance is what the ladder uses", () => {
     expect(await effectiveMonthlyAiCap("user-1")).toBe(42);
   });
 
-  it("lets an admin cap a plan the constants leave uncapped", async () => {
-    plan.value = "lifetime";
-    await setPlanAllowanceOverrides({ lifetime: 900 });
+  it("lets an admin re-cap the top paid tier", async () => {
+    // Power ships at 1,000 credits. An admin override has to win over the
+    // constant, or the runtime ladder in lib/ai/metering/cap is decorative.
+    plan.value = "power";
+    await setPlanAllowanceOverrides({ power: 900 });
 
     expect(await hasUnlimitedAiCredits("user-1")).toBe(false);
     expect(await effectiveMonthlyAiCap("user-1")).toBe(900);

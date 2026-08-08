@@ -9,12 +9,12 @@ import { sendPasswordResetEmail, sendVerifyEmail, sendWelcomeEmail } from "./ema
 import { buildPlugins } from "./plugins";
 import { socialProviderConfig } from "./social";
 import { previewTrustedOrigins } from "./trusted-origins";
-import { beforeUserCreate } from "./signup-hooks";
+import { beforeUserCreate, grantOrRequestApproval } from "./signup-hooks";
 
 /** Re-exported so `@/lib/auth/config` stays the stable import for both the
  *  auth wiring and the vitest suites (the signup-gate logic lives in
  *  ./signup-hooks). */
-export { beforeUserCreate };
+export { beforeUserCreate, grantOrRequestApproval };
 
 /**
  * Lazily built and cached (not a top-level `await getDb()`): merely
@@ -93,6 +93,9 @@ async function buildAuth() {
           // OAuth providers can create an already-verified user, so they do
           // not pass through afterEmailVerification.
           after: async (user) => {
+            // First, because everything else here is a courtesy and this
+            // decides whether the account can use the app at all.
+            await grantOrRequestApproval(user);
             if (user.emailVerified) {
               await sendWelcomeEmail(user.email).catch(() => undefined);
             }

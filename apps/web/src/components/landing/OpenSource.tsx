@@ -22,13 +22,13 @@ export function OpenSource() {
             ))}
           </ul>
         </div>
-        <div className="dark overflow-x-auto rounded-lg border border-seam bg-ink p-6 font-mono text-sm leading-loose transition-all duration-300 hover:border-amber/40 hover:shadow-[0_20px_60px_-24px_rgba(226,164,76,0.3)]">
+        <div className="dark overflow-x-auto rounded-lg border border-seam bg-ink p-6 font-mono text-sm leading-loose transition-all duration-300 hover:border-amber/40 hover:shadow-[0_20px_60px_-24px_color-mix(in_srgb,var(--brand-amber)_30%,transparent)]">
           <p className="text-fog/60"># run the whole stack yourself</p>
           <p className="text-paper">git clone {GITHUB_URL.replace("https://", "")}</p>
           <p className="text-paper">npm install && npm run dev</p>
-          <p className="text-[#7fb98a]">✓ embedded Postgres + pgvector ready</p>
-          <p className="text-[#7fb98a]">✓ app running on :3000</p>
-          <p className="text-[#7fb98a]">✓ your network. your hardware. your rules.</p>
+          <p className="text-calm">✓ embedded Postgres + pgvector ready</p>
+          <p className="text-calm">✓ app running on :3000</p>
+          <p className="text-calm">✓ your network. your hardware. your rules.</p>
         </div>
       </div>
     </section>

@@ -17,6 +17,21 @@ export const PUBLIC_SHELL_PAGES = {
     title: "Privacy — Dhaga",
     description: "How Dhaga handles relationship data, AI actions, browser access, deletion receipts, and exports.",
   },
+  terms: {
+    path: "/terms",
+    title: "Terms of service — Dhaga",
+    description: "The agreement for Dhaga Cloud: your account and data, acceptable use, AI output, subscriptions and billing, availability, and ending it.",
+  },
+  refunds: {
+    path: "/refunds",
+    title: "Refunds & cancellation — Dhaga",
+    description: "Cancel a Dhaga subscription in one click, keep your data, and how to claim a refund within 7 days of a charge.",
+  },
+  contact: {
+    path: "/contact",
+    title: "Contact — Dhaga",
+    description: "Reach Dhaga support about billing, refunds, privacy, or a security report, with the registered business address and hours.",
+  },
   forgotPassword: {
     path: "/forgot-password",
     title: "Reset your password — Dhaga",

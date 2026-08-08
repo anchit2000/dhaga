@@ -1,4 +1,5 @@
 import { GITHUB_URL } from "@/utils/constants/landing";
+import { PARENT_COMPANY } from "@/utils/constants/legal";
 import { SignUpCta } from "./SignUpCta";
 import { SectionHeading } from "./SectionHeading";
 
@@ -40,7 +41,9 @@ export function Footer() {
             धागा — thread. The one that ties your network together.
           </p>
         </div>
-        <div className="flex gap-16 text-sm">
+        {/* Wraps now that there are three columns: at 375px a non-wrapping
+            gap-16 row of three pushed the footer into a horizontal scroll. */}
+        <div className="flex flex-wrap gap-x-16 gap-y-10 text-sm">
           <div className="space-y-2.5">
             <p className="font-mono text-[10px] uppercase tracking-widest text-fog">
               Product
@@ -62,11 +65,33 @@ export function Footer() {
             <FooterLink href={`${GITHUB_URL}/blob/main/LICENSE`} label="AGPL-3.0" external />
             <FooterLink href={`${GITHUB_URL}/blob/main/docs/BRD.md`} label="Roadmap" external />
           </div>
+          {/* Legal is reachable from every page's footer, not just the sitemap.
+              It was in sitemap.ts and linked from nowhere — which is a dead end
+              for a reader looking for the refund policy, and a blocker for a
+              payment gateway, both of which expect these four one click away. */}
+          <div className="space-y-2.5">
+            <p className="font-mono text-[10px] uppercase tracking-widest text-fog">
+              Legal
+            </p>
+            <FooterLink href="/privacy" label="Privacy" />
+            <FooterLink href="/terms" label="Terms" />
+            <FooterLink href="/refunds" label="Refunds" />
+            <FooterLink href="/contact" label="Contact" />
+          </div>
         </div>
       </div>
       <div className="border-t border-seam/60">
         <p className="mx-auto max-w-6xl px-6 py-5 text-xs text-fog">
-          © 2026 Dhaga. Built in the open. Your data is yours — always exportable, always deletable.
+          © 2026 Dhaga, a product by{" "}
+          <a
+            href={PARENT_COMPANY.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-fog transition-colors hover:text-paper"
+          >
+            {PARENT_COMPANY.label}
+          </a>
+          . Built in the open. Your data is yours — always exportable, always deletable.
         </p>
       </div>
     </footer>

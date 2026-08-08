@@ -96,18 +96,36 @@ describe("public shell SEO contract", () => {
       "src/app/reset-password/page.tsx",
       "src/app/auth/error/page.tsx",
       "src/app/privacy/page.tsx",
+      "src/app/terms/page.tsx",
+      "src/app/refunds/page.tsx",
+      "src/app/contact/page.tsx",
       "src/app/features/page.tsx",
       "src/app/pricing/page.tsx",
       "src/app/open-source/page.tsx",
       "src/app/product-tour/page.tsx",
     ];
     for (const file of routeFiles) expect(source(file)).not.toMatch(/^\s*["']use client["']/);
+    // Routes whose <h1> lives in a shared shell rather than the page file — home,
+    // blog, docs, open-source, and the four legal pages (one LegalPage between
+    // them). The contract is unchanged: exactly one h1 per rendered page, just
+    // asserted on the file that actually emits it.
+    const shellRendered = new Set([
+      "src/app/page.tsx",
+      "src/app/blog/[[...slug]]/page.tsx",
+      "src/app/docs/[[...slug]]/page.tsx",
+      "src/app/open-source/page.tsx",
+      "src/app/privacy/page.tsx",
+      "src/app/terms/page.tsx",
+      "src/app/refunds/page.tsx",
+      "src/app/contact/page.tsx",
+    ]);
     const h1Shells = [
       "src/components/landing/FocusedHome/Hero.tsx",
       "src/components/blog/BlogPageHeader.tsx",
       "src/components/docs/DocsHub.tsx",
       "src/components/landing/OpenSource.tsx",
-      ...routeFiles.slice(3).filter((file) => file !== "src/app/open-source/page.tsx"),
+      "src/components/legal/LegalPage.tsx",
+      ...routeFiles.filter((file) => !shellRendered.has(file)),
     ];
     for (const file of h1Shells) expect(source(file).match(/<h1\b/g)).toHaveLength(1);
   });

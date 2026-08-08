@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { toastError } from "@/components/app/feedback";
+import { toastActionError } from "@/components/app/feedback";
 import { EntityCombobox } from "@/components/app/EntityCombobox";
 import {
   dismissConfirmationAction,
@@ -17,7 +17,9 @@ const CONTACT_KINDS = ["contact"] as const satisfies readonly GraphTargetKind[];
 /**
  * "Who is this about?" — a note used a pronoun or bare reference the extractor
  * couldn't pin to one contact. Pick which existing contact the subject is, and
- * only then is the relationship written into the graph.
+ * only then is the relationship written into the graph. When the search turns up
+ * nobody, the same field creates the person from the typed name — otherwise the
+ * only way out of a subject who isn't in the graph yet is Dismiss.
  */
 export function SubjectResolutionCard({
   id,
@@ -32,13 +34,13 @@ export function SubjectResolutionCard({
 }): React.ReactElement {
   const [pending, startTransition] = useTransition();
 
-  function resolveSubject(subjectContactId: string): void {
+  function resolveSubject(choice: { subjectContactId: string } | { subjectCreateName: string }): void {
     startTransition(async () => {
       try {
-        await resolveConfirmationAction(id, { subjectContactId }, contactId);
-      } catch {
-        toastError("Couldn't resolve that. Please try again.", () =>
-          resolveSubject(subjectContactId),
+        await resolveConfirmationAction(id, choice, contactId);
+      } catch (error) {
+        toastActionError(error, "Couldn't resolve that. Please try again.", () =>
+          resolveSubject(choice),
         );
       }
     });
@@ -64,7 +66,9 @@ export function SubjectResolutionCard({
 
       <EntityCombobox
         kinds={CONTACT_KINDS}
-        onSelect={(target: GraphTarget) => resolveSubject(target.id)}
+        onSelect={(target: GraphTarget) => resolveSubject({ subjectContactId: target.id })}
+        onCreate={(name: string) => resolveSubject({ subjectCreateName: name })}
+        createLabel="Add new person"
         placeholder="Search people…"
         disabled={pending}
         clearOnSelect

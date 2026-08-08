@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import {
   ComboboxContent,
   ComboboxEmpty,
@@ -10,15 +10,20 @@ import {
 } from "@/components/ui/combobox";
 import type { GraphTarget } from "@/lib/repo/graph-data";
 
-/** The results list / empty state / create row — split from index.tsx to keep
+/** The results list / status rows / create row — split from index.tsx to keep
  *  the component under the 150-line rule. Must render as a descendant of the
- *  `Combobox` provider (see index.tsx), same as when this was inline. */
+ *  `Combobox` provider (see index.tsx), same as when this was inline.
+ *  `loading` and `failed` are never collapsed into the empty state: an empty
+ *  dropdown that only offers "Create …" reads as a broken search. */
 export function EntityComboboxOptions({
   triggerLabel,
   placeholder,
   results,
   trimmed,
   showCreate,
+  loading,
+  failed,
+  onRetry,
   preloadOnOpen,
   createLabel,
   onCreateClick,
@@ -28,6 +33,9 @@ export function EntityComboboxOptions({
   results: readonly GraphTarget[];
   trimmed: string;
   showCreate: boolean;
+  loading: boolean;
+  failed: boolean;
+  onRetry: () => void;
   preloadOnOpen: boolean;
   createLabel: string;
   onCreateClick: () => void;
@@ -51,7 +59,25 @@ export function EntityComboboxOptions({
           </ComboboxItem>
         )}
       </ComboboxList>
-      {results.length === 0 && !showCreate ? (
+      {loading ? (
+        <div className="flex items-center gap-2 px-3 py-3 text-sm text-fog">
+          <Loader2 aria-hidden className="size-3.5 animate-spin" />
+          Searching…
+        </div>
+      ) : null}
+      {failed ? (
+        <div className="flex items-center justify-between gap-2 px-3 py-3 text-sm">
+          <span className="text-destructive">Couldn’t search right now.</span>
+          <button
+            type="button"
+            onClick={onRetry}
+            className="shrink-0 font-mono text-[10px] uppercase tracking-wider text-ember hover:underline"
+          >
+            Retry
+          </button>
+        </div>
+      ) : null}
+      {!loading && !failed && results.length === 0 && !showCreate ? (
         <ComboboxEmpty>
           {trimmed ? "No matches." : preloadOnOpen ? "No matches yet." : "Type to search…"}
         </ComboboxEmpty>

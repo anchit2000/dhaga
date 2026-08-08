@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition, type FormEvent } from "react";
-import { toastError } from "@/components/app/feedback";
+import { toastActionError } from "@/components/app/feedback";
 import { EntityCombobox } from "@/components/app/EntityCombobox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,8 +46,8 @@ export function NoteSubjectCard({
           { noteSubject: { contactId: existingContactId } },
           contactId,
         );
-      } catch {
-        toastError("Couldn't attach the note. Please try again.", () =>
+      } catch (error) {
+        toastActionError(error, "Couldn't attach the note. Please try again.", () =>
           attachToExisting(existingContactId),
         );
       }
@@ -58,8 +58,8 @@ export function NoteSubjectCard({
     startTransition(async () => {
       try {
         await resolveConfirmationAction(id, { noteSubject: { createName } }, contactId);
-      } catch {
-        toastError("Couldn't create that contact. Please try again.", () =>
+      } catch (error) {
+        toastActionError(error, "Couldn't create that contact. Please try again.", () =>
           createAndAttach(createName),
         );
       }

@@ -9,7 +9,7 @@ import {
   ComboboxTrigger,
   type ComboboxChangeEventDetails,
 } from "@/components/ui/combobox";
-import { useTargetSearch } from "@/components/app/graph/use-target-search";
+import { useTargetSearchState } from "@/components/app/graph/use-target-search";
 import { EntityComboboxOptions } from "./EntityComboboxOptions";
 import type { GraphTarget, GraphTargetKind } from "@/lib/repo/graph-data";
 
@@ -24,6 +24,13 @@ import type { GraphTarget, GraphTargetKind } from "@/lib/repo/graph-data";
  *   field, where the typed text is also the value — pass `inputValue`).
  * - `triggerLabel`: a compact button opens a popup that holds the search input
  *   (e.g. the contact-page "Add to group" control).
+ *
+ * The dropdown always says which state it is in — searching, failed, or
+ * genuinely no matches — and "Create …" is withheld until the search settles.
+ * Reported live: typing an existing company showed nothing but
+ * `Create company "Adaptive Waves A"`, which reads as "the search is broken",
+ * and a failed request (offline, cold DB, 500) looked exactly like "no matches"
+ * with no way to retry short of reloading the page.
  */
 export function EntityCombobox({
   kinds,
@@ -65,12 +72,15 @@ export function EntityCombobox({
     return onInputValueChange ? onInputValueChange(value) : setInternalQuery(value);
   };
 
-  const results = useTargetSearch(query, { kinds, enabled: open, preload: preloadOnOpen }).filter(
-    (target) => !excludeIds?.has(target.id),
-  );
+  const search = useTargetSearchState(query, { kinds, enabled: open, preload: preloadOnOpen });
+  const results = search.targets.filter((target) => !excludeIds?.has(target.id));
   const trimmed = query.trim();
+  const settled = !search.loading && !search.failed;
+  // Withheld while in flight: offering "Create X" before the search has come
+  // back invites a duplicate of a company that is already in the graph.
   const showCreate =
     !!onCreate &&
+    settled &&
     trimmed.length > 0 &&
     !results.some((target) => target.label.toLowerCase() === trimmed.toLowerCase());
 
@@ -120,6 +130,9 @@ export function EntityCombobox({
         results={results}
         trimmed={trimmed}
         showCreate={showCreate}
+        loading={search.loading}
+        failed={search.failed}
+        onRetry={search.retry}
         preloadOnOpen={preloadOnOpen}
         createLabel={createLabel}
         onCreateClick={() => {

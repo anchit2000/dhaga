@@ -1,5 +1,7 @@
 import { toast } from "sonner";
 
+import { isStaleDeploymentError, STALE_DEPLOYMENT_MESSAGE } from "@/lib/actions/stale-deployment";
+
 /**
  * The ONE error toast for fire-and-forget / optimistic failures, so every
  * transient save failure reads identically app-wide. Mirrors the inline
@@ -12,6 +14,21 @@ export function toastError(message: string, onRetry?: () => void): void {
     message,
     onRetry ? { action: { label: "Retry", onClick: onRetry } } : undefined,
   );
+}
+
+/**
+ * `toastError` for a *caught* failure — use this wherever the error object is in
+ * hand. A stale-deployment failure gets the reload prompt instead of the
+ * surface's message, because its Retry replays an action id the server no longer
+ * has: it fails identically every time and reads as "this feature is broken".
+ * Sticky (no auto-dismiss) — every action in the tab is dead until the reload.
+ */
+export function toastActionError(error: unknown, message: string, onRetry?: () => void): void {
+  if (!isStaleDeploymentError(error)) return toastError(message, onRetry);
+  toast.error(STALE_DEPLOYMENT_MESSAGE, {
+    duration: Infinity,
+    action: { label: "Refresh", onClick: () => window.location.reload() },
+  });
 }
 
 /**

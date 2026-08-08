@@ -1,3 +1,4 @@
+import { errorFields, providerStatus } from "@dhaga/core/src/logging";
 import { FOUNDING_CADENCE, foundingPlanConfigured } from "../catalog";
 // From ./config, not the ../razorpay barrel: that barrel re-exports
 // ./checkout, which imports this module, and the cycle is avoidable.
@@ -46,7 +47,12 @@ export async function getFoundingOffer(): Promise<FoundingOffer | null> {
   try {
     claimed = await claimedSeatCount();
   } catch (error) {
-    console.error("[billing] couldn't read founding seat availability", error);
+    // Error CLASS and code only — never the raw error. A driver error quotes the
+    // conflicting row/value in its message; the SQLSTATE is what's diagnostic.
+    console.error("[billing] couldn't read founding seat availability", {
+      ...errorFields(error),
+      status: providerStatus(error),
+    });
     return null;
   }
   const seatsRemaining = FOUNDING_SEAT_CAP - claimed;

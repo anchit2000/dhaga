@@ -11,6 +11,7 @@
  */
 import type { EventSink, Edit, PcmFrame, VocabTerm } from "../types";
 import { todayLine } from "../../llm/prompts/today";
+import { errorFields, providerStatus } from "../../logging";
 import type { SessionDeps } from "./deps";
 import { PARTIAL_INTERVAL_SAMPLES } from "./deps";
 
@@ -58,8 +59,8 @@ export class VoiceSession {
       // phonetic rewrite obscuring it). Teaching is applied on finalize.
       if (text) this.deps.sink({ type: "partial", text });
     } catch (err) {
-      // Partials are best-effort; never surface a decode hiccup to the user.
-      console.warn("partial decode failed", err);
+      // Best-effort; a decode error can echo the transcript, so class + status only.
+      console.warn("partial decode failed", { ...errorFields(err), status: providerStatus(err) });
     } finally {
       this.partialBusy = false;
     }
@@ -99,7 +100,11 @@ export class VoiceSession {
       learned = result.learnedTerms;
     } catch (err) {
       // Fail soft: keep the naive concatenation so speech is never lost (Rule 12).
-      console.warn("correction failed, keeping raw concatenation", err);
+      // The call carries the user's speech and a provider 400 echoes it back, so
+      // never the raw error — class, status, and a COUNT where the text is not safe.
+      console.warn("correction failed, keeping raw concatenation", {
+        ...errorFields(err), status: providerStatus(err), utteranceChars: taught.length,
+      });
     }
 
     this.workingText = workingText;

@@ -1,3 +1,4 @@
+import { errorFields, providerStatus } from "@dhaga/core/src/logging";
 import { asCadence, availableCombinations, type PlanSelection } from "../catalog";
 import { getSubscriptionForUser, patchSubscriptionForUser } from "../repo";
 import type { SubscriptionPlan, SubscriptionRow } from "../../db/schema";
@@ -118,8 +119,14 @@ export async function reconcilePlanState(userId: string): Promise<void> {
   try {
     state = await describePlan(ref);
   } catch (error) {
-    // No ids, no PII — just enough to find it in the processor dashboard.
-    console.error(`[billing] couldn't reconcile the live ${ref.processor} plan`, error);
+    // Error CLASS and HTTP status only — enough to find it in the processor
+    // dashboard, and no more. Never the raw error: a Stripe/Razorpay SDK error
+    // carries the request payload (customer email, ids) on it, so handing it to
+    // console logs the PII this line must not.
+    console.error(`[billing] couldn't reconcile the live ${ref.processor} plan`, {
+      ...errorFields(error),
+      status: providerStatus(error),
+    });
     return;
   }
   await patchSubscriptionForUser(userId, {

@@ -8,10 +8,12 @@ import {
   hasLLM,
   type LLMImage,
 } from "@dhaga/core";
+import { errorFields } from "@dhaga/core/src/logging";
 import { logActionError } from "@/lib/actions/resilience";
 import { withUserDb } from "@/lib/db/request-scope";
 import { upsertEmbedding } from "@/lib/repo/embeddings";
 import { replaceNoteBody } from "@/lib/repo/notes";
+import { isTransientConnectionError } from "@/utils/constants/db";
 import { AiBudgetError, assertAiBudget, recordAiAction, withAiAction } from "./metering";
 
 /**
@@ -61,8 +63,20 @@ async function runTranscription(userId: string, images: LLMImage[]): Promise<str
     );
   } catch (error) {
     // Same trade as the scan: the call is already billed upstream, so a blip
-    // recording it must not discard the transcription.
-    logActionError("cardTranscription.record", error);
+    // recording it must not discard the transcription. logActionError alone said
+    // only that "a write failed" — it never named the spend, and this one is
+    // invisible twice over: it folds into the SCAN's action, so an operator
+    // reading `ai_actions` sees a card_scan row whose tokens are quietly short
+    // rather than a row that is missing. These are the counts to reconcile
+    // against the provider bill; the card's text never appears here.
+    console.error("[card-transcription] usage record failed (transcription kept)", {
+      feature: "card_scan",
+      model: result.model,
+      inputTokens: result.usage.inputTokens,
+      outputTokens: result.usage.outputTokens,
+      ...errorFields(error),
+      transient: isTransientConnectionError(error),
+    });
   }
   const text = result.data.raw_text.trim();
   return text || null;

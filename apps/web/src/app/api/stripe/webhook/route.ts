@@ -1,6 +1,7 @@
 // Dhaga Cloud only — see packages/ee/LICENSE. Self-hosters can delete this
 // whole api/stripe/** folder; nothing else in the app references it.
 import { handleStripeWebhook } from "@dhaga/ee/billing";
+import { logActionError } from "@/lib/actions/resilience";
 
 /**
  * Deliberately public — the second auth-exempt route after access-requests.
@@ -20,8 +21,14 @@ export async function POST(request: Request): Promise<Response> {
   try {
     await handleStripeWebhook(rawBody, signature);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Webhook processing failed.";
-    return Response.json({ error: message }, { status: 400 });
+    // The failure has to be visible somewhere: this is a payment grant path, so
+    // a swallowed error is a customer who paid and got nothing. It is logged
+    // server-side and NOT echoed — the raw message is attacker-reachable (the
+    // caller only has to fail signature verification to read it back) and a
+    // Postgres constraint violation quotes the conflicting value, which here is
+    // the customer's email. 400 is unchanged: Stripe's retry schedule reads it.
+    logActionError("stripe-webhook", error);
+    return Response.json({ error: "Webhook processing failed." }, { status: 400 });
   }
   return Response.json({ received: true });
 }

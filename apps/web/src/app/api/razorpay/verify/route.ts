@@ -1,6 +1,7 @@
 // Dhaga Cloud only — see packages/ee/LICENSE. Self-hosters can delete this
 // whole api/razorpay/** folder; nothing else in the app references it.
 import { confirmRazorpayPayment, razorpayEnabled } from "@dhaga/ee/billing";
+import { errorFields, providerStatus } from "@dhaga/core/src/logging";
 import { requireUserIdFromRequestAllowingPending } from "@/lib/auth/guard";
 
 /**
@@ -56,7 +57,14 @@ export async function POST(request: Request): Promise<Response> {
   try {
     result = await confirmRazorpayPayment(userId, { subscriptionId, paymentId, signature });
   } catch (error) {
-    console.error("[razorpay] payment confirmation failed", error);
+    // Fields only, never the error itself: confirmRazorpayPayment re-reads the
+    // order from Razorpay, so an SDK failure here carries the payer's email and
+    // contact in its attached response body. `status` is what actually
+    // diagnoses this — it separates a rejected key pair from Razorpay being down.
+    console.error("[razorpay] payment confirmation failed", {
+      ...errorFields(error),
+      status: providerStatus(error),
+    });
     return Response.json({ error: "Couldn't confirm payment." }, { status: 500 });
   }
 

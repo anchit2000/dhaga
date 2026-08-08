@@ -1,3 +1,4 @@
+import { errorFields, providerStatus } from "@dhaga/core/src/logging";
 import { razorpayPlanId, selectionForRazorpayPlanId, type PlanSelection } from "../catalog";
 import {
   cancelScheduledChanges,
@@ -37,7 +38,12 @@ async function pendingFor(subscriptionId: string, effectiveAt: Date | null): Pro
     if (!selection) return null;
     return { ...selection, effectiveAt: effectiveAt ?? pending.changeScheduledAt ?? pending.currentEnd };
   } catch (error) {
-    console.error("[billing] couldn't read the pending Razorpay plan change", error);
+    // Error CLASS and HTTP status only: a Razorpay SDK error carries the
+    // request payload (subscription id, customer contact) on it.
+    console.error("[billing] couldn't read the pending Razorpay plan change", {
+      ...errorFields(error),
+      status: providerStatus(error),
+    });
     return null;
   }
 }

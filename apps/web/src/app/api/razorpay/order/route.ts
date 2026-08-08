@@ -6,6 +6,7 @@ import {
   parsePlanSelection,
   razorpayEnabled,
 } from "@dhaga/ee/billing";
+import { errorFields, providerStatus } from "@dhaga/core/src/logging";
 import { requireUserIdFromRequestAllowingPending } from "@/lib/auth/guard";
 
 /**
@@ -57,8 +58,14 @@ export async function POST(request: Request): Promise<Response> {
       );
     }
     // Never echo the Razorpay error text: a misconfigured key pair surfaces
-    // there, and this response is client-visible.
-    console.error("[razorpay] order creation failed", error);
+    // there, and this response is client-visible. The log doesn't echo it
+    // either — the SDK error's attached response body repeats the customer
+    // notify fields (email, contact) we sent with the subscription. `status`
+    // is the diagnostic that matters: 401 is our keys, 5xx is theirs.
+    console.error("[razorpay] order creation failed", {
+      ...errorFields(error),
+      status: providerStatus(error),
+    });
     return Response.json({ error: "Couldn't start checkout." }, { status: 500 });
   }
 }

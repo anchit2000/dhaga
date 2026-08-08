@@ -1,3 +1,4 @@
+import { logActionError } from "@/lib/actions/resilience";
 import { getReferralGate } from "@/lib/hosted/gate";
 import { clearReferralCookie, readReferralCookie } from "./cookie";
 
@@ -47,6 +48,12 @@ export async function grantReferralRewardOnVerification(refereeUserId: string): 
   try {
     await (await getReferralGate()).grantRewardOnVerification(refereeUserId);
   } catch (error) {
-    console.error("referral reward grant failed", error);
+    // Via logActionError, never a raw `console.error(msg, error)`: passing the
+    // Error serializes its message, and the referee's email address flows
+    // through this module — a unique/FK violation on the referral tables quotes
+    // it back, putting a real user's email in the server log (CLAUDE.md privacy
+    // rules). The helper keeps only name/code/frames plus the transient flag,
+    // which is what tells a pool blip apart from a genuinely broken grant.
+    logActionError("referral.grantReward", error);
   }
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useOptimistic, useRef, useTransition } from "react";
-import { toast } from "sonner";
+import { toastActionError } from "@/components/app/feedback";
 
 /** A submit's outcome: `null` when the server accepted it, else a user-facing
  *  error message that triggers rollback + a Retry toast. */
@@ -66,17 +66,19 @@ export function useOptimisticList<TItem>({
       startTransition(async () => {
         applyChange(change);
         let error: SubmitResult;
+        // Kept so a stale-deployment failure can be told apart from a real one:
+        // it needs a reload prompt, not this surface's "try again" message.
+        let thrown: unknown;
         try {
           error = await submit();
-        } catch {
+        } catch (caught) {
+          thrown = caught;
           error = errorMessage;
         }
         if (error) {
           // The transition ends without `items` changing, so React drops the
           // optimistic edit — rollback is automatic. Offer a one-tap Retry.
-          toast.error(error, {
-            action: { label: "Retry", onClick: () => mutateRef.current?.(change, submit) },
-          });
+          toastActionError(thrown, error, () => mutateRef.current?.(change, submit));
         }
       });
     },

@@ -1,7 +1,7 @@
 "use client";
 
-import { toast } from "sonner";
 import type { ReactNode } from "react";
+import { toastActionError } from "@/components/app/feedback";
 import { isNextControlFlow } from "@/lib/actions/next-control-flow";
 
 /**
@@ -20,7 +20,7 @@ export async function runAction(
     return true;
   } catch (error) {
     if (isNextControlFlow(error)) throw error;
-    toast.error(errorMessage);
+    toastActionError(error, errorMessage);
     return false;
   }
 }

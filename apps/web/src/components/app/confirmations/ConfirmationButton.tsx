@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { toastError } from "@/components/app/feedback";
+import { toastActionError } from "@/components/app/feedback";
 import { Button } from "@/components/ui/button";
 import type { ReactNode } from "react";
 
@@ -27,8 +27,8 @@ export function ConfirmationButton({
     startTransition(async () => {
       try {
         await onRun();
-      } catch {
-        toastError("Something went wrong. Please try again.", run);
+      } catch (error) {
+        toastActionError(error, "Something went wrong. Please try again.", run);
       }
     });
   }

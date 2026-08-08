@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useOptimistic, useTransition } from "react";
-import { toast } from "sonner";
+import { toastActionError } from "@/components/app/feedback";
 
 interface OptimisticToggle<T> {
   /** The value to render — the optimistic guess while pending, the server truth otherwise. */
@@ -36,10 +36,10 @@ export function useOptimisticToggle<T>({
         setOptimistic(next);
         try {
           await mutate(next);
-        } catch {
+        } catch (error) {
           // The optimistic value reverts automatically when the transition
           // ends without the source `value` having changed.
-          toast.error(errorMessage);
+          toastActionError(error, errorMessage);
         }
       });
     },

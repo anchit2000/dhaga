@@ -1,4 +1,5 @@
 import { hasLLM } from "@dhaga/core";
+import { errorFields } from "@dhaga/core/src/logging";
 import { withUserDb } from "@/lib/db/request-scope";
 import {
   loadGoalSubjectContext,
@@ -102,16 +103,35 @@ async function runGoalResolve(
     const accepted = completed
       .map((item) => item.verdict)
       .filter((verdict): verdict is GoalMatchVerdict => verdict !== null);
+    const unmetered: GoalJudgement[] = [];
+    let lastRecordError: unknown = null;
     const matched = await withUserDb(userId, async () => {
       for (const item of completed) {
         try {
           await recordAiAction("goal_match_now", item.model, item.usage);
-        } catch {
+        } catch (failure) {
           // One call failing to meter must never drop the cohort it produced.
+          unmetered.push(item);
+          lastRecordError = failure;
         }
       }
       return recordGoalMatchRun(goalId, accepted);
     });
+    // WHAT WENT UNMETERED. Anthropic billed these tokens; no `ai_actions` row
+    // landed, so both monthly ceilings (credits, and the operator's dollar gate)
+    // read low by exactly this much until it is reconciled against the provider
+    // bill. ONE line per resolve, not per call — up to GOAL_SYNC_RESOLVE_CAP
+    // (20) judgements run here. Counts and model id only, never the objective.
+    if (unmetered.length > 0) {
+      console.error("[goal-resolve] usage record failed (cohort kept)", {
+        feature: "goal_match_now",
+        model: unmetered[0].model,
+        unmeteredCalls: unmetered.length,
+        inputTokens: unmetered.reduce((sum, item) => sum + item.usage.inputTokens, 0),
+        outputTokens: unmetered.reduce((sum, item) => sum + item.usage.outputTokens, 0),
+        ...errorFields(lastRecordError),
+      });
+    }
     return { matched, skipped: null };
   } catch (error) {
     if (error instanceof AiBudgetError) return { matched: 0, skipped: "no_budget" };

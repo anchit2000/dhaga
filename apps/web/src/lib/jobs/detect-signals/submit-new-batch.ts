@@ -10,6 +10,7 @@ import {
   type SignalDetection,
 } from "@dhaga/core";
 import type { SignalDetectionSummary } from "@dhaga/core/src/api/jobs";
+import { errorFields } from "@dhaga/core/src/logging";
 import { getDb } from "@/lib/db/request-scope";
 import { companies, contacts } from "@/lib/db/schema";
 import { setPendingSignalBatchId } from "@/lib/repo/settings";
@@ -65,6 +66,8 @@ export async function submitNewBatch(
   const search = getSearchClient();
   const items: BatchExtractItem<SignalDetection>[] = [];
   const searchCost: SearchResponse["usage"][] = [];
+  let searchFailures = 0;
+  let firstSearchError: unknown;
 
   for (const contact of due) {
     try {
@@ -83,11 +86,32 @@ export async function submitNewBatch(
         ),
         tier: "extract",
       });
-    } catch {
+    } catch (error) {
       // One contact's search failing must never abort the rest of the
       // sweep (best-effort, like outbound webhooks) — it's still marked
       // scanned below and will be picked up on the next ~6-day cycle.
+      // Counted, not just swallowed: see the aggregate log below.
+      searchFailures += 1;
+      firstSearchError ??= error;
     }
+  }
+
+  if (searchFailures > 0) {
+    // The one line that makes the trade-off above auditable. Every due contact
+    // is stamped scanned further down whether or not its search ran, and the
+    // summary reports `scanned: due.length` — so a night the search provider
+    // was unreachable is otherwise byte-identical to a clean one. Read it as:
+    // searchFailures === dueCount with itemsBuilt 0 means NOTHING was really
+    // scanned (bad key, quota, provider down) and those contacts are now
+    // suppressed for ~RESCAN_AFTER_DAYS; a few failures out of many is
+    // ordinary per-contact flakiness. Counts and error class only — never
+    // contact names or the search query (privacy rule).
+    console.error("[job:detect-signals] contact searches failed", {
+      dueCount: due.length,
+      itemsBuilt: items.length,
+      searchFailures,
+      ...errorFields(firstSearchError),
+    });
   }
 
   if (items.length > 0) {

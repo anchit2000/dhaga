@@ -1,3 +1,4 @@
+import { errorFields } from "@dhaga/core/src/logging";
 import { withUserDb } from "@/lib/db/request-scope";
 import { logActionError } from "@/lib/actions/resilience";
 import { processMessagingSession } from "@/lib/messaging";
@@ -50,6 +51,9 @@ export async function runMessagingFlush(): Promise<MessagingFlushSummary> {
   const tenantIds = await hostedTenantIds();
 
   const claimed: ClaimedSession[] = [];
+  let tenantsFailed = 0;
+  let sessionsFailed = 0;
+  let firstError: unknown;
   if (tenantIds === null) {
     // Self-host: one global sweep. resolveUserIdByIdentity is cross-tenant and
     // resolves the linked owner of each batch's chat.
@@ -77,6 +81,10 @@ export async function runMessagingFlush(): Promise<MessagingFlushSummary> {
         );
       } catch (error) {
         // Isolate the tenant: one user's claim failing must not abort the rest.
+        // Counted for the aggregate line below — the summary only ever grows on
+        // success, so a tenant that never got claimed leaves no trace in it.
+        tenantsFailed += 1;
+        firstError ??= error;
         logActionError("messaging_flush", error);
       }
     }
@@ -91,8 +99,29 @@ export async function runMessagingFlush(): Promise<MessagingFlushSummary> {
     } catch (error) {
       // Isolate the batch: one failing session must not abort the sweep. Never
       // logs the error body (could echo forwarded third-party PII, privacy rule).
+      sessionsFailed += 1;
+      firstError ??= error;
       logActionError("messaging_flush", error);
     }
+  }
+
+  if (tenantsFailed > 0 || sessionsFailed > 0) {
+    // The denominators the per-item lines above don't carry. `flushed` and
+    // `resumed` only ever count successes, so a night where every claimed batch
+    // blew up returns the same {0,0} as a night with nothing to flush — and a
+    // capture batch that never flushes is a message the user believes was saved.
+    // Read it as: sessionsFailed === claimed means the processing path itself is
+    // down (LLM key/cap, DB) and NOTHING was saved tonight, while the batches
+    // stay claimed in `processing` until the stall window re-picks them;
+    // tenantsFailed === tenantsTotal means claiming never ran, so nothing was
+    // even looked at. Counts only — no tenant ids, chat ids or message text.
+    console.error("[job:messaging-flush] batches failed", {
+      tenantsTotal: tenantIds?.length ?? 1,
+      tenantsFailed,
+      claimed: claimed.length,
+      sessionsFailed,
+      ...errorFields(firstError),
+    });
   }
   return summary;
 }

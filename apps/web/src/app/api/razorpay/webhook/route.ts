@@ -1,6 +1,7 @@
 // Dhaga Cloud only — see packages/ee/LICENSE. Self-hosters can delete this
 // whole api/razorpay/** folder; nothing else in the app references it.
 import { handleRazorpayWebhook, razorpayEnabled } from "@dhaga/ee/billing";
+import { logActionError } from "@/lib/actions/resilience";
 
 /**
  * Deliberately public — the third auth-exempt route, after access-requests and
@@ -27,8 +28,14 @@ export async function POST(request: Request): Promise<Response> {
   try {
     await handleRazorpayWebhook(rawBody, signature);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Webhook processing failed.";
-    return Response.json({ error: message }, { status: 400 });
+    // Authoritative grant path, so a silent failure is a paid-for plan that
+    // never lands: log it server-side rather than only telling Razorpay. The
+    // message is deliberately fixed — echoing the real one leaks (a Postgres
+    // constraint violation quotes the conflicting value, i.e. the buyer's
+    // email) to anyone who can make this handler throw. 400 is unchanged:
+    // Razorpay's redelivery schedule keys off it.
+    logActionError("razorpay-webhook", error);
+    return Response.json({ error: "Webhook processing failed." }, { status: 400 });
   }
   return Response.json({ received: true });
 }

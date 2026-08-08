@@ -10,6 +10,7 @@ import {
   type CalendarDay,
   type NoteExtraction,
 } from "@dhaga/core";
+import { errorFields } from "@dhaga/core/src/logging";
 import { withUserDb } from "@/lib/db/request-scope";
 import { scheduleCalendarWriteOutForNote } from "@/lib/calendar/write-out";
 import { createEnrichmentMatchConfirmation } from "@/lib/repo/confirmations";
@@ -123,14 +124,19 @@ async function runNoteExtraction(
       }
     });
   } catch (error) {
-    // Log server-side so a recurring graph-write failure is diagnosable —
-    // but ONLY the error's own metadata, never the note text, extraction
-    // output, or any contact PII (CLAUDE.md privacy rules).
+    // Log server-side so a recurring graph-write failure is diagnosable, in the
+    // PII-safe shape from @dhaga/core/src/logging: `name` and driver `code` always,
+    // `message` ONLY for TypeError/ReferenceError (engine-generated, so it names
+    // identifiers rather than the values they held), and `at` — stack FRAMES, code
+    // locations — instead of the raw stack. That restriction is the whole point
+    // here: the block above INSERTs extracted fact text and follow-up bodies, so a
+    // constraint violation's message quotes that content straight back into the log
+    // — the PII this must never record. Counts are SIZE, never content, so they stay.
     console.error("note-extraction: graph write failed", {
-      name: error instanceof Error ? error.name : undefined,
-      message: error instanceof Error ? error.message : String(error),
-      code: error instanceof Error ? (error as NodeJS.ErrnoException).code : undefined,
-      stack: error instanceof Error ? error.stack : undefined,
+      ...errorFields(error),
+      factCount: extraction.facts.length,
+      relationshipCount: extraction.relationships.length,
+      followUpCount: extraction.follow_ups.length,
     });
     return graphWriteFailedOutcome();
   }

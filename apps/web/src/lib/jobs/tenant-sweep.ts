@@ -43,6 +43,11 @@ export async function hostedTenantIds(): Promise<string[] | null> {
  *
  * Sequential on purpose: each tenant checks out a connection from the small
  * tenant pool, and the callers' sweeps make network calls between scoped units.
+ *
+ * The failure COUNT is logged once at the end because the return value can't
+ * carry it: callers sum the summaries that came back, so a sweep where every
+ * tenant threw sums to exactly the same zeros as a quiet night with no work due
+ * (see the log's own comment for how to read it).
  */
 export async function forEachTenant<T>(
   tenantIds: readonly string[],
@@ -50,12 +55,27 @@ export async function forEachTenant<T>(
   sweep: (runScoped: ScopedRunner, userId: string) => Promise<T>,
 ): Promise<T[]> {
   const results: T[] = [];
+  let tenantsFailed = 0;
   for (const userId of tenantIds) {
     try {
       results.push(await sweep((work) => withUserDb(userId, work), userId));
     } catch (error) {
+      tenantsFailed += 1;
       logActionError(label, error);
     }
+  }
+  // The denominator the per-tenant lines above don't have. Read it as:
+  // tenantsFailed === tenantsTotal means the sweep is systemically broken (bad
+  // key, schema drift, pool exhausted) and NO tenant was swept tonight — the
+  // job's summary will still be all zeros, which is why this line exists; a
+  // small fraction means ordinary per-tenant trouble that the next run retries.
+  // Counts only, never tenant ids or emails (privacy rule).
+  if (tenantsFailed > 0) {
+    console.error("[job:tenant-sweep] tenants failed", {
+      label,
+      tenantsTotal: tenantIds.length,
+      tenantsFailed,
+    });
   }
   return results;
 }

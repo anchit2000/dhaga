@@ -8,6 +8,7 @@ import {
   type ExtractedContact,
   type LLMImage,
 } from "@dhaga/core";
+import { errorFields } from "@dhaga/core/src/logging";
 import { withUserDb } from "@/lib/db/request-scope";
 import { isTransientConnectionError } from "@/utils/constants/db";
 import {
@@ -75,9 +76,17 @@ async function runScan(userId: string, images: LLMImage[]): Promise<CardScanResu
         recordAiAction("card_scan", result.model, result.usage),
       );
     } catch (recordError) {
+      // Say WHAT WENT UNMETERED, not just that a write failed: Anthropic billed
+      // the vision tokens below, the `ai_actions` row never landed, so this
+      // month's credit and dollar totals both read low by that much and the caps
+      // under-fire until it is reconciled against the provider bill. Model id
+      // and token counts are code-level facts, never the card's contents.
       console.error("[card-scan] usage record failed (scan kept)", {
-        name: recordError instanceof Error ? recordError.name : typeof recordError,
-        code: (recordError as { code?: unknown } | null)?.code,
+        feature: "card_scan",
+        model: result.model,
+        inputTokens: result.usage.inputTokens,
+        outputTokens: result.usage.outputTokens,
+        ...errorFields(recordError),
         transient: isTransientConnectionError(recordError),
       });
     }

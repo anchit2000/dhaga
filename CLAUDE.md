@@ -142,7 +142,10 @@ apps/extension/    Browser extension (MV3) — built, v1.1
 packages/core/     Shared: Zod schemas, extraction prompts, API client, types;
                    messaging/ = provider-agnostic WhatsApp/Telegram inbound-
                    capture gateway; transcription/ = STT gateway stub (no
-                   provider yet — voice notes stored "received, not transcribed")
+                   provider yet — voice notes stored "received, not transcribed");
+                   logging/ = PII-safe error fields (errorFields/bugMessage/
+                   stackFrames) shared by app + ee — a log may describe the CODE
+                   that failed, never the VALUES that flowed through it
 packages/ee/       Dhaga Cloud only: multi-tenant RLS, billing, admin, early
                    access — source-available (PolyForm Shield 1.0.0), not
                    AGPL; self-hosting needs none of it, see docs/SELF_HOSTING.md

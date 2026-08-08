@@ -1,3 +1,4 @@
+import { ZodError } from "zod";
 import {
   SEARCH_QUERY_SYSTEM,
   buildSearchQueryPrompt,
@@ -6,6 +7,7 @@ import {
   type SearchIndexResult,
   type SearchQueryPlan,
 } from "@dhaga/core";
+import { errorFields } from "@dhaga/core/src/logging";
 import { withUserDb } from "@/lib/db/request-scope";
 import { getSearchIndex } from "@/lib/repo/search-index";
 import { isTransientConnectionError } from "@/utils/constants/db";
@@ -46,11 +48,34 @@ export async function planQuery(
       await withUserDb(userId, () =>
         recordAiAction("search", result.model, result.usage),
       );
-    } catch {
-      // Same trade as the card scan: the call is billed upstream either way.
+    } catch (error) {
+      // Same trade as the card scan: the call is billed upstream either way —
+      // so name WHAT WENT UNMETERED. Anthropic billed the tokens below, no
+      // `ai_actions` row landed, and the month's credit and dollar totals both
+      // read low by that much, so neither ceiling can see the spend. Reconcile
+      // these counts against the provider bill. Model id and token counts are
+      // code-level facts; the query and the plan never appear here.
+      console.error("[ask-dhaga] plan usage record failed (search kept)", {
+        feature: "search",
+        model: result.model,
+        inputTokens: result.usage.inputTokens,
+        outputTokens: result.usage.outputTokens,
+        ...errorFields(error),
+      });
     }
     return result.data;
-  } catch {
+  } catch (error) {
+    // A DIFFERENT failure from the one above: no plan at all, so retrieval
+    // silently degrades to UNPLANNED — no filters, no semantic residual — and
+    // the answer quietly gets worse with nothing in the response to say so.
+    // `zodError` separates the two causes an operator must act on differently:
+    // true means the model's structured output missed searchQueryPlanSchema (a
+    // prompt/schema drift to fix), false means the call itself failed (infra).
+    // The CLASS only — never the query, the raw output, or the parsed plan.
+    console.error("[ask-dhaga] query plan failed (retrieval unplanned)", {
+      zodError: error instanceof ZodError,
+      ...errorFields(error),
+    });
     return null;
   }
 }

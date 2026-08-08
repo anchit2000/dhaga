@@ -1,3 +1,4 @@
+import { errorFields } from "@dhaga/core/src/logging";
 import { runPersonClassification } from "@/lib/jobs/classify-people";
 import { runConfirmationsDigest } from "@/lib/jobs/confirmations-digest";
 import { runDailyDigest } from "@/lib/jobs/daily-digest";
@@ -8,6 +9,37 @@ import { runLinkedinExportReminders } from "@/lib/jobs/linkedin-export-reminders
 import { runMessagingFlush } from "@/lib/jobs/messaging-flush";
 import { runMorningReminder } from "@/lib/jobs/morning-reminder";
 import { runSignalDetection } from "@/lib/jobs/detect-signals";
+
+/**
+ * One failed job, named. `job` is the response key so an operator can line the
+ * failure up with the null slot; the rest is PII-safe error shape from
+ * @dhaga/core/src/logging (never the error body — these jobs handle contact
+ * data). Declared here rather than in @/types because nothing outside this
+ * route's own response consumes it.
+ */
+type JobFailure = { job: string } & ReturnType<typeof errorFields>;
+
+/**
+ * Run one nightly job with its own error boundary: a throw is recorded against
+ * the job's name and the sweep continues with the next one. Returns null for a
+ * failed job so the response keeps its shape (every key present) while still
+ * distinguishing "this job produced no work" (a summary of zeros) from "this job
+ * did not run" (null + an entry in `failures`).
+ */
+async function runJob<T>(
+  job: string,
+  run: () => Promise<T>,
+  failures: JobFailure[],
+): Promise<T | null> {
+  try {
+    return await run();
+  } catch (error) {
+    const failure: JobFailure = { job, ...errorFields(error) };
+    console.error("[job:daily] job failed", failure);
+    failures.push(failure);
+    return null;
+  }
+}
 
 /**
  * The single daily-jobs entrypoint. Vercel Hobby allows only one cron, so all
@@ -40,27 +72,45 @@ import { runSignalDetection } from "@/lib/jobs/detect-signals";
  * three jobs). The gate is opt-in precisely because it must never discard the only
  * invocation the day gets: on the single Hobby cron, unset, each job sends once at
  * whatever UTC hour the cron fires. The other jobs here have no hour gate.
+ *
+ * Isolation: every job runs through `runJob`, so one throwing can no longer skip
+ * the nine after it. These are sequential awaits sharing the day's only cron
+ * slot, so an unhandled throw in an early job used to cost every later job its
+ * run AND return a bare 500 that named none of them. Failures now come back in
+ * `failures` (empty array on a clean run) keyed by job name, with that job's slot
+ * set to null instead of a summary. Still 200 unless auth fails: a partial night
+ * is not a reason for a scheduler to retry the endpoint and re-send every email
+ * the jobs that DID succeed already sent.
  */
 export async function GET(request: Request): Promise<Response> {
   const secret = process.env.CRON_SECRET;
   if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const messagingFlush = await runMessagingFlush();
-  const signals = await runSignalDetection();
+  const failures: JobFailure[] = [];
+  const messagingFlush = await runJob("messagingFlush", runMessagingFlush, failures);
+  const signals = await runJob("signals", runSignalDetection, failures);
   // Both curation passes run BEFORE the digest: it emails today's suggestions,
   // so it has to read the freshest person/service labels and goal cohort. They
   // also have to run before each other's summaries are read — sequential awaits,
   // matching the rest of this file, because each pass is itself a per-tenant
   // sweep holding a connection from a small pool.
-  const personClassification = await runPersonClassification();
-  const goalMatching = await runGoalMatching();
-  const digest = await runDailyDigest();
-  const confirmationsDigest = await runConfirmationsDigest();
-  const reminder = await runMorningReminder();
-  const followUpReminders = await runFollowUpReminders();
-  const importantDateReminders = await runImportantDateReminders();
-  const linkedinReminders = await runLinkedinExportReminders();
+  const personClassification = await runJob(
+    "personClassification",
+    runPersonClassification,
+    failures,
+  );
+  const goalMatching = await runJob("goalMatching", runGoalMatching, failures);
+  const digest = await runJob("digest", runDailyDigest, failures);
+  const confirmationsDigest = await runJob("confirmationsDigest", runConfirmationsDigest, failures);
+  const reminder = await runJob("reminder", runMorningReminder, failures);
+  const followUpReminders = await runJob("followUpReminders", runFollowUpReminders, failures);
+  const importantDateReminders = await runJob(
+    "importantDateReminders",
+    runImportantDateReminders,
+    failures,
+  );
+  const linkedinReminders = await runJob("linkedinReminders", runLinkedinExportReminders, failures);
   return Response.json({
     messagingFlush,
     signals,
@@ -72,5 +122,6 @@ export async function GET(request: Request): Promise<Response> {
     followUpReminders,
     importantDateReminders,
     linkedinReminders,
+    failures,
   });
 }

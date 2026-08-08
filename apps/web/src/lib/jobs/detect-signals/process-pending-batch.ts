@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { BatchLLMClient } from "@dhaga/core";
 import { signalDetectionSchema } from "@dhaga/core";
+import { errorFields, providerStatus } from "@dhaga/core/src/logging";
 import { getDb } from "@/lib/db/request-scope";
 import { signals } from "@/lib/db/schema";
 import { recordAiAction } from "@/lib/ai/metering";
@@ -30,9 +31,21 @@ export async function processPendingBatch(
   let isDone: boolean;
   try {
     isDone = await batchClient.isBatchDone(batchId);
-  } catch {
+  } catch (error) {
     // Transient failure checking status — try again next run rather than
-    // risk discarding a batch id we can't yet confirm has finished.
+    // risk discarding a batch id we can't yet confirm has finished. But
+    // "transient" is an ASSUMPTION, and when it's wrong this returns
+    // {done:false} every night forever and signal detection quietly stops.
+    // `status` is what decides: 429/5xx = genuinely transient, ignore a lone
+    // line; 404 (batch id aged out) or 401/403 (key revoked) is permanent —
+    // the pointer will never clear on its own, so clear it and let the next
+    // run submit a fresh batch. The same line repeating nightly means
+    // permanent whatever the status says.
+    console.error("[job:detect-signals] batch poll failed", {
+      phase: "status",
+      status: providerStatus(error),
+      ...errorFields(error),
+    });
     return { done: false };
   }
   if (!isDone) return { done: false };
@@ -42,6 +55,8 @@ export async function processPendingBatch(
     const created = await runScoped(async () => {
       const db = await getDb();
       let count = 0;
+      let applyFailures = 0;
+      let firstApplyError: unknown;
       for (const result of results) {
         if (result.status !== "succeeded" || !result.data || !result.model || !result.usage) {
           // errored/expired/canceled — Anthropic doesn't bill these, and
@@ -68,19 +83,45 @@ export async function processPendingBatch(
             });
             count += 1;
           }
-        } catch {
+        } catch (error) {
           // One contact's result failing to apply must never abort the rest
-          // of the batch (best-effort, like the old inline loop).
+          // of the batch (best-effort, like the old inline loop) — counted,
+          // not just swallowed, because the pointer is cleared below either way.
+          applyFailures += 1;
+          firstApplyError ??= error;
         }
+      }
+      if (applyFailures > 0) {
+        // The pending pointer is cleared unconditionally two lines down, so a
+        // batch we already paid for is discarded whether or not it applied.
+        // Read it as: applyFailures === resultCount means the WHOLE night's
+        // batch was thrown away — created is 0, nothing retries it, and the
+        // cause is systemic (schema drift in signals, RLS/pool failure, a
+        // metering cap rejecting every recordAiAction), not one odd contact.
+        console.error("[job:detect-signals] batch results failed to apply", {
+          resultCount: results.length,
+          applyFailures,
+          ...errorFields(firstApplyError),
+        });
       }
       await setPendingSignalBatchId(null);
       return count;
     });
     return { done: true, created };
-  } catch {
+  } catch (error) {
     // Batch reports done but the results couldn't be downloaded (transient
     // network issue), or the scoped write failed — keep the pointer and retry
-    // next run instead of silently losing a night's worth of signals.
+    // next run instead of silently losing a night's worth of signals. Same
+    // caveat as the status catch: retrying forever is only right if the cause
+    // really is transient. `status` 404/401 = the results are gone or we're
+    // locked out, so this batch will never apply and the pointer must be
+    // cleared by hand; no status at all points at the scoped write (DB), not
+    // Anthropic.
+    console.error("[job:detect-signals] batch results failed", {
+      phase: "results",
+      status: providerStatus(error),
+      ...errorFields(error),
+    });
     return { done: false };
   }
 }

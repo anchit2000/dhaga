@@ -1,4 +1,5 @@
 import { goalMatchSchema, type BatchLLMClient } from "@dhaga/core";
+import { errorFields } from "@dhaga/core/src/logging";
 import { recordAiAction } from "@/lib/ai/metering";
 import { recordGoalMatchRun, type GoalMatchVerdict } from "@/lib/repo/goals";
 import { GOAL_MATCH_BATCH_KEY, setPendingBatchId } from "@/lib/repo/settings";
@@ -45,6 +46,13 @@ export async function processPendingBatch(
     const results = await batchClient.getBatchResults(pending.batchId, goalMatchSchema);
     const matched = await runScoped(async () => {
       const accepted: GoalMatchVerdict[] = [];
+      // Metering is best-effort per result (see the catch below), so the misses
+      // are tallied here and reported ONCE after the loop: a batch carries a
+      // result per recalled contact, and a line each would bury the only number
+      // that matters — how much spend never reached the ledger.
+      const unmetered = { results: 0, inputTokens: 0, outputTokens: 0 };
+      let unmeteredModel: string | null = null;
+      let lastRecordError: unknown = null;
       for (const result of results) {
         if (result.status !== "succeeded" || !result.data || !result.model || !result.usage) {
           // errored/expired/canceled — unbilled by Anthropic, and this contact
@@ -58,9 +66,32 @@ export async function processPendingBatch(
           // SYNCHRONOUSLY at full price, so the feature alone cannot say.
           await recordAiAction("goal_matching", result.model, result.usage, { batch: true });
           if (result.data.matches) accepted.push({ contactId: result.id, fit: result.data.fit });
-        } catch {
+        } catch (failure) {
           // One result failing to meter must never drop the whole batch.
+          unmetered.results++;
+          unmetered.inputTokens += result.usage.inputTokens;
+          unmetered.outputTokens += result.usage.outputTokens;
+          unmeteredModel = result.model;
+          lastRecordError = failure;
         }
+      }
+      // WHAT WENT UNMETERED on this BATCH pass. Anthropic billed these tokens
+      // (at the batch half-price the `batch: true` flag above records), but no
+      // `ai_actions` row landed, so the month's usage reads low and no ceiling
+      // can see the spend. That bites hardest HERE: `goal_matching` is priced at
+      // 0 credits, so the dollar cap is its ONLY ceiling and these rows are the
+      // whole of what it would have counted. Reconcile the counts against the
+      // provider bill. Model id and counts only — never a contact or a verdict.
+      if (unmetered.results > 0) {
+        console.error("[goal-matching] batch usage record failed (batch kept)", {
+          feature: "goal_matching",
+          batch: true,
+          model: unmeteredModel,
+          unmeteredResults: unmetered.results,
+          inputTokens: unmetered.inputTokens,
+          outputTokens: unmetered.outputTokens,
+          ...errorFields(lastRecordError),
+        });
       }
       const inserted = await recordGoalMatchRun(pending.goalId, accepted);
       await setPendingBatchId(GOAL_MATCH_BATCH_KEY, null);

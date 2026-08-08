@@ -24,16 +24,35 @@ function graphVersion(): string {
   return process.env.WHATSAPP_GRAPH_VERSION || DEFAULT_GRAPH_VERSION;
 }
 
+/**
+ * Read a credential from the environment, TRIMMED.
+ *
+ * Not defensive tidiness — an untrimmed value fails in a way that points
+ * nowhere near its cause. A token carrying a leading U+FEFF (a BOM, which is
+ * what a Windows shell pipe or an editor "UTF-8 with BOM" save prepends, and
+ * which is invisible everywhere you would look at it) makes
+ * `new Headers({ Authorization: \`Bearer ${token}\` })` throw
+ * "Cannot convert argument to a ByteString because the character at index 7 has
+ * a value of 65279" — a TypeError from deep inside undici, on a line that
+ * mentions no credential at all. A trailing newline from a copy-paste into a
+ * dashboard field does the same. `trim()` removes both: U+FEFF is WhiteSpace
+ * per the ECMAScript spec, so this is one call, not a special case.
+ *
+ * Empty-after-trim is treated as unset, since a whitespace-only value is a
+ * misconfiguration, not a credential.
+ */
+function requiredEnv(name: "WHATSAPP_ACCESS_TOKEN" | "WHATSAPP_PHONE_NUMBER_ID"): string {
+  const value = process.env[name]?.trim();
+  if (!value) throw new Error(`${name} is not set — WhatsApp messaging is unavailable`);
+  return value;
+}
+
 function accessToken(): string {
-  const token = process.env.WHATSAPP_ACCESS_TOKEN;
-  if (!token) throw new Error("WHATSAPP_ACCESS_TOKEN is not set — WhatsApp messaging is unavailable");
-  return token;
+  return requiredEnv("WHATSAPP_ACCESS_TOKEN");
 }
 
 function phoneNumberId(): string {
-  const id = process.env.WHATSAPP_PHONE_NUMBER_ID;
-  if (!id) throw new Error("WHATSAPP_PHONE_NUMBER_ID is not set — WhatsApp messaging is unavailable");
-  return id;
+  return requiredEnv("WHATSAPP_PHONE_NUMBER_ID");
 }
 
 /**
@@ -42,7 +61,11 @@ function phoneNumberId(): string {
  * null when the verify token is unset — we cannot validate, so we do not echo.
  */
 export function verifyWebhookChallenge(query: URLSearchParams): string | null {
-  const verifyToken = process.env.WHATSAPP_VERIFY_TOKEN;
+  // Trimmed for the same reason as the credentials above, with a worse failure
+  // mode: this one is an equality check, so an invisible character means the
+  // handshake simply 403s and Meta reports "the callback URL could not be
+  // validated" — with nothing anywhere to say the token was the problem.
+  const verifyToken = process.env.WHATSAPP_VERIFY_TOKEN?.trim();
   if (!verifyToken) return null;
   if (query.get("hub.mode") === "subscribe" && query.get("hub.verify_token") === verifyToken) {
     return query.get("hub.challenge");
@@ -59,7 +82,10 @@ export function verifyWebhookChallenge(query: URLSearchParams): string | null {
  * Never throws on a bad/short/malformed signature — always returns a boolean.
  */
 export function verifyInbound(input: { headers: Headers; rawBody: string }): boolean {
-  const appSecret = process.env.WHATSAPP_APP_SECRET;
+  // Trimmed: this is the HMAC key, so an invisible character changes every
+  // signature we compute and EVERY inbound message is rejected as unauthorized
+  // — indistinguishable from a genuinely forged payload.
+  const appSecret = process.env.WHATSAPP_APP_SECRET?.trim();
   if (!appSecret) return false;
   const presented = input.headers.get("x-hub-signature-256");
   if (!presented) return false;

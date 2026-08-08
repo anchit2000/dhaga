@@ -60,6 +60,35 @@ export async function setSetting(key: string, value: string): Promise<void> {
 }
 
 /**
+ * Insert defaults for keys the user has never set, in ONE round-trip.
+ *
+ * DO NOTHING, not DO UPDATE: this is a SEED, not a write. A re-run (a retried
+ * signup hook, a later backfill) must never clobber a choice the user made
+ * since. Conflict-by-constraint-name for the same self-host/EE reason
+ * setSetting documents above.
+ *
+ * `user_id` is deliberately not named: under EE it comes from the column
+ * DEFAULT `current_setting('app.current_user_id')`, so this MUST run inside a
+ * tenant scope (withUserDb) — unscoped it fails on both the NOT NULL and the
+ * RLS insert check. On core the column doesn't exist at all.
+ */
+export async function seedSettings(
+  entries: readonly (readonly [key: string, value: string])[],
+): Promise<void> {
+  if (entries.length === 0) return;
+  const db = await getDb();
+  const rows = sql.join(
+    entries.map(([key, value]) => sql`(${key}, ${value}, now())`),
+    sql`, `,
+  );
+  await db.execute(sql`
+    insert into settings (key, value, updated_at)
+    values ${rows}
+    on conflict on constraint settings_pkey do nothing
+  `);
+}
+
+/**
  * Atomically append `value` to a JSON-array setting, deduping — in ONE
  * lock-free upsert. Two concurrent appends can't lose an update the way a
  * read-modify-write (getSetting → push → setSetting) can, and the single

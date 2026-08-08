@@ -9,12 +9,16 @@ import { sendPasswordResetEmail, sendVerifyEmail, sendWelcomeEmail } from "./ema
 import { buildPlugins } from "./plugins";
 import { socialProviderConfig } from "./social";
 import { previewTrustedOrigins } from "./trusted-origins";
-import { beforeUserCreate, grantOrRequestApproval } from "./signup-hooks";
+import {
+  beforeUserCreate,
+  grantOrRequestApproval,
+  seedEmailPreferencesForNewUser,
+} from "./signup-hooks";
 
 /** Re-exported so `@/lib/auth/config` stays the stable import for both the
  *  auth wiring and the vitest suites (the signup-gate logic lives in
  *  ./signup-hooks). */
-export { beforeUserCreate, grantOrRequestApproval };
+export { beforeUserCreate, grantOrRequestApproval, seedEmailPreferencesForNewUser };
 
 /**
  * Lazily built and cached (not a top-level `await getDb()`): merely
@@ -96,6 +100,10 @@ async function buildAuth() {
             // First, because everything else here is a courtesy and this
             // decides whether the account can use the app at all.
             await grantOrRequestApproval(user);
+            // Reminders on by default for the account that just signed up.
+            // Awaited, not fire-and-forget: a serverless function can freeze
+            // after the response and never run a dangling promise.
+            await seedEmailPreferencesForNewUser(user.id);
             if (user.emailVerified) {
               await sendWelcomeEmail(user.email).catch(() => undefined);
             }

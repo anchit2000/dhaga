@@ -1,8 +1,11 @@
 import { APIError } from "better-auth/api";
 import { getDb } from "@/lib/db";
+import { withUserDb } from "@/lib/db/request-scope";
 import { authUser } from "@/lib/db/schema";
 import { getApprovalGate, getSignupGate } from "@/lib/hosted/gate";
 import { notifyAccessRequested } from "@/lib/access/notify";
+import { logActionError } from "@/lib/actions/resilience";
+import { seedEmailPreferences } from "@/lib/repo/suggestion-settings";
 import type { User } from "better-auth";
 
 /**
@@ -85,5 +88,31 @@ export async function grantOrRequestApproval(user: {
       // Swallowed deliberately: an email-provider hiccup (lib/email/send.ts,
       // via Resend) must not take down a signup that already succeeded.
     }
+  }
+}
+
+/**
+ * better-auth's `user.create.after` hook, preferences half: switch the email
+ * reminders on for the brand-new account. Only new accounts — existing ones keep
+ * whatever they have, because the getters still read a missing row as off.
+ *
+ * MUST be wrapped in `withUserDb`. There is no session cookie on the request
+ * yet, so request-scope's `getDb()` falls through to the unscoped GLOBAL
+ * connection — and under EE `settings` is RLS-scoped with a composite
+ * (user_id, key) PK whose user_id comes from the `app.current_user_id` GUC.
+ * Unscoped, the insert fails twice over: NOT NULL on user_id, and the
+ * tenant_isolation policy's insert check. `withUserDb` sets that GUC under EE
+ * and is a plain passthrough on core, so one call is right in both modes — the
+ * same shape the nightly jobs use (lib/jobs/tenant-sweep.ts).
+ *
+ * Never throws, for the same reason grantOrRequestApproval doesn't: the account
+ * already exists by now. A failed seed degrades to the old default (off), which
+ * is the safe direction to fail in.
+ */
+export async function seedEmailPreferencesForNewUser(userId: string): Promise<void> {
+  try {
+    await withUserDb(userId, () => seedEmailPreferences());
+  } catch (error) {
+    logActionError("seed-email-preferences", error);
   }
 }

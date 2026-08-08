@@ -588,9 +588,16 @@ Every recurring email — the reach-out digest, the confirmations digest, the
 morning follow-up reminder, the due-follow-up sweep, the birthday/anniversary
 reminder and the LinkedIn-export nudges — runs from the one `/api/jobs/daily`
 endpoint, on the single Vercel cron in `apps/web/vercel.json` (`"17 6 * * *"`,
-unchanged). All of them are **opt-in per user** in Settings → Suggestions and
+unchanged). All of them are **per-user toggles** in Settings → Suggestions and
 all degrade to a clean no-op without `RESEND_API_KEY` / `RESEND_FROM_EMAIL`
 (and, on a single-user self-host, `DHAGA_OWNER_EMAIL`).
+
+Since 2026-08-08 those toggles are **seeded on when an account is created**
+(`seedEmailPreferencesForNewUser`, `lib/auth/config/signup-hooks.ts`), so a
+fresh self-host starts with reminders enabled and you switch off what you don't
+want. Accounts created *before* that change are untouched: a missing settings
+row still resolves to off, so nothing starts emailing an existing install on
+upgrade. Configure no `RESEND_*` keys and none of this sends regardless.
 
 Each user's **time zone** (Settings → Suggestions → Time zone, default `UTC`)
 decides which calendar day a job is reasoning about, so a birthday lands on the

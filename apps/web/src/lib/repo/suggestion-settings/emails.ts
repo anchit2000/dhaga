@@ -1,4 +1,4 @@
-import { getSetting, setSetting } from "../settings";
+import { getSetting, seedSettings, setSetting } from "../settings";
 import {
   IMPORTANT_DATE_LEAD_DAYS_DEFAULT,
   IMPORTANT_DATE_LEAD_DAYS_MAX,
@@ -7,8 +7,12 @@ import {
 
 /**
  * Per-user email preferences, on the same key/value settings table as the
- * scheduling scalars next door. EVERY toggle here defaults to OFF: we never
- * email a user who hasn't asked to be emailed (privacy-first).
+ * scheduling scalars next door.
+ *
+ * New accounts are SEEDED "on" at signup (seedEmailPreferences below), but every
+ * getter still resolves a MISSING row to OFF. That floor is what stops the seed
+ * reaching back in time: accounts predating it, and any whose seed failed, stay
+ * silent until they opt in. "Default off" now means "off unless there's a row".
  */
 
 const DAILY_DIGEST_KEY = "daily_digest_enabled";
@@ -118,4 +122,26 @@ export async function getJobEmailLastSentAt(): Promise<number | null> {
 
 export async function setJobEmailLastSentAt(epochMs: number): Promise<void> {
   await setSetting(JOB_EMAIL_LAST_SENT_KEY, String(Math.round(epochMs)));
+}
+
+/** The toggles a brand-new account starts with switched on. Deliberately every
+ *  reminder in this file and nothing else: the lead-days scalar and the
+ *  last-sent timestamp are not preferences. */
+const SEEDED_EMAIL_PREFERENCE_KEYS = [
+  DAILY_DIGEST_KEY,
+  CONFIRMATIONS_DIGEST_KEY,
+  MORNING_REMINDER_KEY,
+  IMPORTANT_DATE_REMINDERS_KEY,
+  JOB_EMAIL_KEY,
+] as const;
+
+/**
+ * Switch every email reminder on for the CURRENT tenant scope — called once per
+ * account from the signup hook, which is the only thing that decides who gets
+ * seeded. Insert-if-absent (see seedSettings), so it can never overwrite a
+ * choice: re-running it on an account that has since turned the digest off
+ * leaves that "off" alone.
+ */
+export async function seedEmailPreferences(): Promise<void> {
+  await seedSettings(SEEDED_EMAIL_PREFERENCE_KEYS.map((key) => [key, "on"] as const));
 }

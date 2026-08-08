@@ -13,7 +13,13 @@ export const UI_THEME_KEY = "ui_theme";
 export const AI_MONTHLY_CAP_OVERRIDE_KEY = "ai_monthly_cap_override";
 
 // Import paths stay stable via this barrel: @/lib/repo/settings.
-export { appendToSettingArray, getSetting, getSettings, setSetting } from "./kv";
+export {
+  appendToSettingArray,
+  getSetting,
+  getSettings,
+  seedSettings,
+  setSetting,
+} from "./kv";
 
 /** Whether scanned card photos are kept as visual receipts (default: yes). */
 export async function shouldStoreCardPhotos(): Promise<boolean> {

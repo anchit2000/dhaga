@@ -67,7 +67,7 @@ export const SETTINGS_TOUR_STEPS: SettingsTourStep[] = [
         align: "center",
         title: "Decide what gets emailed",
         description:
-          "Dhaga emails you nothing until you ask. Switch on a heads-up before a saved birthday or anniversary here — the daily digest and follow-up nudges just above work the same way. Leave them off and nothing is sent.",
+          "Your reminders start switched on: a heads-up before a saved birthday or anniversary here, and the daily digest and follow-up nudges just above. This is the one place that decides what leaves the app — switch off anything you don't want and nothing is sent.",
       },
     },
   },

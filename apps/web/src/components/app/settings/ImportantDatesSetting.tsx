@@ -72,7 +72,7 @@ export function ImportantDatesSetting({
         action={setImportantDateRemindersEnabledAction}
         label="Birthday and anniversary reminders"
         title="Birthday and anniversary reminders"
-        description="Email me before a saved birthday or anniversary, using the lead time above. Off unless you turn it on, and it needs email configured on your server."
+        description="Email me before a saved birthday or anniversary, using the lead time above. On for new accounts — switch it off here any time. Needs email configured on your server."
       />
     </section>
   );

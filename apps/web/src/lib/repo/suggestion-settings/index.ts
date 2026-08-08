@@ -17,6 +17,7 @@ export {
   isDailyDigestEnabled,
   isJobEmailNotificationsEnabled,
   isMorningReminderEnabled,
+  seedEmailPreferences,
   setConfirmationsDigestEnabled,
   setDailyDigestEnabled,
   setImportantDateLeadDays,

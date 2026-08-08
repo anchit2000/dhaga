@@ -69,9 +69,10 @@ resolves part of the hosted email-job fan-out gap below):
 - **Daily important-date reminder email (2026-07-30).** New
   `lib/jobs/important-date-reminders/` (`runImportantDateReminders`), wired into
   `/api/jobs/daily` after the follow-up sweep. Same per-tenant `withUserDb`
-  fan-out and `sendEmail`-between-scopes hygiene. Opt-in via
-  `important_date_reminders_enabled` (**default off** — important dates arrive in
-  bulk from address-book imports the user never reviewed), lead time from
+  fan-out and `sendEmail`-between-scopes hygiene. Gated on
+  `important_date_reminders_enabled` (**seeded on at signup since 2026-08-08**;
+  a *missing* row still reads as off, so accounts predating the seed stay
+  silent until they opt in — see `repo/suggestion-settings/emails.ts`), lead time from
   `important_date_lead_days` (default 7). **Anti-spam:** the cron runs daily, so
   each occurrence gets at most **two** emails — one when it enters the lead window,
   one on the day itself. `state.ts` keeps a JSON array of

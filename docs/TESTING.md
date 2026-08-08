@@ -1394,9 +1394,16 @@ you run hosted mode, treat this section as the regression test for that.
 - [ ] The **birthday reminder** arrives at most **twice per occurrence** — once
       when it enters the lead window, once on the day itself. Run the cron on
       several consecutive days and confirm there is no third email.
-- [ ] With the birthday toggle **off** (its default), no birthday email is ever
-      sent however many dates are saved. Imported address books arrive full of
-      dates the user never reviewed, which is why opt-in is the design.
+- [ ] A **brand-new signup** lands with all five email toggles already on
+      (`seedEmailPreferencesForNewUser`) — check Settings → Suggestions right
+      after creating an account, and check the `settings` rows carry the new
+      user's `user_id` under EE (the seed runs inside `withUserDb`; unscoped it
+      would fail the RLS insert check).
+- [ ] An account created **before** that seed still shows every toggle off and
+      is never emailed — a missing row must keep reading as off, or an upgrade
+      would start mailing existing users who never asked.
+- [ ] With the birthday toggle **off**, no birthday email is ever sent however
+      many dates are saved.
 - [ ] `EMAIL_JOBS_HOURLY=true` applies **only** if you drive the endpoint hourly;
       then the morning reminder, reach-out digest and confirmations digest send
       only on the run matching the recipient's local ~08:00. Unset — the Vercel

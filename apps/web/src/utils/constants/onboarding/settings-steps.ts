@@ -29,10 +29,12 @@ export interface SettingsTourStep {
  * directions read in order — what Dhaga sends out, then what you bring in.
  * Neither displaces a bookend.
  *
- * Nothing here enables anything. Every email preference in Dhaga ships off, and
- * so does copying your contacts out into an address book; these steps exist to
- * surface those choices, not to make them — a pre-flipped switch would defeat
- * the whole point. Appearance is the one exception in kind rather than degree:
+ * Nothing here enables anything — these steps surface choices rather than make
+ * them. Note the two are no longer the same choice: since 2026-08-08 a new
+ * account is created with its email reminders already on (seedEmailPreferences),
+ * so the notifications step is showing the user where to switch things OFF,
+ * while contact sync out to an address book still ships off and stays off until
+ * they turn it on. Appearance is the one exception in kind rather than degree:
  * it writes a preference the moment you click a swatch, but it only changes
  * what you see and is one button from being undone.
  */

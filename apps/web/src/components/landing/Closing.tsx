@@ -1,4 +1,5 @@
 import { GITHUB_URL } from "@/utils/constants/landing";
+import { PARENT_COMPANY } from "@/utils/constants/legal";
 import { SignUpCta } from "./SignUpCta";
 import { SectionHeading } from "./SectionHeading";
 
@@ -81,7 +82,16 @@ export function Footer() {
       </div>
       <div className="border-t border-seam/60">
         <p className="mx-auto max-w-6xl px-6 py-5 text-xs text-fog">
-          © 2026 Dhaga. Built in the open. Your data is yours — always exportable, always deletable.
+          © 2026 Dhaga, a product by{" "}
+          <a
+            href={PARENT_COMPANY.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-fog transition-colors hover:text-paper"
+          >
+            {PARENT_COMPANY.label}
+          </a>
+          . Built in the open. Your data is yours — always exportable, always deletable.
         </p>
       </div>
     </footer>

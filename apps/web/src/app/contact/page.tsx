@@ -7,9 +7,9 @@ import { publicPageMetadata } from "@/utils/public-page-metadata";
 export const metadata = publicPageMetadata("contact");
 
 /**
- * ⚠️ Every detail here comes from utils/constants/legal, which is still
- * placeholders. A payment gateway will check that this page names a real
- * business, a reachable address and a working phone number.
+ * Every detail here comes from utils/constants/legal — a payment gateway checks
+ * that this page names a real business, a reachable address and a working phone
+ * number, so the two must never drift.
  */
 const SECTIONS: LegalSection[] = [
   {
@@ -18,7 +18,11 @@ const SECTIONS: LegalSection[] = [
   },
   {
     heading: "Phone",
-    body: `${LEGAL_ENTITY.phone}, ${LEGAL_ENTITY.supportHours}.`,
+    // No hours set means no hours printed: naming a window nobody committed to
+    // is a promise about when this rings.
+    body: LEGAL_ENTITY.supportHours
+      ? `${LEGAL_ENTITY.phone}, ${LEGAL_ENTITY.supportHours}.`
+      : `${LEGAL_ENTITY.phone}. Email is faster and leaves a record.`,
   },
   {
     heading: "Registered address",
